@@ -7,7 +7,24 @@ def generate_summary(client,text):
             messages=[
                 {
                     "role": "user",
-                    "content": "Generate a summary containing every important information from this text for a job interview :"+text,
+                    "content": 
+                    """
+                     You are an expert HR recruiter analyzing CVs to decide if a candidate is a good fit for demanding roles. Analyze the following CV critically and generate a complete, honest, no-fluff summary paragraph for HR use.
+
+                        ⚠ Important:
+
+                        Do NOT omit any potentially relevant information.
+
+                        Include both strengths and weaknesses, gaps, irrelevant experience, job hopping, achievements, soft skills, hard skills, certifications, education, language, projects, leadership roles, etc.
+
+                        Be brutally honest: If experience is weak, outdated, or irrelevant — say it.
+
+                        Write in  a paragraph.
+
+                        Do NOT include any personal information like name, contact details,birthdate , or location.
+                        Do NOT include any subjective opinions or comments.
+                        Do NOT include any information that is not present in the CV.
+                        here is the CV text: """ + text
                 }
             ],
         )
