@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scan Results</title>
+</head>
+<body>
+    <h1>Scan Results for {{ filename }}</h1>
+
+    <h2>Summary:</h2>
+    <pre>{{ summary }}</pre>
+
+    <h2>Text Extracted from PDF:</h2>
+    <pre>{{ pdf_text }}</pre>
+
+    <h2>Text Extracted from Images:</h2>
+    {% for text in images_text %}
+        <pre>{{ text }}</pre>
+        <hr>
+    {% endfor %}
+</body>
+</html>

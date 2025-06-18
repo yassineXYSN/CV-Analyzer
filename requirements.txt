@@ -1,0 +1,6 @@
+uvicorn
+fastapi
+jinja2
+pymupdf
+python-dotenv
+huggingface_hub

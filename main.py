@@ -1,45 +1,43 @@
-from fastapi import FastAPI, Path, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+import cv_analyzer.text_extractor as text_extractor
+import cv_analyzer.textcleaner as textcleaner
+import cv_analyzer.data_generator as data_generator
 
 app = FastAPI()
 
-cars = {
-    1: {"Make": "BMW", "Model": "M3", "Year": 2020, "Color": "Grey"},
-    2: {"Make": "Audi", "Model": "RS5", "Year": 2021, "Color": "Red"},
-    3: {"Make": "Mercedes-Benz", "Model": "C63 AMG", "Year": 2019, "Color": "Black"},
-    4: {"Make": "Tesla", "Model": "Model S", "Year": 2022, "Color": "White"},
-    5: {"Make": "Porsche", "Model": "911 Carrera", "Year": 2023, "Color": "Blue"},
-    6: {"Make": "Toyota", "Model": "Supra", "Year": 2020, "Color": "Yellow"},
-    7: {"Make": "Ford", "Model": "Mustang GT", "Year": 2018, "Color": "Orange"},
-    8: {"Make": "Chevrolet", "Model": "Camaro SS", "Year": 2021, "Color": "Green"},
-    9: {"Make": "BMW", "Model": "M4", "Year": 2018, "Color": "Blue"}
-}
+app.mount("/static", StaticFiles(directory="css"), name="static")
+templates = Jinja2Templates(directory="templates")
 
-class Car(BaseModel):
-    Make: str
-    Model: str
-    Year: int
-    Color: str
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/", response_model=dict)
-def welcome():
-    return {"message": "Hello World"}
+@app.post("/scan", response_class=HTMLResponse)
+async def scan_file(request: Request, filetoscan: UploadFile = File(...)):
+    file_location = f"uploads/{filetoscan.filename}"
+    
+    # Save file to disk temporarily
+    with open(file_location, "wb") as f:
+        f.write(await filetoscan.read())
+    
+    # Process the file (adapt to your text_extractor method)
+    pdf_text, images_text = text_extractor.process_file(file_location)
 
-@app.get("/cars/{car_id}", response_model=Car)
-def read_car(car_id: int = Path(..., ge=1, le=9)):
-    return cars[car_id]
+    # Clean up pdf text and images text
+    client = textcleaner.intialize_client()
+    pdf_text = textcleaner.cleantext(client,pdf_text)
 
-@app.get("/get", response_model=dict)
-def get_make(make: str):
-    cars_to_return = {}
-    for car_id, car in cars.items():
-        if car["Make"] == make:
-            cars_to_return[car_id] = car
-    return cars_to_return
+    # Generate summary from cleaned text
+    summary = data_generator.generate_summary(client, pdf_text)
 
-@app.post("/add/{car_id}", response_model=Car)
-def add_car(car_id: int, car: Car):
-    if car_id not in cars:
-        cars[car_id] = car.dict()
-        return cars[car_id]
-    return {"message": "id already exists"}
+
+    return templates.TemplateResponse("result.html", {
+        "request": request,
+        "filename": filetoscan.filename,
+        "pdf_text": pdf_text,
+        "images_text": images_text,
+        "summary": summary
+    })

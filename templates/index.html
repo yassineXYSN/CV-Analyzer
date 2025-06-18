@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Upload File to Scan</h1>
+
+    <form id="uploadForm" action="/scan" method="post" enctype="multipart/form-data">
+        <label for="filetoscan">Choose PDF or Image:</label>
+        <input type="file" id="filetoscan" name="filetoscan" required><br><br>
+        <button type="submit">Upload & Scan</button>
+    </form>
+</body>
+</html>
