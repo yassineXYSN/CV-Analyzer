@@ -1,21 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Scan Results</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Scan Results for {{ filename }}</h1>
+    <div class="container">
+        <h1>Scan Results for {{ filename }}</h1>
 
-    <h2>Summary:</h2>
-    <pre>{{ summary }}</pre>
+        <h2>Résumé extrait :</h2>
+        <pre>{{ summary }}</pre>
 
-    <h2>Text Extracted from PDF:</h2>
-    <pre>{{ pdf_text }}</pre>
+        <h2>Texte extrait du PDF :</h2>
+        <pre>{{ pdf_text }}</pre>
 
-    <h2>Text Extracted from Images:</h2>
-    {% for text in images_text %}
-        <pre>{{ text }}</pre>
-        <hr>
-    {% endfor %}
+        {% if images_text %}
+            <h2>Texte OCR (images) :</h2>
+            {% for text in images_text %}
+                <pre>{{ text }}</pre>
+                <hr>
+            {% endfor %}
+        {% endif %}
+
+        <h2>Score de correspondance :</h2>
+        <div class="score-box">
+            <strong>{{ score }}%</strong> de similarité entre le CV et l’offre.
+            <div class="bar-container">
+                <div class="score-bar" id="scoreBar"></div>
+            </div>
+        </div>
+
+        <a href="/" class="back-button">⬅ Retour à l'accueil</a>
+    </div>
+
+    <script>
+(function () {
+    // Convertir en nombre flottant en remplaçant les virgules par des points
+    const scoreValue = parseFloat("{{ score }}".replace(',', '.'));
+    const bar = document.getElementById('scoreBar');
+
+    if (bar && !isNaN(scoreValue)) {
+        bar.style.width = scoreValue + '%';
+
+        // Couleur dynamique selon score
+        if (scoreValue < 50) {
+            bar.style.backgroundColor = '#e53935';  // rouge
+        } else if (scoreValue < 75) {
+            bar.style.backgroundColor = '#fbc02d';  // jaune
+        } else {
+            bar.style.backgroundColor = '#43a047';  // vert
+        }
+    } else {
+        console.error('Score invalide:', "{{ score }}");
+    }
+})();
+</script>
+
+
+
 </body>
 </html>

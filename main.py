@@ -14,53 +14,47 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="css"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+
+
+from fastapi import Form  # déjà importé normalement
+
 @app.post("/scan", response_class=HTMLResponse)
-async def scan_file(request: Request, filetoscan: UploadFile = File(...)):
+async def scan_file(
+    request: Request,
+    filetoscan: UploadFile = File(...),
+    job_description: str = Form(...)
+):
     file_location = f"uploads/{filetoscan.filename}"
-    
+
     # Save file to disk temporarily
     with open(file_location, "wb") as f:
         f.write(await filetoscan.read())
-    
-    # Process the file (adapt to your text_extractor method)
+
+    # Process the file
     pdf_text, images_text = text_extractor.process_file(file_location)
 
-    # Clean up pdf text and images text
+    # Clean up
     client = textcleaner.intialize_client()
-    pdf_text = textcleaner.cleantext(client,pdf_text)
+    pdf_text = textcleaner.cleantext(client, pdf_text)
 
-    # Generate summary from cleaned text
+    # Generate summary
     summary = data_generator.generate_summary(client, pdf_text)
 
+    # Compute matching score
+    score = compute_similarity(summary, job_description)
 
     return templates.TemplateResponse("result.html", {
         "request": request,
         "filename": filetoscan.filename,
         "pdf_text": pdf_text,
         "images_text": images_text,
-        "summary": summary
-    })
-
-@app.post("/match")
-async def match_cv(file: UploadFile = File(...)):
-    # Lire le fichier JSON envoyé
-    contents = await file.read()
-    data = json.loads(contents)
-
-    # Récupérer le résumé du CV
-    summary = data.get("summary", "")
-    if not summary:
-        return {"error": "Le champ 'summary' est manquant dans le JSON."}
-
-    # Appel à la fonction d’analyse externe
-    score = compute_similarity(summary)
-
-    return {
         "summary": summary,
         "score": score,
-        "message": "Analyse réussie ✅"
-    }
+        "job_description": job_description
+    })
+
