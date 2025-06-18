@@ -2,9 +2,9 @@ from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-import cv_analyzer.text_extractor as text_extractor
-import cv_analyzer.textcleaner as textcleaner
-import cv_analyzer.data_generator as data_generator
+import extract_information_cv.text_extractor as text_extractor
+import extract_information_cv.textcleaner as textcleaner
+import extract_information_cv.data_generator as data_generator
 
 app = FastAPI()
 
