@@ -1,10 +1,13 @@
+import json
 from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-import cv_analyzer.text_extractor as text_extractor
-import cv_analyzer.textcleaner as textcleaner
-import cv_analyzer.data_generator as data_generator
+import extract_information_cv.text_extractor as text_extractor
+import extract_information_cv.textcleaner as textcleaner
+import extract_information_cv.data_generator as data_generator
+from   cv_analyzer.information_analyzer import compute_similarity
+
 
 app = FastAPI()
 
@@ -41,3 +44,23 @@ async def scan_file(request: Request, filetoscan: UploadFile = File(...)):
         "images_text": images_text,
         "summary": summary
     })
+
+@app.post("/match")
+async def match_cv(file: UploadFile = File(...)):
+    # Lire le fichier JSON envoyé
+    contents = await file.read()
+    data = json.loads(contents)
+
+    # Récupérer le résumé du CV
+    summary = data.get("summary", "")
+    if not summary:
+        return {"error": "Le champ 'summary' est manquant dans le JSON."}
+
+    # Appel à la fonction d’analyse externe
+    score = compute_similarity(summary)
+
+    return {
+        "summary": summary,
+        "score": score,
+        "message": "Analyse réussie ✅"
+    }
