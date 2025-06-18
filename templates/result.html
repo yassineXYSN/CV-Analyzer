@@ -5,13 +5,13 @@
 </head>
 <body>
     <h1>Scan Results for {{ filename }}</h1>
-
+    <hr>
     <h2>Summary:</h2>
     <pre>{{ summary }}</pre>
-
+    <hr>
     <h2>Text Extracted from PDF:</h2>
     <pre>{{ pdf_text }}</pre>
-
+    <hr>
     <h2>Text Extracted from Images:</h2>
     {% for text in images_text %}
         <pre>{{ text }}</pre>
