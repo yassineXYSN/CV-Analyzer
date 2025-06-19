@@ -46,6 +46,7 @@ async def scan_file(
 
     # Generate summary
     summary = data_generator.generate_summary(client, pdf_text)
+    data = data_generator.generate_json(client, pdf_text)
 
     # Compute matching score
     score = compute_similarity(summary, job_description)
@@ -53,7 +54,7 @@ async def scan_file(
     return templates.TemplateResponse("result.html", {
         "request": request,
         "filename": filetoscan.filename,
-        "pdf_text": pdf_text,
+        "data": data,
         "images_text": images_text,
         "summary": summary,
         "score": score,
