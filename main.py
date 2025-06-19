@@ -6,8 +6,8 @@ from fastapi.responses import HTMLResponse
 import extract_information_cv.text_extractor as text_extractor
 import extract_information_cv.textcleaner as textcleaner
 import extract_information_cv.data_generator as data_generator
-from   cv_analyzer.information_analyzer import compute_similarity
 
+from   cv_analyzer.information_analyzer import compute_similarity
 
 app = FastAPI()
 
