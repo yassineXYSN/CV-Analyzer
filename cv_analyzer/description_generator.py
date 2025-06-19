@@ -4,8 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-HF_TOKEN = os.getenv("HF_TOKEN")
-print("🔐 HF_TOKEN loaded:", HF_TOKEN[:10] + "..." if HF_TOKEN else "❌ AUCUN TOKEN")
+HF_TOKEN = os.getenv("HF_TOKEN1")
 
 client = InferenceClient(
     model="HuggingFaceH4/zephyr-7b-beta",

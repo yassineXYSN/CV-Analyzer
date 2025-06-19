@@ -39,5 +39,6 @@ def intialize_client():
     client = InferenceClient(
         provider="novita",
         api_key=os.getenv("HF_TOKEN"),
+        timeout=300,
     )
     return client
