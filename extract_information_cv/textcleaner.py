@@ -1,7 +1,9 @@
 import os
 from huggingface_hub import InferenceClient
+
 from dotenv import load_dotenv
 load_dotenv()
+
 
 def cleantext(client,text):
     completion = client.chat.completions.create(
@@ -22,5 +24,6 @@ def intialize_client():
     client = InferenceClient(
         provider="novita",
         api_key=HF_TOKEN,
+
     )
     return client
