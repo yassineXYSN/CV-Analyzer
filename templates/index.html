@@ -1,23 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Upload</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>File Upload</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Upload File to Scan</h1>
+  <h1>Upload File to Scan</h1>
 
-    <form id="uploadForm" action="/scan" method="post" enctype="multipart/form-data">
-        <label for="filetoscan">Choose PDF or Image:</label>
-        <input type="file" id="filetoscan" name="filetoscan" required><br><br>
+  <form id="uploadForm" action="/scan" method="post" enctype="multipart/form-data">
+    <label for="filetoscan">Choose PDF or Image:</label>
+    <input type="file" id="filetoscan" name="filetoscan" required><br><br>
 
-        <label for="job_description">Job Description:</label><br>
-        <textarea id="job_description" name="job_description" rows="6" cols="60" required></textarea><br><br>
+    <!-- ✅ Bloc de sélection de profil -->
+    <label for="jobSelect">Choisir un profil prédéfini :</label>
+    <select id="jobSelect">
+      <option value="">-- Sélectionner un profil --</option>
+      <option value="cybersecurity">Cybersecurity</option>
+      <option value="webdev">Développeur Web</option>
+      <option value="datascientist">Data Scientist</option>
+      <option value="addcustom">➕ Ajouter un profil personnalisé...</option>
+    </select><br><br>
 
+    <!-- ✅ Textarea pour description -->
+    <label for="job_description">Job Description:</label><br>
+    <textarea id="job_description" name="job_description" rows="6" cols="60" required></textarea><br><br>
 
-        <button type="submit">Upload & Scan</button>
-    </form>
+    <button type="submit">Upload & Scan</button>
+  </form>
+
+  <!-- ✅ Script JS -->
+  <script>
+    async function fetchDescription(topic) {
+        const response = await fetch("/generate-description", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic })
+        });
+        const data = await response.json();
+        return data.description || "Échec de la génération.";
+    }
+
+    document.getElementById('jobSelect').addEventListener('change', async function () {
+        const selected = this.value;
+        const textarea = document.getElementById('job_description');
+
+        if (selected === "addcustom") {
+            const custom = prompt("Nom du profil personnalisé :");
+            if (custom) {
+                const newOption = document.createElement("option");
+                newOption.value = custom;
+                newOption.textContent = custom;
+                this.insertBefore(newOption, this.querySelector('option[value="addcustom"]'));
+                this.value = custom;
+
+                const desc = await fetchDescription(custom);
+                textarea.value = desc;
+            } else {
+                this.value = "";
+            }
+        } else if (selected) {
+            const desc = await fetchDescription(selected);
+            textarea.value = desc;
+        }
+    });
+</script>
+
 </body>
 </html>
