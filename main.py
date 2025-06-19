@@ -10,20 +10,24 @@ import extract_information_cv.data_generator as data_generator
 from cv_analyzer.information_analyzer import compute_similarity
 from cv_analyzer.description_generator import generate_job_description
 from pydantic import BaseModel
+import os
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="css"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Créer le dossier static s'il n'existe pas
+os.makedirs("static", exist_ok=True)
 
+# Monter les fichiers statiques CORRECTEMENT
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-
-
-from fastapi import Form  
+@app.get("/analyze", response_class=HTMLResponse)
+def analyze_page(request: Request):
+    return templates.TemplateResponse("analyze.html", {"request": request})
 
 @app.post("/scan", response_class=HTMLResponse)
 async def scan_file(
@@ -31,6 +35,9 @@ async def scan_file(
     filetoscan: UploadFile = File(...),
     job_description: str = Form(...)
 ):
+    # Créer le dossier uploads s'il n'existe pas
+    os.makedirs("uploads", exist_ok=True)
+    
     file_location = f"uploads/{filetoscan.filename}"
 
     # Save file to disk temporarily
@@ -46,7 +53,6 @@ async def scan_file(
 
     # Generate summary
     summary = data_generator.generate_summary(client, pdf_text)
-    data = data_generator.generate_json(client, pdf_text)
 
     # Compute matching score
     score = compute_similarity(summary, job_description)
@@ -54,13 +60,12 @@ async def scan_file(
     return templates.TemplateResponse("result.html", {
         "request": request,
         "filename": filetoscan.filename,
-        "data": data,
+        "pdf_text": pdf_text,
         "images_text": images_text,
         "summary": summary,
         "score": score,
         "job_description": job_description
     })
-
 
 class TopicRequest(BaseModel):
     topic: str
@@ -69,3 +74,6 @@ class TopicRequest(BaseModel):
 async def generate_description(request: TopicRequest):
     description = generate_job_description(request.topic)
     return {"description": description}
+
+
+

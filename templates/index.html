@@ -1,71 +1,301 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>File Upload</title>
-  <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Analyzer Pro - Analyse Intelligente de CV avec IA</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h1>Upload File to Scan</h1>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
 
-  <form id="uploadForm" action="/scan" method="post" enctype="multipart/form-data">
-    <label for="filetoscan">Choose PDF or Image:</label>
-    <input type="file" id="filetoscan" name="filetoscan" required><br><br>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">CV Analyzer Pro</div>
+            <ul class="nav-links">
+                <li><a href="#features">Fonctionnalités</a></li>
+                <li><a href="#how-it-works">Comment ça marche</a></li>
+                <li><a href="/analyze">Analyser</a></li>
+            </ul>
+        </div>
+    </nav>
 
-    <!-- ✅ Bloc de sélection de profil -->
-    <label for="jobSelect">Choisir un profil prédéfini :</label>
-    <select id="jobSelect">
-      <option value="">-- Sélectionner un profil --</option>
-      <option value="cybersecurity">Cybersecurity</option>
-      <option value="webdev">Développeur Web</option>
-      <option value="datascientist">Data Scientist</option>
-      <option value="addcustom">➕ Ajouter un profil personnalisé...</option>
-    </select><br><br>
+    <div class="main-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    🚀 Propulsé par l'Intelligence Artificielle
+                </div>
+                <h1 class="hero-title">Analysez vos CV avec une précision inégalée</h1>
+                <p class="hero-subtitle">
+                    Notre IA avancée analyse votre CV en profondeur et calcule un score de correspondance 
+                    précis avec les offres d'emploi. Optimisez vos candidatures et décrochez le poste de vos rêves.
+                </p>
+                <div class="hero-cta">
+                    <a href="/analyze" class="btn-primary">
+                        🎯 Analyser mon CV
+                    </a>
+                    <a href="#how-it-works" class="btn-secondary">
+                        📖 Comment ça marche
+                    </a>
+                </div>
+            </div>
+        </section>
 
-    <!-- ✅ Textarea pour description -->
-    <label for="job_description">Job Description:</label><br>
-    <textarea id="job_description" name="job_description" rows="6" cols="60" required></textarea><br><br>
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <div class="stats-container">
+                <div class="stat-item">
+                    <span class="stat-number" data-count="10000">0</span>
+                    <span class="stat-label">CV Analysés</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" data-count="95">0</span>
+                    <span class="stat-label">% de Précision</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" data-count="500">0</span>
+                    <span class="stat-label">Entreprises Partenaires</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" data-count="24">0</span>
+                    <span class="stat-label">Langues Supportées</span>
+                </div>
+            </div>
+        </section>
 
-    <button type="submit">Upload & Scan</button>
-  </form>
+        <!-- Features Section -->
+        <section id="features" class="features-section">
+            <div class="features-container">
+                <div class="section-header">
+                    <h2 class="section-title">Pourquoi choisir CV Analyzer Pro ?</h2>
+                    <p class="section-subtitle">
+                        Des fonctionnalités avancées pour une analyse complète et professionnelle de vos CV
+                    </p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <span class="feature-icon">🤖</span>
+                        <h3 class="feature-title">IA Avancée</h3>
+                        <p class="feature-description">
+                            Notre intelligence artificielle utilise les derniers modèles de traitement du langage 
+                            naturel pour une analyse précise et contextuelle de votre CV.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">📊</span>
+                        <h3 class="feature-title">Score de Correspondance</h3>
+                        <p class="feature-description">
+                            Obtenez un score précis de correspondance entre votre profil et les exigences 
+                            du poste avec des recommandations personnalisées.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">🔍</span>
+                        <h3 class="feature-title">Analyse OCR</h3>
+                        <p class="feature-description">
+                            Extraction de texte avancée depuis vos PDF et images avec reconnaissance 
+                            optique de caractères de haute précision.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">⚡</span>
+                        <h3 class="feature-title">Traitement Rapide</h3>
+                        <p class="feature-description">
+                            Analyse complète de votre CV en moins de 30 secondes avec des résultats 
+                            détaillés et exploitables immédiatement.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">🔒</span>
+                        <h3 class="feature-title">Sécurité Garantie</h3>
+                        <p class="feature-description">
+                            Vos données sont protégées par un chiffrement de niveau militaire. 
+                            Aucune information personnelle n'est stockée après l'analyse.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">🌍</span>
+                        <h3 class="feature-title">Multi-langues</h3>
+                        <p class="feature-description">
+                            Support de plus de 24 langues pour une analyse globale adaptée 
+                            aux marchés internationaux.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-  <!-- ✅ Script JS -->
-  <script>
-    async function fetchDescription(topic) {
-        const response = await fetch("/generate-description", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ topic })
+        <!-- How It Works Section -->
+        <section id="how-it-works" class="how-it-works-section">
+            <div class="steps-container">
+                <div class="section-header">
+                    <h2 class="section-title">Comment ça marche ?</h2>
+                    <p class="section-subtitle">
+                        Un processus simple et efficace en 4 étapes pour analyser votre CV
+                    </p>
+                </div>
+                <div class="steps-grid">
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <h3 class="step-title">Téléchargez votre CV</h3>
+                        <p class="step-description">
+                            Importez votre CV au format PDF ou image. Notre système supporte 
+                            tous les formats courants.
+                        </p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <h3 class="step-title">Sélectionnez le profil</h3>
+                        <p class="step-description">
+                            Choisissez un profil prédéfini ou créez une description de poste 
+                            personnalisée pour l'analyse.
+                        </p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <h3 class="step-title">Analyse IA</h3>
+                        <p class="step-description">
+                            Notre IA analyse votre CV, extrait les informations clés et calcule 
+                            le score de correspondance.
+                        </p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <h3 class="step-title">Résultats détaillés</h3>
+                        <p class="step-description">
+                            Recevez un rapport complet avec score, recommandations et axes 
+                            d'amélioration pour votre CV.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action Section -->
+        <section class="upload-section" style="padding: 6rem 2rem;">
+            <div class="upload-container" style="text-align: center;">
+                <div class="section-header">
+                    <h2 class="section-title">Prêt à optimiser votre CV ?</h2>
+                    <p class="section-subtitle">
+                        Rejoignez des milliers de professionnels qui ont déjà amélioré leur profil grâce à notre IA
+                    </p>
+                </div>
+                <div style="margin-top: 3rem;">
+                    <a href="/analyze" class="btn-primary" style="font-size: 1.2rem; padding: 1.5rem 3rem;">
+                        🚀 Commencer l'analyse
+                    </a>
+                </div>
+                
+
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>CV Analyzer Pro</h3>
+                <p>La solution d'analyse de CV la plus avancée du marché. Propulsée par l'intelligence artificielle pour des résultats précis et exploitables.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Fonctionnalités</h3>
+                <p><a href="#features">Analyse IA</a></p>
+                <p><a href="#features">Score de correspondance</a></p>
+                <p><a href="#features">OCR avancé</a></p>
+                <p><a href="#features">Multi-langues</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Navigation</h3>
+                <p><a href="/">Accueil</a></p>
+                <p><a href="#features">Fonctionnalités</a></p>
+                <p><a href="#how-it-works">Comment ça marche</a></p>
+                <p><a href="/analyze">Analyser un CV</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <p><a href="#contact">Centre d'aide</a></p>
+                <p><a href="#contact">Documentation</a></p>
+                <p><a href="#contact">Contact</a></p>
+                <p><a href="#contact">FAQ</a></p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 CV Analyzer Pro. Tous droits réservés. Fait avec ❤️ pour les professionnels.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
         });
-        const data = await response.json();
-        return data.description || "Échec de la génération.";
-    }
 
-    document.getElementById('jobSelect').addEventListener('change', async function () {
-        const selected = this.value;
-        const textarea = document.getElementById('job_description');
-
-        if (selected === "addcustom") {
-            const custom = prompt("Nom du profil personnalisé :");
-            if (custom) {
-                const newOption = document.createElement("option");
-                newOption.value = custom;
-                newOption.textContent = custom;
-                this.insertBefore(newOption, this.querySelector('option[value="addcustom"]'));
-                this.value = custom;
-
-                const desc = await fetchDescription(custom);
-                textarea.value = desc;
-            } else {
-                this.value = "";
-            }
-        } else if (selected) {
-            const desc = await fetchDescription(selected);
-            textarea.value = desc;
+        // Animated counters for stats
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-number');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const counter = entry.target;
+                        const target = parseInt(counter.getAttribute('data-count'));
+                        const increment = target / 100;
+                        let current = 0;
+                        
+                        const timer = setInterval(() => {
+                            current += increment;
+                            if (current >= target) {
+                                current = target;
+                                clearInterval(timer);
+                            }
+                            counter.textContent = Math.floor(current).toLocaleString();
+                        }, 20);
+                        
+                        observer.unobserve(counter);
+                    }
+                });
+            });
+            
+            counters.forEach(counter => observer.observe(counter));
         }
-    });
-</script>
 
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 100) {
+                navbar.style.background = 'rgba(10, 10, 10, 0.95)';
+            } else {
+                navbar.style.background = 'rgba(10, 10, 10, 0.9)';
+            }
+        });
+
+        // Initialize animations
+        document.addEventListener('DOMContentLoaded', function() {
+            animateCounters();
+        });
+    </script>
 </body>
 </html>

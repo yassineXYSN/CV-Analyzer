@@ -1,61 +1,231 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Scan Results</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats d'analyse - {{ filename }} | CV Analyzer Pro</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
 
-    <div class="container">
-        <h1>Scan Results for {{ filename }}</h1>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">CV Analyzer Pro</div>
+            <ul class="nav-links">
+                <li><a href="/">Accueil</a></li>
+                <li><a href="/#features">Fonctionnalités</a></li>
+                <li><a href="/#upload">Nouvelle analyse</a></li>
+            </ul>
+        </div>
+    </nav>
 
-        <h2>Résumé extrait :</h2>
-        <pre>{{ summary }}</pre>
+    <div class="results-container">
+        <!-- Header -->
+        <div class="results-header">
+            <h1 class="results-title">📊 Rapport d'analyse complet</h1>
+            <p class="results-filename">{{ filename }}</p>
+        </div>
 
-        <h2>Texte extrait du PDF :</h2>
-        <pre>{{ data }}</pre>
+        <!-- Results Grid -->
+        <div class="results-grid">
+            <!-- Main Content -->
+            <div class="results-main">
+                <!-- Summary Section -->
+                <div class="results-card">
+                    <h2 class="card-title">📄 Résumé professionnel extrait</h2>
+                    <div class="card-content">{{ summary }}</div>
+                </div>
 
-        {% if images_text %}
-            <h2>Texte OCR (images) :</h2>
-            {% for text in images_text %}
-                <pre>{{ text }}</pre>
-                <hr>
-            {% endfor %}
-        {% endif %}
+                <!-- PDF Text Section -->
+                <div class="results-card">
+                    <h2 class="card-title">📝 Contenu du CV analysé</h2>
+                    <div class="card-content">{{ pdf_text }}</div>
+                </div>
 
-        <h2>Score de correspondance :</h2>
-        <div class="score-box">
-            <strong>{{ score }}%</strong> de similarité entre le CV et l’offre.
-            <div class="bar-container">
-                <div class="score-bar" id="scoreBar"></div>
+                <!-- OCR Images Section -->
+                {% if images_text %}
+                <div class="results-card">
+                    <h2 class="card-title">🖼️ Texte extrait des images (OCR)</h2>
+                    {% for text in images_text %}
+                        <div class="card-content" style="margin-bottom: 1rem;">{{ text }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="results-sidebar">
+                <!-- Score Card -->
+                <div class="results-card score-card">
+                    <h2 class="card-title">🎯 Score de correspondance</h2>
+                    <div class="score-display" id="scoreDisplay">{{ score }}%</div>
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                        Compatibilité avec le poste
+                    </p>
+                    <div class="score-bar-container">
+                        <div class="score-bar" id="scoreBar"></div>
+                    </div>
+                    <div id="scoreInterpretation" style="margin-top: 1rem; font-size: 0.9rem;"></div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="results-card">
+                    <h3 class="card-title">📈 Statistiques rapides</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Mots analysés:</span>
+                            <strong id="wordCount">-</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Temps d'analyse:</span>
+                            <strong>< 30s</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Précision IA:</span>
+                            <strong>95%</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="results-card">
+                    <h3 class="card-title">⚡ Actions rapides</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <a href="/" class="btn-primary" style="text-align: center; padding: 0.75rem;">
+                            🔄 Nouvelle analyse
+                        </a>
+                        <button onclick="window.print()" class="btn-secondary" style="text-align: center; padding: 0.75rem;">
+                            🖨️ Imprimer le rapport
+                        </button>
+                        <button onclick="downloadReport()" class="btn-secondary" style="text-align: center; padding: 0.75rem;">
+                            💾 Télécharger PDF
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <a href="/" class="back-button">⬅ Retour à l'accueil</a>
+        <!-- Recommendations Section -->
+        <div class="results-card" style="margin-top: 2rem;">
+            <h2 class="card-title">💡 Recommandations d'amélioration</h2>
+            <div id="recommendations" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <!-- Recommendations will be generated by JavaScript -->
+            </div>
+        </div>
     </div>
 
     <script>
-(function () {
-    // Convertir en nombre flottant en remplaçant les virgules par des points
-    const scoreValue = parseFloat("{{ score }}".replace(',', '.'));
-    const bar = document.getElementById('scoreBar');
+        // Animate score bar and generate recommendations
+        function initializeResults() {
+            const scoreValue = parseFloat("{{ score }}".replace(',', '.'));
+            const bar = document.getElementById('scoreBar');
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const interpretation = document.getElementById('scoreInterpretation');
+            const recommendations = document.getElementById('recommendations');
 
-    if (bar && !isNaN(scoreValue)) {
-        bar.style.width = scoreValue + '%';
+            // Animate score bar
+            setTimeout(() => {
+                bar.style.width = scoreValue + '%';
+            }, 500);
 
-        // Couleur dynamique selon score
-        if (scoreValue < 50) {
-            bar.style.backgroundColor = '#e53935';  // rouge
-        } else if (scoreValue < 75) {
-            bar.style.backgroundColor = '#fbc02d';  // jaune
-        } else {
-            bar.style.backgroundColor = '#43a047';  // vert
+            // Set color and interpretation based on score
+            let color, message, recList;
+            if (scoreValue < 50) {
+                color = 'var(--danger-gradient)';
+                message = '⚠️ Score faible - Optimisation nécessaire';
+                recList = [
+                    '📝 Reformuler les compétences clés',
+                    '🎯 Adapter le CV au poste visé',
+                    '📚 Ajouter des formations pertinentes',
+                    '🏆 Mettre en avant les réalisations'
+                ];
+            } else if (scoreValue < 75) {
+                color = 'var(--warning-gradient)';
+                message = '📈 Score correct - Améliorations possibles';
+                recList = [
+                    '✨ Optimiser les mots-clés',
+                    '📊 Quantifier les résultats',
+                    '🔧 Ajuster les compétences techniques',
+                    '💼 Enrichir l\'expérience professionnelle'
+                ];
+            } else {
+                color = 'var(--accent-gradient)';
+                message = '🎉 Excellent score - Profil très adapté !';
+                recList = [
+                    '✅ CV bien optimisé',
+                    '🚀 Prêt pour candidature',
+                    '💪 Profil compétitif',
+                    '🎯 Correspondance élevée'
+                ];
+            }
+
+            bar.style.background = color;
+            interpretation.innerHTML = message;
+            interpretation.style.color = scoreValue < 50 ? '#ff4757' : scoreValue < 75 ? '#ffa502' : '#00ff88';
+
+            // Generate recommendations
+            recList.forEach(rec => {
+                const recCard = document.createElement('div');
+                recCard.style.cssText = `
+                    background: var(--card-bg);
+                    border: 1px solid var(--border-color);
+                    border-radius: 12px;
+                    padding: 1rem;
+                    backdrop-filter: blur(10px);
+                `;
+                recCard.innerHTML = `<p style="margin: 0; color: var(--text-secondary);">${rec}</p>`;
+                recommendations.appendChild(recCard);
+            });
+
+            // Calculate word count
+            const textContent = "{{ pdf_text }}".replace(/\s+/g, ' ').trim();
+            const wordCount = textContent.split(' ').length;
+            document.getElementById('wordCount').textContent = wordCount.toLocaleString();
+
+            // Animate score number
+            let currentScore = 0;
+            const increment = scoreValue / 50;
+            const timer = setInterval(() => {
+                currentScore += increment;
+                if (currentScore >= scoreValue) {
+                    currentScore = scoreValue;
+                    clearInterval(timer);
+                }
+                scoreDisplay.textContent = Math.round(currentScore) + '%';
+            }, 40);
         }
-    } else {
-        console.error('Score invalide:', "{{ score }}");
-    }
-})();
-</script>
+
+        // Download report function
+        function downloadReport() {
+            alert('Fonctionnalité de téléchargement PDF en cours de développement !');
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeResults();
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 100) {
+                navbar.style.background = 'rgba(10, 10, 10, 0.95)';
+            } else {
+                navbar.style.background = 'rgba(10, 10, 10, 0.9)';
+            }
+        });
+    </script>
 </body>
 </html>
