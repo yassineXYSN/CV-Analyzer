@@ -1,5 +1,7 @@
 import os
 from huggingface_hub import InferenceClient
+from dotenv import load_dotenv
+load_dotenv()
 
 def generate_summary(client,text):
     completion = client.chat.completions.create(

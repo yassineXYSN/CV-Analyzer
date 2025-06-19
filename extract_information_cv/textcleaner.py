@@ -1,6 +1,10 @@
 import os
 from huggingface_hub import InferenceClient
 
+from dotenv import load_dotenv
+load_dotenv()
+
+
 def cleantext(client,text):
     completion = client.chat.completions.create(
             model="deepseek-ai/DeepSeek-R1-0528",
@@ -15,10 +19,11 @@ def cleantext(client,text):
     return  msg[msg.find("</think>")+9:]
 
 
-
+HF_TOKEN = os.getenv("HF_TOKEN") 
 def intialize_client():
     client = InferenceClient(
         provider="novita",
-        api_key=os.getenv("HF_TOKEN"),
+        api_key=HF_TOKEN,
+
     )
     return client

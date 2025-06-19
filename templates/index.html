@@ -12,6 +12,11 @@
     <form id="uploadForm" action="/scan" method="post" enctype="multipart/form-data">
         <label for="filetoscan">Choose PDF or Image:</label>
         <input type="file" id="filetoscan" name="filetoscan" required><br><br>
+
+        <label for="job_description">Job Description:</label><br>
+        <textarea id="job_description" name="job_description" rows="6" cols="60" required></textarea><br><br>
+
+
         <button type="submit">Upload & Scan</button>
     </form>
 </body>
