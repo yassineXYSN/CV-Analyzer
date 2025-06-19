@@ -7,7 +7,9 @@ import extract_information_cv.text_extractor as text_extractor
 import extract_information_cv.textcleaner as textcleaner
 import extract_information_cv.data_generator as data_generator
 
-from   cv_analyzer.information_analyzer import compute_similarity
+from cv_analyzer.information_analyzer import compute_similarity
+from cv_analyzer.description_generator import generate_job_description
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -58,3 +60,11 @@ async def scan_file(
         "job_description": job_description
     })
 
+
+class TopicRequest(BaseModel):
+    topic: str
+
+@app.post("/generate-description")
+async def generate_description(request: TopicRequest):
+    description = generate_job_description(request.topic)
+    return {"description": description}
