@@ -1,6 +1,7 @@
 import os
 from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
+import json
 load_dotenv()
 
 def generate_summary(client,text):
@@ -33,11 +34,59 @@ def generate_summary(client,text):
     msg = completion.choices[0].message.content.strip()
     return  msg[msg.find("</think>")+9:]
 
+def generate_json(client,text):
+    completion = client.chat.completions.create(
+            model="deepseek-ai/DeepSeek-R1-0528",
+            messages=[
+                {
+                    "role": "user",
+                    "content": 
+                    """
+                    Extract the following structured information from the provided text and return it as a JSON object. Only extract the relevant information, and do not include any extra comments or explanations. The JSON format should follow this exact structure:
 
+                    {
+                    "name": "",
+                    "title": "",
+                    "contact": {
+                        "email": "",
+                        "phone": "",
+                        "linkedin": "",
+                        "address": ""
+                    },
+                    "profile": "",
+                    "education": [
+                        {
+                        "institution": "",
+                        "degree": "",
+                        "years": ""
+                        }
+                    ],
+                    "languages": [],
+                    "certificates": [],
+                    "skills": [],
+                    "hobbies": []
+                    }
+                    Please respond only with the JSON output, no extra text or explanation.
+
+                    if any of the fields are not present in the text, put unvailable in the field.
+                    Here is the text:
+
+                     """ + text 
+                }
+            ],
+        )
+    msg = completion.choices[0].message.content.strip()
+    msg =  msg[msg.find("</think>")+9:]
+    try:
+        data = json.loads(msg)
+    except json.JSONDecodeError as e:
+        print("Error parsing JSON:", e)
+    return data
 
 def intialize_client():
     client = InferenceClient(
         provider="novita",
         api_key=os.getenv("HF_TOKEN"),
+        timeout=300,
     )
     return client

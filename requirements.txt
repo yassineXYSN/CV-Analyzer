@@ -5,3 +5,4 @@ pymupdf
 python-dotenv
 huggingface_hub
 python-multipart
+sentence_transformers
