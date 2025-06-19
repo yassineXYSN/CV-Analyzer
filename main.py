@@ -23,7 +23,7 @@ def home(request: Request):
 
 
 
-from fastapi import Form  # déjà importé normalement
+from fastapi import Form  
 
 @app.post("/scan", response_class=HTMLResponse)
 async def scan_file(
