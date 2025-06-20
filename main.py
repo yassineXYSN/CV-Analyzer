@@ -11,7 +11,9 @@ from cv_analyzer.information_analyzer import compute_similarity
 from cv_analyzer.description_generator import generate_job_description
 from pydantic import BaseModel
 import os
-
+from dotenv import load_dotenv
+import json
+load_dotenv()
 app = FastAPI()
 
 # Créer le dossier static s'il n'existe pas
@@ -35,6 +37,9 @@ async def scan_file(
     filetoscan: UploadFile = File(...),
     job_description: str = Form(...)
 ):
+    print("DATA_GENERATOR_TOKEN :" + os.getenv("DATA_GENERATOR_TOKEN"))
+    print("TEXT_CLEANER_TOKEN :" + os.getenv("TEXT_CLEANER_TOKEN"))
+    print("DESCRIPTION_GENERATOR_TOKEN :" + os.getenv("DESCRIPTION_GENERATOR_TOKEN"))
     # Créer le dossier uploads s'il n'existe pas
     os.makedirs("uploads", exist_ok=True)
     
@@ -45,14 +50,21 @@ async def scan_file(
         f.write(await filetoscan.read())
 
     # Process the file
+    print("Extracting text from the file...")
     pdf_text, images_text = text_extractor.process_file(file_location)
+    print("Text extraction completed.")
 
     # Clean up
-    client = textcleaner.intialize_client()
-    pdf_text = textcleaner.cleantext(client, pdf_text)
-
+    print("Cleaning up the extracted text...")
+    pdf_text = textcleaner.cleantext(pdf_text)
+    print("Cleaning up the extracted text...")
     # Generate summary
-    summary = data_generator.generate_summary(client, pdf_text)
+    print("Generating summary ...")
+    summary = data_generator.generate_summary(pdf_text, images_text)
+    print("Summary generation completed.")
+    print("Generating structured data ...")
+    data_json = data_generator.generate_json(pdf_text)
+    print("Structured data generation completed.")
 
     # Compute matching score
     score = compute_similarity(summary, job_description)
@@ -64,6 +76,7 @@ async def scan_file(
         "images_text": images_text,
         "summary": summary,
         "score": score,
+        "data_json": data_json,
         "job_description": job_description
     })
 

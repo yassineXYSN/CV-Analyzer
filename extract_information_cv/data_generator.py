@@ -4,7 +4,14 @@ from dotenv import load_dotenv
 import json
 load_dotenv()
 
-def generate_summary(client,text):
+def generate_summary(text,img_text):
+    client = InferenceClient(
+        provider="novita",
+        api_key=os.getenv("DATA_GENERATOR_TOKEN"),
+        timeout=300,
+    )
+    if isinstance(img_text, list):
+        img_text = "\n".join(img_text)
     completion = client.chat.completions.create(
             model="deepseek-ai/DeepSeek-R1-0528",
             messages=[
@@ -27,14 +34,20 @@ def generate_summary(client,text):
                         Do NOT include any personal information like name, contact details,birthdate , or location.
                         Do NOT include any subjective opinions or comments.
                         Do NOT include any information that is not present in the CV.
-                        here is the CV text: """ + text
+                        here is the CV text: """ + text + """
+                        if you find something you can add from this you can add it (NB: this is the text parsed from the images it can be a bit glitchy or it might not cantain any information): """ + img_text
                 }
             ],
         )
     msg = completion.choices[0].message.content.strip()
     return  msg[msg.find("</think>")+9:]
 
-def generate_json(client,text):
+def generate_json(text):
+    client = InferenceClient(
+        provider="novita",
+        api_key=os.getenv("DATA_GENERATOR_TOKEN"),
+        timeout=300,
+    )
     completion = client.chat.completions.create(
             model="deepseek-ai/DeepSeek-R1-0528",
             messages=[
@@ -63,8 +76,7 @@ def generate_json(client,text):
                     ],
                     "languages": [],
                     "certificates": [],
-                    "skills": [],
-                    "hobbies": []
+                    "skills": []
                     }
                     Please respond only with the JSON output, no extra text or explanation.
 
@@ -76,17 +88,7 @@ def generate_json(client,text):
             ],
         )
     msg = completion.choices[0].message.content.strip()
-    msg =  msg[msg.find("</think>")+9:]
-    try:
-        data = json.loads(msg)
-    except json.JSONDecodeError as e:
-        print("Error parsing JSON:", e)
-    return data
+    msg =  msg[msg.find("""{
+                    "name": """)+9:]
+    return msg
 
-def intialize_client():
-    client = InferenceClient(
-        provider="novita",
-        api_key=os.getenv("HF_TOKEN"),
-        timeout=300,
-    )
-    return client
