@@ -12,7 +12,7 @@ def cleantext(text):
         timeout=300,
     )
     completion = client.chat.completions.create(
-            model="deepseek-ai/DeepSeek-R1-0528",
+            model="deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
             messages=[
                 {
                     "role": "user",

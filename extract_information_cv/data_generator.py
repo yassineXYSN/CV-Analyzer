@@ -7,13 +7,13 @@ load_dotenv()
 def generate_summary(text,img_text):
     client = InferenceClient(
         provider="novita",
-        api_key=os.getenv("DATA_GENERATOR_TOKEN"),
+        api_key=os.getenv("SUMMARY_DATA_GENERATOR_TOKEN"),
         timeout=300,
     )
     if isinstance(img_text, list):
         img_text = "\n".join(img_text)
     completion = client.chat.completions.create(
-            model="deepseek-ai/DeepSeek-R1-0528",
+            model="deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
             messages=[
                 {
                     "role": "user",
@@ -45,11 +45,11 @@ def generate_summary(text,img_text):
 def generate_json(text):
     client = InferenceClient(
         provider="novita",
-        api_key=os.getenv("DATA_GENERATOR_TOKEN"),
-        timeout=300,
+        api_key=os.getenv("JSON_DATA_GENERATOR_TOKEN"),
+        timeout=600,
     )
     completion = client.chat.completions.create(
-            model="deepseek-ai/DeepSeek-R1-0528",
+            model="deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
             messages=[
                 {
                     "role": "user",
@@ -60,6 +60,7 @@ def generate_json(text):
                     {
                     "name": "",
                     "title": "",
+                    yearsOfExperience: "",
                     "contact": {
                         "email": "",
                         "phone": "",
@@ -88,7 +89,4 @@ def generate_json(text):
             ],
         )
     msg = completion.choices[0].message.content.strip()
-    msg =  msg[msg.find("""{
-                    "name": """)+9:]
-    return msg
-
+    return  json.loads(msg[msg.find("</think>")+9:])
