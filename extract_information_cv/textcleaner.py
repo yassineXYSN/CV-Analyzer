@@ -5,7 +5,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def cleantext(client,text):
+def cleantext(text):
+    client = InferenceClient(
+        provider="novita",
+        api_key=os.getenv("TEXT_CLEANER_TOKEN") ,
+        timeout=300,
+    )
     completion = client.chat.completions.create(
             model="deepseek-ai/DeepSeek-R1-0528",
             messages=[
@@ -17,13 +22,3 @@ def cleantext(client,text):
         )
     msg = completion.choices[0].message.content.strip()
     return  msg[msg.find("</think>")+9:]
-
-
-HF_TOKEN = os.getenv("HF_TOKEN") 
-def intialize_client():
-    client = InferenceClient(
-        provider="novita",
-        api_key=HF_TOKEN,
-        timeout=300,
-    )
-    return client
