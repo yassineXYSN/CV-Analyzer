@@ -35,6 +35,49 @@
         </div>
     </nav>
 
+    <!-- Custom Profile Modal -->
+    <div id="customProfileModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✨ Créer un profil personnalisé</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    Décrivez le type de poste ou profil que vous recherchez. Notre IA générera automatiquement une description détaillée.
+                </p>
+                <div class="form-group">
+                    <label for="customProfileInput" class="form-label">🎯 Nom du profil</label>
+                    <input 
+                        type="text" 
+                        id="customProfileInput" 
+                        class="form-input"
+                        placeholder="Ex: Ingénieur Machine Learning, Consultant SAP, etc."
+                        maxlength="100"
+                    >
+                    <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
+                        Soyez précis pour une meilleure génération de description
+                    </small>
+                </div>
+                <div class="modal-examples">
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">💡 Exemples :</p>
+                    <div class="example-tags">
+                        <span class="example-tag" onclick="fillExample('Architecte Cloud AWS')">Architecte Cloud AWS</span>
+                        <span class="example-tag" onclick="fillExample('Product Manager SaaS')">Product Manager SaaS</span>
+                        <span class="example-tag" onclick="fillExample('Consultant en Transformation Digitale')">Consultant Digital</span>
+                        <span class="example-tag" onclick="fillExample('Ingénieur Blockchain')">Ingénieur Blockchain</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelModal">Annuler</button>
+                <button class="btn-primary" id="confirmModal">
+                    <span>🚀 Créer le profil</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="main-container">
         <!-- Hero Section for Analyze Page -->
         <section class="hero-section" style="min-height: 60vh;">
@@ -189,159 +232,528 @@
     </footer>
 
     <script>
-        // File upload handling
-        const fileInput = document.getElementById('filetoscan');
-        const fileUploadArea = document.getElementById('fileUploadArea');
-        const uploadText = document.getElementById('uploadText');
+    // File upload handling
+    const fileInput = document.getElementById('filetoscan');
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    const uploadText = document.getElementById('uploadText');
 
-        // Drag and drop functionality
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            fileUploadArea.addEventListener(eventName, preventDefaults, false);
-        });
+    // Modal elements
+    const modal = document.getElementById('customProfileModal');
+    const customInput = document.getElementById('customProfileInput');
+    const closeModalBtn = document.getElementById('closeModal');
+    const cancelModalBtn = document.getElementById('cancelModal');
+    const confirmModalBtn = document.getElementById('confirmModal');
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            fileUploadArea.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            fileUploadArea.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-            fileUploadArea.classList.add('dragover');
-        }
-
-        function unhighlight(e) {
-            fileUploadArea.classList.remove('dragover');
-        }
-
-        fileUploadArea.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            fileInput.files = files;
-            handleFileSelect();
-        }
-
-        fileInput.addEventListener('change', handleFileSelect);
-
-        function handleFileSelect() {
-            const file = fileInput.files[0];
-            if (file) {
-                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
-                uploadText.innerHTML = `✅ ${file.name} <br><small>Fichier sélectionné (${fileSize} MB)</small>`;
-                fileUploadArea.style.borderColor = '#00d4ff';
-                fileUploadArea.style.background = 'rgba(0, 212, 255, 0.1)';
-            }
-        }
-
-        // Job description generator
-        async function fetchDescription(topic) {
-            try {
-                const response = await fetch("/generate-description", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ topic })
+    // Load existing custom profiles on page load
+    async function loadCustomProfiles() {
+        try {
+            const response = await fetch("/get-custom-profiles");
+            const data = await response.json();
+            
+            if (data.profiles && data.profiles.length > 0) {
+                const jobSelect = document.getElementById('jobSelect');
+                const addCustomOption = jobSelect.querySelector('option[value="addcustom"]');
+                
+                // Add existing custom profiles before the "add custom" option
+                data.profiles.forEach(profile => {
+                    const option = document.createElement('option');
+                    option.value = profile.nom;
+                    option.textContent = `💾 ${profile.nom}`;
+                    option.title = `Créé le ${profile.date_creation}`;
+                    jobSelect.insertBefore(option, addCustomOption);
                 });
-                const data = await response.json();
-                return data.description || "Échec de la génération de description.";
-            } catch (error) {
-                console.error('Erreur lors de la génération:', error);
-                return "Erreur lors de la génération de la description.";
+                
+                console.log(`✅ ${data.profiles.length} profils personnalisés chargés`);
             }
+        } catch (error) {
+            console.error('Erreur lors du chargement des profils:', error);
+        }
+    }
+
+    // Call on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCustomProfiles();
+    });
+
+    // Apply modal styles directly via JavaScript
+    function applyModalStyles() {
+        // Modal overlay styles
+        modal.style.cssText = `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(10px) !important;
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 10000 !important;
+            opacity: 0 !important;
+            transition: opacity 0.3s ease !important;
+            padding: 1rem !important;
+        `;
+
+        // Modal content styles
+        const modalContent = modal.querySelector('.modal-content');
+        modalContent.style.cssText = `
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 20px !important;
+            width: 90% !important;
+            max-width: 500px !important;
+            max-height: 90vh !important;
+            overflow-y: auto !important;
+            position: relative !important;
+            transform: scale(0.9) translateY(20px) !important;
+            transition: transform 0.3s ease !important;
+            margin: auto !important;
+            color: #ffffff !important;
+        `;
+
+        // Modal header styles
+        const modalHeader = modal.querySelector('.modal-header');
+        modalHeader.style.cssText = `
+            padding: 2rem 2rem 1rem !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+        `;
+
+        // Modal body styles
+        const modalBody = modal.querySelector('.modal-body');
+        modalBody.style.cssText = `
+            padding: 1.5rem 2rem !important;
+        `;
+
+        // Modal footer styles
+        const modalFooter = modal.querySelector('.modal-footer');
+        modalFooter.style.cssText = `
+            padding: 1rem 2rem 2rem !important;
+            display: flex !important;
+            gap: 1rem !important;
+            justify-content: flex-end !important;
+        `;
+
+        // Input styles
+        customInput.style.cssText = `
+            width: 100% !important;
+            padding: 1rem 1.5rem !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 12px !important;
+            color: #ffffff !important;
+            font-size: 1rem !important;
+            font-family: inherit !important;
+        `;
+
+        // Button styles
+        const buttons = modal.querySelectorAll('.btn-primary, .btn-secondary');
+        buttons.forEach(btn => {
+            if (btn.classList.contains('btn-primary')) {
+                btn.style.cssText = `
+                    padding: 0.75rem 1.5rem !important;
+                    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%) !important;
+                    color: #000 !important;
+                    border: none !important;
+                    border-radius: 12px !important;
+                    font-weight: 600 !important;
+                    cursor: pointer !important;
+                    transition: all 0.3s ease !important;
+                    min-width: 100px !important;
+                `;
+            } else {
+                btn.style.cssText = `
+                    padding: 0.75rem 1.5rem !important;
+                    background: transparent !important;
+                    color: #ffffff !important;
+                    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                    border-radius: 12px !important;
+                    font-weight: 600 !important;
+                    cursor: pointer !important;
+                    transition: all 0.3s ease !important;
+                    min-width: 100px !important;
+                `;
+            }
+        });
+
+        // Example tags styles
+        const exampleTags = modal.querySelectorAll('.example-tag');
+        exampleTags.forEach(tag => {
+            tag.style.cssText = `
+                background: rgba(255, 255, 255, 0.05) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                color: #a0a0a0 !important;
+                padding: 0.5rem 1rem !important;
+                border-radius: 20px !important;
+                font-size: 0.85rem !important;
+                cursor: pointer !important;
+                transition: all 0.3s ease !important;
+                user-select: none !important;
+                display: inline-block !important;
+                margin: 0.25rem !important;
+            `;
+        });
+
+        // Close button styles
+        closeModalBtn.style.cssText = `
+            background: none !important;
+            border: none !important;
+            color: #a0a0a0 !important;
+            font-size: 1.5rem !important;
+            cursor: pointer !important;
+            padding: 0.5rem !important;
+            border-radius: 50% !important;
+            width: 40px !important;
+            height: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.3s ease !important;
+        `;
+    }
+
+    // Initialize modal styles
+    applyModalStyles();
+
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        fileUploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        fileUploadArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        fileUploadArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        fileUploadArea.classList.add('dragover');
+    }
+
+    function unhighlight(e) {
+        fileUploadArea.classList.remove('dragover');
+    }
+
+    fileUploadArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        fileInput.files = files;
+        handleFileSelect();
+    }
+
+    fileInput.addEventListener('change', handleFileSelect);
+
+    function handleFileSelect() {
+        const file = fileInput.files[0];
+        if (file) {
+            const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+            uploadText.innerHTML = `✅ ${file.name} <br><small>Fichier sélectionné (${fileSize} MB)</small>`;
+            fileUploadArea.style.borderColor = '#00d4ff';
+            fileUploadArea.style.background = 'rgba(0, 212, 255, 0.1)';
+        }
+    }
+
+    // Modal functions
+    function openModal() {
+        modal.style.display = 'flex';
+        // Force reflow
+        modal.offsetHeight;
+        modal.style.opacity = '1';
+        const modalContent = modal.querySelector('.modal-content');
+        modalContent.style.transform = 'scale(1) translateY(0)';
+        customInput.focus();
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.style.opacity = '0';
+        const modalContent = modal.querySelector('.modal-content');
+        modalContent.style.transform = 'scale(0.9) translateY(20px)';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }, 300);
+        customInput.value = '';
+        customInput.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+    }
+
+    function fillExample(text) {
+        customInput.value = text;
+        customInput.focus();
+    }
+
+    // Modal event listeners
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelModalBtn.addEventListener('click', closeModal);
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            closeModal();
+        }
+    });
+
+    // Hover effects for example tags
+    modal.addEventListener('mouseover', function(e) {
+        if (e.target.classList.contains('example-tag')) {
+            e.target.style.background = 'rgba(0, 212, 255, 0.1)';
+            e.target.style.borderColor = 'rgba(0, 212, 255, 0.3)';
+            e.target.style.color = '#ffffff';
+            e.target.style.transform = 'translateY(-1px)';
+        }
+    });
+
+    modal.addEventListener('mouseout', function(e) {
+        if (e.target.classList.contains('example-tag')) {
+            e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+            e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            e.target.style.color = '#a0a0a0';
+            e.target.style.transform = 'translateY(0)';
+        }
+    });
+
+    // Hover effects for close button
+    closeModalBtn.addEventListener('mouseover', function() {
+        this.style.background = 'rgba(255, 255, 255, 0.1)';
+        this.style.color = '#ffffff';
+    });
+
+    closeModalBtn.addEventListener('mouseout', function() {
+        this.style.background = 'none';
+        this.style.color = '#a0a0a0';
+    });
+
+    // Confirm modal
+    confirmModalBtn.addEventListener('click', async function() {
+        const customValue = customInput.value.trim();
+        if (!customValue) {
+            customInput.style.borderColor = '#ff4757';
+            customInput.focus();
+            return;
         }
 
-        // Job select handler
-        document.getElementById('jobSelect').addEventListener('change', async function() {
-            const selected = this.value;
-            const textarea = document.getElementById('job_description');
-            const submitBtn = document.getElementById('submitBtn');
+        // Close modal first
+        closeModal();
 
-            if (selected === "addcustom") {
-                const custom = prompt("Entrez le nom du profil personnalisé :");
-                if (custom && custom.trim()) {
-                    const newOption = document.createElement("option");
-                    newOption.value = custom.trim();
-                    newOption.textContent = `🎯 ${custom.trim()}`;
-                    this.insertBefore(newOption, this.querySelector('option[value="addcustom"]'));
-                    this.value = custom.trim();
+        // Add new option to select
+        const jobSelect = document.getElementById('jobSelect');
+        const newOption = document.createElement('option');
+        newOption.value = customValue;
+        newOption.textContent = `🎯 ${customValue}`; // Icône temporaire avant sauvegarde
+        jobSelect.insertBefore(newOption, jobSelect.querySelector('option[value="addcustom"]'));
+        jobSelect.value = customValue;
 
-                    textarea.value = "⏳ Génération de la description en cours...";
-                    submitBtn.classList.add('loading');
-                    submitBtn.innerHTML = '<span class="loading-spinner"></span> Génération...';
+        // Generate description (la sauvegarde se fera automatiquement via l'event listener du select)
+        const textarea = document.getElementById('job_description');
+        const submitBtn = document.getElementById('submitBtn');
 
-                    const desc = await fetchDescription(custom.trim());
-                    textarea.value = desc;
-                    submitBtn.classList.remove('loading');
-                    submitBtn.innerHTML = '<span>🎯 Analyser mon CV</span>';
-                } else {
-                    this.value = "";
-                }
-            } else if (selected) {
-                textarea.value = "⏳ Génération de la description en cours...";
-                submitBtn.classList.add('loading');
-                submitBtn.innerHTML = '<span class="loading-spinner"></span> Génération...';
+        textarea.value = "⏳ Génération de la description en cours...";
+        submitBtn.classList.add('loading');
+        submitBtn.innerHTML = '<span class="loading-spinner"></span> Génération...';
 
+        try {
+            const desc = await fetchDescription(customValue);
+            textarea.value = desc;
+        
+            // Déclencher l'événement change pour sauvegarder automatiquement
+            jobSelect.dispatchEvent(new Event('change'));
+
+        } catch (error) {
+            textarea.value = "Erreur lors de la génération. Veuillez saisir manuellement la description.";
+            console.error('Erreur:', error);
+        }
+
+        submitBtn.classList.remove('loading');
+        submitBtn.innerHTML = '<span>🎯 Analyser mon CV</span>';
+    });
+
+    // Enter key in modal input
+    customInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            confirmModalBtn.click();
+        }
+    });
+
+    // Job description generator
+    async function fetchDescription(topic) {
+        try {
+            const response = await fetch("/generate-description", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ topic })
+            });
+            const data = await response.json();
+            return data.description || "Échec de la génération de description.";
+        } catch (error) {
+            console.error('Erreur lors de la génération:', error);
+            return "Erreur lors de la génération de la description.";
+        }
+    }
+
+    // Job select handler
+    document.getElementById('jobSelect').addEventListener('change', async function() {
+        const selected = this.value;
+        const textarea = document.getElementById('job_description');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (selected === "addcustom") {
+            this.value = ""; // Reset select
+            openModal();
+            return;
+        } else if (selected) {
+            textarea.value = "⏳ Génération de la description en cours...";
+            submitBtn.classList.add('loading');
+            submitBtn.innerHTML = '<span class="loading-spinner"></span> Génération...';
+
+            try {
                 const desc = await fetchDescription(selected);
                 textarea.value = desc;
-                submitBtn.classList.remove('loading');
-                submitBtn.innerHTML = '<span>🎯 Analyser mon CV</span>';
-            } else {
-                textarea.value = "";
-            }
-        });
 
-        // Form submit handler with progress
-        document.getElementById('uploadForm').addEventListener('submit', function() {
-            const submitBtn = document.getElementById('submitBtn');
-            const progressContainer = document.getElementById('progressContainer');
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
+                // ✅ NOUVEAU : Sauvegarder automatiquement si c'est un profil personnalisé
+                // Vérifier si c'est un profil personnalisé (commence par 🎯 ou 💾)
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption.textContent.startsWith('🎯') || selectedOption.textContent.startsWith('💾')) {
+                    console.log('💾 Sauvegarde automatique du profil personnalisé...');
+                    
+                    const saveResult = await fetch("/save-custom-profile", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ 
+                            nom: selected, 
+                            description: desc 
+                        })
+                    });
 
-            submitBtn.classList.add('loading');
-            submitBtn.innerHTML = '<span class="loading-spinner"></span> Analyse en cours...';
-            submitBtn.disabled = true;
-
-            // Show progress bar
-            progressContainer.style.display = 'block';
-
-            // Simulate progress
-            const progressSteps = [
-                { progress: 20, text: "Téléchargement du fichier..." },
-                { progress: 40, text: "Extraction du texte..." },
-                { progress: 60, text: "Analyse par IA..." },
-                { progress: 80, text: "Calcul du score..." },
-                { progress: 95, text: "Génération du rapport..." }
-            ];
-
-            let stepIndex = 0;
-            const progressInterval = setInterval(() => {
-                if (stepIndex < progressSteps.length) {
-                    const step = progressSteps[stepIndex];
-                    progressBar.style.width = step.progress + '%';
-                    progressText.textContent = step.text;
-                    stepIndex++;
-                } else {
-                    clearInterval(progressInterval);
+                    const saveData = await saveResult.json();
+                    if (saveData.success) {
+                        console.log(`✅ Profil "${selected}" sauvegardé automatiquement`);
+                        showNotification(`💾 Profil "${selected}" sauvegardé !`, 'success');
+                        
+                        // Mettre à jour l'icône pour montrer qu'il est sauvegardé
+                        selectedOption.textContent = `💾 ${selected}`;
+                    } else {
+                        console.warn('⚠️ Erreur sauvegarde automatique:', saveData.error);
+                    }
                 }
-            }, 1000);
-        });
 
-        // Navbar scroll effect
-        window.addEventListener('scroll', function() {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 100) {
-                navbar.style.background = 'rgba(10, 10, 10, 0.95)';
-            } else {
-                navbar.style.background = 'rgba(10, 10, 10, 0.9)';
+            } catch (error) {
+                textarea.value = "Erreur lors de la génération. Veuillez saisir manuellement la description.";
+                console.error('Erreur:', error);
             }
-        });
-    </script>
+
+            submitBtn.classList.remove('loading');
+            submitBtn.innerHTML = '<span>🎯 Analyser mon CV</span>';
+        } else {
+            textarea.value = "";
+        }
+    });
+
+    // Form submit handler with progress
+    document.getElementById('uploadForm').addEventListener('submit', function() {
+        const submitBtn = document.getElementById('submitBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        submitBtn.classList.add('loading');
+        submitBtn.innerHTML = '<span class="loading-spinner"></span> Analyse en cours...';
+        submitBtn.disabled = true;
+
+        // Show progress bar
+        progressContainer.style.display = 'block';
+
+        // Simulate progress
+        const progressSteps = [
+            { progress: 20, text: "Téléchargement du fichier..." },
+            { progress: 40, text: "Extraction du texte..." },
+            { progress: 60, text: "Analyse par IA..." },
+            { progress: 80, text: "Calcul du score..." },
+            { progress: 95, text: "Génération du rapport..." }
+        ];
+
+        let stepIndex = 0;
+        const progressInterval = setInterval(() => {
+            if (stepIndex < progressSteps.length) {
+                const step = progressSteps[stepIndex];
+                progressBar.style.width = step.progress + '%';
+                progressText.textContent = step.text;
+                stepIndex++;
+            } else {
+                clearInterval(progressInterval);
+            }
+        }, 1000);
+    });
+
+    // Navbar scroll effect
+    window.addEventListener('scroll', function() {
+        const navbar = document.querySelector('.navbar');
+        if (window.scrollY > 100) {
+            navbar.style.background = 'rgba(10, 10, 10, 0.95)';
+        } else {
+            navbar.style.background = 'rgba(10, 10, 10, 0.9)';
+        }
+    });
+
+    // Make fillExample function global for onclick handlers
+    window.fillExample = fillExample;
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: ${type === 'success' ? 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)' : 'var(--card-bg)'};
+            color: ${type === 'success' ? '#000' : 'var(--text-primary)'};
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            z-index: 10001;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        `;
+        
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Remove after 4 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(400px)';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 4000);
+    }
+</script>
 </body>
 </html>

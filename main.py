@@ -8,12 +8,21 @@ import extract_information_cv.textcleaner as textcleaner
 import extract_information_cv.data_generator as data_generator
 from cv_analyzer.information_analyzer import compute_similarity
 from cv_analyzer.description_generator import generate_job_description
+from insert_to_db import insert_candidate_data
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
+from database import engine
+import models
+
+
+
 import json
 load_dotenv()
 app = FastAPI()
+
+# Création des tables
+models.Base.metadata.create_all(bind=engine)
 
 # Créer le dossier static s'il n'existe pas
 os.makedirs("static", exist_ok=True)
@@ -68,7 +77,7 @@ async def scan_file(
 
     # For demonstration purposes, using test data instead of actual processing
     pdf_text = """
-    YASSINE CHTOUROU COMPUTER SCIENCE STUDENT CONTACT yassinechtourou03@gmail.com +00216993465 www.linkedin.com 22 rue karatchi ABOUT ME Born on 16 January 2005. Currently pursuing the BD (Big Data) program at the Higher Institute of Arts and Multimedia (ISAMM) to become a Big Data engineer. Thrives on challenges with a sociable and motivated personality. Passionate about programming with proficiency in multiple languages, committed to expanding skills in the evolving tech field. EDUCATION Computer Science Licence ISAMM 2023-2026 Baccalaureate Mouhamed Dachraoui 2020-2023 EXPERTISE Adaptability Teamwork Communication Creativity LANGUAGES Arabic English French German DIPLOMAS AND CERTIFICATES Certificate PHP Udemy Certificate PHP Certificate CSS and Java Udemy Certificate CSS and Java Baccalaureate Diploma Excellent Grade in Mathematics Baccalaureate Python Intermediate Certificate Sololearn Python Certificate German Language Level A1 Certificate ECL Tunisie Centre d´examen Allemand Microsoft Azure AI Fundamentals: AI Overview Microsoft Profile SKILLS SUMMARY CSS: 80% PHP: 80% Python: 75% C: 75% HTML: 60% Java: 60% HOBBIES 80% 75% 75% 60% 60%
+    youssef CHTOUROU COMPUTER SCIENCE STUDENT CONTACT yassinechtourou03@gmail.com +00216993465 www.linkedin.com 22 rue karatchi ABOUT ME Born on 16 January 2005. Currently pursuing the BD (Big Data) program at the Higher Institute of Arts and Multimedia (ISAMM) to become a Big Data engineer. Thrives on challenges with a sociable and motivated personality. Passionate about programming with proficiency in multiple languages, committed to expanding skills in the evolving tech field. EDUCATION Computer Science Licence ISAMM 2023-2026 Baccalaureate Mouhamed Dachraoui 2020-2023 EXPERTISE Adaptability Teamwork Communication Creativity LANGUAGES Arabic English French German DIPLOMAS AND CERTIFICATES Certificate PHP Udemy Certificate PHP Certificate CSS and Java Udemy Certificate CSS and Java Baccalaureate Diploma Excellent Grade in Mathematics Baccalaureate Python Intermediate Certificate Sololearn Python Certificate German Language Level A1 Certificate ECL Tunisie Centre d´examen Allemand Microsoft Azure AI Fundamentals: AI Overview Microsoft Profile SKILLS SUMMARY CSS: 80% PHP: 80% Python: 75% C: 75% HTML: 60% Java: 60% HOBBIES 80% 75% 75% 60% 60%
     """
     images_text = ['', '', 'sam']
 
@@ -115,7 +124,7 @@ async def scan_file(
         "French",
         "German"
     ],
-    "name": "YASSINE CHTOUROU",
+    "name": "youssef CHTOUROU",
     "profile": "Born on 16 January 2005. Currently pursuing the BD (Big Data) program at the Higher Institute of Arts and Multimedia (ISAMM) to become a Big Data engineer. Thrives on challenges with a sociable and motivated personality. Passionate about programming with proficiency in multiple languages, committed to expanding skills in the evolving tech field.",
     "skills": [
         "CSS: 80%",
@@ -133,6 +142,10 @@ async def scan_file(
 
 
 
+    # Juste avant le return :
+    insert_candidate_data(data_json, summary)
+
+    # Ensuite on affiche la page avec les résultats
     return templates.TemplateResponse("result.html", {
         "request": request,
         "filename": filetoscan.filename,
@@ -143,7 +156,8 @@ async def scan_file(
         "user_info": data_json,
         "job_description": job_description,
         "skills_titles": skills_titles_str,
-    })
+})
+
 
 class TopicRequest(BaseModel):
     topic: str
@@ -189,3 +203,5 @@ async def create_detailed_analysis(request: Request):
         
     except Exception as e:
         return {"success": False, "error": str(e)}
+    
+    
