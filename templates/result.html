@@ -125,9 +125,11 @@
         <div class="results-grid" style="grid-template-columns: 1fr 350px; gap: 2rem;">
             <!-- Summary Section -->
             <div class="results-main">
-                <div class="results-card">
-                    <h2 class="card-title">📄 Résumé professionnel extrait</h2>
-                    <div class="card-content">{{ summary }}</div>
+                <div class="results-card" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h2 class="card-title">📄 Résumé professionnel extrait</h2>
+                        <div class="card-content">{{ summary }}</div>
+                    </div>
                     
                     <!-- View Detailed Analysis Button -->
                     <div style="margin-top: 2rem; text-align: center;">
@@ -171,6 +173,93 @@
             </div>
         </div>
 
+        <!-- Account Creation Section -->
+        <div class="results-card" style="margin-top: 2rem;">
+            <h2 class="card-title">👤 Créer votre profil professionnel</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                Nous avons extrait vos informations professionnelles. Créez votre compte pour sauvegarder vos analyses et suivre vos candidatures.
+            </p>
+            
+            <div id="accountForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                <!-- Personal Info -->
+                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        📝 Informations personnelles
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <input type="text" id="fullName" placeholder="Nom complet" value="{{ user_info.name | title }}" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                        <input type="email" id="email" value="{{ user_info.contact.email }}" placeholder="Email professionnel" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                        <input type="tel" id="phone" value="{{ user_info.contact.phone }}" placeholder="Téléphone" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                    </div>
+                </div>
+
+                <!-- Professional Info -->
+                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        💼 Profil professionnel
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <input type="text" id="currentPosition" placeholder="Poste actuel" value="{{ user_info.title | title }}" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                        <input type="text" id="experience" placeholder="Années d'expérience" value="{{ user_info.yearsOfExperience }} anées d'experience" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                        <input type="text" id="skills" value="{{ skills_titles }}" placeholder="Compétences principales" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Account Button -->
+            <div style="text-align: center; margin-top: 2rem;">
+                <button onclick="createAccount()" class="btn-primary" style="padding: 1rem 3rem; font-size: 1.1rem;">
+                    🚀 Créer mon profil professionnel
+                </button>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+                    En créant votre profil, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.
+                </p>
+            </div>
+        </div>
+
+        <!-- Detailed Analysis Section -->
+        <div class="results-card" style="margin-top: 2rem; display: none;" id="detailedAnalysis">
+            <h2 class="card-title">🔍 Analyse détaillée</h2>
+            
+            <!-- Tab Navigation -->
+            <div class="analysis-tabs">
+                <button class="tab-button active" onclick="switchTab('scores')" data-tab="scores">
+                    📊 Scores par catégorie
+                </button>
+                <button class="tab-button" onclick="switchTab('strengths')" data-tab="strengths">
+                    ✅ Points forts
+                </button>
+                <button class="tab-button" onclick="switchTab('weaknesses')" data-tab="weaknesses">
+                    ⚠️ Points faibles
+                </button>
+                <button class="tab-button" onclick="switchTab('improvements')" data-tab="improvements">
+                    📈 Recommandations
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Category Scores Tab -->
+                <div class="tab-pane active" id="scores-tab">
+                    <div id="categoryScoresList" class="score-list"></div>
+                </div>
+
+                <!-- Strengths Tab -->
+                <div class="tab-pane" id="strengths-tab">
+                    <div id="goodPointsList" class="point-list"></div>
+                </div>
+
+                <!-- Weaknesses Tab -->
+                <div class="tab-pane" id="weaknesses-tab">
+                    <div id="weakPointsList" class="point-list"></div>
+                </div>
+
+                <!-- Improvements Tab -->
+                <div class="tab-pane" id="improvements-tab">
+                    <div id="improvementsList" class="improvement-list"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -214,6 +303,20 @@
                 }
                 scoreDisplay.textContent = Math.round(currentScore) + '%';
             }, 40);
+
+            // Pre-populate account form with extracted data
+            populateAccountForm();
+        }
+
+        // Switch between tabs
+        function switchTab(tabName) {
+            // Remove active class from all tabs and panes
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            
+            // Add active class to selected tab and pane
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
         }
 
         // Toggle detailed analysis
@@ -221,96 +324,259 @@
             const detailedSection = document.getElementById('detailedAnalysis');
             const button = event.target;
             
-            if (!detailedSection || detailedSection.style.display === 'none') {
-                // Start detailed analysis creation
-                button.innerHTML = '⏳ Création d\'une analyse détaillée en cours...';
-                button.disabled = true;
-                button.style.opacity = '0.6';
-                button.style.cursor = 'not-allowed';
+            // If already visible, hide it
+            if (detailedSection.style.display !== 'none') {
+                detailedSection.style.display = 'none';
+                button.innerHTML = '📊 Créer une analyse détaillée';
+                return;
+            }
+            
+            // Show loading state
+            button.innerHTML = '⏳ Création d\'une analyse détaillée en cours...';
+            button.disabled = true;
+            button.style.opacity = '0.6';
+            button.style.cursor = 'not-allowed';
+            
+            try {
+                // Fetch detailed analysis
+                const response = await fetch('/create-detailed-analysis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pdf_text: {{ pdf_text | tojson | safe }}
+                    })
+                });
                 
-                try {
-                    // Call backend to create detailed analysis
-                    const response = await fetch('/create-detailed-analysis', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            filename: '{{ filename }}',
-                            summary: `{{ summary }}`,
-                            pdf_text: `{{ pdf_text }}`,
-                            score: `{{ score }}`
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        const detailedData = await response.json();
-                        
-                        // Create detailed section if it doesn't exist
-                        if (!detailedSection) {
-                            createDetailedSection();
-                        }
-                        
-                        // Update the detailed analysis content
-                        updateDetailedAnalysisContent(detailedData);
-                        
-                        // Show the detailed section
-                        document.getElementById('detailedAnalysis').style.display = 'block';
-                        
-                        // Update button
-                        button.innerHTML = '📊 Masquer l\'analyse détaillée';
-                        button.disabled = false;
-                        button.style.opacity = '1';
-                        button.style.cursor = 'pointer';
-                        
-                        // Smooth scroll to detailed section
-                        setTimeout(() => {
-                            document.getElementById('detailedAnalysis').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 100);
-                        
-                    } else {
-                        throw new Error('Erreur lors de la création de l\'analyse détaillée');
-                    }
-                    
-                } catch (error) {
-                    console.error('Erreur:', error);
-                    button.innerHTML = '❌ Erreur - Réessayer';
-                    button.disabled = false;
-                    button.style.opacity = '1';
-                    button.style.cursor = 'pointer';
-                    alert('Une erreur est survenue lors de la création de l\'analyse détaillée. Veuillez réessayer.');
+                if (!response.ok) {
+                    throw new Error('Erreur réseau: ' + response.status);
                 }
                 
-            } else {
-                // Hide detailed analysis
-                detailedSection.style.display = 'none';
-                button.innerHTML = '📊 Voir l\'analyse détaillée';
+                const data = await response.json();
+                console.log('Received data:', data); // Debug log
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Erreur inconnue');
+                }
+                
+                // Populate detailed analysis
+                populateDetailedAnalysis(data);
+                
+                // Show the section
+                detailedSection.style.display = 'block';
+                button.innerHTML = '📊 Masquer l\'analyse détaillée';
+                button.disabled = false;
+                button.style.opacity = '1';
+                button.style.cursor = 'pointer';
+                
+                // Smooth scroll to detailed section with offset for navbar
+                setTimeout(() => {
+                    const navbarHeight = document.querySelector('.navbar').offsetHeight;
+                    const elementPosition = detailedSection.offsetTop - navbarHeight - 20;
+                    
+                    window.scrollTo({
+                        top: elementPosition,
+                        behavior: 'smooth'
+                    });
+                }, 300);
+                
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la création de l\'analyse détaillée: ' + error.message);
+                button.innerHTML = '📊 Créer une analyse détaillée';
+                button.disabled = false;
+                button.style.opacity = '1';
+                button.style.cursor = 'pointer';
             }
         }
-
-        function createDetailedSection() {
-            const container = document.querySelector('.results-container');
-            const detailedSection = document.createElement('div');
-            detailedSection.id = 'detailedAnalysis';
-            detailedSection.className = 'results-card';
-            detailedSection.style.marginTop = '2rem';
-            detailedSection.style.display = 'none';
-            detailedSection.innerHTML = `
-                <h2 class="card-title">📊 Analyse détaillée</h2>
-                <div id="recommendations"></div>
-            `;
-            container.appendChild(detailedSection);
+        
+        // Populate detailed analysis content
+        function populateDetailedAnalysis(data) {
+            console.log('Populating detailed analysis with data:', data);
+            
+            // Populate category scores
+            const categoryScoresList = document.getElementById('categoryScoresList');
+            categoryScoresList.innerHTML = '';
+            
+            if (data.categorie_scores) {
+                Object.entries(data.categorie_scores).forEach(([category, score], index) => {
+                    const scoreItem = document.createElement('div');
+                    scoreItem.className = 'score-item';
+                    scoreItem.style.animationDelay = `${index * 0.1}s`;
+                    
+                    scoreItem.innerHTML = `
+                        <div class="score-info">
+                            <span class="category-name">${category}</span>
+                            <span class="score-value">${score}%</span>
+                        </div>
+                        <div class="score-bar-container">
+                            <div class="score-bar" style="width: 0%; background: ${getScoreColor(score)}; transition: width 1.5s ease;"></div>
+                        </div>
+                    `;
+                    
+                    categoryScoresList.appendChild(scoreItem);
+                    
+                    // Animate the score bar
+                    setTimeout(() => {
+                        const bar = scoreItem.querySelector('.score-bar');
+                        bar.style.width = score + '%';
+                    }, 200 + (index * 100));
+                });
+            }
+            
+            // Populate good points
+            const goodPointsList = document.getElementById('goodPointsList');
+            goodPointsList.innerHTML = '';
+            
+            if (data.good_points && Array.isArray(data.good_points)) {
+                console.log('Good points:', data.good_points);
+                data.good_points.forEach((point, index) => {
+                    const pointItem = document.createElement('div');
+                    pointItem.className = 'point-item good-point';
+                    pointItem.style.animationDelay = `${index * 0.1}s`;
+                    pointItem.innerHTML = `
+                        <div class="point-icon">✓</div>
+                        <div class="point-text">${point}</div>
+                    `;
+                    goodPointsList.appendChild(pointItem);
+                });
+            }
+            
+            // Populate weak points
+            const weakPointsList = document.getElementById('weakPointsList');
+            weakPointsList.innerHTML = '';
+            
+            if (data.weak_points && Array.isArray(data.weak_points)) {
+                console.log('Weak points:', data.weak_points);
+                data.weak_points.forEach((point, index) => {
+                    const pointItem = document.createElement('div');
+                    pointItem.className = 'point-item weak-point';
+                    pointItem.style.animationDelay = `${index * 0.1}s`;
+                    pointItem.innerHTML = `
+                        <div class="point-icon">⚠</div>
+                        <div class="point-text">${point}</div>
+                    `;
+                    weakPointsList.appendChild(pointItem);
+                });
+            } else {
+                console.log('No weak points data found:', data.weak_points);
+                // Add a fallback message
+                const noDataItem = document.createElement('div');
+                noDataItem.className = 'point-item weak-point';
+                noDataItem.innerHTML = `
+                    <div class="point-icon">ℹ</div>
+                    <div class="point-text">Aucun point faible majeur identifié dans cette analyse.</div>
+                `;
+                weakPointsList.appendChild(noDataItem);
+            }
+            
+            // Populate improvements
+            const improvementsList = document.getElementById('improvementsList');
+            improvementsList.innerHTML = '';
+            
+            if (data.improvements && Array.isArray(data.improvements)) {
+                console.log('Improvements:', data.improvements);
+                data.improvements.forEach((improvement, index) => {
+                    const improvementItem = document.createElement('div');
+                    improvementItem.className = 'improvement-item';
+                    improvementItem.style.animationDelay = `${index * 0.1}s`;
+                    improvementItem.innerHTML = `
+                        <div class="improvement-icon">💡</div>
+                        <div class="improvement-text">${improvement}</div>
+                    `;
+                    improvementsList.appendChild(improvementItem);
+                });
+            }
+        }
+        
+        // Get color based on score
+        function getScoreColor(score) {
+            if (score >= 80) return 'var(--accent-gradient)';
+            if (score >= 60) return 'var(--warning-gradient)';
+            return 'var(--danger-gradient)';
         }
 
-        function updateDetailedAnalysisContent(data) {
-            // Placeholder for detailed analysis content
-            const recommendations = document.getElementById('recommendations');
-            recommendations.innerHTML = '<p style="color: var(--text-secondary);">Analyse détaillée en cours de développement...</p>';
+        // Extract profile data from summary (simplified)
+        function extractProfileData(summary) {
+            const data = {};
+            
+            // Extract potential name (first capitalized words)
+            const nameMatch = summary.match(/([A-Z][a-z]+ [A-Z][a-z]+)/);
+            if (nameMatch) {
+                data.name = nameMatch[1];
+            }
+            
+            // Extract years of experience
+            const expMatch = summary.match(/(\d+)\s*(ans?|années?|years?)/i);
+            if (expMatch) {
+                data.experience = expMatch[1] + ' ans';
+            }
+            
+            // Extract job titles (common patterns)
+            const jobTitles = ['développeur', 'ingénieur', 'chef', 'responsable', 'manager', 'consultant', 'analyste', 'designer'];
+            for (let title of jobTitles) {
+                const regex = new RegExp(title + '\\s+([a-zA-Z\\s]+)', 'i');
+                const match = summary.match(regex);
+                if (match) {
+                    data.position = match[0];
+                    break;
+                }
+            }
+            
+            // Extract skills (words after "compétences" or similar)
+            const skillsMatch = summary.match(/compétences?[:\s]+(.*?)(?:\.|$)/i);
+            if (skillsMatch) {
+                data.skills = skillsMatch[1].substring(0, 100) + '...';
+            }
+            
+            return data;
         }
 
-        // Download CV function
-        function downloadCV() {
-            alert('Fonctionnalité de téléchargement CV en cours de développement !');
+        // Create account function
+        function createAccount() {
+            const formData = {
+                fullName: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                currentPosition: document.getElementById('currentPosition').value,
+                experience: document.getElementById('experience').value,
+                skills: document.getElementById('skills').value,
+                cvAnalysis: {
+                    score: "{{ score }}",
+                    summary: "{{ summary }}",
+                    filename: "{{ filename }}"
+                }
+            };
+
+            // Validate required fields
+            if (!formData.fullName || !formData.email) {
+                alert('⚠️ Veuillez remplir au moins votre nom et email.');
+                return;
+            }
+
+            // Simulate account creation
+            const button = event.target;
+            button.innerHTML = '<span class="loading-spinner"></span> Création en cours...';
+            button.disabled = true;
+
+            setTimeout(() => {
+                alert('🎉 Profil créé avec succès ! Vous recevrez un email de confirmation.');
+                button.innerHTML = '✅ Profil créé !';
+                button.style.background = 'var(--accent-gradient)';
+                
+                // Show success message
+                const successMsg = document.createElement('div');
+                successMsg.style.cssText = `
+                    background: rgba(0, 255, 136, 0.1);
+                    border: 1px solid rgba(0, 255, 136, 0.3);
+                    border-radius: 12px;
+                    padding: 1rem;
+                    margin-top: 1rem;
+                    text-align: center;
+                    color: #00ff88;
+                `;
+                successMsg.innerHTML = '🎉 Votre profil professionnel a été créé ! Vous pouvez maintenant suivre vos analyses et candidatures.';
+                button.parentNode.appendChild(successMsg);
+            }, 2000);
         }
 
         // Download report function

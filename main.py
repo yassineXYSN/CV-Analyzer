@@ -339,35 +339,132 @@ async def generate_description(request: TopicRequest):
 async def create_detailed_analysis(request: Request):
     try:
         data = await request.json()
-        filename = data.get('filename')
-        summary = data.get('summary')
         pdf_text = data.get('pdf_text')
-        score = data.get('score')
+        """
+        print("Hello from create_detailed_analysis")
+        print("PDF text length:", len(pdf_text) if pdf_text else 0)
         
-        # Simulate processing time (remove in production)
-        import time
-        import asyncio
-        await asyncio.sleep(3)  # Simulate 3 seconds of processing
+        print("Generating categorie scores...")
+        categorie_scores_raw = data_generator.generate_categorie_scores(pdf_text)
+        print("Categorie scores generated:", categorie_scores_raw[:200] + "..." if len(categorie_scores_raw) > 200 else categorie_scores_raw)
         
-        # Initialize client for detailed analysis
-        client = "textcleaner.intialize_client()"
+        print("Generating good points...")
+        good_points_raw = data_generator.generate_good_points(pdf_text)
+        print("Good points generated:", good_points_raw[:200] + "..." if len(good_points_raw) > 200 else good_points_raw)
         
-        # Generate detailed recommendations based on score
-        recommendations = "generate_detailed_recommendations(score, summary, client)"
+        print("Generating weak points...")
+        weak_points_raw = data_generator.generate_weak_points(pdf_text)
+        print("Weak points generated:", weak_points_raw[:200] + "..." if len(weak_points_raw) > 200 else weak_points_raw)
         
-        # Analyze skills
-        skills_analysis = "analyze_skills(summary, pdf_text, client)"
+        print("Generating improvements...")
+        improvements_raw = data_generator.generate_improvements(pdf_text, good_points_raw, weak_points_raw, categorie_scores_raw)
+        print("Improvements generated:", improvements_raw[:200] + "..." if len(improvements_raw) > 200 else improvements_raw)
         
-        # Analyze keywords
-        keyword_analysis = "analyze_keywords(summary, pdf_text)"
+        # Parse the results
+        categorie_scores = parse_category_scores(categorie_scores_raw)
+        good_points = parse_bullet_points(good_points_raw)
+        weak_points = parse_bullet_points(weak_points_raw)
+        improvements = parse_bullet_points(improvements_raw)"""
         
+        # For testing, return sample data
         return {
             "success": True,
-            "recommendations": recommendations,
-            "skills_analysis": skills_analysis,
-            "keyword_analysis": keyword_analysis,
-            "processing_time": "3.2s"
+            "categorie_scores": {
+                "Expérience Professionnelle": 85,
+                "Compétences Techniques": 78,
+                "Formation & Éducation": 92,
+                "Certifications": 65,
+                "Compétences Relationnelles": 73,
+                "Présentation & Structure": 88
+            },
+            "good_points": [
+                "Solide expérience de 5+ années dans le développement web",
+                "Maîtrise excellente des technologies modernes (React, Node.js, Python)",
+                "Formation universitaire pertinente en informatique",
+                "Projets personnels démontrant la passion pour la technologie",
+                "Expérience en gestion d'équipe et leadership technique",
+                "Compétences en méthodologies agiles (Scrum, Kanban)",
+                "Excellente capacité d'adaptation et d'apprentissage continu",
+                "Portfolio bien documenté avec projets variés"
+            ],
+            "weak_points": [
+                "Manque de certifications professionnelles récentes",
+                "Peu d'expérience avec les technologies cloud (AWS, Azure)",
+                "Absence de projets open source contributifs",
+                "Compétences en DevOps limitées",
+                "Pas de mention d'expérience en sécurité informatique",
+                "Lacunes dans les compétences en analyse de données",
+                "Communication écrite pourrait être améliorée"
+            ],
+            "improvements": [
+                "Obtenir des certifications AWS ou Azure pour renforcer les compétences cloud",
+                "Contribuer à des projets open source pour démontrer l'engagement communautaire",
+                "Suivre une formation en cybersécurité pour élargir le profil technique",
+                "Développer des compétences en DevOps (Docker, Kubernetes, CI/CD)",
+                "Ajouter des métriques quantifiées aux réalisations professionnelles",
+                "Créer un blog technique pour démontrer les compétences en communication",
+                "Participer à des conférences ou meetups pour le networking professionnel",
+                "Apprendre des outils d'analyse de données (SQL avancé, Python data science)"
+            ]
         }
         
     except Exception as e:
+        print(f"Error in create_detailed_analysis: {str(e)}")
         return {"success": False, "error": str(e)}
+
+def parse_category_scores(raw_text):
+    """Parse category scores from raw text"""
+    try:
+        # Try to find JSON in the text
+        json_match = re.search(r'\{[^}]*\}', raw_text)
+        if json_match:
+            json_str = json_match.group()
+            return json.loads(json_str)
+        else:
+            # Fallback: create default scores
+            return {
+                "Work Experience": 75,
+                "Skills & Technical Expertise": 80,
+                "Education": 70,
+                "Certifications & Training": 65,
+                "Soft Skills & Leadership": 72,
+                "Overall Structure & Presentation": 78
+            }
+    except Exception as e:
+        print(f"Error parsing category scores: {e}")
+        return {
+            "Work Experience": 75,
+            "Skills & Technical Expertise": 80,
+            "Education": 70,
+            "Certifications & Training": 65,
+            "Soft Skills & Leadership": 72,
+            "Overall Structure & Presentation": 78
+        }
+
+def parse_bullet_points(raw_text):
+    """Parse bullet points from raw text"""
+    try:
+        # Split by lines and filter bullet points
+        lines = raw_text.split('\n')
+        bullet_points = []
+        
+        for line in lines:
+            line = line.strip()
+            # Remove bullet point markers
+            if line.startswith('•') or line.startswith('-') or line.startswith('*'):
+                bullet_points.append(line[1:].strip())
+            elif line.startswith('- '):
+                bullet_points.append(line[2:].strip())
+            elif line and not line.startswith('#') and len(line) > 10:
+                # If it's a substantial line without bullet markers, include it
+                bullet_points.append(line)
+        
+        # Filter out empty or very short points
+        bullet_points = [point for point in bullet_points if len(point) > 5]
+        
+        return bullet_points[:8]  # Limit to 8 points max
+        
+    except Exception as e:
+        print(f"Error parsing bullet points: {e}")
+        return ["Erreur lors de l'analyse des points"]
+
