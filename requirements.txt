@@ -1,8 +1,11 @@
-uvicorn
-fastapi
-jinja2
 pymupdf
-python-dotenv
 huggingface_hub
-python-multipart
-sentence_transformers
+sentence_transformers 
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+jinja2==3.1.2
+python-dotenv==1.0.0
+sqlalchemy==2.0.23
+pymysql==1.1.0
+cryptography==41.0.7
