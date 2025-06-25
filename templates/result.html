@@ -34,8 +34,91 @@
     <div class="results-container">
         <!-- Header -->
         <div class="results-header">
-            <h1 class="results-title">🎯 Analyse terminée !</h1>
+            <h1 class="results-title">Analyse terminée !</h1>
             <p class="results-filename">{{ filename }}</p>
+        </div>
+
+        <!-- Mini Profil Candidat - Prominent Display -->
+        <div class="results-card candidate-profile-featured" style="margin-bottom: 3rem;">
+            <h2 class="card-title">👤 Profil du candidat</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- Photo et infos principales -->
+                <div style="display: flex; align-items: center; gap: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
+                    <div style="flex-shrink: 0;">
+                        <div style="width: 100px; height: 100px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700; color: #000; box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);">
+                            {{ user_info.name[0] if user_info.name else 'C' }}
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h3 style="font-size: 2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.75rem;">{{ user_info.name | title }}</h3>
+                        <p style="font-size: 1.3rem; color: var(--text-secondary); margin-bottom: 1.5rem;">{{ user_info.title | title }}</p>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <span style="background: rgba(0, 212, 255, 0.2); color: #00d4ff; padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 600; border: 1px solid rgba(0, 212, 255, 0.3);">{{ user_info.yearsOfExperience }} années d'expérience</span>
+                            <span style="background: rgba(0, 255, 136, 0.2); color: #00ff88; padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 600; border: 1px solid rgba(0, 255, 136, 0.3);">Score: {{ score }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations de contact -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+                        <span style="font-size: 1.5rem; flex-shrink: 0;">📧</span>
+                        <div>
+                            <span style="display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem;">Email</span>
+                            <span style="color: var(--text-primary); font-weight: 500; word-break: break-all;">{{ user_info.contact.email }}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+                        <span style="font-size: 1.5rem; flex-shrink: 0;">📱</span>
+                        <div>
+                            <span style="display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem;">Téléphone</span>
+                            <span style="color: var(--text-primary); font-weight: 500; word-break: break-all;">{{ user_info.contact.phone }}</span>
+                        </div>
+                    </div>
+                    {% if user_info.contact.linkedin %}
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+                        <span style="font-size: 1.5rem; flex-shrink: 0;">💼</span>
+                        <div>
+                            <span style="display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem;">LinkedIn</span>
+                            <span style="color: var(--text-primary); font-weight: 500; word-break: break-all;">{{ user_info.contact.linkedin }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if user_info.contact.address %}
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+                        <span style="font-size: 1.5rem; flex-shrink: 0;">📍</span>
+                        <div>
+                            <span style="display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem;">Adresse</span>
+                            <span style="color: var(--text-primary); font-weight: 500; word-break: break-all;">{{ user_info.contact.address }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Compétences principales -->
+                <div style="padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                    <h4 style="font-size: 1.3rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">🎯 Compétences principales</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        {% for skill in user_info.skills[:6] %}
+                        <span style="background: rgba(0, 255, 136, 0.2); color: #00ff88; padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 500; border: 1px solid rgba(0, 255, 136, 0.3);">{{ skill.split(':')[0] }}</span>
+                        {% endfor %}
+                        {% if user_info.skills|length > 6 %}
+                        <span style="background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); border-color: var(--border-color); padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 500; border: 1px solid var(--border-color);">+{{ user_info.skills|length - 6 }} autres</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Actions principales -->
+                <div style="display: flex; gap: 1.5rem; justify-content: center; padding-top: 2rem; border-top: 1px solid var(--border-color); flex-wrap: wrap;">
+                    <a href="/profile/{{ candidate_id }}" style="flex: 1; min-width: 200px; max-width: 250px; text-align: center; padding: 1.25rem 2rem; background: var(--accent-gradient); color: #000; border: none; border-radius: 16px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);">
+                        👁️ Voir le profil détaillé
+                    </a>
+                    <button onclick="downloadCV()" style="background: transparent; color: var(--text-primary); border: 2px solid var(--border-color); padding: 1.25rem 2rem; border-radius: 16px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.75rem; min-width: 200px;">
+                        📄 Télécharger CV
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Main Results Grid -->
@@ -87,50 +170,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Account Creation Section -->
-        <div class="results-card" style="margin-top: 2rem;">
-            <h2 class="card-title">👤 Créer votre profil professionnel</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
-                Nous avons extrait vos informations professionnelles. Créez votre compte pour sauvegarder vos analyses et suivre vos candidatures.
-            </p>
-            
-            <div id="accountForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-                <!-- Personal Info -->
-                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
-                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        📝 Informations personnelles
-                    </h3>
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <input type="text" id="fullName" placeholder="Nom complet" value="{{ user_info.name | title }}" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                        <input type="email" id="email" value="{{ user_info.contact.email }}" placeholder="Email professionnel" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                        <input type="tel" id="phone" value="{{ user_info.contact.phone }}" placeholder="Téléphone" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                    </div>
-                </div>
-
-                <!-- Professional Info -->
-                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
-                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        💼 Profil professionnel
-                    </h3>
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <input type="text" id="currentPosition" placeholder="Poste actuel" value="{{ user_info.title | title }}" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                        <input type="text" id="experience" placeholder="Années d'expérience" value="{{ user_info.yearsOfExperience }} anées d'experience" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                        <input type="text" id="skills" value="{{ skills_titles }}" placeholder="Compétences principales" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Create Account Button -->
-            <div style="text-align: center; margin-top: 2rem;">
-                <button onclick="createAccount()" class="btn-primary" style="padding: 1rem 3rem; font-size: 1.1rem;">
-                    🚀 Créer mon profil professionnel
-                </button>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
-                    En créant votre profil, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.
-                </p>
             </div>
         </div>
 
@@ -288,9 +327,6 @@
                 }
                 scoreDisplay.textContent = Math.round(currentScore) + '%';
             }, 40);
-
-            // Pre-populate account form with extracted data
-            populateAccountForm();
         }
 
         // Switch between tabs
@@ -328,7 +364,10 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        pdf_text: {{ pdf_text | tojson | safe }}
+                        filename: '{{ filename }}',
+                        summary: `{{ summary }}`,
+                        pdf_text: {{ pdf_text | tojson | safe }},
+                        score: `{{ score }}`
                     })
                 });
                 
@@ -480,42 +519,6 @@
             return 'var(--danger-gradient)';
         }
 
-        // Extract profile data from summary (simplified)
-        function extractProfileData(summary) {
-            const data = {};
-            
-            // Extract potential name (first capitalized words)
-            const nameMatch = summary.match(/([A-Z][a-z]+ [A-Z][a-z]+)/);
-            if (nameMatch) {
-                data.name = nameMatch[1];
-            }
-            
-            // Extract years of experience
-            const expMatch = summary.match(/(\d+)\s*(ans?|années?|years?)/i);
-            if (expMatch) {
-                data.experience = expMatch[1] + ' ans';
-            }
-            
-            // Extract job titles (common patterns)
-            const jobTitles = ['développeur', 'ingénieur', 'chef', 'responsable', 'manager', 'consultant', 'analyste', 'designer'];
-            for (let title of jobTitles) {
-                const regex = new RegExp(title + '\\s+([a-zA-Z\\s]+)', 'i');
-                const match = summary.match(regex);
-                if (match) {
-                    data.position = match[0];
-                    break;
-                }
-            }
-            
-            // Extract skills (words after "compétences" or similar)
-            const skillsMatch = summary.match(/compétences?[:\s]+(.*?)(?:\.|$)/i);
-            if (skillsMatch) {
-                data.skills = skillsMatch[1].substring(0, 100) + '...';
-            }
-            
-            return data;
-        }
-
         // Create account function
         function createAccount() {
             const formData = {
@@ -562,6 +565,11 @@
                 successMsg.innerHTML = '🎉 Votre profil professionnel a été créé ! Vous pouvez maintenant suivre vos analyses et candidatures.';
                 button.parentNode.appendChild(successMsg);
             }, 2000);
+        }
+
+        // Download CV function
+        function downloadCV() {
+            alert('Fonctionnalité de téléchargement CV en cours de développement !');
         }
 
         // Download report function

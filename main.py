@@ -273,7 +273,7 @@ def profile_detail(request: Request, candidate_id: int):
             education=parsed_education,
             languages=parsed_languages,
             certificates=parsed_certificates,
-            years_of_experience=getattr(profile, 'years_of_experience', None),
+            years_of_experience=getattr(profile, 'yearOfExperience', None),
             experience=getattr(profile, 'experience', None),
             projects=getattr(profile, 'projects', None),
             hobbies=getattr(profile, 'hobbies', None),
