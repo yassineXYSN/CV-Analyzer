@@ -1,53 +1,1043 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyser votre CV - CV Analyzer Pro</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyser votre CV - CV Analyzer Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --accent-gradient: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+  --danger-gradient: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+  --warning-gradient: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
+  --dark-bg: #0a0a0a;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #707070;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", sans-serif !important;
+  background: radial-gradient(ellipse at top, #1a1a2e 0%, #16213e 50%, #0f0f23 100%) !important;
+  min-height: 100vh !important;
+  color: var(--text-primary) !important;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Advanced Background Effects */
+.background-effects {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-shapes {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(45deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1));
+  animation: float 20s ease-in-out infinite;
+}
+
+.shape:nth-child(1) {
+  width: 300px;
+  height: 300px;
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.shape:nth-child(2) {
+  width: 200px;
+  height: 200px;
+  top: 60%;
+  right: 10%;
+  animation-delay: -7s;
+}
+
+.shape:nth-child(3) {
+  width: 150px;
+  height: 150px;
+  bottom: 20%;
+  left: 20%;
+  animation-delay: -14s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.3;
+  }
+  33% {
+    transform: translateY(-30px) rotate(120deg);
+    opacity: 0.6;
+  }
+  66% {
+    transform: translateY(30px) rotate(240deg);
+    opacity: 0.4;
+  }
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 30s linear infinite;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+/* Navigation */
+.navbar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  background: rgba(10, 10, 10, 0.9) !important;
+  backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 1rem 0 !important;
+  transition: all 0.3s ease;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  background: var(--accent-gradient) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text-secondary) !important;
+  text-decoration: none !important;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  position: relative;
+}
+
+.nav-links a:hover {
+  color: var(--text-primary) !important;
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--accent-gradient);
+  transition: width 0.3s ease;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+/* Main Container */
+.main-container {
+  position: relative;
+  z-index: 10;
+  padding-top: 80px !important;
+}
+
+/* Hero Section */
+.hero-section {
+  min-height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 2rem !important;
+}
+
+.hero-content {
+  max-width: 800px;
+  animation: fadeInUp 1s ease-out;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: 0.5rem 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.hero-title {
+  font-size: clamp(3rem, 8vw, 5rem) !important;
+  font-weight: 800 !important;
+  background: linear-gradient(135deg, #00d4ff, #00ff88, #667eea, #764ba2) !important;
+  background-size: 300% 300% !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  animation: gradientShift 4s ease-in-out infinite !important;
+  margin-bottom: 1.5rem !important;
+  line-height: 1.1 !important;
+}
+
+.hero-subtitle {
+  font-size: 1.3rem !important;
+  color: var(--text-secondary) !important;
+  font-weight: 400;
+  margin-bottom: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Upload Section */
+.upload-section {
+  padding: 6rem 2rem !important;
+}
+
+.upload-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.upload-form {
+  background: var(--card-bg) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 24px !important;
+  padding: 3rem !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-form::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-gradient);
+}
+
+.form-title {
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+  margin-bottom: 2rem !important;
+  color: var(--text-primary) !important;
+}
+
+.form-group {
+  margin-bottom: 2rem !important;
+}
+
+.form-label {
+  display: block !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.75rem !important;
+  color: var(--text-primary) !important;
+  font-size: 1rem !important;
+}
+
+.file-upload-area {
+  position: relative;
+  border: 2px dashed var(--border-color) !important;
+  border-radius: 16px !important;
+  padding: 3rem 2rem !important;
+  text-align: center !important;
+  transition: all 0.3s ease !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+}
+
+.file-upload-area:hover {
+  border-color: rgba(0, 212, 255, 0.5) !important;
+  background: rgba(0, 212, 255, 0.05) !important;
+}
+
+.file-upload-area.dragover {
+  border-color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.1) !important;
+  transform: scale(1.02) !important;
+}
+
+.upload-icon {
+  font-size: 3rem !important;
+  margin-bottom: 1rem !important;
+  opacity: 0.7;
+}
+
+.upload-text {
+  font-size: 1.1rem !important;
+  color: var(--text-secondary) !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.upload-subtext {
+  font-size: 0.9rem !important;
+  color: var(--text-muted) !important;
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.form-input {
+  width: 100% !important;
+  padding: 1rem 1.5rem !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  color: var(--text-primary) !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  font-family: inherit !important;
+}
+
+.form-input:focus {
+  outline: none !important;
+  border-color: #00d4ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1) !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.submit-btn {
+  width: 100% !important;
+  padding: 1.25rem !important;
+  background: var(--accent-gradient) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  color: #000 !important;
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 20px 40px rgba(0, 212, 255, 0.3) !important;
+}
+
+.submit-btn:active {
+  transform: translateY(0) !important;
+}
+
+.submit-btn.loading {
+  opacity: 0.8 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* Profile Selector Button Styles */
+.profile-selector-btn {
+  width: 100% !important;
+  padding: 1.5rem !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  font-family: inherit !important;
+}
+
+.profile-selector-btn:hover {
+  border-color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.05) !important;
+  transform: translateY(-2px) !important;
+}
+
+.selector-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+.selector-icon {
+  font-size: 1.5rem !important;
+  flex-shrink: 0 !important;
+}
+
+.selector-text {
+  flex: 1 !important;
+  text-align: left !important;
+}
+
+.selector-title {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.selector-subtitle {
+  font-size: 0.9rem !important;
+  color: var(--text-secondary) !important;
+}
+
+.selector-arrow {
+  font-size: 1rem !important;
+  color: var(--text-secondary) !important;
+  transition: transform 0.3s ease !important;
+}
+
+.profile-selector-btn:hover .selector-arrow {
+  transform: translateY(2px) !important;
+}
+
+/* Modal Styles - FIXED */
+.modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 99999 !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+  padding: 1rem !important;
+}
+
+.modal-overlay.show {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+.modal-content {
+  background: rgba(25, 25, 45, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(0, 212, 255, 0.2) !important;
+  border-radius: 20px !important;
+  width: 90% !important;
+  max-width: 900px !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  position: relative !important;
+  transform: scale(0.9) translateY(20px) !important;
+  transition: transform 0.3s ease !important;
+  margin: auto !important;
+  color: #ffffff !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5) !important;
+}
+
+.modal-overlay.show .modal-content {
+  transform: scale(1) translateY(0) !important;
+}
+
+.modal-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-gradient);
+  opacity: 0.7;
+}
+
+.modal-header {
+  padding: 1.5rem 2rem !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.modal-header h3 {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  background: var(--accent-gradient) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  margin: 0 !important;
+}
+
+.modal-close {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-secondary) !important;
+  font-size: 1.8rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+}
+
+.modal-close:hover {
+  color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.1) !important;
+}
+
+.modal-body {
+  padding: 2rem !important;
+}
+
+.search-section {
+  margin-bottom: 2rem !important;
+}
+
+.search-input {
+  width: 100% !important;
+  padding: 1rem 1.5rem !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  color: var(--text-primary) !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  font-family: inherit !important;
+}
+
+.search-input:focus {
+  outline: none !important;
+  border-color: #00d4ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1) !important;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted) !important;
+}
+
+.section-title {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.profiles-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: 1rem !important;
+  margin-bottom: 2rem !important;
+}
+
+.profile-card {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.profile-card:hover {
+  transform: translateY(-5px) !important;
+  border-color: rgba(0, 212, 255, 0.5) !important;
+  box-shadow: 0 10px 20px rgba(0, 212, 255, 0.2) !important;
+}
+
+.profile-card.selected {
+  border-color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.1) !important;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3) !important;
+}
+
+.profile-card.selected::after {
+  content: "✓" !important;
+  position: absolute !important;
+  top: 0.5rem !important;
+  right: 0.5rem !important;
+  background: var(--accent-gradient) !important;
+  color: #000 !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: bold !important;
+  font-size: 0.8rem !important;
+}
+
+.profile-icon {
+  font-size: 2rem !important;
+  margin-bottom: 1rem !important;
+  display: block !important;
+}
+
+.profile-name {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.profile-description {
+  font-size: 0.9rem !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.4 !important;
+}
+
+.selected-section {
+  margin-bottom: 2rem !important;
+  padding: 1.5rem !important;
+  background: rgba(0, 255, 136, 0.05) !important;
+  border: 1px solid rgba(0, 255, 136, 0.2) !important;
+  border-radius: 12px !important;
+}
+
+.selected-profiles {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.5rem !important;
+}
+
+.no-selection {
+  color: var(--text-muted) !important;
+  font-style: italic !important;
+}
+
+.selected-tag {
+  background: var(--accent-gradient) !important;
+  color: #000 !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 20px !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.remove-tag {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: none !important;
+  color: #000 !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: 0.8rem !important;
+  font-weight: bold !important;
+  transition: all 0.2s ease !important;
+}
+
+.remove-tag:hover {
+  background: rgba(255, 0, 0, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+
+.custom-profile-section {
+  padding: 1.5rem !important;
+  background: rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  margin-bottom: 1rem !important;
+}
+
+.custom-profile-section .form-group {
+  display: flex !important;
+  gap: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.custom-profile-section .form-input {
+  flex: 1 !important;
+}
+
+.btn-add-custom {
+  padding: 1rem 1.5rem !important;
+  background: var(--accent-gradient) !important;
+  color: #000 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  white-space: nowrap !important;
+}
+
+.btn-add-custom:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3) !important;
+}
+
+.modal-examples {
+  margin-top: 1rem !important;
+}
+
+.modal-examples p {
+  color: var(--text-secondary) !important;
+  font-size: 0.9rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.example-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.5rem !important;
+}
+
+.example-tag {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #a0a0a0 !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 20px !important;
+  font-size: 0.85rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  user-select: none !important;
+}
+
+.example-tag:hover {
+  background: rgba(0, 212, 255, 0.1) !important;
+  border-color: rgba(0, 212, 255, 0.3) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+.modal-footer {
+  padding: 1.5rem 2rem !important;
+  border-top: 1px solid var(--border-color) !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 1rem !important;
+}
+
+.btn-secondary {
+  padding: 0.8rem 1.5rem !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  transform: translateY(-2px) !important;
+}
+
+.btn-primary {
+  padding: 0.8rem 1.5rem !important;
+  background: var(--accent-gradient) !important;
+  color: #000 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3) !important;
+}
+
+/* Footer */
+.footer {
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(20px) !important;
+  border-top: 1px solid var(--border-color) !important;
+  padding: 3rem 2rem 2rem !important;
+  margin-top: 4rem !important;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.footer-section h3 {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 1rem !important;
+  color: var(--text-primary) !important;
+}
+
+.footer-section p,
+.footer-section a {
+  color: var(--text-secondary) !important;
+  text-decoration: none !important;
+  line-height: 1.8 !important;
+}
+
+.footer-section a:hover {
+  color: var(--text-primary) !important;
+}
+
+.footer-bottom {
+  text-align: center !important;
+  padding-top: 2rem !important;
+  margin-top: 2rem !important;
+  border-top: 1px solid var(--border-color) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Loading Animation */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .upload-form { padding: 2rem; }
+  .main-container { padding-top: 60px; }
+  .hero-title { font-size: 2.5rem; }
+  
+  .profiles-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .custom-profile-section .form-group {
+    flex-direction: column !important;
+  }
+  
+  .modal-content {
+    width: 98% !important;
+    margin: 1rem !important;
+  }
+  
+  .modal-footer {
+    flex-direction: column !important;
+  }
+  
+  .btn-secondary, .btn-primary {
+    width: 100% !important;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+::-webkit-scrollbar-thumb { 
+  background: var(--accent-gradient);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #00b8e6, #00e67a);
+}
+</style>
 </head>
 <body>
-    <!-- Background Effects -->
-    <div class="background-effects">
-        <div class="floating-shapes">
-            <div class="shape"></div>
-            <div class="shape"></div>
-            <div class="shape"></div>
-        </div>
-        <div class="grid-overlay"></div>
+<!-- Background Effects -->
+<div class="background-effects">
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
     </div>
+    <div class="grid-overlay"></div>
+</div>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                <a href="/" style="text-decoration: none; color: inherit;">CV Analyzer Pro</a>
-            </div>
-            <ul class="nav-links">
-                <li><a href="/">Accueil</a></li>
-                <li><a href="/#features">Fonctionnalités</a></li>
-                <li><a href="/#how-it-works">Comment ça marche</a></li>
-                <li><a href="/analyze" style="color: #00d4ff;">Analyser</a></li>
-            </ul>
+<!-- Navigation -->
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="logo">
+            <a href="/" style="text-decoration: none; color: inherit;">CV Analyzer Pro</a>
         </div>
-    </nav>
+        <ul class="nav-links">
+            <li><a href="/">Accueil</a></li>
+            <li><a href="/#features">Fonctionnalités</a></li>
+            <li><a href="/#how-it-works">Comment ça marche</a></li>
+            <li><a href="/analyze" style="color: #00d4ff;">Analyser</a></li>
+        </ul>
+    </div>
+</nav>
 
-    <!-- Custom Profile Modal -->
-    <div id="customProfileModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>✨ Créer un profil personnalisé</h3>
-                <button class="modal-close" id="closeModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-                    Décrivez le type de poste ou profil que vous recherchez. Notre IA générera automatiquement une description détaillée.
-                </p>
+<!-- Profile Selection Modal -->
+<div id="profileSelectionModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✨ Créer un profil personnalisé</h3>
+            <button class="modal-close" id="closeProfileModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="search-section">
                 <div class="form-group">
-                    <label for="customProfileInput" class="form-label">🎯 Nom du profil</label>
+                    <label for="profileSearch" class="form-label">🔍 Rechercher des profils</label>
+                    <input 
+                        type="text" 
+                        id="profileSearch" 
+                        class="form-input search-input"
+                        placeholder="Tapez pour rechercher des profils..."
+                    >
+                </div>
+            </div>
+
+            <div class="profiles-section">
+                <div class="section-title">📋 Profils disponibles</div>
+                <div class="profiles-grid" id="profilesGrid">
+                    <!-- Profils prédéfinis -->
+                    <div class="profile-card" data-profile="cybersecurity">
+                        <div class="profile-icon">🔒</div>
+                        <div class="profile-name">Expert en Cybersécurité</div>
+                        <div class="profile-description">Sécurité informatique, audit, protection des données</div>
+                    </div>
+                    <div class="profile-card" data-profile="webdev">
+                        <div class="profile-icon">💻</div>
+                        <div class="profile-name">Développeur Full-Stack</div>
+                        <div class="profile-description">Développement web, frontend, backend</div>
+                    </div>
+                    <div class="profile-card" data-profile="datascientist">
+                        <div class="profile-icon">📊</div>
+                        <div class="profile-name">Data Scientist</div>
+                        <div class="profile-description">Analyse de données, machine learning, IA</div>
+                    </div>
+                    <div class="profile-card" data-profile="marketing">
+                        <div class="profile-icon">📈</div>
+                        <div class="profile-name">Responsable Marketing Digital</div>
+                        <div class="profile-description">Marketing digital, SEO, réseaux sociaux</div>
+                    </div>
+                    <div class="profile-card" data-profile="projectmanager">
+                        <div class="profile-icon">🎯</div>
+                        <div class="profile-name">Chef de Projet</div>
+                        <div class="profile-description">Gestion de projet, coordination, planning</div>
+                    </div>
+                    <div class="profile-card" data-profile="devops">
+                        <div class="profile-icon">⚙️</div>
+                        <div class="profile-name">Ingénieur DevOps</div>
+                        <div class="profile-description">CI/CD, infrastructure, automatisation</div>
+                    </div>
+                    <div class="profile-card" data-profile="uxdesigner">
+                        <div class="profile-icon">🎨</div>
+                        <div class="profile-name">UX/UI Designer</div>
+                        <div class="profile-description">Design d'interface, expérience utilisateur</div>
+                    </div>
+                    <div class="profile-card" data-profile="sales">
+                        <div class="profile-icon">💼</div>
+                        <div class="profile-name">Commercial / Ventes</div>
+                        <div class="profile-description">Vente, négociation, relation client</div>
+                    </div>
+                    <div class="profile-card" data-profile="hr">
+                        <div class="profile-icon">👥</div>
+                        <div class="profile-name">Ressources Humaines</div>
+                        <div class="profile-description">Recrutement, gestion RH, formation</div>
+                    </div>
+                    <div class="profile-card" data-profile="finance">
+                        <div class="profile-icon">💰</div>
+                        <div class="profile-name">Finance / Comptabilité</div>
+                        <div class="profile-description">Comptabilité, analyse financière, audit</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="selected-section">
+                <div class="section-title">✅ Profils sélectionnés (<span id="selectedCount">0</span>)</div>
+                <div class="selected-profiles" id="selectedProfiles">
+                    <div class="no-selection">Aucun profil sélectionné</div>
+                </div>
+            </div>
+
+            <div class="custom-profile-section">
+                <div class="section-title">➕ Créer un profil personnalisé</div>
+                <div class="form-group">
                     <input 
                         type="text" 
                         id="customProfileInput" 
@@ -55,371 +1045,390 @@
                         placeholder="Ex: Ingénieur Machine Learning, Consultant SAP, etc."
                         maxlength="100"
                     >
-                    <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
-                        Soyez précis pour une meilleure génération de description
-                    </small>
+                    <button class="btn-add-custom" id="addCustomBtn">
+                        <span>➕ Ajouter</span>
+                    </button>
                 </div>
                 <div class="modal-examples">
                     <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">💡 Exemples :</p>
                     <div class="example-tags">
-                        <span class="example-tag" onclick="fillExample('Architecte Cloud AWS')">Architecte Cloud AWS</span>
-                        <span class="example-tag" onclick="fillExample('Product Manager SaaS')">Product Manager SaaS</span>
-                        <span class="example-tag" onclick="fillExample('Consultant en Transformation Digitale')">Consultant Digital</span>
-                        <span class="example-tag" onclick="fillExample('Ingénieur Blockchain')">Ingénieur Blockchain</span>
+                        <span class="example-tag" onclick="fillCustomExample('Architecte Cloud AWS')">Architecte Cloud AWS</span>
+                        <span class="example-tag" onclick="fillCustomExample('Product Manager SaaS')">Product Manager SaaS</span>
+                        <span class="example-tag" onclick="fillCustomExample('Consultant en Transformation Digitale')">Consultant Digital</span>
+                        <span class="example-tag" onclick="fillCustomExample('Ingénieur Blockchain')">Ingénieur Blockchain</span>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" id="cancelModal">Annuler</button>
-                <button class="btn-primary" id="confirmModal">
-                    <span>🚀 Créer le profil</span>
-                </button>
             </div>
         </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" id="cancelProfileModal">Annuler</button>
+            <button class="btn-primary" id="confirmProfileModal">
+                <span>🚀 Confirmer la sélection</span>
+            </button>
+        </div>
     </div>
+</div>
 
-    <div class="main-container">
-        <!-- Hero Section for Analyze Page -->
-        <section class="hero-section" style="min-height: 60vh;">
-            <div class="hero-content">
-                <div class="hero-badge">
-                    🎯 Analyse Intelligente de CV
-                </div>
-                <h1 class="hero-title" style="font-size: clamp(2.5rem, 6vw, 4rem);">
-                    Analysez votre CV maintenant
-                </h1>
-                <p class="hero-subtitle">
-                    Commencez votre analyse en quelques clics et obtenez des résultats instantanés 
-                    avec des recommandations personnalisées pour optimiser votre profil.
-                </p>
+<div class="main-container">
+    <!-- Hero Section for Analyze Page -->
+    <section class="hero-section" style="min-height: 60vh;">
+        <div class="hero-content">
+            <div class="hero-badge">
+                🎯 Analyse Intelligente de CV
             </div>
-        </section>
+            <h1 class="hero-title" style="font-size: clamp(2.5rem, 6vw, 4rem);">
+                Analysez votre CV maintenant
+            </h1>
+            <p class="hero-subtitle">
+                Commencez votre analyse en quelques clics et obtenez des résultats instantanés 
+                avec des recommandations personnalisées pour optimiser votre profil.
+            </p>
+        </div>
+    </section>
 
-        <!-- Upload Section -->
-        <section class="upload-section" style="padding: 4rem 2rem;">
-            <div class="upload-container">
-                <form id="uploadForm" action="/scan" method="post" enctype="multipart/form-data" class="upload-form">
-                    <h3 class="form-title">🚀 Démarrer l'analyse</h3>
-                    
-                    <!-- File Upload -->
-                    <div class="form-group">
-                        <label class="form-label">📄 Votre CV (PDF ou Image)</label>
-                        <div class="file-upload-area" id="fileUploadArea">
-                            <input type="file" id="filetoscan" name="filetoscan" class="file-input" required accept=".pdf,.jpg,.jpeg,.png">
-                            <div class="upload-icon">📁</div>
-                            <div class="upload-text" id="uploadText">Glissez-déposez votre CV ici</div>
-                            <div class="upload-subtext">ou cliquez pour sélectionner un fichier</div>
-                            <div class="upload-formats">
-                                <small style="color: var(--text-muted); margin-top: 1rem; display: block;">
-                                    Formats supportés: PDF, JPG, JPEG, PNG • Taille max: 10MB
-                                </small>
+    <!-- Upload Section -->
+    <section class="upload-section" style="padding: 4rem 2rem;">
+        <div class="upload-container">
+            <form id="uploadForm" action="/scan" method="post" enctype="multipart/form-data" class="upload-form">
+                <h3 class="form-title">🚀 Démarrer l'analyse</h3>
+                
+                <!-- File Upload -->
+                <div class="form-group">
+                    <label class="form-label">📄 Votre CV (PDF ou Image)</label>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="filetoscan" name="filetoscan" class="file-input" required accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text" id="uploadText">Glissez-déposez votre CV ici</div>
+                        <div class="upload-subtext">ou cliquez pour sélectionner un fichier</div>
+                        <div class="upload-formats">
+                            <small style="color: var(--text-muted); margin-top: 1rem; display: block;">
+                                Formats supportés: PDF, JPG, JPEG, PNG • Taille max: 10MB
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Selection Button -->
+                <div class="form-group">
+                    <label class="form-label">💼 Profils recherchés</label>
+                    <button type="button" class="profile-selector-btn" id="profileSelectorBtn">
+                        <div class="selector-content">
+                            <div class="selector-icon">✨</div>
+                            <div class="selector-text">
+                                <div class="selector-title">Sélectionner des profils</div>
+                                <div class="selector-subtitle" id="profileSelectorSubtitle">Cliquez pour choisir un ou plusieurs profils</div>
                             </div>
+                            <div class="selector-arrow">▼</div>
                         </div>
-                    </div>
-
-                    <!-- Job Profile Selection -->
-                    <div class="form-group">
-                        <label for="jobSelect" class="form-label">💼 Profil recherché</label>
-                        <select id="jobSelect" class="form-select">
-                            <option value="">-- Sélectionner un profil --</option>
-                            <option value="cybersecurity">🔒 Expert en Cybersécurité</option>
-                            <option value="webdev">💻 Développeur Full-Stack</option>
-                            <option value="datascientist">📊 Data Scientist</option>
-                            <option value="marketing">📈 Responsable Marketing Digital</option>
-                            <option value="projectmanager">🎯 Chef de Projet</option>
-                            <option value="devops">⚙️ Ingénieur DevOps</option>
-                            <option value="uxdesigner">🎨 UX/UI Designer</option>
-                            <option value="sales">💼 Commercial / Ventes</option>
-                            <option value="hr">👥 Ressources Humaines</option>
-                            <option value="finance">💰 Finance / Comptabilité</option>
-                            <option value="addcustom">➕ Profil personnalisé...</option>
-                        </select>
-                    </div>
-
-                    <!-- Job Description -->
-                    <div class="form-group">
-                        <label for="job_description" class="form-label">📝 Description du poste</label>
-                        <textarea 
-                            id="job_description" 
-                            name="job_description" 
-                            class="form-textarea" 
-                            placeholder="La description sera générée automatiquement selon le profil sélectionné, ou vous pouvez la personnaliser..."
-                            required
-                        ></textarea>
-                        <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
-                            💡 Plus la description est détaillée, plus l'analyse sera précise
-                        </small>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button type="submit" class="submit-btn" id="submitBtn">
-                        <span id="submitText">🎯 Analyser mon CV</span>
                     </button>
+                    <input type="hidden" id="selectedProfilesInput" name="selectedProfiles" required>
+                </div>
 
-                    <!-- Progress Bar (Hidden by default) -->
-                    <div id="progressContainer" style="display: none; margin-top: 1rem;">
-                        <div style="background: rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; height: 8px;">
-                            <div id="progressBar" style="background: var(--accent-gradient); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
-                        </div>
-                        <p id="progressText" style="text-align: center; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
-                            Initialisation...
+                <!-- Submit Button -->
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span id="submitText">🎯 Analyser mon CV</span>
+                </button>
+
+                <!-- Progress Bar (Hidden by default) -->
+                <div id="progressContainer" style="display: none; margin-top: 1rem;">
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; height: 8px;">
+                        <div id="progressBar" style="background: var(--accent-gradient); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <p id="progressText" style="text-align: center; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                        Initialisation...
+                    </p>
+                </div>
+            </form>
+
+            <!-- Quick Tips -->
+            <div style="margin-top: 3rem; padding: 2rem; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color);">
+                <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    💡 Conseils pour une meilleure analyse
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                        <strong style="color: var(--text-primary);">📄 Format du CV</strong>
+                        <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
+                            Utilisez un PDF de bonne qualité ou une image claire pour une extraction optimale du texte.
                         </p>
                     </div>
-                </form>
-
-                <!-- Quick Tips -->
-                <div style="margin-top: 3rem; padding: 2rem; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color);">
-                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        💡 Conseils pour une meilleure analyse
-                    </h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                        <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                            <strong style="color: var(--text-primary);">📄 Format du CV</strong>
-                            <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
-                                Utilisez un PDF de bonne qualité ou une image claire pour une extraction optimale du texte.
-                            </p>
-                        </div>
-                        <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                            <strong style="color: var(--text-primary);">🎯 Description précise</strong>
-                            <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
-                                Plus la description du poste est détaillée, plus le score de correspondance sera précis.
-                            </p>
-                        </div>
-                        <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                            <strong style="color: var(--text-primary);">🔒 Confidentialité</strong>
-                            <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
-                                Vos données sont sécurisées et supprimées automatiquement après l'analyse.
-                            </p>
-                        </div>
+                    <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                        <strong style="color: var(--text-primary);">🎯 Sélection multiple</strong>
+                        <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
+                            Sélectionnez plusieurs profils pour une analyse comparative plus précise.
+                        </p>
+                    </div>
+                    <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                        <strong style="color: var(--text-primary);">🔒 Confidentialité</strong>
+                        <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
+                            Vos données sont sécurisées et supprimées automatiquement après l'analyse.
+                        </p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-section">
+            <h3>CV Analyzer Pro</h3>
+            <p>La solution d'analyse de CV la plus avancée du marché. Propulsée par l'intelligence artificielle pour des résultats précis et exploitables.</p>
+        </div>
+        <div class="footer-section">
+            <h3>Navigation</h3>
+            <p><a href="/">Accueil</a></p>
+            <p><a href="/#features">Fonctionnalités</a></p>
+            <p><a href="/#how-it-works">Comment ça marche</a></p>
+            <p><a href="/analyze">Analyser un CV</a></p>
+        </div>
+        <div class="footer-section">
+            <h3>Support</h3>
+            <p><a href="#contact">Centre d'aide</a></p>
+            <p><a href="#contact">Documentation</a></p>
+            <p><a href="#contact">Contact</a></p>
+            <p><a href="#contact">FAQ</a></p>
+        </div>
+        <div class="footer-section">
+            <h3>Légal</h3>
+            <p><a href="#legal">Politique de confidentialité</a></p>
+            <p><a href="#legal">Conditions d'utilisation</a></p>
+            <p><a href="#legal">RGPD</a></p>
+            <p><a href="#legal">Sécurité</a></p>
+        </div>
     </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 CV Analyzer Pro. Tous droits réservés. Fait avec ❤️ pour les professionnels.</p>
+    </div>
+</footer>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h3>CV Analyzer Pro</h3>
-                <p>La solution d'analyse de CV la plus avancée du marché. Propulsée par l'intelligence artificielle pour des résultats précis et exploitables.</p>
-            </div>
-            <div class="footer-section">
-                <h3>Navigation</h3>
-                <p><a href="/">Accueil</a></p>
-                <p><a href="/#features">Fonctionnalités</a></p>
-                <p><a href="/#how-it-works">Comment ça marche</a></p>
-                <p><a href="/analyze">Analyser un CV</a></p>
-            </div>
-            <div class="footer-section">
-                <h3>Support</h3>
-                <p><a href="#contact">Centre d'aide</a></p>
-                <p><a href="#contact">Documentation</a></p>
-                <p><a href="#contact">Contact</a></p>
-                <p><a href="#contact">FAQ</a></p>
-            </div>
-            <div class="footer-section">
-                <h3>Légal</h3>
-                <p><a href="#legal">Politique de confidentialité</a></p>
-                <p><a href="#legal">Conditions d'utilisation</a></p>
-                <p><a href="#legal">RGPD</a></p>
-                <p><a href="#legal">Sécurité</a></p>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2024 CV Analyzer Pro. Tous droits réservés. Fait avec ❤️ pour les professionnels.</p>
-        </div>
-    </footer>
+<script>
+    // Global variables
+    let selectedProfiles = [];
+    const profileModal = document.getElementById('profileSelectionModal');
+    const profileSelectorBtn = document.getElementById('profileSelectorBtn');
+    const profileSelectorSubtitle = document.getElementById('profileSelectorSubtitle');
+    const selectedProfilesInput = document.getElementById('selectedProfilesInput');
+    const selectedProfilesContainer = document.getElementById('selectedProfiles');
+    const selectedCount = document.getElementById('selectedCount');
+    const profileSearch = document.getElementById('profileSearch');
+    const profilesGrid = document.getElementById('profilesGrid');
+    const customProfileInput = document.getElementById('customProfileInput');
 
-    <script>
     // File upload handling
     const fileInput = document.getElementById('filetoscan');
     const fileUploadArea = document.getElementById('fileUploadArea');
     const uploadText = document.getElementById('uploadText');
 
-    // Modal elements
-    const modal = document.getElementById('customProfileModal');
-    const customInput = document.getElementById('customProfileInput');
-    const closeModalBtn = document.getElementById('closeModal');
-    const cancelModalBtn = document.getElementById('cancelModal');
-    const confirmModalBtn = document.getElementById('confirmModal');
+    // FIXED: Open profile modal
+    function openProfileModal() {
+        console.log('Opening profile modal...');
+        profileModal.classList.add('show');
+        profileModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        // Force reflow and apply animation
+        setTimeout(() => {
+            profileModal.style.opacity = '1';
+        }, 10);
+    }
 
-    // Load existing custom profiles on page load
-    async function loadCustomProfiles() {
-        try {
-            const response = await fetch("/get-custom-profiles");
-            const data = await response.json();
+    // FIXED: Close profile modal
+    function closeProfileModal() {
+        console.log('Closing profile modal...');
+        profileModal.style.opacity = '0';
+        
+        setTimeout(() => {
+            profileModal.classList.remove('show');
+            profileModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+
+    // Update selected profiles display
+    function updateSelectedProfiles() {
+        selectedCount.textContent = selectedProfiles.length;
+        
+        if (selectedProfiles.length === 0) {
+            selectedProfilesContainer.innerHTML = '<div class="no-selection">Aucun profil sélectionné</div>';
+            profileSelectorSubtitle.textContent = 'Cliquez pour choisir un ou plusieurs profils';
+            selectedProfilesInput.value = '';
+        } else {
+            const tags = selectedProfiles.map(profile => `
+                <div class="selected-tag">
+                    <span>${profile.name}</span>
+                    <button class="remove-tag" onclick="removeProfile('${profile.id}')">×</button>
+                </div>
+            `).join('');
+            selectedProfilesContainer.innerHTML = tags;
             
-            if (data.profiles && data.profiles.length > 0) {
-                const jobSelect = document.getElementById('jobSelect');
-                const addCustomOption = jobSelect.querySelector('option[value="addcustom"]');
-                
-                // Add existing custom profiles before the "add custom" option
-                data.profiles.forEach(profile => {
-                    const option = document.createElement('option');
-                    option.value = profile.nom;
-                    option.textContent = `💾 ${profile.nom}`;
-                    option.title = `Créé le ${profile.date_creation}`;
-                    jobSelect.insertBefore(option, addCustomOption);
-                });
-                
-                console.log(`✅ ${data.profiles.length} profils personnalisés chargés`);
-            }
-        } catch (error) {
-            console.error('Erreur lors du chargement des profils:', error);
+            const names = selectedProfiles.map(p => p.name).join(', ');
+            profileSelectorSubtitle.textContent = selectedProfiles.length === 1 
+                ? `1 profil sélectionné: ${names}`
+                : `${selectedProfiles.length} profils sélectionnés: ${names.length > 50 ? names.substring(0, 50) + '...' : names}`;
+            
+            selectedProfilesInput.value = JSON.stringify(selectedProfiles);
         }
     }
 
-    // Call on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        loadCustomProfiles();
-    });
+    // Toggle profile selection
+    function toggleProfile(profileElement) {
+        const profileId = profileElement.dataset.profile;
+        const profileName = profileElement.querySelector('.profile-name').textContent;
+        
+        const existingIndex = selectedProfiles.findIndex(p => p.id === profileId);
+        
+        if (existingIndex > -1) {
+            selectedProfiles.splice(existingIndex, 1);
+            profileElement.classList.remove('selected');
+        } else {
+            selectedProfiles.push({ id: profileId, name: profileName });
+            profileElement.classList.add('selected');
+        }
+        
+        updateSelectedProfiles();
+    }
 
-    // Apply modal styles directly via JavaScript
-    function applyModalStyles() {
-        // Modal overlay styles
-        modal.style.cssText = `
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            background: rgba(0, 0, 0, 0.8) !important;
-            backdrop-filter: blur(10px) !important;
-            display: none !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 10000 !important;
-            opacity: 0 !important;
-            transition: opacity 0.3s ease !important;
-            padding: 1rem !important;
+    // Remove profile from selection
+    function removeProfile(profileId) {
+        selectedProfiles = selectedProfiles.filter(p => p.id !== profileId);
+        
+        // Update UI
+        const profileCard = document.querySelector(`[data-profile="${profileId}"]`);
+        if (profileCard) {
+            profileCard.classList.remove('selected');
+        }
+        
+        updateSelectedProfiles();
+    }
+
+    // Add custom profile
+    function addCustomProfile() {
+        const customValue = customProfileInput.value.trim();
+        if (!customValue) {
+            customProfileInput.focus();
+            return;
+        }
+
+        // Check if already exists
+        if (selectedProfiles.some(p => p.name === customValue)) {
+            alert('Ce profil est déjà sélectionné');
+            return;
+        }
+
+        // Create custom profile card
+        const customId = 'custom_' + Date.now();
+        const profileCard = document.createElement('div');
+        profileCard.className = 'profile-card selected';
+        profileCard.dataset.profile = customId;
+        profileCard.innerHTML = `
+            <div class="profile-icon">🎯</div>
+            <div class="profile-name">${customValue}</div>
+            <div class="profile-description">Profil personnalisé</div>
         `;
+        
+        // Add to grid
+        profilesGrid.appendChild(profileCard);
+        
+        // Add to selection
+        selectedProfiles.push({ id: customId, name: customValue });
+        updateSelectedProfiles();
+        
+        // Clear input
+        customProfileInput.value = '';
+        
+        // Add click handler
+        profileCard.addEventListener('click', () => toggleProfile(profileCard));
+    }
 
-        // Modal content styles
-        const modalContent = modal.querySelector('.modal-content');
-        modalContent.style.cssText = `
-            background: rgba(255, 255, 255, 0.05) !important;
-            backdrop-filter: blur(20px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 20px !important;
-            width: 90% !important;
-            max-width: 500px !important;
-            max-height: 90vh !important;
-            overflow-y: auto !important;
-            position: relative !important;
-            transform: scale(0.9) translateY(20px) !important;
-            transition: transform 0.3s ease !important;
-            margin: auto !important;
-            color: #ffffff !important;
-        `;
+    // Fill custom example
+    function fillCustomExample(text) {
+        customProfileInput.value = text;
+        customProfileInput.focus();
+    }
 
-        // Modal header styles
-        const modalHeader = modal.querySelector('.modal-header');
-        modalHeader.style.cssText = `
-            padding: 2rem 2rem 1rem !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-            display: flex !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-        `;
-
-        // Modal body styles
-        const modalBody = modal.querySelector('.modal-body');
-        modalBody.style.cssText = `
-            padding: 1.5rem 2rem !important;
-        `;
-
-        // Modal footer styles
-        const modalFooter = modal.querySelector('.modal-footer');
-        modalFooter.style.cssText = `
-            padding: 1rem 2rem 2rem !important;
-            display: flex !important;
-            gap: 1rem !important;
-            justify-content: flex-end !important;
-        `;
-
-        // Input styles
-        customInput.style.cssText = `
-            width: 100% !important;
-            padding: 1rem 1.5rem !important;
-            background: rgba(0, 0, 0, 0.3) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 12px !important;
-            color: #ffffff !important;
-            font-size: 1rem !important;
-            font-family: inherit !important;
-        `;
-
-        // Button styles
-        const buttons = modal.querySelectorAll('.btn-primary, .btn-secondary');
-        buttons.forEach(btn => {
-            if (btn.classList.contains('btn-primary')) {
-                btn.style.cssText = `
-                    padding: 0.75rem 1.5rem !important;
-                    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%) !important;
-                    color: #000 !important;
-                    border: none !important;
-                    border-radius: 12px !important;
-                    font-weight: 600 !important;
-                    cursor: pointer !important;
-                    transition: all 0.3s ease !important;
-                    min-width: 100px !important;
-                `;
+    // Search profiles
+    function searchProfiles() {
+        const searchTerm = profileSearch.value.toLowerCase();
+        const profileCards = profilesGrid.querySelectorAll('.profile-card');
+        
+        profileCards.forEach(card => {
+            const name = card.querySelector('.profile-name').textContent.toLowerCase();
+            const description = card.querySelector('.profile-description').textContent.toLowerCase();
+            
+            if (name.includes(searchTerm) || description.includes(searchTerm)) {
+                card.style.display = 'block';
             } else {
-                btn.style.cssText = `
-                    padding: 0.75rem 1.5rem !important;
-                    background: transparent !important;
-                    color: #ffffff !important;
-                    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                    border-radius: 12px !important;
-                    font-weight: 600 !important;
-                    cursor: pointer !important;
-                    transition: all 0.3s ease !important;
-                    min-width: 100px !important;
-                `;
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    // FIXED: Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, setting up modal...');
+        
+        // Profile selector button
+        profileSelectorBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Profile selector button clicked!');
+            openProfileModal();
+        });
+        
+        // Modal close buttons
+        document.getElementById('closeProfileModal').addEventListener('click', closeProfileModal);
+        document.getElementById('cancelProfileModal').addEventListener('click', closeProfileModal);
+        
+        // Confirm button
+        document.getElementById('confirmProfileModal').addEventListener('click', () => {
+            if (selectedProfiles.length === 0) {
+                alert('Veuillez sélectionner au moins un profil');
+                return;
+            }
+            closeProfileModal();
+        });
+
+        // Add custom profile
+        document.getElementById('addCustomBtn').addEventListener('click', addCustomProfile);
+        
+        // Custom profile input
+        customProfileInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                addCustomProfile();
             }
         });
 
-        // Example tags styles
-        const exampleTags = modal.querySelectorAll('.example-tag');
-        exampleTags.forEach(tag => {
-            tag.style.cssText = `
-                background: rgba(255, 255, 255, 0.05) !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                color: #a0a0a0 !important;
-                padding: 0.5rem 1rem !important;
-                border-radius: 20px !important;
-                font-size: 0.85rem !important;
-                cursor: pointer !important;
-                transition: all 0.3s ease !important;
-                user-select: none !important;
-                display: inline-block !important;
-                margin: 0.25rem !important;
-            `;
+        // Search functionality
+        profileSearch.addEventListener('input', searchProfiles);
+
+        // Close modal when clicking outside
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) {
+                closeProfileModal();
+            }
         });
 
-        // Close button styles
-        closeModalBtn.style.cssText = `
-            background: none !important;
-            border: none !important;
-            color: #a0a0a0 !important;
-            font-size: 1.5rem !important;
-            cursor: pointer !important;
-            padding: 0.5rem !important;
-            border-radius: 50% !important;
-            width: 40px !important;
-            height: 40px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: all 0.3s ease !important;
-        `;
-    }
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && profileModal.classList.contains('show')) {
+                closeProfileModal();
+            }
+        });
 
-    // Initialize modal styles
-    applyModalStyles();
+        // Add click handlers to existing profile cards
+        const profileCards = profilesGrid.querySelectorAll('.profile-card');
+        profileCards.forEach(card => {
+            card.addEventListener('click', () => toggleProfile(card));
+        });
+    });
 
-    // Drag and drop functionality
+    // Make functions global
+    window.removeProfile = removeProfile;
+    window.fillCustomExample = fillCustomExample;
+
+    // File upload code
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         fileUploadArea.addEventListener(eventName, preventDefaults, false);
     });
@@ -459,217 +1468,21 @@
     function handleFileSelect() {
         const file = fileInput.files[0];
         if (file) {
-            const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
             uploadText.innerHTML = `✅ ${file.name} <br><small>Fichier sélectionné (${fileSize} MB)</small>`;
             fileUploadArea.style.borderColor = '#00d4ff';
             fileUploadArea.style.background = 'rgba(0, 212, 255, 0.1)';
         }
     }
 
-    // Modal functions
-    function openModal() {
-        modal.style.display = 'flex';
-        // Force reflow
-        modal.offsetHeight;
-        modal.style.opacity = '1';
-        const modalContent = modal.querySelector('.modal-content');
-        modalContent.style.transform = 'scale(1) translateY(0)';
-        customInput.focus();
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeModal() {
-        modal.style.opacity = '0';
-        const modalContent = modal.querySelector('.modal-content');
-        modalContent.style.transform = 'scale(0.9) translateY(20px)';
-        setTimeout(() => {
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }, 300);
-        customInput.value = '';
-        customInput.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-    }
-
-    function fillExample(text) {
-        customInput.value = text;
-        customInput.focus();
-    }
-
-    // Modal event listeners
-    closeModalBtn.addEventListener('click', closeModal);
-    cancelModalBtn.addEventListener('click', closeModal);
-
-    // Close modal when clicking outside
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            closeModal();
-        }
-    });
-
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal.style.display === 'flex') {
-            closeModal();
-        }
-    });
-
-    // Hover effects for example tags
-    modal.addEventListener('mouseover', function(e) {
-        if (e.target.classList.contains('example-tag')) {
-            e.target.style.background = 'rgba(0, 212, 255, 0.1)';
-            e.target.style.borderColor = 'rgba(0, 212, 255, 0.3)';
-            e.target.style.color = '#ffffff';
-            e.target.style.transform = 'translateY(-1px)';
-        }
-    });
-
-    modal.addEventListener('mouseout', function(e) {
-        if (e.target.classList.contains('example-tag')) {
-            e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-            e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-            e.target.style.color = '#a0a0a0';
-            e.target.style.transform = 'translateY(0)';
-        }
-    });
-
-    // Hover effects for close button
-    closeModalBtn.addEventListener('mouseover', function() {
-        this.style.background = 'rgba(255, 255, 255, 0.1)';
-        this.style.color = '#ffffff';
-    });
-
-    closeModalBtn.addEventListener('mouseout', function() {
-        this.style.background = 'none';
-        this.style.color = '#a0a0a0';
-    });
-
-    // Confirm modal
-    confirmModalBtn.addEventListener('click', async function() {
-        const customValue = customInput.value.trim();
-        if (!customValue) {
-            customInput.style.borderColor = '#ff4757';
-            customInput.focus();
-            return;
-        }
-
-        // Close modal first
-        closeModal();
-
-        // Add new option to select
-        const jobSelect = document.getElementById('jobSelect');
-        const newOption = document.createElement('option');
-        newOption.value = customValue;
-        newOption.textContent = `🎯 ${customValue}`; // Icône temporaire avant sauvegarde
-        jobSelect.insertBefore(newOption, jobSelect.querySelector('option[value="addcustom"]'));
-        jobSelect.value = customValue;
-
-        // Generate description (la sauvegarde se fera automatiquement via l'event listener du select)
-        const textarea = document.getElementById('job_description');
-        const submitBtn = document.getElementById('submitBtn');
-
-        textarea.value = "⏳ Génération de la description en cours...";
-        submitBtn.classList.add('loading');
-        submitBtn.innerHTML = '<span class="loading-spinner"></span> Génération...';
-
-        try {
-            const desc = await fetchDescription(customValue);
-            textarea.value = desc;
-        
-            // Déclencher l'événement change pour sauvegarder automatiquement
-            jobSelect.dispatchEvent(new Event('change'));
-
-        } catch (error) {
-            textarea.value = "Erreur lors de la génération. Veuillez saisir manuellement la description.";
-            console.error('Erreur:', error);
-        }
-
-        submitBtn.classList.remove('loading');
-        submitBtn.innerHTML = '<span>🎯 Analyser mon CV</span>';
-    });
-
-    // Enter key in modal input
-    customInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            confirmModalBtn.click();
-        }
-    });
-
-    // Job description generator
-    async function fetchDescription(topic) {
-        try {
-            const response = await fetch("/generate-description", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ topic })
-            });
-            const data = await response.json();
-            return data.description || "Échec de la génération de description.";
-        } catch (error) {
-            console.error('Erreur lors de la génération:', error);
-            return "Erreur lors de la génération de la description.";
-        }
-    }
-
-    // Job select handler
-    document.getElementById('jobSelect').addEventListener('change', async function() {
-        const selected = this.value;
-        const textarea = document.getElementById('job_description');
-        const submitBtn = document.getElementById('submitBtn');
-
-        if (selected === "addcustom") {
-            this.value = ""; // Reset select
-            openModal();
-            return;
-        } else if (selected) {
-            textarea.value = "⏳ Génération de la description en cours...";
-            submitBtn.classList.add('loading');
-            submitBtn.innerHTML = '<span class="loading-spinner"></span> Génération...';
-
-            try {
-                const desc = await fetchDescription(selected);
-                textarea.value = desc;
-
-                // ✅ NOUVEAU : Sauvegarder automatiquement si c'est un profil personnalisé
-                // Vérifier si c'est un profil personnalisé (commence par 🎯 ou 💾)
-                const selectedOption = this.options[this.selectedIndex];
-                if (selectedOption.textContent.startsWith('🎯') || selectedOption.textContent.startsWith('💾')) {
-                    console.log('💾 Sauvegarde automatique du profil personnalisé...');
-                    
-                    const saveResult = await fetch("/save-custom-profile", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ 
-                            nom: selected, 
-                            description: desc 
-                        })
-                    });
-
-                    const saveData = await saveResult.json();
-                    if (saveData.success) {
-                        console.log(`✅ Profil "${selected}" sauvegardé automatiquement`);
-                        showNotification(`💾 Profil "${selected}" sauvegardé !`, 'success');
-                        
-                        // Mettre à jour l'icône pour montrer qu'il est sauvegardé
-                        selectedOption.textContent = `💾 ${selected}`;
-                    } else {
-                        console.warn('⚠️ Erreur sauvegarde automatique:', saveData.error);
-                    }
-                }
-
-            } catch (error) {
-                textarea.value = "Erreur lors de la génération. Veuillez saisir manuellement la description.";
-                console.error('Erreur:', error);
-            }
-
-            submitBtn.classList.remove('loading');
-            submitBtn.innerHTML = '<span>🎯 Analyser mon CV</span>';
-        } else {
-            textarea.value = "";
-        }
-    });
-
     // Form submit handler with progress
-    document.getElementById('uploadForm').addEventListener('submit', function() {
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        if (selectedProfiles.length === 0) {
+            e.preventDefault();
+            alert('Veuillez sélectionner au moins un profil avant de continuer');
+            return;
+        }
+
         const submitBtn = document.getElementById('submitBtn');
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
@@ -679,10 +1492,8 @@
         submitBtn.innerHTML = '<span class="loading-spinner"></span> Analyse en cours...';
         submitBtn.disabled = true;
 
-        // Show progress bar
         progressContainer.style.display = 'block';
 
-        // Simulate progress
         const progressSteps = [
             { progress: 20, text: "Téléchargement du fichier..." },
             { progress: 40, text: "Extraction du texte..." },
@@ -713,47 +1524,6 @@
             navbar.style.background = 'rgba(10, 10, 10, 0.9)';
         }
     });
-
-    // Make fillExample function global for onclick handlers
-    window.fillExample = fillExample;
-
-    // Notification system
-    function showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            background: ${type === 'success' ? 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)' : 'var(--card-bg)'};
-            color: ${type === 'success' ? '#000' : 'var(--text-primary)'};
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            backdrop-filter: blur(20px);
-            z-index: 10001;
-            font-weight: 500;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            max-width: 300px;
-        `;
-        
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        // Animate in
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-        }, 100);
-        
-        // Remove after 4 seconds
-        setTimeout(() => {
-            notification.style.transform = 'translateX(400px)';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 4000);
-    }
 </script>
 </body>
 </html>
