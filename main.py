@@ -12,12 +12,10 @@ from insert_to_db import insert_candidate_data
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
-from database import engine
+from database import engine, SessionLocal
 import models
+import re
 
-
-
-import json
 load_dotenv()
 app = FastAPI()
 
@@ -25,11 +23,72 @@ app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
 
 # Créer le dossier static s'il n'existe pas
-os.makedirs("static", exist_ok=True)
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(static_dir, exist_ok=True)
 
-# Monter les fichiers statiques CORRECTEMENT
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Vérifier que le fichier CSS existe
+css_file = os.path.join(static_dir, "style.css")
+if not os.path.exists(css_file):
+    print(f"⚠️  ATTENTION: Le fichier CSS n'existe pas à {css_file}")
+    print(f"📁 Dossier static: {static_dir}")
+    print(f"📄 Fichiers dans static: {os.listdir(static_dir) if os.path.exists(static_dir) else 'Dossier inexistant'}")
+else:
+    print(f"✅ Fichier CSS trouvé: {css_file}")
+
+# Monter les fichiers statiques
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# Templates
+templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+templates = Jinja2Templates(directory=templates_dir)
+
+def parse_skills(skills_data):
+    """Parse skills list to extract name and percentage"""
+    if not skills_data:
+        return []
+    
+    # Si c'est une string JSON, la parser
+    if isinstance(skills_data, str):
+        try:
+            skills_list = json.loads(skills_data)
+        except:
+            return []
+    else:
+        skills_list = skills_data
+    
+    if not isinstance(skills_list, list):
+        return []
+    
+    parsed_skills = []
+    for skill in skills_list:
+        try:
+            skill_str = str(skill)
+            if ':' in skill_str:
+                parts = skill_str.split(':')
+                name = parts[0].strip()
+                level_str = parts[1].strip()
+                # Extract percentage number
+                percentage_match = re.search(r'(\d+)', level_str)
+                percentage = int(percentage_match.group(1)) if percentage_match else 0
+                parsed_skills.append({
+                    'name': name,
+                    'level_str': level_str,
+                    'percentage': min(percentage, 100)  # Cap at 100%
+                })
+            else:
+                parsed_skills.append({
+                    'name': skill_str.strip(),
+                    'level_str': '',
+                    'percentage': 0
+                })
+        except Exception as e:
+            print(f"Erreur parsing skill {skill}: {e}")
+            parsed_skills.append({
+                'name': str(skill),
+                'level_str': '',
+                'percentage': 0
+            })
+    return parsed_skills
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
@@ -38,6 +97,27 @@ def home(request: Request):
 @app.get("/analyze", response_class=HTMLResponse)
 def analyze_page(request: Request):
     return templates.TemplateResponse("analyze.html", {"request": request})
+
+# Route de test pour vérifier les fichiers statiques
+@app.get("/test-css")
+def test_css():
+    css_path = os.path.join(static_dir, "style.css")
+    if os.path.exists(css_path):
+        with open(css_path, 'r', encoding='utf-8') as f:
+            content = f.read()[:500]  # Premiers 500 caractères
+        return {
+            "status": "CSS file found",
+            "path": css_path,
+            "size": os.path.getsize(css_path),
+            "preview": content
+        }
+    else:
+        return {
+            "status": "CSS file NOT found",
+            "path": css_path,
+            "static_dir": static_dir,
+            "files_in_static": os.listdir(static_dir) if os.path.exists(static_dir) else []
+        }
 
 @app.post("/scan", response_class=HTMLResponse)
 async def scan_file(
@@ -53,27 +133,6 @@ async def scan_file(
     # Save file to disk temporarily
     with open(file_location, "wb") as f:
         f.write(await filetoscan.read())
-    """
-    # Process the file
-    print("Extracting text from the file...")
-    pdf_text, images_text = text_extractor.process_file(file_location)
-    print("Text extraction completed.")
-
-    # Clean up
-    print("Cleaning up the extracted text...")
-    pdf_text = textcleaner.cleantext(pdf_text)
-    print("Cleaned up the extracted text.")
-    # Generate summary
-    print("Generating summary ...")
-    summary = data_generator.generate_summary(pdf_text, images_text)
-    print("Summary generation completed.")
-    print("Generating structured data ...")
-    data_json = data_generator.generate_json(pdf_text)
-    print("Structured data generation completed.")
-
-    # Compute matching score
-    score = compute_similarity(summary, job_description)
-    """
 
     # For demonstration purposes, using test data instead of actual processing
     pdf_text = """
@@ -81,69 +140,67 @@ async def scan_file(
     """
     images_text = ['', '', 'sam']
 
-    summary = """Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent."""
+    summary = """Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent.Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent.Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent.Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent.Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent."""
 
     score = 68.02
 
     data_json = {
-    "certificates": [
-        "Certificate PHP",
-        "Udemy Certificate PHP",
-        "Certificate CSS and Java",
-        "Udemy Certificate CSS and Java",
-        "Baccalaureate Diploma",
-        "Excellent Grade in Mathematics Baccalaureate",
-        "Python Intermediate Certificate",
-        "Sololearn Python Certificate",
-        "German Language Level A1 Certificate",
-        "ECL Tunisie Centre d\u00b4examen Allemand",
-        "Microsoft Azure AI Fundamentals: AI Overview",
-        "Microsoft Profile"
-    ],
-    "contact": {
-        "address": "22 rue karatchi",
-        "email": "yassinechtourou03@gmail.com",
-        "linkedin": "www.linkedin.com",
-        "phone": "+00216993465"
-    },
-    "education": [
-        {
-        "degree": "Computer Science Licence",
-        "institution": "ISAMM",
-        "years": "2023-2026"
+        "certificates": [
+            "Certificate PHP",
+            "Udemy Certificate PHP",
+            "Certificate CSS and Java",
+            "Udemy Certificate CSS and Java",
+            "Baccalaureate Diploma",
+            "Excellent Grade in Mathematics Baccalaureate",
+            "Python Intermediate Certificate",
+            "Sololearn Python Certificate",
+            "German Language Level A1 Certificate",
+            "ECL Tunisie Centre d\u00b4examen Allemand",
+            "Microsoft Azure AI Fundamentals: AI Overview",
+            "Microsoft Profile"
+        ],
+        "contact": {
+            "address": "22 rue karatchi",
+            "email": "ahbedhmid@gmail.com",
+            "linkedin": "www.linkedin.com",
+            "phone": "99896635"
         },
-        {
-        "degree": "Baccalaureate",
-        "institution": "Mouhamed Dachraoui",
-        "years": "2020-2023"
-        }
-    ],
-    "languages": [
-        "Arabic",
-        "English",
-        "French",
-        "German"
-    ],
-    "name": "youssef CHTOUROU",
-    "profile": "Born on 16 January 2005. Currently pursuing the BD (Big Data) program at the Higher Institute of Arts and Multimedia (ISAMM) to become a Big Data engineer. Thrives on challenges with a sociable and motivated personality. Passionate about programming with proficiency in multiple languages, committed to expanding skills in the evolving tech field.",
-    "skills": [
-        "CSS: 80%",
-        "PHP: 80%",
-        "Python: 75%",
-        "C: 75%",
-        "HTML: 60%",
-        "Java: 60%"
-    ],
-    "title": "COMPUTER SCIENCE STUDENT",
-    "yearsOfExperience":"0"
+        "education": [
+            {
+                "degree": "Computer Science Licence",
+                "institution": "ISAMM",
+                "years": "2023-2026"
+            },
+            {
+                "degree": "Baccalaureate",
+                "institution": "Mouhamed Dachraoui",
+                "years": "2020-2023"
+            }
+        ],
+        "languages": [
+            "Arabic",
+            "English",
+            "French",
+            "German"
+        ],
+        "name": "ahmed hamido",
+        "profile": "Born on 16 January 2005. Currently pursuing the BD (Big Data) program at the Higher Institute of Arts and Multimedia (ISAMM) to become a Big Data engineer. Thrives on challenges with a sociable and motivated personality. Passionate about programming with proficiency in multiple languages, committed to expanding skills in the evolving tech field.",
+        "skills": [
+            "CSS: 80%",
+            "PHP: 30%",
+            "Python: 75%",
+            "C: 75%",
+            "HTML: 60%",
+            "Java: 60%"
+        ],
+        "title": "COMPUTER SCIENCE STUDENT",
+        "yearsOfExperience": "0"
     }
     skills_titles = [skill.split(":")[0] for skill in data_json["skills"]]
     skills_titles_str = ", ".join(skills_titles)
 
-
-
-    # Juste avant le return :
-    insert_candidate_data(data_json, summary)
+    # Insérer les données en base
+    candidate_id = insert_candidate_data(data_json, summary)
 
     # Ensuite on affiche la page avec les résultats
     return templates.TemplateResponse("result.html", {
@@ -156,8 +213,119 @@ async def scan_file(
         "user_info": data_json,
         "job_description": job_description,
         "skills_titles": skills_titles_str,
-})
+        "candidate_id": candidate_id
+    })
 
+@app.get("/profile/{candidate_id}", response_class=HTMLResponse)
+def profile_detail(request: Request, candidate_id: int):
+    db = SessionLocal()
+    try:
+        # Récupérer les données du candidat depuis la base
+        profile = db.query(models.ProfileCandidat).filter(models.ProfileCandidat.id == candidate_id).first()
+        if not profile:
+            print(f"Profile not found for ID: {candidate_id}")
+            return templates.TemplateResponse("profile_detail.html", {
+                "request": request,
+                "profile": None,
+                "contact": None,
+                "analyse": None,
+                "parsed_skills": []
+            })
+        
+        contact = db.query(models.Contact).filter(models.Contact.id == profile.contact_id).first()
+        analyse = db.query(models.AnalyseCandidat).filter(models.AnalyseCandidat.id == profile.analyse_id).first()
+        
+        # Debug: afficher le type et contenu de profile.skills
+        print(f"Profile skills type: {type(profile.skills)}")
+        print(f"Profile skills content: {profile.skills}")
+        
+        # Parse skills to extract percentages
+        parsed_skills = parse_skills(profile.skills)
+        
+        # Récupérer les valeurs des attributs d'abord
+        education_value = getattr(profile, 'education', None)
+        languages_value = getattr(profile, 'languages', None)
+        certificates_value = getattr(profile, 'certificates', None)
+        
+        # Parse education if it's a JSON string
+        parsed_education = []
+        if education_value:
+            try:
+                if isinstance(education_value, str):
+                    parsed_education = json.loads(education_value)
+                else:
+                    parsed_education = education_value
+            except:
+                parsed_education = []
+        
+        # Parse languages if it's a JSON string
+        parsed_languages = []
+        if languages_value:
+            try:
+                if isinstance(languages_value, str):
+                    parsed_languages = json.loads(languages_value)
+                else:
+                    parsed_languages = languages_value
+            except:
+                parsed_languages = []
+        
+        # Parse certificates if it's a JSON string
+        parsed_certificates = []
+        if certificates_value:
+            try:
+                if isinstance(certificates_value, str):
+                    parsed_certificates = json.loads(certificates_value)
+                else:
+                    parsed_certificates = certificates_value
+            except:
+                parsed_certificates = []
+        
+        # Create a simple object to hold profile data
+        class ProfileData:
+            def __init__(self, **kwargs):
+                for key, value in kwargs.items():
+                    setattr(self, key, value)
+
+        profile_data = ProfileData(
+            id=profile.id,
+            name=profile.name,
+            title=profile.title,
+            profile=profile.profile,
+            education=parsed_education,
+            languages=parsed_languages,
+            certificates=parsed_certificates,
+            years_of_experience=getattr(profile, 'years_of_experience', None),
+            experience=getattr(profile, 'experience', None),
+            projects=getattr(profile, 'projects', None),
+            hobbies=getattr(profile, 'hobbies', None),
+            references=getattr(profile, 'references', None),
+            additional_info=getattr(profile, 'additional_info', None)
+        )
+
+        print(f"Profile found: {profile.name}")
+        print(f"Parsed skills: {parsed_skills}")
+        print(f"Parsed education: {parsed_education}")
+
+        return templates.TemplateResponse("profile_detail.html", {
+            "request": request,
+            "profile": profile_data,
+            "contact": contact,
+            "analyse": analyse,
+            "parsed_skills": parsed_skills
+        })
+    except Exception as e:
+        print(f"Erreur dans profile_detail: {e}")
+        import traceback
+        traceback.print_exc()
+        return templates.TemplateResponse("profile_detail.html", {
+            "request": request,
+            "profile": None,
+            "contact": None,
+            "analyse": None,
+            "parsed_skills": []
+        })
+    finally:
+        db.close()
 
 class TopicRequest(BaseModel):
     topic: str

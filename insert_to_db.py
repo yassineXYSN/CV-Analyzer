@@ -27,12 +27,13 @@ def insert_candidate_data(data_json, summary):
         )
         db.add(profile)
         db.commit()
+        db.refresh(profile)
+        
+        return profile.id  # Retourner l'ID du profil créé
 
     except Exception as e:
         db.rollback()
         print("[ERREUR]", e)
+        return None
     finally:
         db.close()
-
-
-
