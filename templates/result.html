@@ -176,32 +176,6 @@
         <!-- Detailed Analysis Section -->
         <div class="results-card" style="margin-top: 2rem; display: none;" id="detailedAnalysis">
             <h2 class="card-title">🔍 Analyse détaillée</h2>
-            
-
-            <div id="accountForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-                <!-- Personal Info -->
-                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
-                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        📝 Informations personnelles
-                    </h3>
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <input type="text" id="fullName" placeholder="Nom complet" value="{{ user_info.name | title }}" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                        <input type="email" id="email" value="{{ user_info.contact.email }}" placeholder="Email professionnel" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                        <input type="tel" id="phone" value="{{ user_info.contact.phone }}" placeholder="Téléphone" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                    </div>
-                </div>
-
-                <!-- Professional Info -->
-                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
-                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        💼 Profil professionnel
-                    </h3>
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <input type="text" id="currentPosition" placeholder="Poste actuel" value="{{ user_info.title | title }}" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                        <input type="text" id="experience" placeholder="Années d'expérience" value="{{ user_info.yearsOfExperience }} anées d'experience" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                        <input type="text" id="skills" value="{{ skills_titles }}" placeholder="Compétences principales" class="form-input" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                    </div>
-            <!-- Tab Navigation -->
             <div class="analysis-tabs">
                 <button class="tab-button active" onclick="switchTab('scores')" data-tab="scores">
                     📊 Scores par catégorie
