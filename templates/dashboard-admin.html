@@ -1,0 +1,2170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Dashboard - Vista Department View</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --accent-gradient: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            --danger-gradient: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+            --warning-gradient: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
+            --dark-bg: #0a0a0a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #707070;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Inter", sans-serif !important;
+            background: radial-gradient(ellipse at top, #1a1a2e 0%, #16213e 50%, #0f0f23 100%) !important;
+            min-height: 100vh !important;
+            color: var(--text-primary) !important;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Background Effects */
+        .background-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1));
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .shape:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            top: 60%;
+            right: 10%;
+            animation-delay: -7s;
+        }
+
+        .shape:nth-child(3) {
+            width: 150px;
+            height: 150px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: -14s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+                opacity: 0.3;
+            }
+            33% {
+                transform: translateY(-30px) rotate(120deg);
+                opacity: 0.6;
+            }
+            66% {
+                transform: translateY(30px) rotate(240deg);
+                opacity: 0.4;
+            }
+        }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 30s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        /* Dashboard Container */
+        .dashboard-container {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        /* Header */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-gradient);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo span {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: 700;
+        }
+
+        /* Grid Layout */
+        .parent {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 1rem;
+            height: calc(100vh - 150px);
+        }
+
+        .div1 {
+            grid-column: span 4 / span 4;
+            grid-row: span 5 / span 5;
+        }
+
+        .div2 {
+            grid-row: span 5 / span 5;
+            grid-column-start: 5;
+        }
+
+        /* Main Content */
+        .main-content {
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .section-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-gradient);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .action-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Applications Grid */
+        .applications-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .application-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .application-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(0, 212, 255, 0.5);
+        }
+
+        .app-status {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: rgba(255, 165, 2, 0.2);
+            color: #ffa502;
+            border: 1px solid rgba(255, 165, 2, 0.3);
+        }
+
+        .status-active {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-review {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .application-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .application-card p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .app-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .app-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent-gradient);
+            transition: width 0.3s ease;
+        }
+
+        /* Analytics Grid */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(0, 212, 255, 0.5);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+        }
+
+        .stat-info h3 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-info p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-change {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .stat-change.positive {
+            color: #00ff88;
+        }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            height: 100%;
+            overflow-y: auto;
+            padding: 1rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            position: relative;
+        }
+
+        .sidebar::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-gradient);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-section h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        /* Department Dropdowns */
+        .department-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .department-dropdown {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .department-dropdown:hover {
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .department-dropdown.expanded {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .department-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .department-header:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .department-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .dept-icon {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00ff88;
+        }
+
+        .dept-icon.away {
+            background: #ffa502;
+        }
+
+        .dept-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .dept-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .dropdown-arrow {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            transition: transform 0.3s ease;
+        }
+
+        .department-dropdown.expanded .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .department-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .department-content.expanded {
+            max-height: 400px;
+        }
+
+        .department-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.75rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: var(--text-primary);
+            border-bottom-color: #00d4ff;
+        }
+
+        .tab-content {
+            padding: 1rem;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Workers List */
+        .workers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .worker-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .worker-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            transform: translateX(4px);
+        }
+
+        .worker-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .worker-info {
+            flex: 1;
+        }
+
+        .worker-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .worker-role {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .worker-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            flex-shrink: 0;
+        }
+
+        .worker-status.away {
+            background: #ffa502;
+        }
+
+        .worker-status.offline {
+            background: #ff4757;
+        }
+
+        /* Jobs List */
+        .jobs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .job-item {
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .job-item:hover {
+            border-color: rgba(0, 212, 255, 0.5);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .job-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .job-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .job-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .job-status.open {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .job-status.urgent {
+            background: rgba(255, 165, 2, 0.2);
+            color: #ffa502;
+        }
+
+        .job-status.filled {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+        }
+
+        /* Activity List */
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .activity-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .activity-info p {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-info span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .quick-btn {
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .quick-btn:hover {
+            border-color: rgba(0, 212, 255, 0.5);
+            background: rgba(0, 212, 255, 0.1);
+            transform: translateX(4px);
+        }
+
+        /* Modal Styles - Fixed and improved */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 1rem;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+            margin: auto;
+            color: #ffffff;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 2rem 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1rem 2rem 2rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Job Form Styles */
+        .job-form {
+            padding: 0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .form-select {
+            cursor: pointer;
+        }
+
+        .form-select option {
+            background: #1a1a2e;
+            color: #ffffff;
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Skills Section */
+        .skills-section {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .skills-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .skills-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .add-skill-btn {
+            padding: 0.5rem 1rem;
+            background: var(--accent-gradient);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .add-skill-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .skills-input-group {
+            display: none;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .skills-input-group.show {
+            display: flex;
+        }
+
+        .skills-input-group .form-input {
+            flex: 2;
+        }
+
+        .skills-input-group .form-select {
+            flex: 1;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .skill-tag {
+            background: var(--accent-gradient);
+            color: #000;
+            padding: 0.4rem 0.8rem;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .skill-level {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.2rem 0.4rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+        }
+
+        .remove-skill {
+            background: rgba(0, 0, 0, 0.2);
+            border: none;
+            color: #000;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .remove-skill:hover {
+            background: rgba(255, 0, 0, 0.3);
+            transform: scale(1.1);
+        }
+
+        /* Benefits Section */
+        .benefits-section {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .benefit-item:hover {
+            border-color: rgba(0, 212, 255, 0.5);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .benefit-item.selected {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .benefit-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 0.7rem;
+        }
+
+        .benefit-item.selected .benefit-checkbox {
+            background: var(--accent-gradient);
+            border-color: #00d4ff;
+            color: #000;
+        }
+
+        .benefit-label {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+
+        /* Button Styles */
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+            border-color: rgba(0, 212, 255, 0.5);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 4px solid rgba(0, 212, 255, 0.3);
+            border-top: 4px solid var(--accent-gradient);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-gradient);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #00b8e6, #00e67a);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .parent {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+                height: auto;
+            }
+            
+            .div1 {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            
+            .div2 {
+                grid-column: 1;
+                grid-row: 2;
+            }
+            
+            .analytics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .applications-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .skills-input-group {
+                flex-direction: column;
+            }
+            
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-footer {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="logo">
+                <h1>Vista HR Pro</h1>
+                <span>Department Management System</span>
+            </div>
+            <div class="user-info">
+                <span>Welcome, Sarah Johnson</span>
+                <div class="avatar">SJ</div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Grid -->
+        <div class="parent">
+            <!-- Main Content Area -->
+            <div class="div1">
+                <div class="main-content">
+                    <!-- Job Applications Section -->
+                    <section class="section-card">
+                        <div class="section-header">
+                            <h2>🚀 Active Job Applications</h2>
+                            <button class="action-btn" id="newApplicationBtn">+ New Application</button>
+                        </div>
+                        <div class="applications-grid">
+                            <div class="application-card">
+                                <div class="app-status status-pending">Pending</div>
+                                <h3>Senior Software Engineer</h3>
+                                <p>Engineering Department</p>
+                                <div class="app-stats">
+                                    <span>📋 15 Applications</span>
+                                    <span>⏱️ 3 days left</span>
+                                </div>
+                                <div class="app-progress">
+                                    <div class="progress-bar" style="width: 60%"></div>
+                                </div>
+                            </div>
+
+                            <div class="application-card">
+                                <div class="app-status status-active">Active</div>
+                                <h3>Product Manager</h3>
+                                <p>Product Department</p>
+                                <div class="app-stats">
+                                    <span>📋 8 Applications</span>
+                                    <span>⏱️ 5 days left</span>
+                                </div>
+                                <div class="app-progress">
+                                    <div class="progress-bar" style="width: 80%"></div>
+                                </div>
+                            </div>
+
+                            <div class="application-card">
+                                <div class="app-status status-review">Review</div>
+                                <h3>UX Designer</h3>
+                                <p>Design Department</p>
+                                <div class="app-stats">
+                                    <span>📋 22 Applications</span>
+                                    <span>⏱️ 1 day left</span>
+                                </div>
+                                <div class="app-progress">
+                                    <div class="progress-bar" style="width: 95%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Analytics Section -->
+                    <section class="section-card">
+                        <div class="section-header">
+                            <h2>📊 HR Analytics</h2>
+                            <select class="filter-select">
+                                <option>This Month</option>
+                                <option>Last Month</option>
+                                <option>This Quarter</option>
+                            </select>
+                        </div>
+                        <div class="analytics-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">👥</div>
+                                <div class="stat-info">
+                                    <h3>245</h3>
+                                    <p>Total Employees</p>
+                                    <span class="stat-change positive">+12%</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">📝</div>
+                                <div class="stat-info">
+                                    <h3>89</h3>
+                                    <p>Applications</p>
+                                    <span class="stat-change positive">+8%</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">✅</div>
+                                <div class="stat-info">
+                                    <h3>15</h3>
+                                    <p>Hired This Month</p>
+                                    <span class="stat-change positive">+25%</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">🎯</div>
+                                <div class="stat-info">
+                                    <h3>92%</h3>
+                                    <p>Satisfaction Rate</p>
+                                    <span class="stat-change positive">+3%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="div2">
+                <div class="sidebar">
+                    <!-- Departments Section -->
+                    <section class="sidebar-section">
+                        <h3>🏢 Departments</h3>
+                        <div class="department-list">
+                            <!-- Engineering Department -->
+                            <div class="department-dropdown" data-department="engineering">
+                                <div class="department-header">
+                                    <div class="department-info">
+                                        <div class="dept-icon"></div>
+                                        <div>
+                                            <div class="dept-name">Engineering</div>
+                                            <div class="dept-count">45 people • 3 open jobs</div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown-arrow">▼</div>
+                                </div>
+                                <div class="department-content">
+                                    <div class="department-tabs">
+                                        <button class="tab-btn active" data-tab="workers">Workers</button>
+                                        <button class="tab-btn" data-tab="jobs">Jobs</button>
+                                    </div>
+                                    <div class="tab-content active" id="workers-engineering">
+                                        <div class="workers-list">
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">JD</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">John Doe</div>
+                                                    <div class="worker-role">Senior Developer</div>
+                                                </div>
+                                                <div class="worker-status"></div>
+                                            </div>
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">SM</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">Sarah Miller</div>
+                                                    <div class="worker-role">Frontend Developer</div>
+                                                </div>
+                                                <div class="worker-status"></div>
+                                            </div>
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">MJ</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">Mike Johnson</div>
+                                                    <div class="worker-role">DevOps Engineer</div>
+                                                </div>
+                                                <div class="worker-status away"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-content" id="jobs-engineering">
+                                        <div class="jobs-list">
+                                            <div class="job-item">
+                                                <div class="job-title">Senior Software Engineer</div>
+                                                <div class="job-details">
+                                                    <span>Full-time</span>
+                                                    <span class="job-status open">Open</span>
+                                                </div>
+                                            </div>
+                                            <div class="job-item">
+                                                <div class="job-title">React Developer</div>
+                                                <div class="job-details">
+                                                    <span>Remote</span>
+                                                    <span class="job-status urgent">Urgent</span>
+                                                </div>
+                                            </div>
+                                            <div class="job-item">
+                                                <div class="job-title">Backend Engineer</div>
+                                                <div class="job-details">
+                                                    <span>Hybrid</span>
+                                                    <span class="job-status open">Open</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Product Department -->
+                            <div class="department-dropdown" data-department="product">
+                                <div class="department-header">
+                                    <div class="department-info">
+                                        <div class="dept-icon"></div>
+                                        <div>
+                                            <div class="dept-name">Product</div>
+                                            <div class="dept-count">12 people • 2 open jobs</div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown-arrow">▼</div>
+                                </div>
+                                <div class="department-content">
+                                    <div class="department-tabs">
+                                        <button class="tab-btn active" data-tab="workers">Workers</button>
+                                        <button class="tab-btn" data-tab="jobs">Jobs</button>
+                                    </div>
+                                    <div class="tab-content active" id="workers-product">
+                                        <div class="workers-list">
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">AL</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">Anna Lee</div>
+                                                    <div class="worker-role">Product Manager</div>
+                                                </div>
+                                                <div class="worker-status"></div>
+                                            </div>
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">TB</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">Tom Brown</div>
+                                                    <div class="worker-role">Product Analyst</div>
+                                                </div>
+                                                <div class="worker-status"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-content" id="jobs-product">
+                                        <div class="jobs-list">
+                                            <div class="job-item">
+                                                <div class="job-title">Product Manager</div>
+                                                <div class="job-details">
+                                                    <span>Full-time</span>
+                                                    <span class="job-status open">Open</span>
+                                                </div>
+                                            </div>
+                                            <div class="job-item">
+                                                <div class="job-title">Product Designer</div>
+                                                <div class="job-details">
+                                                    <span>Contract</span>
+                                                    <span class="job-status urgent">Urgent</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Design Department -->
+                            <div class="department-dropdown" data-department="design">
+                                <div class="department-header">
+                                    <div class="department-info">
+                                        <div class="dept-icon"></div>
+                                        <div>
+                                            <div class="dept-name">Design</div>
+                                            <div class="dept-count">18 people • 1 open job</div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown-arrow">▼</div>
+                                </div>
+                                <div class="department-content">
+                                    <div class="department-tabs">
+                                        <button class="tab-btn active" data-tab="workers">Workers</button>
+                                        <button class="tab-btn" data-tab="jobs">Jobs</button>
+                                    </div>
+                                    <div class="tab-content active" id="workers-design">
+                                        <div class="workers-list">
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">EW</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">Emma Wilson</div>
+                                                    <div class="worker-role">UX Designer</div>
+                                                </div>
+                                                <div class="worker-status"></div>
+                                            </div>
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">DJ</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">David Jones</div>
+                                                    <div class="worker-role">UI Designer</div>
+                                                </div>
+                                                <div class="worker-status"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-content" id="jobs-design">
+                                        <div class="jobs-list">
+                                            <div class="job-item">
+                                                <div class="job-title">UX Designer</div>
+                                                <div class="job-details">
+                                                    <span>Full-time</span>
+                                                    <span class="job-status open">Open</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Marketing Department -->
+                            <div class="department-dropdown" data-department="marketing">
+                                <div class="department-header">
+                                    <div class="department-info">
+                                        <div class="dept-icon away"></div>
+                                        <div>
+                                            <div class="dept-name">Marketing</div>
+                                            <div class="dept-count">23 people • 0 open jobs</div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown-arrow">▼</div>
+                                </div>
+                                <div class="department-content">
+                                    <div class="department-tabs">
+                                        <button class="tab-btn active" data-tab="workers">Workers</button>
+                                        <button class="tab-btn" data-tab="jobs">Jobs</button>
+                                    </div>
+                                    <div class="tab-content active" id="workers-marketing">
+                                        <div class="workers-list">
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">LC</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">Lisa Chen</div>
+                                                    <div class="worker-role">Marketing Manager</div>
+                                                </div>
+                                                <div class="worker-status away"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-content" id="jobs-marketing">
+                                        <div class="jobs-list">
+                                            <p style="color: var(--text-muted); text-align: center; padding: 1rem;">No open positions</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sales Department -->
+                            <div class="department-dropdown" data-department="sales">
+                                <div class="department-header">
+                                    <div class="department-info">
+                                        <div class="dept-icon"></div>
+                                        <div>
+                                            <div class="dept-name">Sales</div>
+                                            <div class="dept-count">31 people • 4 open jobs</div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown-arrow">▼</div>
+                                </div>
+                                <div class="department-content">
+                                    <div class="department-tabs">
+                                        <button class="tab-btn active" data-tab="workers">Workers</button>
+                                        <button class="tab-btn" data-tab="jobs">Jobs</button>
+                                    </div>
+                                    <div class="tab-content active" id="workers-sales">
+                                        <div class="workers-list">
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">RG</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">Robert Garcia</div>
+                                                    <div class="worker-role">Sales Manager</div>
+                                                </div>
+                                                <div class="worker-status"></div>
+                                            </div>
+                                            <div class="worker-item">
+                                                <div class="worker-avatar">KT</div>
+                                                <div class="worker-info">
+                                                    <div class="worker-name">Kate Taylor</div>
+                                                    <div class="worker-role">Account Executive</div>
+                                                </div>
+                                                <div class="worker-status"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-content" id="jobs-sales">
+                                        <div class="jobs-list">
+                                            <div class="job-item">
+                                                <div class="job-title">Sales Representative</div>
+                                                <div class="job-details">
+                                                    <span>Full-time</span>
+                                                    <span class="job-status open">Open</span>
+                                                </div>
+                                            </div>
+                                            <div class="job-item">
+                                                <div class="job-title">Account Manager</div>
+                                                <div class="job-details">
+                                                    <span>Remote</span>
+                                                    <span class="job-status urgent">Urgent</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Recent Activity -->
+                    <section class="sidebar-section">
+                        <h3>⚡ Recent Activity</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-avatar">JD</div>
+                                <div class="activity-info">
+                                    <p><strong>John Doe</strong> applied for Senior Developer</p>
+                                    <span>2 hours ago</span>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-avatar">MS</div>
+                                <div class="activity-info">
+                                    <p><strong>Mary Smith</strong> joined Design team</p>
+                                    <span>4 hours ago</span>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-avatar">RJ</div>
+                                <div class="activity-info">
+                                    <p><strong>Robert Johnson</strong> completed interview</p>
+                                    <span>1 day ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Quick Actions -->
+                    <section class="sidebar-section">
+                        <h3>⚡ Quick Actions</h3>
+                        <div class="quick-actions">
+                            <button class="quick-btn">📝 Post Job</button>
+                            <button class="quick-btn">👥 Add Employee</button>
+                            <button class="quick-btn">📊 Generate Report</button>
+                            <button class="quick-btn">⚙️ Settings</button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Creation Modal -->
+    <div id="jobCreationModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💼 Create New Job Application</h3>
+                <button class="modal-close" id="closeJobModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="jobForm" class="job-form">
+                    <!-- Basic Information -->
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">💼 Job Title</label>
+                            <input 
+                                type="text" 
+                                id="jobTitle" 
+                                name="jobTitle" 
+                                class="form-input" 
+                                placeholder="e.g. Senior Full-Stack Developer"
+                                required
+                            >
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">🏢 Department</label>
+                            <select id="department" name="department" class="form-select" required>
+                                <option value="">Select Department</option>
+                                <option value="engineering">Engineering</option>
+                                <option value="product">Product</option>
+                                <option value="design">Design</option>
+                                <option value="marketing">Marketing</option>
+                                <option value="sales">Sales</option>
+                                <option value="hr">Human Resources</option>
+                                <option value="finance">Finance</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">📍 Location</label>
+                            <select id="location" name="location" class="form-select" required>
+                                <option value="">Select Location</option>
+                                <option value="remote">Remote</option>
+                                <option value="paris">Paris, France</option>
+                                <option value="london">London, UK</option>
+                                <option value="newyork">New York, USA</option>
+                                <option value="hybrid">Hybrid</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">⏰ Contract Type</label>
+                            <select id="contractType" name="contractType" class="form-select" required>
+                                <option value="">Select Type</option>
+                                <option value="fulltime">Full-time</option>
+                                <option value="parttime">Part-time</option>
+                                <option value="contract">Contract</option>
+                                <option value="internship">Internship</option>
+                                <option value="freelance">Freelance</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">🎓 Experience Level</label>
+                            <select id="experience" name="experience" class="form-select" required>
+                                <option value="">Select Experience</option>
+                                <option value="entry">Entry Level (0-2 years)</option>
+                                <option value="mid">Mid Level (3-5 years)</option>
+                                <option value="senior">Senior Level (6-8 years)</option>
+                                <option value="lead">Lead/Principal (9+ years)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">💰 Salary Range ($/year)</label>
+                            <input 
+                                type="text" 
+                                id="salary" 
+                                name="salary" 
+                                class="form-input" 
+                                placeholder="e.g. 80,000-120,000"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Job Description -->
+                    <div class="form-group full-width">
+                        <label class="form-label">📋 Job Description</label>
+                        <textarea 
+                            id="jobDescription" 
+                            name="jobDescription" 
+                            class="form-textarea" 
+                            placeholder="Describe the role, responsibilities, and key objectives..."
+                            required
+                        ></textarea>
+                    </div>
+
+                    <!-- Skills Section -->
+                    <div class="skills-section">
+                        <div class="skills-header">
+                            <h4 class="skills-title">🛠️ Required Skills</h4>
+                            <button type="button" class="add-skill-btn" id="addSkillBtn">
+                                ➕ Add Skill
+                            </button>
+                        </div>
+                        
+                        <div class="skills-input-group" id="skillsInputGroup">
+                            <input 
+                                type="text" 
+                                id="skillInput" 
+                                class="form-input" 
+                                placeholder="e.g. JavaScript, React, Node.js..."
+                            >
+                            <select id="skillLevel" class="form-select">
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="advanced" selected>Advanced</option>
+                                <option value="expert">Expert</option>
+                            </select>
+                            <button type="button" class="add-skill-btn" id="confirmSkillBtn">✓</button>
+                        </div>
+                        
+                        <div class="skills-list" id="skillsList">
+                            <!-- Skills will be added here dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Benefits Section -->
+                    <div class="benefits-section">
+                        <h4 class="skills-title">🎁 Benefits & Perks</h4>
+                        <div class="benefits-grid">
+                            <div class="benefit-item" data-benefit="remote">
+                                <div class="benefit-checkbox"></div>
+                                <span class="benefit-label">🏠 Remote Work</span>
+                            </div>
+                            <div class="benefit-item" data-benefit="health">
+                                <div class="benefit-checkbox"></div>
+                                <span class="benefit-label">🏥 Health Insurance</span>
+                            </div>
+                            <div class="benefit-item" data-benefit="dental">
+                                <div class="benefit-checkbox"></div>
+                                <span class="benefit-label">🦷 Dental Coverage</span>
+                            </div>
+                            <div class="benefit-item" data-benefit="vision">
+                                <div class="benefit-checkbox"></div>
+                                <span class="benefit-label">👓 Vision Coverage</span>
+                            </div>
+                            <div class="benefit-item" data-benefit="401k">
+                                <div class="benefit-checkbox"></div>
+                                <span class="benefit-label">💰 401(k) Match</span>
+                            </div>
+                            <div class="benefit-item" data-benefit="pto">
+                                <div class="benefit-checkbox"></div>
+                                <span class="benefit-label">🏖️ Paid Time Off</span>
+                            </div>
+                            <div class="benefit-item" data-benefit="training">
+                                <div class="benefit-checkbox"></div>
+                                <span class="benefit-label">📚 Training Budget</span>
+                            </div>
+                            <div class="benefit-item" data-benefit="bonus">
+                                <div class="benefit-checkbox"></div>
+                                <span class="benefit-label">💎 Performance Bonus</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Requirements -->
+                    <div class="form-group full-width">
+                        <label class="form-label">📝 Additional Requirements</label>
+                        <textarea 
+                            id="additionalRequirements" 
+                            name="additionalRequirements" 
+                            class="form-textarea" 
+                            placeholder="Education requirements, certifications, languages, etc..."
+                        ></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelJobModal">Cancel</button>
+                <button class="btn-primary" id="submitJobModal">
+                    <span id="submitJobText">🚀 Create Job Posting</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let selectedSkills = [];
+        let selectedBenefits = [];
+
+        // Modal elements
+        const jobModal = document.getElementById('jobCreationModal');
+        const newAppBtn = document.getElementById('newApplicationBtn');
+        const closeModalBtn = document.getElementById('closeJobModal');
+        const cancelModalBtn = document.getElementById('cancelJobModal');
+        const submitModalBtn = document.getElementById('submitJobModal');
+
+        // Skills elements
+        const addSkillBtn = document.getElementById('addSkillBtn');
+        const skillsInputGroup = document.getElementById('skillsInputGroup');
+        const confirmSkillBtn = document.getElementById('confirmSkillBtn');
+        const skillInput = document.getElementById('skillInput');
+        const skillLevel = document.getElementById('skillLevel');
+        const skillsList = document.getElementById('skillsList');
+
+        // Modal functions
+        function openJobModal() {
+            jobModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeJobModal() {
+            jobModal.classList.remove('show');
+            document.body.style.overflow = 'auto';
+            setTimeout(() => {
+                resetJobForm();
+            }, 300);
+        }
+
+        function resetJobForm() {
+            document.getElementById('jobForm').reset();
+            selectedSkills = [];
+            selectedBenefits = [];
+            updateSkillsDisplay();
+            resetBenefits();
+            skillsInputGroup.classList.remove('show');
+        }
+
+        function resetBenefits() {
+            const benefitItems = document.querySelectorAll('.benefit-item');
+            benefitItems.forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('.benefit-checkbox').innerHTML = '';
+            });
+        }
+
+        // Skills management
+        function toggleSkillsInput() {
+            skillsInputGroup.classList.toggle('show');
+            if (skillsInputGroup.classList.contains('show')) {
+                skillInput.focus();
+            }
+        }
+
+        function addSkill() {
+            const skill = skillInput.value.trim();
+            const level = skillLevel.value;
+            
+            if (!skill) {
+                skillInput.focus();
+                return;
+            }
+
+            // Check if skill already exists
+            if (selectedSkills.some(s => s.name.toLowerCase() === skill.toLowerCase())) {
+                alert('This skill is already added');
+                skillInput.focus();
+                return;
+            }
+
+            // Add skill to array
+            selectedSkills.push({ name: skill, level: level });
+            
+            // Update UI
+            updateSkillsDisplay();
+            
+            // Clear input and hide
+            skillInput.value = '';
+            skillsInputGroup.classList.remove('show');
+        }
+
+        function updateSkillsDisplay() {
+            skillsList.innerHTML = selectedSkills.map(skill => `
+                <div class="skill-tag">
+                    <span>${skill.name}</span>
+                    <span class="skill-level">${skill.level}</span>
+                    <button type="button" class="remove-skill" onclick="removeSkill('${skill.name}')">×</button>
+                </div>
+            `).join('');
+        }
+
+        function removeSkill(skillName) {
+            selectedSkills = selectedSkills.filter(s => s.name !== skillName);
+            updateSkillsDisplay();
+        }
+
+        // Benefits management
+        function initializeBenefits() {
+            const benefitItems = document.querySelectorAll('.benefit-item');
+            benefitItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const benefit = this.dataset.benefit;
+                    const isSelected = this.classList.contains('selected');
+                    
+                    if (isSelected) {
+                        this.classList.remove('selected');
+                        this.querySelector('.benefit-checkbox').innerHTML = '';
+                        selectedBenefits = selectedBenefits.filter(b => b !== benefit);
+                    } else {
+                        this.classList.add('selected');
+                        this.querySelector('.benefit-checkbox').innerHTML = '✓';
+                        selectedBenefits.push(benefit);
+                    }
+                });
+            });
+        }
+
+        // Form submission
+        function submitJobForm() {
+            const form = document.getElementById('jobForm');
+            
+            // Validate required fields
+            const requiredFields = ['jobTitle', 'department', 'location', 'contractType', 'experience', 'jobDescription'];
+            let isValid = true;
+            
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    field.style.borderColor = '#ff4757';
+                    isValid = false;
+                } else {
+                    field.style.borderColor = 'var(--border-color)';
+                }
+            });
+            
+            if (!isValid) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            // Show loading state
+            const submitText = document.getElementById('submitJobText');
+            submitModalBtn.disabled = true;
+            submitText.innerHTML = '<span class="loading-spinner"></span> Creating...';
+            
+            // Simulate form submission
+            setTimeout(() => {
+                // Collect form data
+                const formData = {
+                    title: document.getElementById('jobTitle').value,
+                    department: document.getElementById('department').value,
+                    location: document.getElementById('location').value,
+                    contractType: document.getElementById('contractType').value,
+                    experience: document.getElementById('experience').value,
+                    salary: document.getElementById('salary').value,
+                    description: document.getElementById('jobDescription').value,
+                    additionalRequirements: document.getElementById('additionalRequirements').value,
+                    skills: selectedSkills,
+                    benefits: selectedBenefits
+                };
+                
+                console.log('Job posting data:', formData);
+                
+                // Show success message
+                alert('Job posting created successfully!');
+                
+                // Reset and close modal
+                submitModalBtn.disabled = false;
+                submitText.innerHTML = '🚀 Create Job Posting';
+                closeJobModal();
+                
+            }, 2000);
+        }
+
+        // Department dropdown functionality
+        function initializeDepartmentDropdowns() {
+            const departmentDropdowns = document.querySelectorAll('.department-dropdown');
+            departmentDropdowns.forEach(dropdown => {
+                const header = dropdown.querySelector('.department-header');
+                const content = dropdown.querySelector('.department-content');
+                
+                header.addEventListener('click', function() {
+                    const isExpanded = dropdown.classList.contains('expanded');
+                    
+                    // Close all other dropdowns
+                    departmentDropdowns.forEach(dd => {
+                        dd.classList.remove('expanded');
+                        dd.querySelector('.department-content').classList.remove('expanded');
+                    });
+                    
+                    // Toggle current dropdown
+                    if (!isExpanded) {
+                        dropdown.classList.add('expanded');
+                        content.classList.add('expanded');
+                    }
+                });
+            });
+        }
+
+        // Tab functionality
+        function initializeTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const department = this.closest('.department-dropdown').dataset.department;
+                    const tab = this.dataset.tab;
+                    
+                    // Remove active class from all tabs in this department
+                    const departmentTabs = this.closest('.department-dropdown').querySelectorAll('.tab-btn');
+                    const departmentContents = this.closest('.department-dropdown').querySelectorAll('.tab-content');
+                    
+                    departmentTabs.forEach(t => t.classList.remove('active'));
+                    departmentContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+                    
+                    // Show corresponding content
+                    const targetContent = document.getElementById(`${tab}-${department}`);
+                    if (targetContent) {
+                        targetContent.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // Quick actions
+        function initializeQuickActions() {
+            const quickBtns = document.querySelectorAll('.quick-btn');
+            quickBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const action = this.textContent.trim();
+                    if (action.includes('Post Job')) {
+                        openJobModal();
+                    } else {
+                        alert(`${action} functionality would be implemented here.`);
+                    }
+                });
+            });
+        }
+
+        // Event listeners
+        newAppBtn.addEventListener('click', openJobModal);
+        closeModalBtn.addEventListener('click', closeJobModal);
+        cancelModalBtn.addEventListener('click', closeJobModal);
+        submitModalBtn.addEventListener('click', submitJobForm);
+
+        // Skills event listeners
+        addSkillBtn.addEventListener('click', toggleSkillsInput);
+        confirmSkillBtn.addEventListener('click', addSkill);
+        skillInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addSkill();
+            }
+        });
+
+        // Close modal when clicking outside
+        jobModal.addEventListener('click', (e) => {
+            if (e.target === jobModal) {
+                closeJobModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && jobModal.classList.contains('show')) {
+                closeJobModal();
+            }
+        });
+
+        // Filter select
+        const filterSelect = document.querySelector('.filter-select');
+        if (filterSelect) {
+            filterSelect.addEventListener('change', function() {
+                console.log(`Filter changed to: ${this.value}`);
+                // Analytics would be updated based on selection
+            });
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDepartmentDropdowns();
+            initializeTabs();
+            initializeQuickActions();
+            initializeBenefits();
+            
+            // Add hover effects to cards
+            const cards = document.querySelectorAll('.application-card, .stat-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+
+        // Make removeSkill function global for onclick handlers
+        window.removeSkill = removeSkill;
+    </script>
+</body>
+</html>

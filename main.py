@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 import extract_information_cv.text_extractor as text_extractor
 import extract_information_cv.textcleaner as textcleaner
-import extract_information_cv.data_generator as data_generator
+import cv_analyzer.data_generator as data_generator
 from cv_analyzer.information_analyzer import compute_similarity
 from cv_analyzer.description_generator import generate_job_description
 from insert_to_db import insert_candidate_data
@@ -98,37 +98,17 @@ def home(request: Request):
 def analyze_page(request: Request):
     return templates.TemplateResponse("analyze.html", {"request": request})
 
-# Route de test pour vérifier les fichiers statiques
-@app.get("/test-css")
-def test_css():
-    css_path = os.path.join(static_dir, "style.css")
-    if os.path.exists(css_path):
-        with open(css_path, 'r', encoding='utf-8') as f:
-            content = f.read()[:500]  # Premiers 500 caractères
-        return {
-            "status": "CSS file found",
-            "path": css_path,
-            "size": os.path.getsize(css_path),
-            "preview": content
-        }
-    else:
-        return {
-            "status": "CSS file NOT found",
-            "path": css_path,
-            "static_dir": static_dir,
-            "files_in_static": os.listdir(static_dir) if os.path.exists(static_dir) else []
-        }
-
 @app.post("/scan", response_class=HTMLResponse)
 async def scan_file(
     request: Request,
     filetoscan: UploadFile = File(...),
-    job_description: str = Form(...)
+    selectedProfiles: str = Form(...)
 ):
     # Créer le dossier uploads s'il n'existe pas
     os.makedirs("uploads", exist_ok=True)
     
     file_location = f"uploads/{filetoscan.filename}"
+    print(selectedProfiles)
 
     # Save file to disk temporarily
     with open(file_location, "wb") as f:
@@ -211,7 +191,6 @@ async def scan_file(
         "summary": summary,
         "score": score,
         "user_info": data_json,
-        "job_description": job_description,
         "skills_titles": skills_titles_str,
         "candidate_id": candidate_id
     })
@@ -468,3 +447,10 @@ def parse_bullet_points(raw_text):
         print(f"Error parsing bullet points: {e}")
         return ["Erreur lors de l'analyse des points"]
 
+@app.get("/login", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("dashboard-admin.html", {"request": request})
