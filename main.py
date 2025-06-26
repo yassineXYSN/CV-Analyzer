@@ -92,11 +92,11 @@ def parse_skills(skills_data):
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("client-dep/index.html", {"request": request})
 
 @app.get("/analyze", response_class=HTMLResponse)
 def analyze_page(request: Request):
-    return templates.TemplateResponse("analyze.html", {"request": request})
+    return templates.TemplateResponse("client-dep/analyze.html", {"request": request})
 
 @app.post("/scan", response_class=HTMLResponse)
 async def scan_file(
@@ -183,7 +183,7 @@ async def scan_file(
     candidate_id = insert_candidate_data(data_json, summary)
 
     # Ensuite on affiche la page avec les résultats
-    return templates.TemplateResponse("result.html", {
+    return templates.TemplateResponse("client-dep/result.html", {
         "request": request,
         "filename": filetoscan.filename,
         "pdf_text": pdf_text,
@@ -203,7 +203,7 @@ def profile_detail(request: Request, candidate_id: int):
         profile = db.query(models.ProfileCandidat).filter(models.ProfileCandidat.id == candidate_id).first()
         if not profile:
             print(f"Profile not found for ID: {candidate_id}")
-            return templates.TemplateResponse("profile_detail.html", {
+            return templates.TemplateResponse("client-dep/profile_detail.html", {
                 "request": request,
                 "profile": None,
                 "contact": None,
@@ -285,7 +285,7 @@ def profile_detail(request: Request, candidate_id: int):
         print(f"Parsed skills: {parsed_skills}")
         print(f"Parsed education: {parsed_education}")
 
-        return templates.TemplateResponse("profile_detail.html", {
+        return templates.TemplateResponse("client-dep/profile_detail.html", {
             "request": request,
             "profile": profile_data,
             "contact": contact,
@@ -296,7 +296,7 @@ def profile_detail(request: Request, candidate_id: int):
         print(f"Erreur dans profile_detail: {e}")
         import traceback
         traceback.print_exc()
-        return templates.TemplateResponse("profile_detail.html", {
+        return templates.TemplateResponse("client-dep/profile_detail.html", {
             "request": request,
             "profile": None,
             "contact": None,
@@ -449,8 +449,17 @@ def parse_bullet_points(raw_text):
 
 @app.get("/login", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("client-dep/auth/client-login.html", {"request": request})
 
 @app.get("/dashboard", response_class=HTMLResponse)
-def home(request: Request):
-    return templates.TemplateResponse("dashboard-admin.html", {"request": request})
+def home1(request: Request):
+    return templates.TemplateResponse("HR-dep/dashboard-admin.html", {"request": request})
+
+@app.get("/signup", response_class=HTMLResponse)
+def home2(request: Request):
+    return templates.TemplateResponse("client-dep/auth/client-signup.html", {"request": request})
+
+
+@app.get("/hr-login", response_class=HTMLResponse)
+def home3(request: Request):
+    return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
