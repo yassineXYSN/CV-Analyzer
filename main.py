@@ -453,7 +453,7 @@ def home(request: Request):
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def home1(request: Request):
-    return templates.TemplateResponse("HR-dep/dashboard-admin.html", {"request": request})
+    return templates.TemplateResponse("HR-dep/hr-dashboard.html", {"request": request})
 
 @app.get("/signup", response_class=HTMLResponse)
 def home2(request: Request):
@@ -463,3 +463,11 @@ def home2(request: Request):
 @app.get("/hr-login", response_class=HTMLResponse)
 def home3(request: Request):
     return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
+
+@app.get("/company-profile", response_class=HTMLResponse)
+def home4(request: Request):
+    return templates.TemplateResponse("HR-dep/company-profile.html", {"request": request})
+
+@app.get("/company-setup", response_class=HTMLResponse)
+def home5(request: Request):
+    return templates.TemplateResponse("HR-dep/company-setup.html", {"request": request})
