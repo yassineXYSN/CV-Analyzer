@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from database import Base
 
+# Vos modèles existants (Contact, AnalyseCandidat, ProfileCandidat)
 class Contact(Base):
     __tablename__ = "contact"
     id = Column(Integer, primary_key=True, index=True)
@@ -30,3 +32,154 @@ class ProfileCandidat(Base):
 
     contact = relationship("Contact")
     analyse = relationship("AnalyseCandidat")
+
+# NOUVEAUX MODÈLES HR
+class HRAdmin(Base):
+    __tablename__ = "hr_admins"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    role = Column(Enum('super_admin', 'hr_admin', 'hr_manager'), default='hr_admin')
+    is_active = Column(Boolean, default=True)
+    last_login = Column(DateTime)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class Company(Base):
+    __tablename__ = "companies"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    company_name = Column(String(255), nullable=False)
+    industry = Column(String(100))
+    company_size = Column(Enum('1-10', '11-50', '51-200', '201-1000', '1000+'))
+    founded_year = Column(Integer)
+    description = Column(Text)
+    logo_url = Column(String(500))
+    
+    # Coordonnées
+    address = Column(Text)
+    phone = Column(String(20))
+    email = Column(String(255))
+    website = Column(String(255))
+    
+    # Réseaux sociaux
+    linkedin_url = Column(String(255))
+    twitter_url = Column(String(255))
+    facebook_url = Column(String(255))
+    
+    # Métadonnées
+    setup_completed = Column(Boolean, default=False)
+    created_by = Column(Integer, ForeignKey("hr_admins.id"))
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class Department(Base):
+    __tablename__ = "departments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    manager_name = Column(String(255))
+    color = Column(String(7), default='#e74c3c')
+    budget = Column(DECIMAL(15,2))
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class Employee(Base):
+    __tablename__ = "employees"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    department_id = Column(Integer, ForeignKey("departments.id"))
+    employee_id = Column(String(50))
+    
+    # Informations personnelles
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
+    phone = Column(String(20))
+    address = Column(Text)
+    date_of_birth = Column(Date)
+    
+    # Informations professionnelles
+    position = Column(String(100), nullable=False)
+    hire_date = Column(Date)
+    salary = Column(DECIMAL(10,2))
+    employment_type = Column(Enum('CDI', 'CDD', 'Stage', 'Freelance', 'Consultant'), default='CDI')
+    status = Column(Enum('active', 'inactive', 'terminated', 'on_leave'), default='active')
+    
+    # Compétences et performance
+    skills = Column(JSON)
+    performance_rating = Column(DECIMAL(3,2))
+    
+    # Métadonnées
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class Job(Base):
+    __tablename__ = "jobs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
+    
+    # Informations du poste
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    requirements = Column(Text)
+    responsibilities = Column(Text)
+    
+    # Détails contractuels
+    employment_type = Column(Enum('CDI', 'CDD', 'Stage', 'Freelance'), nullable=False)
+    salary_min = Column(DECIMAL(10,2))
+    salary_max = Column(DECIMAL(10,2))
+    currency = Column(String(3), default='EUR')
+    
+    # Gestion du poste
+    priority = Column(Enum('low', 'normal', 'urgent'), default='normal')
+    status = Column(Enum('draft', 'active', 'paused', 'closed', 'filled'), default='draft')
+    assigned_employee_id = Column(Integer, ForeignKey("employees.id"))
+    
+    # Dates importantes
+    deadline = Column(Date)
+    start_date = Column(Date)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Statistiques
+    views_count = Column(Integer, default=0)
+    applications_count = Column(Integer, default=0)
+
+class Application(Base):
+    __tablename__ = "applications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    candidate_profile_id = Column(Integer, ForeignKey("profile_candidat.id"), nullable=False)
+    
+    # Informations de candidature
+    application_date = Column(DateTime, default=func.now())
+    status = Column(Enum('pending', 'reviewed', 'interview_scheduled', 'interview_completed', 'accepted', 'rejected', 'withdrawn'), default='pending')
+    
+    # Évaluation
+    hr_rating = Column(DECIMAL(3,2))
+    hr_notes = Column(Text)
+    interview_date = Column(DateTime)
+    interview_notes = Column(Text)
+    
+    # Suivi
+    reviewed_by = Column(Integer, ForeignKey("hr_admins.id"))
+    reviewed_at = Column(DateTime)
+    decision_date = Column(DateTime)
+    decision_reason = Column(Text)
+    
+    # Métadonnées
+    source = Column(String(100))
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+

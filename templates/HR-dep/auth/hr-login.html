@@ -88,12 +88,12 @@
             <!-- Success/Error Messages -->
             <div class="message success-message" style="display: none;">
                 <i class="fas fa-check-circle"></i>
-                Connexion réussie ! Redirection en cours...
+                <span class="message-text">Connexion réussie ! Redirection en cours...</span>
             </div>
 
             <div class="message error-message" style="display: none;">
                 <i class="fas fa-exclamation-triangle"></i>
-                Identifiants incorrects. Veuillez réessayer.
+                <span class="message-text">Identifiants incorrects. Veuillez réessayer.</span>
             </div>
 
             <!-- Login Form -->
@@ -213,8 +213,8 @@
             }
         }
 
-        // Form submission
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        // Form submission with real API integration
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const submitBtn = document.querySelector('.submit-btn');
@@ -222,34 +222,71 @@
             const loadingSpinner = document.querySelector('.loading-spinner');
             const errorMessage = document.querySelector('.error-message');
             const successMessage = document.querySelector('.success-message');
+            const errorText = document.querySelector('.error-message .message-text');
+            const successText = document.querySelector('.success-message .message-text');
+            
+            // Get form data
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            
+            // Validation
+            if (!email || !password) {
+                showError('Veuillez remplir tous les champs');
+                return;
+            }
             
             // Hide messages
             errorMessage.style.display = 'none';
             successMessage.style.display = 'none';
             
-            // Show loading
+            // Show loading state
             btnContent.style.display = 'none';
             loadingSpinner.style.display = 'flex';
             submitBtn.disabled = true;
             
-            // Simulate API call
-            setTimeout(() => {
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
+            try {
+                // Call the API
+                const response = await fetch('/api/hr-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
                 
-                // Demo credentials
-                if (email === 'admin@demo.com' && password === 'admin123') {
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Success
+                    successText.textContent = result.message || 'Connexion réussie ! Redirection en cours...';
                     successMessage.style.display = 'flex';
+                    
+                    // Redirect after delay
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 2000);
+                        window.location.href = result.redirect_url || '/dashboard';
+                    }, 1500);
                 } else {
-                    errorMessage.style.display = 'flex';
-                    btnContent.style.display = 'flex';
-                    loadingSpinner.style.display = 'none';
-                    submitBtn.disabled = false;
+                    // Error from API
+                    showError(result.message || 'Erreur de connexion');
                 }
-            }, 1500);
+                
+            } catch (error) {
+                console.error('Erreur de connexion:', error);
+                showError('Erreur de connexion au serveur. Veuillez réessayer.');
+            }
+            
+            function showError(message) {
+                errorText.textContent = message;
+                errorMessage.style.display = 'flex';
+                
+                // Reset button state
+                btnContent.style.display = 'flex';
+                loadingSpinner.style.display = 'none';
+                submitBtn.disabled = false;
+            }
         });
 
         // Input focus effects
@@ -260,6 +297,36 @@
             
             input.addEventListener('blur', function() {
                 this.parentElement.classList.remove('focused');
+            });
+            
+            // Real-time validation
+            input.addEventListener('input', function() {
+                if (this.validity.valid) {
+                    this.parentElement.classList.remove('error');
+                } else {
+                    this.parentElement.classList.add('error');
+                }
+            });
+        });
+
+        // Auto-focus on first input
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('email').focus();
+        });
+
+        // Handle Enter key in password field
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Social login handlers (placeholder)
+        document.querySelectorAll('.social-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const provider = this.classList.contains('google-btn') ? 'Google' : 
+                               this.classList.contains('microsoft-btn') ? 'Microsoft' : 'LinkedIn';
+                alert(`Connexion ${provider} - Fonctionnalité à venir`);
             });
         });
     </script>

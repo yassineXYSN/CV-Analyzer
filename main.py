@@ -1,14 +1,16 @@
 import json
-from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import extract_information_cv.text_extractor as text_extractor
 import extract_information_cv.textcleaner as textcleaner
 import cv_analyzer.data_generator as data_generator
 from cv_analyzer.information_analyzer import compute_similarity
 from cv_analyzer.description_generator import generate_job_description
 from insert_to_db import insert_candidate_data
+from auth_utils import verify_password, hash_password  # NOUVEAU
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
@@ -41,6 +43,16 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 # Templates
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=templates_dir)
+
+# NOUVEAU: Modèles pour l'authentification
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    success: bool
+    message: str
+    redirect_url: str = None
 
 def parse_skills(skills_data):
     """Parse skills list to extract name and percentage"""
@@ -459,7 +471,6 @@ def home1(request: Request):
 def home2(request: Request):
     return templates.TemplateResponse("client-dep/auth/client-signup.html", {"request": request})
 
-
 @app.get("/hr-login", response_class=HTMLResponse)
 def home3(request: Request):
     return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
@@ -471,3 +482,76 @@ def home4(request: Request):
 @app.get("/company-setup", response_class=HTMLResponse)
 def home5(request: Request):
     return templates.TemplateResponse("HR-dep/company-setup.html", {"request": request})
+
+@app.get("/employee-profile", response_class=HTMLResponse)
+def employee_profile_page(request: Request):
+    return templates.TemplateResponse("HR-dep/employee-profile.html", {"request": request})
+
+@app.get("/job-details", response_class=HTMLResponse)
+def job_details_page(request: Request):
+    return templates.TemplateResponse("HR-dep/job-details.html", {"request": request})
+
+# NOUVEAU: API pour l'authentification HR
+@app.post("/api/hr-login")
+async def hr_login(login_data: LoginRequest):
+    """API pour la connexion HR"""
+    db = SessionLocal()
+    try:
+        # Chercher l'utilisateur par email
+        user = db.query(models.HRAdmin).filter(models.HRAdmin.email == login_data.email).first()
+        
+        if not user:
+            return LoginResponse(
+                success=False,
+                message="Utilisateur non trouvé"
+            )
+        
+        if not user.is_active:
+            return LoginResponse(
+                success=False,
+                message="Compte désactivé"
+            )
+        
+        # Vérifier le mot de passe
+        if not verify_password(login_data.password, user.password_hash):
+            return LoginResponse(
+                success=False,
+                message="Mot de passe incorrect"
+            )
+        
+        # Mettre à jour la dernière connexion
+        from datetime import datetime
+        user.last_login = datetime.now()
+        db.commit()
+        
+        # Vérifier si l'entreprise est configurée
+        company_access = db.query(models.AdminCompanyAccess).filter(
+            models.AdminCompanyAccess.admin_id == user.id
+        ).first()
+        
+        if company_access:
+            company = db.query(models.Company).filter(
+                models.Company.id == company_access.company_id
+            ).first()
+            
+            if company and not company.setup_completed:
+                redirect_url = "/company-setup"
+            else:
+                redirect_url = "/dashboard"
+        else:
+            redirect_url = "/company-setup"
+        
+        return LoginResponse(
+            success=True,
+            message="Connexion réussie",
+            redirect_url=redirect_url
+        )
+        
+    except Exception as e:
+        print(f"Erreur lors de la connexion: {e}")
+        return LoginResponse(
+            success=False,
+            message="Erreur interne du serveur"
+        )
+    finally:
+        db.close()

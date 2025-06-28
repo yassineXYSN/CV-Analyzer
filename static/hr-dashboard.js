@@ -3,7 +3,7 @@ let departments = []
 let jobs = []
 let employees = []
 let activityLog = []
-let applications = [] // Nouvelle variable pour les candidatures
+let applications = []
 
 // Nouvelles variables
 let expandedDept = null
@@ -14,7 +14,7 @@ let filteredDepartments = []
 document.addEventListener("DOMContentLoaded", () => {
   const setupCompleted = localStorage.getItem("setupCompleted")
   if (!setupCompleted) {
-    window.location.href = "/company-setup"
+    window.location.href = "company-setup.html"
     return
   }
 
@@ -256,9 +256,11 @@ function createEmployee() {
   const email = document.getElementById("employeeEmail").value.trim()
   const departmentId = Number.parseInt(document.getElementById("employeeDepartment").value)
   const position = document.getElementById("employeePosition").value.trim()
+  const phone = document.getElementById("employeePhone").value.trim()
+  const hireDate = document.getElementById("employeeHireDate").value
 
   if (!firstName || !lastName || !email || !departmentId || !position) {
-    showNotification("Veuillez remplir tous les champs", "error")
+    showNotification("Veuillez remplir tous les champs requis", "error")
     return
   }
 
@@ -269,6 +271,8 @@ function createEmployee() {
     email: email,
     departmentId: departmentId,
     position: position,
+    phone: phone,
+    hireDate: hireDate,
     createdAt: new Date(),
   }
 
@@ -289,6 +293,27 @@ function createEmployee() {
   showNotification(`Employé ${firstName} ${lastName} ajouté avec succès !`, "success")
 }
 
+// Fonctions de navigation vers les profils
+function openEmployeeProfile(employeeId) {
+  const employee = employees.find((e) => e.id === employeeId)
+  if (employee) {
+    // Sauvegarder les données de l'employé pour la page de profil
+    localStorage.setItem("selectedEmployee", JSON.stringify(employee))
+    // Ouvrir la page de profil dans un nouvel onglet
+    window.open("/employee-profile", "_blank")
+  }
+}
+
+function openJobDetails(jobId) {
+  const job = jobs.find((j) => j.id === jobId)
+  if (job) {
+    // Sauvegarder les données du job pour la page de détails
+    localStorage.setItem("selectedJob", JSON.stringify(job))
+    // Ouvrir la page de détails dans un nouvel onglet
+    window.open("/job-details", "_blank")
+  }
+}
+
 // Fonctions d'ajout rapide depuis les départements
 function quickAddEmployee(deptId) {
   setEmployeeDepartment(deptId)
@@ -302,7 +327,7 @@ function quickAddJob(deptId) {
 
 // Fonction pour ouvrir le profil d'entreprise
 function openCompanyProfile() {
-  window.open("/company-profile", "_blank")
+  window.open("company-profile.html", "_blank")
 }
 
 // Fonctions de gestion des candidatures
@@ -742,10 +767,12 @@ function renderDepartments() {
         </div>
         <div class="dept-quick-actions">
           <button class="quick-add-btn" onclick="quickAddEmployee(${dept.id})">
-            <i class="fas fa-user-plus"></i> Ajouter Employé
+            <i class="fas fa-user-plus"></i>
+            <span>Ajouter Employé</span>
           </button>
           <button class="quick-add-btn" onclick="quickAddJob(${dept.id})">
-            <i class="fas fa-briefcase"></i> Ajouter Poste
+            <i class="fas fa-briefcase"></i>
+            <span>Ajouter Poste</span>
           </button>
         </div>
       </div>
@@ -773,7 +800,7 @@ function renderWorkersTab(dept, deptEmployees) {
       ${deptEmployees
         .map(
           (employee) => `
-        <div class="worker-item">
+        <div class="worker-item" onclick="openEmployeeProfile(${employee.id})">
           <div class="worker-avatar">${employee.firstName[0]}${employee.lastName[0]}</div>
           <div class="worker-info">
             <div class="worker-name">${employee.firstName} ${employee.lastName}</div>
@@ -781,7 +808,7 @@ function renderWorkersTab(dept, deptEmployees) {
           </div>
           <div class="worker-status"></div>
           <div class="worker-actions">
-            <button class="worker-btn" onclick="deleteEmployee(${employee.id}, ${dept.id})" title="Supprimer">
+            <button class="worker-btn" onclick="event.stopPropagation(); deleteEmployee(${employee.id}, ${dept.id})" title="Supprimer">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -813,7 +840,7 @@ function renderJobsTab(dept, deptJobs) {
           const deptEmployees = employees.filter((e) => e.departmentId === dept.id)
 
           return `
-          <div class="job-item">
+          <div class="job-item" onclick="openJobDetails(${job.id})">
             <div class="job-header">
               <div class="job-title">${job.title}</div>
               <div class="job-priority ${job.priority}">${job.priority}</div>
@@ -829,7 +856,7 @@ function renderJobsTab(dept, deptJobs) {
                   : '<i class="fas fa-user-slash"></i> Non assigné'
               }
             </div>
-            <div class="job-actions">
+            <div class="job-actions" onclick="event.stopPropagation()">
               <select class="assign-select" onchange="assignEmployee(${job.id}, this.value)">
                 <option value="">Assigner à...</option>
                 ${deptEmployees
@@ -945,7 +972,7 @@ function logout() {
   if (confirm("Êtes-vous sûr de vouloir vous déconnecter ?")) {
     localStorage.removeItem("setupCompleted")
     localStorage.removeItem("companyProfile")
-    window.location.href = "/hr-login"
+    window.location.href = "hr-login.html"
   }
 }
 

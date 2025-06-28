@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détails du Poste - CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/job-details.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="job-header">
+        <div class="header-content">
+            <button class="back-btn" onclick="window.close()">
+                <i class="fas fa-arrow-left"></i> Retour au Dashboard
+            </button>
+            <h1><i class="fas fa-briefcase"></i> Détails du Poste</h1>
+            <div class="header-actions">
+                <button class="action-btn" onclick="editJob()">
+                    <i class="fas fa-edit"></i> Modifier
+                </button>
+                <button class="action-btn" onclick="shareJob()">
+                    <i class="fas fa-share"></i> Partager
+                </button>
+                <button class="action-btn danger" onclick="closeJob()">
+                    <i class="fas fa-times-circle"></i> Fermer le poste
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="job-container">
+        <!-- Job Overview -->
+        <section class="job-overview">
+            <div class="job-card">
+                <div class="job-icon">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <div class="job-info">
+                    <h2 id="jobTitle">Chargement...</h2>
+                    <p id="jobDepartment">Département</p>
+                    <div class="job-meta">
+                        <span id="jobType" class="job-badge">Type</span>
+                        <span id="jobPriority" class="job-badge priority">Priorité</span>
+                        <span id="jobStatus" class="job-badge status">Statut</span>
+                    </div>
+                </div>
+                <div class="job-salary">
+                    <div class="salary-amount" id="jobSalary">€ 0</div>
+                    <div class="salary-label">Salaire annuel</div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="job-stats">
+                <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-eye"></i></div>
+                    <div class="stat-info">
+                        <h3 id="jobViews">247</h3>
+                        <p>Vues</p>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-info">
+                        <h3 id="jobApplications">12</h3>
+                        <p>Candidatures</p>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-calendar"></i></div>
+                    <div class="stat-info">
+                        <h3 id="daysRemaining">15</h3>
+                        <p>Jours restants</p>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                    <div class="stat-info">
+                        <h3 id="conversionRate">4.9%</h3>
+                        <p>Taux conversion</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Grid -->
+        <div class="job-grid">
+            <!-- Job Description -->
+            <section class="job-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-info-circle"></i> Description du Poste</h3>
+                </div>
+                <div class="job-description" id="jobDescription">
+                    <p>Chargement de la description...</p>
+                </div>
+                <div class="job-details-grid">
+                    <div class="detail-item">
+                        <label>Type de contrat</label>
+                        <span id="contractType">CDI</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Date limite</label>
+                        <span id="jobDeadline">Non définie</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Date de création</label>
+                        <span id="jobCreated">Aujourd'hui</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Employé assigné</label>
+                        <span id="assignedEmployee">Non assigné</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Required Skills -->
+            <section class="job-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-cogs"></i> Compétences Requises</h3>
+                    <button class="add-skill-btn" onclick="addRequiredSkill()">
+                        <i class="fas fa-plus"></i> Ajouter
+                    </button>
+                </div>
+                <div class="skills-grid" id="requiredSkills">
+                    <div class="skill-tag">JavaScript</div>
+                    <div class="skill-tag">React</div>
+                    <div class="skill-tag">Node.js</div>
+                    <div class="skill-tag">MongoDB</div>
+                    <div class="skill-tag">Git</div>
+                    <div class="skill-tag">Agile</div>
+                </div>
+            </section>
+
+            <!-- Applications -->
+            <section class="job-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-file-alt"></i> Candidatures</h3>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" onclick="filterApplications('all')">Toutes</button>
+                        <button class="filter-btn" onclick="filterApplications('pending')">En attente</button>
+                        <button class="filter-btn" onclick="filterApplications('reviewed')">Examinées</button>
+                        <button class="filter-btn" onclick="filterApplications('accepted')">Acceptées</button>
+                    </div>
+                </div>
+                <div class="applications-list" id="applicationsList">
+                    <!-- Applications will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Activity Timeline -->
+            <section class="job-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-clock"></i> Historique</h3>
+                </div>
+                <div class="timeline" id="jobTimeline">
+                    <div class="timeline-item">
+                        <div class="timeline-icon"><i class="fas fa-plus"></i></div>
+                        <div class="timeline-content">
+                            <h4>Poste créé</h4>
+                            <p>Le poste a été publié et est maintenant visible</p>
+                            <span class="timeline-date">Aujourd'hui</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Performance Metrics -->
+            <section class="job-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-chart-bar"></i> Métriques</h3>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h4>Vues par jour</h4>
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="metric-chart">
+                            <div class="chart-bar" style="height: 60%"></div>
+                            <div class="chart-bar" style="height: 80%"></div>
+                            <div class="chart-bar" style="height: 45%"></div>
+                            <div class="chart-bar" style="height: 90%"></div>
+                            <div class="chart-bar" style="height: 70%"></div>
+                            <div class="chart-bar" style="height: 85%"></div>
+                            <div class="chart-bar" style="height: 95%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h4>Candidatures</h4>
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="metric-chart">
+                            <div class="chart-bar" style="height: 30%"></div>
+                            <div class="chart-bar" style="height: 50%"></div>
+                            <div class="chart-bar" style="height: 40%"></div>
+                            <div class="chart-bar" style="height: 70%"></div>
+                            <div class="chart-bar" style="height: 60%"></div>
+                            <div class="chart-bar" style="height: 80%"></div>
+                            <div class="chart-bar" style="height: 90%"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal Add Skill -->
+    <div id="skillModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-cogs"></i> Ajouter une Compétence</h3>
+                <button class="modal-close" onclick="closeSkillModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="skillForm">
+                    <div class="form-group">
+                        <label class="form-label">Compétence</label>
+                        <input type="text" id="skillName" class="form-input" placeholder="ex: JavaScript" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeSkillModal()">Annuler</button>
+                <button class="btn-primary" onclick="saveSkill()">
+                    <i class="fas fa-save"></i> Ajouter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/job-details.js"></script>
+</body>
+</html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Employé - CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/employee-profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="profile-header">
+        <div class="header-content">
+            <button class="back-btn" onclick="window.close()">
+                <i class="fas fa-arrow-left"></i> Retour au Dashboard
+            </button>
+            <h1><i class="fas fa-user"></i> Profil Employé</h1>
+            <div class="header-actions">
+                <button class="action-btn" onclick="editEmployee()">
+                    <i class="fas fa-edit"></i> Modifier
+                </button>
+                <button class="action-btn" onclick="exportProfile()">
+                    <i class="fas fa-download"></i> Exporter
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="profile-container">
+        <!-- Employee Overview -->
+        <section class="profile-overview">
+            <div class="employee-card">
+                <div class="employee-avatar" id="employeeAvatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="employee-info">
+                    <h2 id="employeeName">Chargement...</h2>
+                    <p id="employeePosition">Position</p>
+                    <div class="employee-meta">
+                        <span id="employeeDepartment">Département</span>
+                        <span id="employeeHireDate">Date d'embauche</span>
+                    </div>
+                </div>
+                <div class="employee-status">
+                    <div class="status-indicator active"></div>
+                    <span>Actif</span>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-calendar"></i></div>
+                    <div class="stat-info">
+                        <h3 id="yearsOfService">0</h3>
+                        <p>Années de service</p>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                    <div class="stat-info">
+                        <h3 id="completedProjects">0</h3>
+                        <p>Projets terminés</p>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-info">
+                        <h3 id="performanceRating">4.5</h3>
+                        <p>Note performance</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Grid -->
+        <div class="profile-grid">
+            <!-- Contact Information -->
+            <section class="profile-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-address-book"></i> Informations de Contact</h3>
+                </div>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <label>Email</label>
+                            <span id="employeeEmail">email@example.com</span>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <label>Téléphone</label>
+                            <span id="employeePhone">Non renseigné</span>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-building"></i>
+                        <div>
+                            <label>Bureau</label>
+                            <span>Siège social</span>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-id-badge"></i>
+                        <div>
+                            <label>ID Employé</label>
+                            <span id="employeeId">EMP001</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Performance Metrics -->
+            <section class="profile-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-chart-line"></i> Métriques de Performance</h3>
+                </div>
+                <div class="performance-metrics">
+                    <div class="metric-circle">
+                        <div class="circle-progress" data-percentage="85">
+                            <span>85%</span>
+                        </div>
+                        <label>Productivité</label>
+                    </div>
+                    <div class="metric-circle">
+                        <div class="circle-progress" data-percentage="92">
+                            <span>92%</span>
+                        </div>
+                        <label>Qualité</label>
+                    </div>
+                    <div class="metric-circle">
+                        <div class="circle-progress" data-percentage="78">
+                            <span>78%</span>
+                        </div>
+                        <label>Collaboration</label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Skills -->
+            <section class="profile-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-cogs"></i> Compétences</h3>
+                    <button class="add-skill-btn" onclick="addSkill()">
+                        <i class="fas fa-plus"></i> Ajouter
+                    </button>
+                </div>
+                <div class="skills-list" id="skillsList">
+                    <div class="skill-item">
+                        <span class="skill-name">JavaScript</span>
+                        <div class="skill-bar">
+                            <div class="skill-progress" style="width: 90%"></div>
+                        </div>
+                        <span class="skill-level">90%</span>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">React</span>
+                        <div class="skill-bar">
+                            <div class="skill-progress" style="width: 85%"></div>
+                        </div>
+                        <span class="skill-level">85%</span>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Node.js</span>
+                        <div class="skill-bar">
+                            <div class="skill-progress" style="width: 80%"></div>
+                        </div>
+                        <span class="skill-level">80%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Activity Timeline -->
+            <section class="profile-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-clock"></i> Activité Récente</h3>
+                </div>
+                <div class="activity-timeline" id="activityTimeline">
+                    <div class="timeline-item">
+                        <div class="timeline-icon"><i class="fas fa-briefcase"></i></div>
+                        <div class="timeline-content">
+                            <h4>Assigné au projet Alpha</h4>
+                            <p>Nouveau projet de développement web</p>
+                            <span class="timeline-date">Il y a 2 jours</span>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-icon"><i class="fas fa-star"></i></div>
+                        <div class="timeline-content">
+                            <h4>Évaluation de performance</h4>
+                            <p>Note: 4.5/5 - Excellent travail</p>
+                            <span class="timeline-date">Il y a 1 semaine</span>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-icon"><i class="fas fa-graduation-cap"></i></div>
+                        <div class="timeline-content">
+                            <h4>Formation terminée</h4>
+                            <p>Certification React Advanced</p>
+                            <span class="timeline-date">Il y a 2 semaines</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Documents -->
+            <section class="profile-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-file-alt"></i> Documents</h3>
+                    <button class="upload-btn" onclick="uploadDocument()">
+                        <i class="fas fa-upload"></i> Ajouter
+                    </button>
+                </div>
+                <div class="documents-list">
+                    <div class="document-item">
+                        <div class="doc-icon"><i class="fas fa-file-pdf"></i></div>
+                        <div class="doc-info">
+                            <h4>CV_John_Doe.pdf</h4>
+                            <p>Curriculum Vitae • 2.3 MB</p>
+                        </div>
+                        <div class="doc-actions">
+                            <button class="doc-btn" onclick="viewDocument('cv')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="doc-btn" onclick="downloadDocument('cv')">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="document-item">
+                        <div class="doc-icon"><i class="fas fa-file-contract"></i></div>
+                        <div class="doc-info">
+                            <h4>Contrat_Travail.pdf</h4>
+                            <p>Contrat de travail • 1.8 MB</p>
+                        </div>
+                        <div class="doc-actions">
+                            <button class="doc-btn" onclick="viewDocument('contract')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="doc-btn" onclick="downloadDocument('contract')">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="document-item">
+                        <div class="doc-icon"><i class="fas fa-certificate"></i></div>
+                        <div class="doc-info">
+                            <h4>Certification_React.pdf</h4>
+                            <p>Certificat • 1.2 MB</p>
+                        </div>
+                        <div class="doc-actions">
+                            <button class="doc-btn" onclick="viewDocument('cert')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="doc-btn" onclick="downloadDocument('cert')">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HR Notes -->
+            <section class="profile-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-sticky-note"></i> Notes RH</h3>
+                    <button class="add-note-btn" onclick="addNote()">
+                        <i class="fas fa-plus"></i> Ajouter Note
+                    </button>
+                </div>
+                <div class="notes-list" id="notesList">
+                    <div class="note-item">
+                        <div class="note-header">
+                            <span class="note-author">Sarah Johnson</span>
+                            <span class="note-date">15/03/2024</span>
+                        </div>
+                        <p class="note-content">Excellent travail sur le projet Alpha. Montre de bonnes capacités de leadership.</p>
+                    </div>
+                    <div class="note-item">
+                        <div class="note-header">
+                            <span class="note-author">Mike Wilson</span>
+                            <span class="note-date">10/03/2024</span>
+                        </div>
+                        <p class="note-content">Formation React terminée avec succès. Prêt pour des projets plus complexes.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal Add Note -->
+    <div id="noteModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-sticky-note"></i> Ajouter une Note</h3>
+                <button class="modal-close" onclick="closeNoteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="noteForm">
+                    <div class="form-group">
+                        <label class="form-label">Note</label>
+                        <textarea id="noteContent" class="form-textarea" placeholder="Saisissez votre note..." required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeNoteModal()">Annuler</button>
+                <button class="btn-primary" onclick="saveNote()">
+                    <i class="fas fa-save"></i> Sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/employee-profile.js"></script>
+</body>
+</html>
