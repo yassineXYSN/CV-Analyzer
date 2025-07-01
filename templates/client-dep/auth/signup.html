@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription Client - CV Analyzer Pro</title>
-    <link rel="stylesheet" href="/static/client-auth.css">
+    <link rel="stylesheet" href="/static/client-dep/css/auth.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -188,7 +188,7 @@
         <div class="logo-section">
             <div class="logo">
                 <i class="fas fa-brain"></i>
-                CV Analyzer Pro
+                <a href="/" style="text-decoration: none; color: inherit;">CV Analyzer Pro</a>
             </div>
             <div class="logo-subtitle">Rejoignez des milliers d'utilisateurs</div>
             <div class="logo-description">
@@ -215,124 +215,6 @@
         </div>
     </div>
 
-    <script>
-        // Password toggle functionality
-        function setupPasswordToggle(inputId, toggleId) {
-            const passwordInput = document.getElementById(inputId);
-            const passwordToggle = document.getElementById(toggleId);
-
-            passwordToggle.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                
-                const icon = passwordToggle.querySelector('i');
-                icon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
-            });
-        }
-
-        setupPasswordToggle('password', 'passwordToggle');
-        setupPasswordToggle('confirmPassword', 'confirmPasswordToggle');
-
-        // Password strength checker
-        const passwordInput = document.getElementById('password');
-        const strengthFill = document.getElementById('strengthFill');
-        const strengthText = document.getElementById('strengthText');
-
-        passwordInput.addEventListener('input', function() {
-            const password = this.value;
-            const strength = calculatePasswordStrength(password);
-            
-            strengthFill.style.width = strength.percentage + '%';
-            strengthFill.className = 'strength-fill ' + strength.class;
-            strengthText.textContent = strength.text;
-        });
-
-        function calculatePasswordStrength(password) {
-            let score = 0;
-            let feedback = [];
-
-            if (password.length >= 8) score += 25;
-            else feedback.push('8 caractères min');
-
-            if (/[a-z]/.test(password)) score += 25;
-            else feedback.push('minuscule');
-
-            if (/[A-Z]/.test(password)) score += 25;
-            else feedback.push('majuscule');
-
-            if (/[0-9]/.test(password)) score += 25;
-            else feedback.push('chiffre');
-
-            if (score < 50) {
-                return { percentage: score, class: 'weak', text: 'Faible - ' + feedback.join(', ') };
-            } else if (score < 75) {
-                return { percentage: score, class: 'medium', text: 'Moyen - ' + feedback.join(', ') };
-            } else if (score < 100) {
-                return { percentage: score, class: 'good', text: 'Bon - ' + feedback.join(', ') };
-            } else {
-                return { percentage: 100, class: 'strong', text: 'Excellent' };
-            }
-        }
-
-        // Form submission
-        const signupForm = document.getElementById('signupForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnContent = document.getElementById('btnContent');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const errorMessage = document.getElementById('errorMessage');
-        const errorText = document.getElementById('errorText');
-        const successMessage = document.getElementById('successMessage');
-
-        signupForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Hide previous messages
-            errorMessage.style.display = 'none';
-            successMessage.style.display = 'none';
-            
-            // Validation
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (password !== confirmPassword) {
-                errorText.textContent = 'Les mots de passe ne correspondent pas.';
-                errorMessage.style.display = 'flex';
-                return;
-            }
-
-            if (!document.getElementById('acceptTerms').checked) {
-                errorText.textContent = 'Vous devez accepter les conditions d\'utilisation.';
-                errorMessage.style.display = 'flex';
-                return;
-            }
-            
-            // Show loading state
-            btnContent.style.display = 'none';
-            loadingSpinner.style.display = 'flex';
-            submitBtn.disabled = true;
-
-            // Simulate signup process
-            setTimeout(() => {
-                successMessage.style.display = 'flex';
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 3000);
-            }, 2000);
-        });
-
-        // Input focus effects
-        const inputs = document.querySelectorAll('.form-input');
-        inputs.forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentElement.classList.add('focused');
-            });
-            
-            input.addEventListener('blur', function() {
-                if (!this.value) {
-                    this.parentElement.classList.remove('focused');
-                }
-            });
-        });
-    </script>
+    <script src="/static/client-dep/js/auth.js"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion Client - CV Analyzer Pro</title>
-    <link rel="stylesheet" href="/static/client-auth.css">
+    <link rel="stylesheet" href="/static/client-dep/css/auth.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -24,7 +24,7 @@
         <div class="logo-section">
             <div class="logo">
                 <i class="fas fa-brain"></i>
-                CV Analyzer Pro
+                <a href="/" style="text-decoration: none; color: inherit;">CV Analyzer Pro</a>
             </div>
             <div class="logo-subtitle">Analyse intelligente de CV propulsée par l'IA</div>
             <div class="logo-description">
@@ -176,87 +176,6 @@
         </div>
     </div>
 
-    <script>
-        // Password toggle functionality
-        const passwordInput = document.getElementById('password');
-        const passwordToggle = document.getElementById('passwordToggle');
-
-        passwordToggle.addEventListener('click', function() {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            
-            const icon = passwordToggle.querySelector('i');
-            icon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
-        });
-
-        // Form submission
-        const loginForm = document.getElementById('loginForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnContent = document.getElementById('btnContent');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const errorMessage = document.getElementById('errorMessage');
-        const successMessage = document.getElementById('successMessage');
-
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Hide previous messages
-            errorMessage.style.display = 'none';
-            successMessage.style.display = 'none';
-            
-            // Show loading state
-            btnContent.style.display = 'none';
-            loadingSpinner.style.display = 'flex';
-            submitBtn.disabled = true;
-
-            // Get form data
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            // Simulate login process
-            setTimeout(() => {
-                if (email === 'client@cvanalyzer.com' && password === 'client123') {
-                    // Success
-                    successMessage.style.display = 'flex';
-                    setTimeout(() => {
-                        window.location.href = '/dashboard'; // Replace with actual dashboard URL
-                    }, 2000);
-                } else {
-                    // Error
-                    errorMessage.style.display = 'flex';
-                    btnContent.style.display = 'flex';
-                    loadingSpinner.style.display = 'none';
-                    submitBtn.disabled = false;
-                }
-            }, 2000);
-        });
-
-        // Input focus effects
-        const inputs = document.querySelectorAll('.form-input');
-        inputs.forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentElement.classList.add('focused');
-            });
-            
-            input.addEventListener('blur', function() {
-                if (!this.value) {
-                    this.parentElement.classList.remove('focused');
-                }
-            });
-        });
-
-        // Social login handlers
-        document.querySelector('.google-btn').addEventListener('click', function() {
-            alert('Connexion Google - Fonctionnalité à implémenter');
-        });
-
-        document.querySelector('.microsoft-btn').addEventListener('click', function() {
-            alert('Connexion Microsoft - Fonctionnalité à implémenter');
-        });
-
-        document.querySelector('.linkedin-btn').addEventListener('click', function() {
-            alert('Connexion LinkedIn - Fonctionnalité à implémenter');
-        });
-    </script>
+    <script src="/static/client-dep/js/auth.js"></script>
 </body>
 </html>

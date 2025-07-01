@@ -1,8 +1,9 @@
 import json
-from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi import FastAPI, Request, UploadFile, File, Form, Query, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
+from models import get_jobs_with_pagination, get_job_by_id
 import extract_information_cv.text_extractor as text_extractor
 import extract_information_cv.textcleaner as textcleaner
 import cv_analyzer.data_generator as data_generator
@@ -13,7 +14,12 @@ from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 from database import engine, SessionLocal
+from typing import Optional
+from models import Job, Company, Department
 import models
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import desc, or_, and_
+import math
 import re
 
 load_dotenv()
@@ -449,7 +455,7 @@ def parse_bullet_points(raw_text):
 
 @app.get("/login", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("client-dep/auth/client-login.html", {"request": request})
+    return templates.TemplateResponse("client-dep/auth/login.html", {"request": request})
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def home1(request: Request):
@@ -457,9 +463,216 @@ def home1(request: Request):
 
 @app.get("/signup", response_class=HTMLResponse)
 def home2(request: Request):
-    return templates.TemplateResponse("client-dep/auth/client-signup.html", {"request": request})
+    return templates.TemplateResponse("client-dep/auth/signup.html", {"request": request})
 
 
 @app.get("/hr-login", response_class=HTMLResponse)
 def home3(request: Request):
     return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Pagination helper class
+class Pagination:
+    def __init__(self, page: int, per_page: int, total: int):
+        self.current_page = page
+        self.per_page = per_page
+        self.total_jobs = total
+        self.total_pages = math.ceil(total / per_page) if per_page > 0 else 0
+        self.has_prev = page > 1
+        self.has_next = page < self.total_pages
+        self.prev_page = page - 1 if self.has_prev else None
+        self.next_page = page + 1 if self.has_next else None
+
+# Search parameters helper class
+class SearchParams:
+    def __init__(self, search: str = "", location: str = "", category: str = "", 
+                 employment_type: str = "", salary_min: Optional[int] = None, 
+                 salary_max: Optional[int] = None):
+        self.search = search
+        self.location = location
+        self.category = category
+        self.employment_type = employment_type
+        self.salary_min = salary_min
+        self.salary_max = salary_max
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("client-dep/index.html", {"request": request})
+
+@app.get("/analyze", response_class=HTMLResponse)
+async def analyze(request: Request):
+    return templates.TemplateResponse("client-dep/analyze.html", {"request": request})
+
+@app.get("/jobs", response_class=HTMLResponse)
+async def jobs_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    search: str = Query(""),
+    location: str = Query(""),
+    category: str = Query(""),
+    employment_type: str = Query(""),
+    salary_min: Optional[int] = Query(None),
+    salary_max: Optional[int] = Query(None),
+    sort: str = Query("newest")
+):
+    per_page = 12
+    
+    # Build base query with all necessary joins
+    query = db.query(Job).options(
+        joinedload(Job.company),
+        joinedload(Job.department)
+    )
+    
+    # Join tables only once
+    company_joined = False
+    department_joined = False
+    
+    # Apply filters
+    filters = [Job.status == 'active']
+    
+    # Search filter
+    if search:
+        if not company_joined:
+            query = query.join(Company)
+            company_joined = True
+        
+        search_filter = or_(
+            Job.title.ilike(f"%{search}%"),
+            Job.description.ilike(f"%{search}%"),
+            Company.company_name.ilike(f"%{search}%")
+        )
+        filters.append(search_filter)
+    
+    # Location filter
+    if location:
+        if not company_joined:
+            query = query.join(Company)
+            company_joined = True
+        
+        filters.append(Company.address.ilike(f"%{location}%"))
+    
+    # Category filter
+    if category:
+        if not department_joined:
+            query = query.join(Department)
+            department_joined = True
+        
+        filters.append(Department.name.ilike(f"%{category}%"))
+    
+    # Employment type filter
+    if employment_type:
+        filters.append(Job.employment_type == employment_type)
+    
+    # Salary filters
+    if salary_min:
+        filters.append(Job.salary_min >= salary_min)
+    
+    if salary_max:
+        filters.append(Job.salary_max <= salary_max)
+    
+    # Apply all filters
+    query = query.filter(and_(*filters))
+    
+    # Apply sorting
+    if sort == "newest":
+        query = query.order_by(Job.created_at.desc())
+    elif sort == "oldest":
+        query = query.order_by(Job.created_at.asc())
+    elif sort == "salary_high":
+        query = query.order_by(Job.salary_max.desc().nullslast())
+    elif sort == "salary_low":
+        query = query.order_by(Job.salary_min.asc().nullslast())
+    
+    # Get total count
+    total_jobs = query.count()
+    
+    # Apply pagination
+    offset = (page - 1) * per_page
+    jobs = query.offset(offset).limit(per_page).all()
+    
+    # Create pagination object
+    pagination = Pagination(page, per_page, total_jobs)
+    
+    # Create search params object
+    search_params = SearchParams(search, location, category, employment_type, salary_min, salary_max)
+    
+    return templates.TemplateResponse("client-dep/jobs.html", {
+        "request": request,
+        "jobs": jobs,
+        "pagination": pagination,
+        "search_params": search_params
+    })
+
+@app.get("/jobs/{job_id}", response_class=HTMLResponse)
+async def job_detail(request: Request, job_id: int, db: Session = Depends(get_db)):
+    job = db.query(Job).options(
+        joinedload(Job.company),
+        joinedload(Job.department)
+    ).filter(Job.id == job_id).first()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Increment view count
+    job.views_count += 1
+    db.commit()
+    
+    return templates.TemplateResponse("client-dep/job_detail.html", {
+        "request": request,
+        "job": job
+    })
+
+@app.get("/profile", response_class=HTMLResponse)
+async def profile(request: Request):
+    return templates.TemplateResponse("client-dep/profile_detail.html", {"request": request})
+
+@app.get("/result", response_class=HTMLResponse)
+async def result(request: Request):
+    return templates.TemplateResponse("client-dep/result.html", {"request": request})
+
+@app.get("/auth/login", response_class=HTMLResponse)
+async def login(request: Request):
+    return templates.TemplateResponse("client-dep/auth/login.html", {"request": request})
+
+@app.get("/auth/signup", response_class=HTMLResponse)
+async def signup(request: Request):
+    return templates.TemplateResponse("client-dep/auth/client-signup.html", {"request": request})
+
+# API endpoints for job interactions
+@app.post("/api/jobs/{job_id}/save")
+async def save_job(job_id: int, db: Session = Depends(get_db)):
+    """Save job to user's favorites"""
+    # This would typically save to a user's saved jobs
+    # For now, just return success
+    return {"success": True, "message": "Offre ajoutée aux favoris"}
+
+@app.delete("/api/jobs/{job_id}/save")
+async def unsave_job(job_id: int, db: Session = Depends(get_db)):
+    """Remove job from user's favorites"""
+    # This would typically remove from user's saved jobs
+    # For now, just return success
+    return {"success": True, "message": "Offre retirée des favoris"}
+
+@app.post("/api/jobs/{job_id}/apply")
+async def apply_to_job(job_id: int, db: Session = Depends(get_db)):
+    """Submit job application"""
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Increment application count
+    job.applications_count = (job.applications_count or 0) + 1
+    db.commit()
+    
+    return {"success": True, "message": "Candidature envoyée avec succès!"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
