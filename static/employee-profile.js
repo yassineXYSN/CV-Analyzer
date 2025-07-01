@@ -9,26 +9,54 @@ document.addEventListener("DOMContentLoaded", () => {
   loadNotes()
 })
 
-// Charger les données de l'employé depuis localStorage
+// Charger les données de l'employé depuis localStorage ou URL
 function loadEmployeeData() {
-  const employeeData = localStorage.getItem("selectedEmployee")
-  if (employeeData) {
-    currentEmployee = JSON.parse(employeeData)
-    displayEmployeeInfo()
+  // Essayer de récupérer l'ID depuis l'URL
+  const urlParams = new URLSearchParams(window.location.search)
+  const employeeId = urlParams.get("id")
+
+  if (employeeId) {
+    // Charger depuis l'API
+    loadEmployeeFromAPI(employeeId)
   } else {
-    // Données par défaut si aucune donnée n'est trouvée
-    currentEmployee = {
-      id: 1,
-      firstName: "John",
-      lastName: "Doe",
-      email: "john.doe@company.com",
-      position: "Développeur Full-Stack",
-      departmentId: 1,
-      phone: "+33 1 23 45 67 89",
-      hireDate: "2022-01-15",
-      createdAt: new Date(),
+    // Essayer localStorage
+    const employeeData = localStorage.getItem("selectedEmployee")
+    if (employeeData) {
+      currentEmployee = JSON.parse(employeeData)
+      displayEmployeeInfo()
+    } else {
+      // Données par défaut si aucune donnée n'est trouvée
+      currentEmployee = {
+        id: 1,
+        first_name: "John",
+        last_name: "Doe",
+        email: "john.doe@company.com",
+        position: "Développeur Full-Stack",
+        department_id: 1,
+        phone: "+33 1 23 45 67 89",
+        hire_date: "2022-01-15",
+        created_at: new Date(),
+      }
+      displayEmployeeInfo()
     }
-    displayEmployeeInfo()
+  }
+}
+
+// Charger l'employé depuis l'API
+async function loadEmployeeFromAPI(employeeId) {
+  try {
+    const response = await fetch(`/api/employee/${employeeId}`)
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        currentEmployee = result.employee
+        displayEmployeeInfo()
+      }
+    }
+  } catch (error) {
+    console.error("Erreur chargement employé:", error)
+    // Utiliser des données par défaut en cas d'erreur
+    loadEmployeeData()
   }
 }
 
@@ -37,22 +65,24 @@ function displayEmployeeInfo() {
   if (!currentEmployee) return
 
   // Informations principales
-  document.getElementById("employeeName").textContent = `${currentEmployee.firstName} ${currentEmployee.lastName}`
+  document.getElementById("employeeName").textContent = `${currentEmployee.first_name} ${currentEmployee.last_name}`
   document.getElementById("employeePosition").textContent = currentEmployee.position
   document.getElementById("employeeEmail").textContent = currentEmployee.email
   document.getElementById("employeePhone").textContent = currentEmployee.phone || "Non renseigné"
-  document.getElementById("employeeId").textContent = `EMP${String(currentEmployee.id).padStart(3, "0")}`
+  document.getElementById("employeeId").textContent =
+    currentEmployee.employee_id || `EMP${String(currentEmployee.id).padStart(3, "0")}`
 
   // Avatar avec initiales
   const avatar = document.getElementById("employeeAvatar")
-  avatar.textContent = `${currentEmployee.firstName[0]}${currentEmployee.lastName[0]}`
+  avatar.textContent = `${currentEmployee.first_name[0]}${currentEmployee.last_name[0]}`
 
-  // Département (simulé)
-  document.getElementById("employeeDepartment").textContent = getDepartmentName(currentEmployee.departmentId)
+  // Département
+  document.getElementById("employeeDepartment").textContent =
+    currentEmployee.department_name || getDepartmentName(currentEmployee.department_id)
 
   // Date d'embauche
-  if (currentEmployee.hireDate) {
-    const hireDate = new Date(currentEmployee.hireDate)
+  if (currentEmployee.hire_date) {
+    const hireDate = new Date(currentEmployee.hire_date)
     document.getElementById("employeeHireDate").textContent = `Embauché le ${hireDate.toLocaleDateString("fr-FR")}`
 
     // Calculer les années de service
@@ -86,6 +116,11 @@ function initializeCircleProgress() {
   })
 }
 
+// Fonction pour retourner au dashboard
+function goBackToDashboard() {
+  window.location.href = "/dashboard"
+}
+
 // Fonctions pour les actions
 function editEmployee() {
   showNotification("Fonction de modification en cours de développement", "info")
@@ -102,7 +137,7 @@ function exportProfile() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `profil_${currentEmployee.firstName}_${currentEmployee.lastName}.json`
+  a.download = `profil_${currentEmployee.first_name}_${currentEmployee.last_name}.json`
   a.click()
   URL.revokeObjectURL(url)
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CV Analyzer Pro - Configuration Entreprise</title>
+    <title>Configuration Entreprise - CV Analyzer Pro</title>
     <link rel="stylesheet" href="/static/company-setup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -18,28 +18,23 @@
         <div class="grid-overlay"></div>
     </div>
 
-    <!-- Setup Container -->
     <div class="setup-container">
         <!-- Progress Bar -->
         <div class="progress-container">
             <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
+                <div class="progress-fill"></div>
             </div>
             <div class="progress-steps">
-                <div class="step active" data-step="1">
+                <div class="step active">
                     <div class="step-number">1</div>
                     <div class="step-label">Informations</div>
                 </div>
-                <div class="step" data-step="2">
+                <div class="step">
                     <div class="step-number">2</div>
                     <div class="step-label">Coordonnées</div>
                 </div>
-                <div class="step" data-step="3">
+                <div class="step">
                     <div class="step-number">3</div>
-                    <div class="step-label">Description</div>
-                </div>
-                <div class="step" data-step="4">
-                    <div class="step-number">4</div>
                     <div class="step-label">Finalisation</div>
                 </div>
             </div>
@@ -48,182 +43,193 @@
         <!-- Setup Form -->
         <div class="setup-form">
             <div class="form-header">
-                <h1><i class="fas fa-rocket"></i> Configuration de votre entreprise</h1>
-                <p>Configurons votre profil d'entreprise pour commencer</p>
+                <h1><i class="fas fa-building"></i> Configuration Entreprise</h1>
+                <p>Configurez les informations essentielles de votre entreprise</p>
             </div>
 
-            <!-- Step 1: Basic Information -->
-            <div class="step-content active" data-step="1">
-                <h2><i class="fas fa-building"></i> Informations de base</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-building"></i>
-                            Nom de l'entreprise *
-                        </label>
-                        <input type="text" id="companyName" class="form-input" placeholder="Ex: TechCorp Solutions" required>
-                        <div class="input-feedback"></div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-industry"></i>
-                            Secteur d'activité *
-                        </label>
-                        <select id="industry" class="form-select" required>
-                            <option value="">Sélectionnez un secteur</option>
-                            <option value="tech">Technologies de l'Information</option>
-                            <option value="finance">Finance & Banque</option>
-                            <option value="healthcare">Santé & Médical</option>
-                            <option value="education">Éducation & Formation</option>
-                            <option value="retail">Commerce & Retail</option>
-                            <option value="manufacturing">Industrie & Manufacturing</option>
-                            <option value="consulting">Conseil & Services</option>
-                            <option value="other">Autre</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-users"></i>
-                            Taille de l'entreprise *
-                        </label>
-                        <select id="companySize" class="form-select" required>
-                            <option value="">Sélectionnez la taille</option>
-                            <option value="1-10">1-10 employés</option>
-                            <option value="11-50">11-50 employés</option>
-                            <option value="51-200">51-200 employés</option>
-                            <option value="201-1000">201-1000 employés</option>
-                            <option value="1000+">1000+ employés</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-calendar"></i>
-                            Année de création
-                        </label>
-                        <input type="number" id="foundedYear" class="form-input" placeholder="2020" min="1900" max="2024">
-                    </div>
-                </div>
-            </div>
+            <form id="companySetupForm">
+                <!-- Step 1: Basic Information -->
+                <div class="step-content active" data-step="1">
+                    <h2><i class="fas fa-info-circle"></i> Informations de base</h2>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="companyName">
+                                <i class="fas fa-building"></i>
+                                Nom de l'entreprise *
+                            </label>
+                            <input type="text" id="companyName" name="company_name" class="form-input" required>
+                            <div class="input-feedback"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="industry">
+                                <i class="fas fa-industry"></i>
+                                Secteur d'activité *
+                            </label>
+                            <select id="industry" name="industry" class="form-select" required>
+                                <option value="">Sélectionnez un secteur</option>
+                                <option value="tech">Technologie</option>
+                                <option value="finance">Finance</option>
+                                <option value="healthcare">Santé</option>
+                                <option value="education">Éducation</option>
+                                <option value="retail">Commerce</option>
+                                <option value="manufacturing">Industrie</option>
+                                <option value="consulting">Conseil</option>
+                                <option value="media">Médias</option>
+                                <option value="other">Autre</option>
+                            </select>
+                            <div class="input-feedback"></div>
+                        </div>
 
-            <!-- Step 2: Contact Information -->
-            <div class="step-content" data-step="2">
-                <h2><i class="fas fa-address-book"></i> Coordonnées</h2>
-                <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label class="form-label">
-                            <i class="fas fa-map-marker-alt"></i>
-                            Adresse complète *
-                        </label>
-                        <textarea id="address" class="form-textarea" placeholder="123 Rue de la Technologie, 75001 Paris, France" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-phone"></i>
-                            Téléphone *
-                        </label>
-                        <input type="tel" id="phone" class="form-input" placeholder="+33 1 23 45 67 89" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-envelope"></i>
-                            Email professionnel *
-                        </label>
-                        <input type="email" id="email" class="form-input" placeholder="contact@entreprise.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-globe"></i>
-                            Site web
-                        </label>
-                        <input type="url" id="website" class="form-input" placeholder="https://www.entreprise.com">
-                    </div>
-                </div>
-            </div>
+                        <div class="form-group">
+                            <label class="form-label" for="companySize">
+                                <i class="fas fa-users"></i>
+                                Taille de l'entreprise *
+                            </label>
+                            <select id="companySize" name="company_size" class="form-select" required>
+                                <option value="">Sélectionnez la taille</option>
+                                <option value="1-10">1-10 employés</option>
+                                <option value="11-50">11-50 employés</option>
+                                <option value="51-200">51-200 employés</option>
+                                <option value="201-1000">201-1000 employés</option>
+                                <option value="1000+">1000+ employés</option>
+                            </select>
+                            <div class="input-feedback"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="foundedYear">
+                                <i class="fas fa-calendar"></i>
+                                Année de création
+                            </label>
+                            <input type="number" id="foundedYear" name="founded_year" class="form-input" min="1800" max="2024">
+                            <div class="input-feedback"></div>
+                        </div>
 
-            <!-- Step 3: Description -->
-            <div class="step-content" data-step="3">
-                <h2><i class="fas fa-file-alt"></i> Description de l'entreprise</h2>
-                <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label class="form-label">
-                            <i class="fas fa-info-circle"></i>
-                            Décrivez votre entreprise *
-                        </label>
-                        <textarea id="description" class="form-textarea large" placeholder="Décrivez votre entreprise, ses activités, sa mission et ses valeurs..." required></textarea>
-                        <div class="char-counter">
-                            <span id="charCount">0</span>/500 caractères
+                        <div class="form-group full-width">
+                            <label class="form-label" for="description">
+                                <i class="fas fa-align-left"></i>
+                                Description de l'entreprise
+                            </label>
+                            <textarea id="description" name="description" class="form-textarea large" placeholder="Décrivez votre entreprise, ses activités, sa mission..."></textarea>
+                            <div class="char-counter">0 / 500</div>
+                            <div class="input-feedback"></div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-user-tie"></i>
-                            Votre nom complet *
-                        </label>
-                        <input type="text" id="adminName" class="form-input" placeholder="Prénom Nom" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-briefcase"></i>
-                            Votre fonction *
-                        </label>
-                        <input type="text" id="adminRole" class="form-input" placeholder="Ex: Directeur RH, CEO..." required>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Step 4: Finalization -->
-            <div class="step-content" data-step="4">
-                <h2><i class="fas fa-check-circle"></i> Finalisation</h2>
-                <div class="summary-container">
-                    <div class="summary-card">
-                        <h3><i class="fas fa-building"></i> Récapitulatif</h3>
-                        <div class="summary-content" id="summaryContent">
-                            <!-- Le contenu sera généré dynamiquement -->
+                <!-- Step 2: Contact Information -->
+                <div class="step-content" data-step="2">
+                    <h2><i class="fas fa-map-marker-alt"></i> Coordonnées</h2>
+                    
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="address">
+                                <i class="fas fa-map-marker-alt"></i>
+                                Adresse
+                            </label>
+                            <textarea id="address" name="address" class="form-textarea" placeholder="Adresse complète de l'entreprise"></textarea>
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="phone">
+                                <i class="fas fa-phone"></i>
+                                Téléphone
+                            </label>
+                            <input type="tel" id="phone" name="phone" class="form-input" placeholder="+33 1 23 45 67 89">
+                            <div class="input-feedback"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="email">
+                                <i class="fas fa-envelope"></i>
+                                Email
+                            </label>
+                            <input type="email" id="email" name="email" class="form-input" placeholder="contact@entreprise.com">
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label" for="website">
+                                <i class="fas fa-globe"></i>
+                                Site web
+                            </label>
+                            <input type="url" id="website" name="website" class="form-input" placeholder="https://www.entreprise.com">
+                            <div class="input-feedback"></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Step 3: Summary -->
+                <div class="step-content" data-step="3">
+                    <h2><i class="fas fa-check-circle"></i> Récapitulatif</h2>
+                    
+                    <div class="summary-container">
+                        <div class="summary-card">
+                            <h3><i class="fas fa-building"></i> Informations générales</h3>
+                            <div class="summary-content" id="basicSummary">
+                                <!-- Filled by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <div class="summary-card">
+                            <h3><i class="fas fa-map-marker-alt"></i> Coordonnées</h3>
+                            <div class="summary-content" id="contactSummary">
+                                <!-- Filled by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="welcome-message">
                         <div class="welcome-icon">
                             <i class="fas fa-rocket"></i>
                         </div>
-                        <h3>Félicitations !</h3>
-                        <p>Votre profil d'entreprise est prêt. Vous pouvez maintenant accéder à votre tableau de bord RH et commencer à gérer vos départements, employés et postes.</p>
+                        <h3>Prêt à commencer !</h3>
+                        <p>Votre entreprise sera configurée et vous pourrez accéder à toutes les fonctionnalités de CV Analyzer Pro.</p>
+                        
                         <div class="features-preview">
                             <div class="feature-item">
                                 <i class="fas fa-users"></i>
-                                <span>Gestion des employés</span>
+                                <span>Gestion des candidats</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-file-alt"></i>
+                                <span>Analyse des CV</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Rapports détaillés</span>
                             </div>
                             <div class="feature-item">
                                 <i class="fas fa-briefcase"></i>
                                 <span>Gestion des postes</span>
                             </div>
-                            <div class="feature-item">
-                                <i class="fas fa-chart-bar"></i>
-                                <span>Rapports et statistiques</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-file-alt"></i>
-                                <span>Gestion des candidatures</span>
-                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Navigation Buttons -->
-            <div class="form-navigation">
-                <button class="btn-secondary" id="prevBtn" onclick="previousStep()" style="display: none;">
-                    <i class="fas fa-arrow-left"></i>
-                    Précédent
-                </button>
-                <button class="btn-primary" id="nextBtn" onclick="nextStep()">
-                    Suivant
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-                <button class="btn-success" id="finishBtn" onclick="finishSetup()" style="display: none;">
-                    <i class="fas fa-rocket"></i>
-                    Accéder au Dashboard
-                </button>
-            </div>
+                <!-- Navigation -->
+                <div class="form-navigation">
+                    <button type="button" class="btn-secondary" id="prevBtn" onclick="previousStep()" style="display: none;">
+                        <i class="fas fa-arrow-left"></i>
+                        Précédent
+                    </button>
+                    
+                    <div style="flex: 1;"></div>
+                    
+                    <button type="button" class="btn-primary" id="nextBtn" onclick="nextStep()">
+                        Suivant
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    
+                    <button type="submit" class="btn-success" id="submitBtn" style="display: none;">
+                        <i class="fas fa-save"></i>
+                        Finaliser la configuration
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -232,10 +238,236 @@
         <div class="loading-content">
             <div class="loading-spinner"></div>
             <h3>Configuration en cours...</h3>
-            <p>Nous préparons votre espace de travail</p>
+            <p>Veuillez patienter pendant que nous configurons votre entreprise</p>
         </div>
     </div>
 
-    <script src="/static/company-setup.js"></script>
+    <script>
+        let currentStep = 1;
+        const totalSteps = 3;
+
+        console.log('🏢 FRONTEND: Page company-setup chargée');
+
+        // Character counter for description
+        document.getElementById('description').addEventListener('input', function() {
+            const counter = document.querySelector('.char-counter');
+            const length = this.value.length;
+            counter.textContent = `${length} / 500`;
+            
+            if (length > 500) {
+                counter.style.color = 'var(--error-color)';
+                this.value = this.value.substring(0, 500);
+            } else {
+                counter.style.color = 'var(--text-muted)';
+            }
+        });
+
+        function updateProgress() {
+            const progressFill = document.querySelector('.progress-fill');
+            const steps = document.querySelectorAll('.step');
+            
+            // Update progress bar
+            const progress = (currentStep / totalSteps) * 100;
+            progressFill.style.width = `${progress}%`;
+            
+            // Update step indicators
+            steps.forEach((step, index) => {
+                const stepNumber = index + 1;
+                step.classList.remove('active', 'completed');
+                
+                if (stepNumber < currentStep) {
+                    step.classList.add('completed');
+                } else if (stepNumber === currentStep) {
+                    step.classList.add('active');
+                }
+            });
+        }
+
+        function showStep(step) {
+            console.log(`📋 FRONTEND: Affichage étape ${step}`);
+            
+            // Hide all steps
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Show current step
+            document.querySelector(`[data-step="${step}"]`).classList.add('active');
+            
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            prevBtn.style.display = step > 1 ? 'flex' : 'none';
+            nextBtn.style.display = step < totalSteps ? 'flex' : 'none';
+            submitBtn.style.display = step === totalSteps ? 'flex' : 'none';
+            
+            // Update summary on last step
+            if (step === totalSteps) {
+                updateSummary();
+            }
+        }
+
+        function nextStep() {
+            console.log(`➡️ FRONTEND: Tentative passage à l'étape ${currentStep + 1}`);
+            
+            if (validateCurrentStep() && currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+                updateProgress();
+                console.log(`✅ FRONTEND: Passage à l'étape ${currentStep} réussi`);
+            }
+        }
+
+        function previousStep() {
+            console.log(`⬅️ FRONTEND: Retour à l'étape ${currentStep - 1}`);
+            
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+
+        function validateCurrentStep() {
+            const currentStepElement = document.querySelector(`[data-step="${currentStep}"]`);
+            const requiredFields = currentStepElement.querySelectorAll('[required]');
+            let isValid = true;
+            
+            console.log(`🔍 FRONTEND: Validation étape ${currentStep} - ${requiredFields.length} champs requis`);
+            
+            requiredFields.forEach(field => {
+                const feedback = field.parentElement.querySelector('.input-feedback');
+                
+                if (!field.value.trim()) {
+                    feedback.textContent = 'Ce champ est requis';
+                    feedback.className = 'input-feedback error';
+                    field.style.borderColor = 'var(--error-color)';
+                    isValid = false;
+                    console.log(`❌ FRONTEND: Champ requis vide: ${field.name}`);
+                } else {
+                    feedback.textContent = '';
+                    feedback.className = 'input-feedback';
+                    field.style.borderColor = 'var(--border-color)';
+                }
+            });
+            
+            console.log(`🔍 FRONTEND: Validation étape ${currentStep}: ${isValid ? 'VALIDE' : 'INVALIDE'}`);
+            return isValid;
+        }
+
+        function updateSummary() {
+            console.log('📋 FRONTEND: Mise à jour du récapitulatif');
+            
+            const basicSummary = document.getElementById('basicSummary');
+            const contactSummary = document.getElementById('contactSummary');
+            
+            // Basic information
+            const basicInfo = [
+                { label: 'Entreprise', value: document.getElementById('companyName').value },
+                { label: 'Secteur', value: document.getElementById('industry').value },
+                { label: 'Taille', value: document.getElementById('companySize').value },
+                { label: 'Année', value: document.getElementById('foundedYear').value }
+            ].filter(item => item.value);
+            
+            basicSummary.innerHTML = basicInfo.map(item => `
+                <div class="summary-item">
+                    <span class="summary-label">${item.label}</span>
+                    <span class="summary-value">${item.value}</span>
+                </div>
+            `).join('');
+            
+            // Contact information
+            const contactInfo = [
+                { label: 'Email', value: document.getElementById('email').value },
+                { label: 'Téléphone', value: document.getElementById('phone').value },
+                { label: 'Site web', value: document.getElementById('website').value },
+                { label: 'Adresse', value: document.getElementById('address').value }
+            ].filter(item => item.value);
+            
+            contactSummary.innerHTML = contactInfo.map(item => `
+                <div class="summary-item">
+                    <span class="summary-label">${item.label}</span>
+                    <span class="summary-value">${item.value}</span>
+                </div>
+            `).join('');
+        }
+
+        // Form submission with detailed logging
+        document.getElementById('companySetupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            console.log('🏢 FRONTEND: Début soumission formulaire entreprise');
+            
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const companyData = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (value.trim()) {
+                    if (key === 'founded_year') {
+                        companyData[key] = parseInt(value);
+                    } else {
+                        companyData[key] = value.trim();
+                    }
+                }
+            }
+            
+            console.log('📤 FRONTEND: Données à envoyer:', companyData);
+            
+            try {
+                console.log('📤 FRONTEND: Envoi requête à /api/company-setup');
+                
+                const response = await fetch('/api/company-setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(companyData)
+                });
+                
+                console.log('📥 FRONTEND: Réponse reçue, status:', response.status);
+                const result = await response.json();
+                console.log('📋 FRONTEND: Résultat:', result);
+                
+                if (result.success) {
+                    console.log('✅ FRONTEND: Configuration réussie');
+                    console.log('🎯 FRONTEND: Redirection vers:', result.redirect_url);
+                    
+                    // Afficher un message de succès temporaire
+                    const loadingContent = document.querySelector('.loading-content');
+                    loadingContent.innerHTML = `
+                        <div class="loading-spinner" style="border-top-color: #27ae60;"></div>
+                        <h3 style="color: #27ae60;">Configuration terminée !</h3>
+                        <p>Redirection vers le tableau de bord...</p>
+                    `;
+                    
+                    // Redirection après 1.5 secondes
+                    setTimeout(() => {
+                        console.log('🔄 FRONTEND: Redirection en cours...');
+                        window.location.href = result.redirect_url || '/dashboard';
+                    }, 1500);
+                } else {
+                    console.error('❌ FRONTEND: Erreur configuration:', result.message);
+                    loadingOverlay.style.display = 'none';
+                    alert('Erreur: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau:', error);
+                loadingOverlay.style.display = 'none';
+                alert('Erreur de connexion au serveur. Veuillez réessayer.');
+            }
+        });
+
+        // Initialize
+        console.log('🎯 FRONTEND: Initialisation page company-setup');
+        updateProgress();
+        showStep(currentStep);
+    </script>
 </body>
 </html>

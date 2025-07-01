@@ -207,7 +207,7 @@
         </div>
 
     <!-- Modal Département -->
-    <div id="departmentModal" class="modal-overlay">
+    <div id="departmentModal" class="modal-overlay" style="z-index: 10000;">
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-building"></i> Nouveau Département</h3>
@@ -273,7 +273,7 @@
     </div>
 
     <!-- Modal Job -->
-    <div id="jobModal" class="modal-overlay">
+    <div id="jobModal" class="modal-overlay" style="z-index: 10001;">
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-briefcase"></i> Nouveau Poste</h3>
@@ -305,27 +305,29 @@
                             </select>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-flag"></i>
-                            Priorité
-                        </label>
-                        <select id="jobPriority" class="form-select" required>
-                            <option value="normal">Normal</option>
-                            <option value="urgent">Urgent</option>
-                            <option value="low">Faible</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-calendar"></i>
-                            Date limite
-                        </label>
-                        <input 
-                            type="date" 
-                            id="jobDeadline" 
-                            class="form-input"
-                        >
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-flag"></i>
+                                Priorité
+                            </label>
+                            <select id="jobPriority" class="form-select" required>
+                                <option value="normal">Normal</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="low">Faible</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-calendar"></i>
+                                Date limite
+                            </label>
+                            <input 
+                                type="date" 
+                                id="jobDeadline" 
+                                class="form-input"
+                            >
+                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -335,10 +337,10 @@
                             </label>
                             <select id="jobType" class="form-select" required>
                                 <option value="">Type de contrat</option>
-                                <option value="cdi">CDI</option>
-                                <option value="cdd">CDD</option>
-                                <option value="stage">Stage</option>
-                                <option value="freelance">Freelance</option>
+                                <option value="CDI">CDI</option>
+                                <option value="CDD">CDD</option>
+                                <option value="Stage">Stage</option>
+                                <option value="Freelance">Freelance</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -346,12 +348,23 @@
                                 <i class="fas fa-euro-sign"></i>
                                 Salaire (€/an)
                             </label>
-                            <input 
-                                type="text" 
-                                id="jobSalary" 
-                                class="form-input" 
-                                placeholder="ex: 45000-55000"
-                            >
+                            <div class="salary-range">
+                                <input 
+                                    type="number" 
+                                    id="jobSalaryMin" 
+                                    class="form-input" 
+                                    placeholder="Min"
+                                    style="width: 48%; display: inline-block;"
+                                >
+                                <span style="margin: 0 2%;">-</span>
+                                <input 
+                                    type="number" 
+                                    id="jobSalaryMax" 
+                                    class="form-input" 
+                                    placeholder="Max"
+                                    style="width: 48%; display: inline-block;"
+                                >
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -364,6 +377,28 @@
                             class="form-textarea" 
                             placeholder="Décrivez les missions, responsabilités et compétences requises..."
                             required
+                        ></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-list"></i>
+                            Exigences
+                        </label>
+                        <textarea 
+                            id="jobRequirements" 
+                            class="form-textarea" 
+                            placeholder="Compétences et qualifications requises..."
+                        ></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tasks"></i>
+                            Responsabilités
+                        </label>
+                        <textarea 
+                            id="jobResponsibilities" 
+                            class="form-textarea" 
+                            placeholder="Principales responsabilités du poste..."
                         ></textarea>
                     </div>
                     <div class="form-group">
@@ -387,7 +422,7 @@
     </div>
 
     <!-- Modal Employé -->
-    <div id="employeeModal" class="modal-overlay">
+    <div id="employeeModal" class="modal-overlay" style="z-index: 10002;">
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-user-plus"></i> Nouvel Employé</h3>
@@ -485,6 +520,33 @@
                             >
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-euro-sign"></i>
+                                Salaire (€/an)
+                            </label>
+                            <input 
+                                type="number" 
+                                id="employeeSalary" 
+                                class="form-input" 
+                                placeholder="45000"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-clock"></i>
+                                Type de contrat
+                            </label>
+                            <select id="employeeType" class="form-select">
+                                <option value="CDI">CDI</option>
+                                <option value="CDD">CDD</option>
+                                <option value="Stage">Stage</option>
+                                <option value="Freelance">Freelance</option>
+                                <option value="Consultant">Consultant</option>
+                            </select>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -496,6 +558,1401 @@
         </div>
     </div>
 
-    <script src="/static/hr-dashboard.js"></script>
+    <script>
+        console.log('🎯 FRONTEND: Dashboard chargé avec succès');
+        
+        // Variables globales
+        let departments = [];
+        let employees = [];
+        let jobs = [];
+        let currentUser = null;
+        let expandedDepartments = new Set();
+        
+        // Initialisation du dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 FRONTEND: Initialisation du dashboard');
+            loadCurrentUser();
+            loadDepartments();
+            loadEmployees();
+            loadJobs();
+            loadDashboardStats();
+            loadRecentActivity();
+        });
+        
+        // Fonction pour charger l'utilisateur actuel
+        async function loadCurrentUser() {
+            console.log('👤 FRONTEND: Chargement utilisateur actuel');
+            
+            try {
+                const response = await fetch('/api/current-user');
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentUser = result.user;
+                    console.log('✅ FRONTEND: Utilisateur chargé:', currentUser);
+                    updateUserDisplay();
+                } else {
+                    console.error('❌ FRONTEND: Erreur chargement utilisateur:', result.message);
+                    // Rediriger vers login si pas connecté
+                    if (result.message === "Utilisateur non connecté") {
+                        window.location.href = '/hr-login';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau chargement utilisateur:', error);
+            }
+        }
+        
+        // Fonction pour mettre à jour l'affichage utilisateur
+        function updateUserDisplay() {
+            if (currentUser) {
+                const userName = `${currentUser.first_name} ${currentUser.last_name}`;
+                const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`;
+                
+                // Mettre à jour le nom d'utilisateur
+                const userNameSpan = document.querySelector('.user-info span');
+                if (userNameSpan) {
+                    userNameSpan.textContent = `Bienvenue, ${userName}`;
+                }
+                
+                // Mettre à jour l'avatar
+                const avatar = document.querySelector('.avatar');
+                if (avatar) {
+                    avatar.textContent = userInitials;
+                }
+                
+                console.log('✅ FRONTEND: Affichage utilisateur mis à jour');
+            }
+        }
+        
+        // Fonction pour charger les statistiques du dashboard
+        async function loadDashboardStats() {
+            console.log('📊 FRONTEND: Chargement statistiques dashboard');
+            
+            try {
+                const response = await fetch('/api/dashboard-stats');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const stats = result.stats;
+                    console.log('✅ FRONTEND: Statistiques chargées:', stats);
+                    updateStatsDisplay(stats);
+                } else {
+                    console.error('❌ FRONTEND: Erreur chargement statistiques:', result.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau chargement statistiques:', error);
+            }
+        }
+        
+        // Fonction pour mettre à jour l'affichage des statistiques
+        function updateStatsDisplay(stats) {
+            document.getElementById('totalDepartments').textContent = stats.total_departments;
+            document.getElementById('totalEmployees').textContent = stats.total_employees;
+            document.getElementById('totalJobs').textContent = stats.total_jobs;
+            document.getElementById('urgentJobs').textContent = stats.urgent_jobs;
+            document.getElementById('totalApplications').textContent = stats.total_applications;
+            
+            // Mettre à jour les pourcentages de changement
+            const deptChange = document.querySelector('#totalDepartments').parentElement.querySelector('.stat-change');
+            const jobChange = document.querySelector('#totalJobs').parentElement.querySelector('.stat-change');
+            const empChange = document.querySelector('#totalEmployees').parentElement.querySelector('.stat-change');
+            
+            if (deptChange) deptChange.textContent = stats.dept_change;
+            if (jobChange) jobChange.textContent = stats.job_change;
+            if (empChange) empChange.textContent = stats.emp_change;
+            
+            // Mettre à jour les classes de couleur
+            updateStatChangeClass(deptChange, stats.dept_change);
+            updateStatChangeClass(jobChange, stats.job_change);
+            updateStatChangeClass(empChange, stats.emp_change);
+            
+            console.log('✅ FRONTEND: Statistiques affichées');
+        }
+        
+        // Fonction pour mettre à jour les classes de couleur des changements
+        function updateStatChangeClass(element, change) {
+            if (!element) return;
+            
+            element.classList.remove('positive', 'negative', 'warning');
+            
+            if (change.startsWith('+')) {
+                element.classList.add('positive');
+            } else if (change.startsWith('-')) {
+                element.classList.add('negative');
+            } else {
+                element.classList.add('warning');
+            }
+        }
+        
+        // Fonction pour charger l'activité récente
+        async function loadRecentActivity() {
+            console.log('🔄 FRONTEND: Chargement activité récente');
+            
+            try {
+                console.log('📡 FRONTEND: Envoi requête vers /api/recent-activity');
+                const response = await fetch('/api/recent-activity');
+                console.log('📡 FRONTEND: Statut réponse:', response.status);
+                
+                if (!response.ok) {
+                    console.error('❌ FRONTEND: Erreur HTTP:', response.status);
+                    return;
+                }
+                
+                const result = await response.json();
+                console.log('📥 FRONTEND: Réponse reçue:', result);
+                
+                if (result.success) {
+                    const activities = result.activities;
+                    console.log(`✅ FRONTEND: ${activities.length} activités chargées`);
+                    console.log('📋 FRONTEND: Détail des activités:', activities);
+                    displayRecentActivity(activities);
+                } else {
+                    console.error('❌ FRONTEND: Erreur chargement activités:', result.message);
+                    displayRecentActivity([]); // Afficher vide en cas d'erreur
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau chargement activités:', error);
+                displayRecentActivity([]); // Afficher vide en cas d'erreur
+            }
+        }
+        
+        // Fonction pour afficher l'activité récente
+        function displayRecentActivity(activities) {
+            console.log('🎨 FRONTEND: Affichage activités, nombre:', activities.length);
+            const activityTimeline = document.getElementById('activityTimeline');
+            
+            if (!activityTimeline) {
+                console.error('❌ FRONTEND: Element activityTimeline non trouvé');
+                return;
+            }
+            
+            if (activities.length === 0) {
+                console.log('📭 FRONTEND: Aucune activité à afficher');
+                activityTimeline.innerHTML = `
+                    <div class="empty-activity">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Aucune activité récente</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            console.log('🎨 FRONTEND: Génération HTML pour', activities.length, 'activités');
+            let html = '';
+            activities.forEach((activity, index) => {
+                console.log(`🎨 FRONTEND: Traitement activité ${index + 1}:`, activity);
+                
+                const date = new Date(activity.created_at);
+                const timeAgo = getTimeAgo(date);
+                const icon = getActivityIcon(activity.action_type, activity.entity_type);
+                
+                html += `
+                    <div class="activity-item">
+                        <div class="activity-icon ${activity.action_type}">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-description">
+                                ${activity.description}
+                            </div>
+                            <div class="activity-meta">
+                                <span class="activity-user">${activity.admin_name}</span>
+                                <span class="activity-time">${timeAgo}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            console.log('✅ FRONTEND: HTML généré, longueur:', html.length);
+            activityTimeline.innerHTML = html;
+            console.log('✅ FRONTEND: Activités affichées avec succès');
+        }
+        
+        // Fonction pour obtenir l'icône d'activité
+        function getActivityIcon(actionType, entityType) {
+            const icons = {
+                'create': {
+                    'department': 'fa-building',
+                    'employee': 'fa-user-plus',
+                    'job': 'fa-briefcase'
+                },
+                'update': {
+                    'department': 'fa-edit',
+                    'employee': 'fa-user-edit',
+                    'job': 'fa-edit'
+                },
+                'delete': {
+                    'department': 'fa-trash',
+                    'employee': 'fa-user-minus',
+                    'job': 'fa-trash'
+                }
+            };
+            
+            return icons[actionType]?.[entityType] || 'fa-info-circle';
+        }
+        
+        // Fonction pour calculer le temps écoulé
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) {
+                return 'À l\'instant';
+            } else if (diffInSeconds < 3600) {
+                const minutes = Math.floor(diffInSeconds / 60);
+                return `Il y a ${minutes} minute${minutes > 1 ? 's' : ''}`;
+            } else if (diffInSeconds < 86400) {
+                const hours = Math.floor(diffInSeconds / 3600);
+                return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
+            } else {
+                const days = Math.floor(diffInSeconds / 86400);
+                return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
+            }
+        }
+        
+        // Fonctions de navigation
+        function openCompanyProfile() {
+            console.log('🏢 FRONTEND: Ouverture profil entreprise');
+            window.location.href = '/company-profile';
+        }
+        
+        function logout() {
+            console.log('🚪 FRONTEND: Déconnexion');
+            window.location.href = '/hr-login';
+        }
+        
+        // Gestion des modals avec z-index approprié
+        function closeAllModals() {
+            document.getElementById('departmentModal').style.display = 'none';
+            document.getElementById('jobModal').style.display = 'none';
+            document.getElementById('employeeModal').style.display = 'none';
+        }
+        
+        // Fonctions modales
+        function openDepartmentModal() {
+            console.log('🏢 FRONTEND: Ouverture modal département');
+            closeAllModals();
+            document.getElementById('departmentModal').style.display = 'flex';
+        }
+        
+        function closeDepartmentModal() {
+            console.log('🏢 FRONTEND: Fermeture modal département');
+            document.getElementById('departmentModal').style.display = 'none';
+            document.getElementById('departmentForm').reset();
+        }
+        
+        function openJobModal(preselectedDeptId = null) {
+            console.log('💼 FRONTEND: Ouverture modal poste');
+            closeAllModals();
+            loadDepartmentsInSelect('jobDepartment');
+            loadEmployeesInSelect('jobEmployee');
+            document.getElementById('jobModal').style.display = 'flex';
+            
+            // Pré-sélectionner le département si spécifié
+            if (preselectedDeptId) {
+                setTimeout(() => {
+                    document.getElementById('jobDepartment').value = preselectedDeptId;
+                }, 100);
+            }
+        }
+        
+        function closeJobModal() {
+            console.log('💼 FRONTEND: Fermeture modal poste');
+            document.getElementById('jobModal').style.display = 'none';
+            document.getElementById('jobForm').reset();
+        }
+        
+        function openEmployeeModal(preselectedDeptId = null) {
+            console.log('👤 FRONTEND: Ouverture modal employé');
+            closeAllModals();
+            loadDepartmentsInSelect('employeeDepartment');
+            document.getElementById('employeeModal').style.display = 'flex';
+            
+            // Pré-sélectionner le département si spécifié
+            if (preselectedDeptId) {
+                setTimeout(() => {
+                    document.getElementById('employeeDepartment').value = preselectedDeptId;
+                }, 100);
+            }
+        }
+        
+        function closeEmployeeModal() {
+            console.log('👤 FRONTEND: Fermeture modal employé');
+            document.getElementById('employeeModal').style.display = 'none';
+            document.getElementById('employeeForm').reset();
+        }
+        
+        // Fonction pour basculer l'expansion d'un département
+        function toggleDepartmentExpansion(departmentId) {
+            if (expandedDepartments.has(departmentId)) {
+                expandedDepartments.delete(departmentId);
+            } else {
+                expandedDepartments.add(departmentId);
+            }
+            displayDepartments(); // Rafraîchir l'affichage
+        }
+        
+        // Fonction pour créer un département
+        async function createDepartment() {
+            console.log('🏢 FRONTEND: Début création département');
+            
+            const name = document.getElementById('departmentName').value.trim();
+            const description = document.getElementById('departmentDescription').value.trim();
+            const manager = document.getElementById('departmentManager').value.trim();
+            const color = document.getElementById('departmentColor').value;
+            
+            if (!name) {
+                showNotification('Le nom du département est requis', 'warning');
+                return;
+            }
+            
+            const departmentData = {
+                name: name,
+                description: description || "",
+                manager_name: manager || "",
+                color: color,
+                budget: 0.0
+            };
+            
+            console.log('📤 FRONTEND: Envoi données département:', departmentData);
+            
+            try {
+                const response = await fetch('/api/create-department', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(departmentData)
+                });
+                
+                console.log('📡 FRONTEND: Statut réponse:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ FRONTEND: Erreur HTTP:', response.status, errorText);
+                    showNotification(`Erreur HTTP ${response.status}: ${errorText}`, 'error');
+                    return;
+                }
+                
+                const result = await response.json();
+                console.log('📥 FRONTEND: Réponse reçue:', result);
+                
+                if (result.success) {
+                    console.log('✅ FRONTEND: Département créé avec succès');
+                    showNotification(`Département "${name}" créé avec succès !`, 'success');
+                    closeDepartmentModal();
+                    await refreshDashboard(); // Rafraîchir tout le dashboard
+                } else {
+                    console.error('❌ FRONTEND: Erreur création département:', result.message);
+                    showNotification('Erreur: ' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau:', error);
+                showNotification('Erreur de connexion au serveur. Veuillez réessayer.', 'error');
+            }
+        }
+        
+        // Fonction pour créer un employé
+        async function createEmployee() {
+            console.log('👤 FRONTEND: Début création employé');
+            
+            const firstName = document.getElementById('employeeFirstName').value.trim();
+            const lastName = document.getElementById('employeeLastName').value.trim();
+            const email = document.getElementById('employeeEmail').value.trim();
+            const departmentId = document.getElementById('employeeDepartment').value;
+            const position = document.getElementById('employeePosition').value.trim();
+            const phone = document.getElementById('employeePhone').value.trim();
+            const hireDate = document.getElementById('employeeHireDate').value;
+            const salary = document.getElementById('employeeSalary').value;
+            const employmentType = document.getElementById('employeeType').value;
+            
+            if (!firstName || !lastName || !email || !departmentId || !position) {
+                showNotification('Veuillez remplir tous les champs obligatoires', 'warning');
+                return;
+            }
+            
+            const employeeData = {
+                first_name: firstName,
+                last_name: lastName,
+                email: email,
+                department_id: parseInt(departmentId),
+                position: position,
+                phone: phone || "",
+                hire_date: hireDate || null,
+                salary: salary ? parseFloat(salary) : null,
+                employment_type: employmentType,
+                employee_id: ""
+            };
+            
+            console.log('📤 FRONTEND: Envoi données employé:', employeeData);
+            
+            try {
+                const response = await fetch('/api/create-employee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(employeeData)
+                });
+                
+                const result = await response.json();
+                console.log('📥 FRONTEND: Réponse reçue:', result);
+                
+                if (result.success) {
+                    console.log('✅ FRONTEND: Employé créé avec succès');
+                    showNotification(`Employé "${firstName} ${lastName}" créé avec succès !`, 'success');
+                    closeEmployeeModal();
+                    await refreshDashboard(); // Rafraîchir tout le dashboard
+                } else {
+                    console.error('❌ FRONTEND: Erreur création employé:', result.message);
+                    showNotification('Erreur: ' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau:', error);
+                showNotification('Erreur de connexion au serveur. Veuillez réessayer.', 'error');
+            }
+        }
+        
+        // Fonction pour créer un poste
+        async function createJob() {
+            console.log('💼 FRONTEND: Début création poste');
+            
+            const title = document.getElementById('jobTitle').value.trim();
+            const departmentId = document.getElementById('jobDepartment').value;
+            const priority = document.getElementById('jobPriority').value;
+            const deadline = document.getElementById('jobDeadline').value;
+            const employmentType = document.getElementById('jobType').value;
+            const salaryMin = document.getElementById('jobSalaryMin').value;
+            const salaryMax = document.getElementById('jobSalaryMax').value;
+            const description = document.getElementById('jobDescription').value.trim();
+            const requirements = document.getElementById('jobRequirements').value.trim();
+            const responsibilities = document.getElementById('jobResponsibilities').value.trim();
+            const assignedEmployeeId = document.getElementById('jobEmployee').value;
+            
+            if (!title || !departmentId || !employmentType || !description) {
+                showNotification('Veuillez remplir tous les champs obligatoires', 'warning');
+                return;
+            }
+            
+            const jobData = {
+                title: title,
+                department_id: parseInt(departmentId),
+                description: description,
+                employment_type: employmentType,
+                priority: priority,
+                deadline: deadline || null,
+                salary_min: salaryMin ? parseFloat(salaryMin) : null,
+                salary_max: salaryMax ? parseFloat(salaryMax) : null,
+                requirements: requirements || "",
+                responsibilities: responsibilities || "",
+                assigned_employee_id: assignedEmployeeId ? parseInt(assignedEmployeeId) : null
+            };
+            
+            console.log('📤 FRONTEND: Envoi données poste:', jobData);
+            
+            try {
+                const response = await fetch('/api/create-job', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(jobData)
+                });
+                
+                const result = await response.json();
+                console.log('📥 FRONTEND: Réponse reçue:', result);
+                
+                if (result.success) {
+                    console.log('✅ FRONTEND: Poste créé avec succès');
+                    showNotification(`Poste "${title}" créé avec succès !`, 'success');
+                    closeJobModal();
+                    await refreshDashboard(); // Rafraîchir tout le dashboard
+                } else {
+                    console.error('❌ FRONTEND: Erreur création poste:', result.message);
+                    showNotification('Erreur: ' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau:', error);
+                showNotification('Erreur de connexion au serveur. Veuillez réessayer.', 'error');
+            }
+        }
+        
+        // Fonction pour rafraîchir tout le dashboard
+        async function refreshDashboard() {
+            console.log('🔄 FRONTEND: Rafraîchissement complet du dashboard');
+            await loadDepartments();
+            await loadEmployees();
+            await loadJobs();
+            await loadDashboardStats();
+            await loadRecentActivity();
+        }
+        
+        // Fonction pour charger les départements
+        async function loadDepartments() {
+            console.log('🔄 FRONTEND: Chargement des départements');
+            
+            try {
+                const response = await fetch('/api/departments');
+                const result = await response.json();
+                
+                if (result.success) {
+                    departments = result.departments;
+                    console.log(`✅ FRONTEND: ${departments.length} départements chargés`);
+                    displayDepartments();
+                } else {
+                    console.error('❌ FRONTEND: Erreur chargement départements:', result.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau chargement départements:', error);
+            }
+        }
+        
+        // Fonction pour charger les employés
+        async function loadEmployees() {
+            console.log('🔄 FRONTEND: Chargement des employés');
+            
+            try {
+                const response = await fetch('/api/employees');
+                const result = await response.json();
+                
+                if (result.success) {
+                    employees = result.employees;
+                    console.log(`✅ FRONTEND: ${employees.length} employés chargés`);
+                } else {
+                    console.error('❌ FRONTEND: Erreur chargement employés:', result.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau chargement employés:', error);
+            }
+        }
+        
+        // Fonction pour charger les postes
+        async function loadJobs() {
+            console.log('🔄 FRONTEND: Chargement des postes');
+            
+            try {
+                const response = await fetch('/api/jobs');
+                const result = await response.json();
+                
+                if (result.success) {
+                    jobs = result.jobs;
+                    console.log(`✅ FRONTEND: ${jobs.length} postes chargés`);
+                } else {
+                    console.error('❌ FRONTEND: Erreur chargement postes:', result.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau chargement postes:', error);
+            }
+        }
+        
+        // Fonction pour afficher les départements avec sections intégrées
+        function displayDepartments() {
+            const departmentsList = document.getElementById('departmentsList');
+            
+            if (departments.length === 0) {
+                departmentsList.innerHTML = `
+                    <div class="empty-departments">
+                        <div class="empty-icon"><i class="fas fa-building"></i></div>
+                        <h4>Aucun département</h4>
+                        <p>Commencez par créer votre premier département</p>
+                        <button class="empty-btn" onclick="openDepartmentModal()">
+                            <i class="fas fa-plus"></i> Créer Département
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            departments.forEach(dept => {
+                const isExpanded = expandedDepartments.has(dept.id);
+                const departmentEmployees = employees.filter(emp => emp.department_id === dept.id);
+                const departmentJobs = jobs.filter(job => job.department_id === dept.id);
+                
+                html += `
+                    <div class="department-card-enhanced" style="border-left: 4px solid ${dept.color}">
+                        <div class="department-header">
+                            <div class="department-info">
+                                <h4>${dept.name}</h4>
+                                <p>${dept.description || 'Aucune description'}</p>
+                                ${dept.manager_name ? `<span class="manager">👤 ${dept.manager_name}</span>` : ''}
+                            </div>
+                            <div class="department-stats">
+                                <span class="stat-badge employees">
+                                    <i class="fas fa-users"></i> ${dept.employee_count}
+                                </span>
+                                <span class="stat-badge jobs">
+                                    <i class="fas fa-briefcase"></i> ${dept.job_count}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="department-actions">
+                            <button class="btn-expand ${isExpanded ? 'expanded' : ''}" 
+                                    onclick="toggleDepartmentExpansion(${dept.id})" 
+                                    title="${isExpanded ? 'Réduire' : 'Voir les détails'}">
+                                <i class="fas fa-chevron-${isExpanded ? 'up' : 'down'}"></i>
+                                ${isExpanded ? 'Réduire' : 'Voir Détails'}
+                            </button>
+                            <button class="btn-add-employee" onclick="openEmployeeModal(${dept.id})" title="Ajouter un employé">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                            <button class="btn-add-job" onclick="openJobModal(${dept.id})" title="Ajouter un poste">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        
+                        ${isExpanded ? `
+                            <div class="department-details">
+                                <div class="details-tabs">
+                                    <div class="tab-section">
+                                        <h5><i class="fas fa-users"></i> Employés (${departmentEmployees.length})</h5>
+                                        <div class="items-list">
+                                            ${departmentEmployees.length === 0 ? 
+                                                '<p class="empty-message">Aucun employé dans ce département</p>' :
+                                                departmentEmployees.map(emp => `
+                                                    <div class="item-card employee-card">
+                                                        <div class="item-avatar">
+                                                            ${emp.first_name.charAt(0)}${emp.last_name.charAt(0)}
+                                                        </div>
+                                                        <div class="item-info">
+                                                            <strong>${emp.first_name} ${emp.last_name}</strong>
+                                                            <span>${emp.position}</span>
+                                                            <small>${emp.email}</small>
+                                                        </div>
+                                                        <div class="item-actions">
+                                                            <button class="btn-icon-small" onclick="viewEmployeeProfile(${emp.id})" title="Voir le profil">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                `).join('')
+                                            }
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="tab-section">
+                                        <h5><i class="fas fa-briefcase"></i> Postes (${departmentJobs.length})</h5>
+                                        <div class="items-list">
+                                            ${departmentJobs.length === 0 ? 
+                                                '<p class="empty-message">Aucun poste dans ce département</p>' :
+                                                departmentJobs.map(job => `
+                                                    <div class="item-card job-card">
+                                                        <div class="item-info">
+                                                            <strong>${job.title}</strong>
+                                                            <span>${job.employment_type}</span>
+                                                            <small class="priority-${job.priority}">${job.priority.toUpperCase()}</small>
+                                                        </div>
+                                                        <div class="item-actions">
+                                                            <button class="btn-icon-small" onclick="viewJobDetails(${job.id})" title="Voir les détails">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                `).join('')
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            departmentsList.innerHTML = html;
+        }
+        
+        // Fonction pour charger les départements dans un select
+        function loadDepartmentsInSelect(selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Sélectionner un département</option>';
+            
+            departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept.id;
+                option.textContent = dept.name;
+                select.appendChild(option);
+            });
+        }
+        
+        // Fonction pour charger les employés dans un select
+        function loadEmployeesInSelect(selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Aucun employé assigné</option>';
+            
+            employees.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.textContent = `${emp.first_name} ${emp.last_name} (${emp.position})`;
+                select.appendChild(option);
+            });
+        }
+        
+        function viewEmployeeProfile(employeeId) {
+            console.log('👤 FRONTEND: Ouverture profil employé:', employeeId);
+            window.open(`/employee-profile?id=${employeeId}`, '_blank');
+        }
+        
+        function viewJobDetails(jobId) {
+            console.log('💼 FRONTEND: Ouverture détails poste:', jobId);
+            window.open(`/job-details?id=${jobId}`, '_blank');
+        }
+        
+        // Fonctions placeholder
+        function exportData() {
+            console.log('📊 FRONTEND: Export données');
+            showNotification('Fonctionnalité en cours de développement', 'info');
+        }
+        
+        function generateReport() {
+            console.log('📈 FRONTEND: Génération rapport');
+            showNotification('Fonctionnalité en cours de développement', 'info');
+        }
+        
+        function clearActivity() {
+            console.log('🗑️ FRONTEND: Effacement activité');
+            if (confirm('Êtes-vous sûr de vouloir effacer toute l\'activité récente ?')) {
+                document.getElementById('activityTimeline').innerHTML = `
+                    <div class="empty-activity">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Aucune activité récente</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function clearApplications() {
+            console.log('🗑️ FRONTEND: Effacement candidatures');
+            showNotification('Fonctionnalité en cours de développement', 'info');
+        }
+        
+        function filterApplications(value) {
+            console.log('🔍 FRONTEND: Filtrage candidatures:', value);
+        }
+        
+        function filterDepartments() {
+            console.log('🔍 FRONTEND: Filtrage départements');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            // Implémenter le filtrage...
+        }
+        
+        // Fermer les modales en cliquant à l'extérieur
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.style.display = 'none';
+            }
+        });
+        
+        // Mise à jour de la couleur preview
+        document.getElementById('departmentColor').addEventListener('change', function() {
+            document.querySelector('.color-preview').style.backgroundColor = this.value;
+        });
+
+        // Fonction de notification améliorée
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle',
+            };
+
+            const colors = {
+                success: 'linear-gradient(135deg, #27ae60, #2ecc71)',
+                error: 'linear-gradient(135deg, #e74c3c, #c0392b)',
+                warning: 'linear-gradient(135deg, #f39c12, #e67e22)',
+                info: 'linear-gradient(135deg, #3498db, #2980b9)',
+            };
+
+            notification.innerHTML = `
+                <div class="notification-icon">
+                    <i class="fas ${icons[type]}"></i>
+                </div>
+                <div class="notification-content">
+                    <span>${message}</span>
+                </div>
+                <button class="notification-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            notification.style.cssText = `
+                position: fixed;
+                top: 2rem;
+                right: 2rem;
+                background: ${colors[type]};
+                color: white;
+                padding: 1rem;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                z-index: 20000;
+                backdrop-filter: blur(10px);
+                animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                min-width: 320px;
+                max-width: 450px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+        }
+    </script>
+
+    <style>
+        /* Styles améliorés pour les cartes de département */
+        .department-card-enhanced {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .department-card-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .department-card-enhanced:hover::before {
+            opacity: 1;
+        }
+        
+        .department-card-enhanced:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(231, 76, 60, 0.5);
+        }
+        
+        .department-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .department-info h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        
+        .department-info p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .manager {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .department-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .stat-badge {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.2), rgba(41, 128, 185, 0.1));
+            color: #3498db;
+            padding: 0.5rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+        
+        .stat-badge:hover {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.3), rgba(41, 128, 185, 0.2));
+            transform: scale(1.05);
+        }
+        
+        .stat-badge.employees {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.1));
+            color: #27ae60;
+            border-color: rgba(46, 204, 113, 0.3);
+        }
+        
+        .stat-badge.jobs {
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.2), rgba(230, 126, 34, 0.1));
+            color: #f39c12;
+            border-color: rgba(243, 156, 18, 0.3);
+        }
+        
+        .department-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .btn-expand {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-expand::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-expand:hover::before {
+            left: 100%;
+        }
+        
+        .btn-expand:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-expand.expanded {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .btn-expand.expanded:hover {
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+        }
+        
+        .btn-add-employee, .btn-add-job {
+            width: 45px;
+            height: 45px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-add-employee {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+        
+        .btn-add-job {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+        
+        .btn-add-employee:hover, .btn-add-job:hover {
+            transform: translateY(-2px) scale(1.05);
+        }
+        
+        .btn-add-employee:hover {
+            box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+        }
+        
+        .btn-add-job:hover {
+            box-shadow: 0 8px 25px rgba(243, 156, 18, 0.4);
+        }
+        
+        /* Styles pour les détails du département */
+        .department-details {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid var(--border-color);
+            animation: expandDetails 0.4s ease-out;
+        }
+        
+        @keyframes expandDetails {
+            from {
+                opacity: 0;
+                max-height: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                max-height: 1000px;
+                transform: translateY(0);
+            }
+        }
+        
+        .details-tabs {
+            display: grid;
+            gap: 1.5rem;
+        }
+        
+        .tab-section h5 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--hr-accent);
+        }
+        
+        .items-list {
+            display: grid;
+            gap: 0.75rem;
+        }
+        
+        .item-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .item-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+            border-color: rgba(231, 76, 60, 0.3);
+        }
+        
+        .item-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        
+        .item-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .item-info strong {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        
+        .item-info span {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        
+        .item-info small {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+        
+        .priority-urgent {
+            color: #e74c3c !important;
+            font-weight: bold;
+        }
+        
+        .priority-normal {
+            color: #27ae60 !important;
+        }
+        
+        .priority-low {
+            color: #95a5a6 !important;
+        }
+        
+        .item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-icon-small {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        
+        .btn-icon-small:hover {
+            background: #3498db;
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .empty-message {
+            color: var(--text-muted);
+            font-style: italic;
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px dashed var(--border-color);
+        }
+        
+        /* Styles pour l'activité récente */
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .activity-item:hover {
+            background-color: rgba(231, 76, 60, 0.05);
+            transform: translateX(5px);
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+        
+        .activity-icon.create {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.1));
+            color: #27ae60;
+            border: 2px solid rgba(46, 204, 113, 0.3);
+        }
+        
+        .activity-icon.update {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.2), rgba(41, 128, 185, 0.1));
+            color: #3498db;
+            border: 2px solid rgba(52, 152, 219, 0.3);
+        }
+        
+        .activity-icon.delete {
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.2), rgba(192, 57, 43, 0.1));
+            color: #e74c3c;
+            border: 2px solid rgba(231, 76, 60, 0.3);
+        }
+        
+        .activity-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .activity-description {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+        
+        .activity-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .activity-user {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .activity-time {
+            color: var(--text-muted);
+        }
+        
+        /* Amélioration des stats */
+        .stat-change.positive {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        
+        .stat-change.negative {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .stat-change.warning {
+            color: #f39c12;
+            font-weight: 600;
+        }
+        
+        /* Styles pour les notifications améliorées */
+        .notification {
+            border-radius: 16px !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .notification-content {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .notification-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notification-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        /* Animations */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .department-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .btn-expand {
+                width: 100%;
+            }
+            
+            .btn-add-employee, .btn-add-job {
+                width: 100%;
+                height: 40px;
+                border-radius: 8px;
+            }
+            
+            .department-stats {
+                flex-direction: row;
+                gap: 0.5rem;
+            }
+            
+            .stat-badge {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.6rem;
+            }
+        }
+    </style>
 </body>
 </html>

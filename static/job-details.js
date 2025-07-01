@@ -12,27 +12,56 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTimeline()
 })
 
-// Charger les données du job depuis localStorage
+// Charger les données du job depuis localStorage ou URL
 function loadJobData() {
-  const jobData = localStorage.getItem("selectedJob")
-  if (jobData) {
-    currentJob = JSON.parse(jobData)
-    displayJobInfo()
+  // Essayer de récupérer l'ID depuis l'URL
+  const urlParams = new URLSearchParams(window.location.search)
+  const jobId = urlParams.get("id")
+
+  if (jobId) {
+    // Charger depuis l'API
+    loadJobFromAPI(jobId)
   } else {
-    // Données par défaut si aucune donnée n'est trouvée
-    currentJob = {
-      id: 1,
-      title: "Développeur Full-Stack Senior",
-      departmentId: 1,
-      type: "cdi",
-      salary: "45000-55000",
-      description:
-        "Nous recherchons un développeur full-stack expérimenté pour rejoindre notre équipe dynamique. Vous travaillerez sur des projets innovants utilisant les dernières technologies web.",
-      priority: "normal",
-      deadline: "2024-04-15",
-      createdAt: new Date(),
+    // Essayer localStorage
+    const jobData = localStorage.getItem("selectedJob")
+    if (jobData) {
+      currentJob = JSON.parse(jobData)
+      displayJobInfo()
+    } else {
+      // Données par défaut si aucune donnée n'est trouvée
+      currentJob = {
+        id: 1,
+        title: "Développeur Full-Stack Senior",
+        department_id: 1,
+        employment_type: "CDI",
+        salary_min: 45000,
+        salary_max: 55000,
+        description:
+          "Nous recherchons un développeur full-stack expérimenté pour rejoindre notre équipe dynamique. Vous travaillerez sur des projets innovants utilisant les dernières technologies web.",
+        priority: "normal",
+        deadline: "2024-04-15",
+        created_at: new Date(),
+      }
+      displayJobInfo()
     }
-    displayJobInfo()
+  }
+}
+
+// Charger le job depuis l'API
+async function loadJobFromAPI(jobId) {
+  try {
+    const response = await fetch(`/api/job/${jobId}`)
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        currentJob = result.job
+        displayJobInfo()
+      }
+    }
+  } catch (error) {
+    console.error("Erreur chargement job:", error)
+    // Utiliser des données par défaut en cas d'erreur
+    loadJobData()
   }
 }
 
@@ -42,33 +71,40 @@ function displayJobInfo() {
 
   // Informations principales
   document.getElementById("jobTitle").textContent = currentJob.title
-  document.getElementById("jobDepartment").textContent = getDepartmentName(currentJob.departmentId)
+  document.getElementById("jobDepartment").textContent =
+    currentJob.department_name || getDepartmentName(currentJob.department_id)
   document.getElementById("jobDescription").textContent = currentJob.description
 
   // Badges
-  document.getElementById("jobType").textContent = currentJob.type.toUpperCase()
+  document.getElementById("jobType").textContent = currentJob.employment_type.toUpperCase()
 
   const priorityElement = document.getElementById("jobPriority")
   priorityElement.textContent = currentJob.priority
   priorityElement.className = `job-badge priority ${currentJob.priority}`
 
   // Salaire
-  document.getElementById("jobSalary").textContent = currentJob.salary ? `€ ${currentJob.salary}` : "Non spécifié"
+  let salaryText = "Non spécifié"
+  if (currentJob.salary_min && currentJob.salary_max) {
+    salaryText = `€ ${currentJob.salary_min} - ${currentJob.salary_max}`
+  } else if (currentJob.salary_min) {
+    salaryText = `€ ${currentJob.salary_min}+`
+  }
+  document.getElementById("jobSalary").textContent = salaryText
 
   // Détails
-  document.getElementById("contractType").textContent = currentJob.type.toUpperCase()
+  document.getElementById("contractType").textContent = currentJob.employment_type.toUpperCase()
   document.getElementById("jobDeadline").textContent = currentJob.deadline
     ? new Date(currentJob.deadline).toLocaleDateString("fr-FR")
     : "Non définie"
-  document.getElementById("jobCreated").textContent = new Date(currentJob.createdAt).toLocaleDateString("fr-FR")
+  document.getElementById("jobCreated").textContent = new Date(currentJob.created_at).toLocaleDateString("fr-FR")
 
   // Employé assigné
-  const assignedEmployee = getAssignedEmployee(currentJob.id)
-  document.getElementById("assignedEmployee").textContent = assignedEmployee || "Non assigné"
+  const assignedEmployee = currentJob.assigned_employee_name || "Non assigné"
+  document.getElementById("assignedEmployee").textContent = assignedEmployee
 
   // Statistiques simulées
-  document.getElementById("jobViews").textContent = Math.floor(Math.random() * 500) + 100
-  document.getElementById("jobApplications").textContent = applications.length
+  document.getElementById("jobViews").textContent = currentJob.views_count || Math.floor(Math.random() * 500) + 100
+  document.getElementById("jobApplications").textContent = currentJob.applications_count || applications.length
 
   // Calculer les jours restants
   if (currentJob.deadline) {
@@ -94,11 +130,9 @@ function getDepartmentName(departmentId) {
   return departments[departmentId] || "Département inconnu"
 }
 
-// Obtenir l'employé assigné (simulé)
-function getAssignedEmployee(jobId) {
-  // Simulation - dans une vraie app, ceci viendrait de la base de données
-  const employees = ["Marie Dubois", "Pierre Martin", "Sophie Laurent", "Thomas Durand"]
-  return Math.random() > 0.5 ? employees[Math.floor(Math.random() * employees.length)] : null
+// Fonction pour retourner au dashboard
+function goBackToDashboard() {
+  window.location.href = "/dashboard"
 }
 
 // Charger les candidatures
@@ -272,7 +306,7 @@ function closeJob() {
   if (confirm("Êtes-vous sûr de vouloir fermer ce poste ?")) {
     showNotification("Poste fermé avec succès", "success")
     setTimeout(() => {
-      window.close()
+      goBackToDashboard()
     }, 2000)
   }
 }

@@ -3,26 +3,26 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
 
-# Vos modèles existants (Contact, AnalyseCandidat, ProfileCandidat)
+# Modèles existants (Contact, AnalyseCandidat, ProfileCandidat)
 class Contact(Base):
     __tablename__ = "contact"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String)
-    phone = Column(String)
-    linkedin = Column(String)
-    address = Column(String)
+    email = Column(String(255))
+    phone = Column(String(50))
+    linkedin = Column(String(255))
+    address = Column(Text)
 
 class AnalyseCandidat(Base):
     __tablename__ = "analyse_candidat"
     id = Column(Integer, primary_key=True, index=True)
-    analyse = Column(String)
+    analyse = Column(Text)
 
 class ProfileCandidat(Base):
     __tablename__ = "profile_candidat"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    title = Column(String)
-    profile = Column(String)
+    name = Column(String(255))
+    title = Column(String(255))
+    profile = Column(Text)
     contact_id = Column(Integer, ForeignKey("contact.id"))
     analyse_id = Column(Integer, ForeignKey("analyse_candidat.id"))
     education = Column(JSON)
@@ -75,6 +75,16 @@ class Company(Base):
     created_by = Column(Integer, ForeignKey("hr_admins.id"))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class AdminCompanyAccess(Base):
+    __tablename__ = "admin_company_access"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    access_level = Column(Enum('owner', 'admin', 'viewer'), default='admin')
+    granted_at = Column(DateTime, default=func.now())
+    granted_by = Column(Integer, ForeignKey("hr_admins.id"))
 
 class Department(Base):
     __tablename__ = "departments"
@@ -182,4 +192,3 @@ class Application(Base):
     source = Column(String(100))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-
