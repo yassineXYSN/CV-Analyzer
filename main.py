@@ -530,19 +530,12 @@ async def jobs_page(
         joinedload(Job.department)
     )
     
-    # Join tables only once
-    company_joined = False
-    department_joined = False
-    
     # Apply filters
     filters = [Job.status == 'active']
     
     # Search filter
     if search:
-        if not company_joined:
-            query = query.join(Company)
-            company_joined = True
-        
+        query = query.join(Company)
         search_filter = or_(
             Job.title.ilike(f"%{search}%"),
             Job.description.ilike(f"%{search}%"),
@@ -552,18 +545,12 @@ async def jobs_page(
     
     # Location filter
     if location:
-        if not company_joined:
-            query = query.join(Company)
-            company_joined = True
-        
+        query = query.join(Company)
         filters.append(Company.address.ilike(f"%{location}%"))
     
     # Category filter
     if category:
-        if not department_joined:
-            query = query.join(Department)
-            department_joined = True
-        
+        query = query.join(Department)
         filters.append(Department.name.ilike(f"%{category}%"))
     
     # Employment type filter
@@ -603,13 +590,18 @@ async def jobs_page(
     # Create search params object
     search_params = SearchParams(search, location, category, employment_type, salary_min, salary_max)
     
+    # Get all departments for category dropdown
+    departments = db.query(Department.name).distinct().all()
+    categories = [dept[0] for dept in departments]
+    
     return templates.TemplateResponse("client-dep/jobs.html", {
         "request": request,
         "jobs": jobs,
         "pagination": pagination,
-        "search_params": search_params
+        "search_params": search_params,
+        "sort": sort,
+        "categories": categories
     })
-
 @app.get("/jobs/{job_id}", response_class=HTMLResponse)
 async def job_detail(request: Request, job_id: int, db: Session = Depends(get_db)):
     job = db.query(Job).options(
