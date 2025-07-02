@@ -170,12 +170,188 @@
         <!-- Demo Credentials -->
         <div class="demo-hint">
             <i class="fas fa-info-circle"></i>
-            <strong>Demo Client</strong>
-            <br>Email: client@cvanalyzer.com
-            <br>Mot de passe: client123
+            <strong>Créez votre compte</strong>
+            <br>ou utilisez les identifiants de test
+            <br>Email: test@example.com
+            <br>Mot de passe: password123
         </div>
     </div>
 
-    <script src="/static/client-dep/js/auth.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            initializeAuthPage()
+            initializePasswordToggles()
+            initializeFormValidation()
+            initializeSocialLogin()
+        })
+
+        function initializeAuthPage() {
+            console.log("Auth page initialized")
+
+            // Add focus effects to inputs
+            const inputs = document.querySelectorAll(".form-input")
+            inputs.forEach((input) => {
+                const container = input.closest(".input-container")
+
+                input.addEventListener("focus", () => {
+                    if (container) container.classList.add("focused")
+                })
+
+                input.addEventListener("blur", () => {
+                    if (container) container.classList.remove("focused")
+                })
+            })
+        }
+
+        function initializePasswordToggles() {
+            const passwordToggles = document.querySelectorAll(".password-toggle")
+
+            passwordToggles.forEach((toggle) => {
+                toggle.addEventListener("click", () => {
+                    const input = toggle.previousElementSibling
+                    const icon = toggle.querySelector("i")
+
+                    if (input.type === "password") {
+                        input.type = "text"
+                        icon.className = "fas fa-eye-slash"
+                    } else {
+                        input.type = "password"
+                        icon.className = "fas fa-eye"
+                    }
+                })
+            })
+        }
+
+        function initializeFormValidation() {
+            const form = document.getElementById("loginForm")
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault()
+
+                const formData = new FormData(form)
+                const isValid = validateForm(form, formData)
+
+                if (isValid) {
+                    await handleFormSubmission(form, formData)
+                }
+            })
+        }
+
+        function validateForm(form, formData) {
+            const errors = []
+
+            // Email validation
+            const email = formData.get("email")
+            if (!email || !isValidEmail(email)) {
+                errors.push("Adresse email invalide")
+            }
+
+            // Password validation
+            const password = formData.get("password")
+            if (!password || password.length < 1) {
+                errors.push("Mot de passe requis")
+            }
+
+            if (errors.length > 0) {
+                showFormError(errors[0])
+                return false
+            }
+
+            return true
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+            return emailRegex.test(email)
+        }
+
+        async function handleFormSubmission(form, formData) {
+            const submitBtn = form.querySelector(".submit-btn")
+            const btnContent = form.querySelector(".btn-content")
+            const loadingSpinner = form.querySelector(".loading-spinner")
+
+            // Show loading state
+            submitBtn.disabled = true
+            btnContent.style.display = "none"
+            loadingSpinner.style.display = "flex"
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    body: formData
+                })
+
+                const result = await response.json()
+
+                if (result.success) {
+                    showFormSuccess(result.message)
+                    setTimeout(() => {
+                        window.location.href = "/"
+                    }, 1500)
+                } else {
+                    showFormError(result.message)
+                    // Reset button state
+                    submitBtn.disabled = false
+                    btnContent.style.display = "flex"
+                    loadingSpinner.style.display = "none"
+                }
+            } catch (error) {
+                console.error('Login error:', error)
+                showFormError("Erreur de connexion. Veuillez réessayer.")
+                
+                // Reset button state
+                submitBtn.disabled = false
+                btnContent.style.display = "flex"
+                loadingSpinner.style.display = "none"
+            }
+        }
+
+        function initializeSocialLogin() {
+            const socialButtons = document.querySelectorAll(".social-btn")
+
+            socialButtons.forEach((button) => {
+                button.addEventListener("click", () => {
+                    const provider = button.classList.contains("google-btn")
+                        ? "Google"
+                        : button.classList.contains("microsoft-btn")
+                          ? "Microsoft"
+                          : "LinkedIn"
+
+                    showFormError(`Connexion ${provider} temporairement indisponible`)
+                })
+            })
+        }
+
+        function showFormError(message) {
+            const errorElement = document.getElementById("errorMessage")
+            const errorText = errorElement.querySelector("span")
+
+            if (errorElement) {
+                errorText.textContent = message
+                errorElement.style.display = "flex"
+
+                // Hide success message if visible
+                const successElement = document.getElementById("successMessage")
+                if (successElement) {
+                    successElement.style.display = "none"
+                }
+            }
+        }
+
+        function showFormSuccess(message) {
+            const successElement = document.getElementById("successMessage")
+
+            if (successElement) {
+                successElement.querySelector("span").textContent = message
+                successElement.style.display = "flex"
+
+                // Hide error message if visible
+                const errorElement = document.getElementById("errorMessage")
+                if (errorElement) {
+                    errorElement.style.display = "none"
+                }
+            }
+        }
+    </script>
 </body>
 </html>

@@ -17,11 +17,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def add_sample_jobs():
     db = SessionLocal()
     try:
-        # Check if we already have jobs
-        existing_jobs = db.query(Job).count()
-        if existing_jobs > 0:
-            print(f"Found {existing_jobs} existing jobs. Skipping sample data creation.")
-            return
 
         # Get existing companies
         companies = db.query(Company).all()

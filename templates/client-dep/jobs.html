@@ -7,21 +7,19 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* Base styles */
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --accent-gradient: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            --dark-bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --border-color: rgba(255, 255, 255, 0.08);
+            --danger-gradient: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+            --warning-gradient: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
+            --dark-bg: #0a0a0a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
             --text-primary: #ffffff;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --error-color: #ff6b6b;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --info-color: #60a5fa;
-            --radius: 12px;
-            --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            --text-secondary: #a0a0a0;
+            --text-muted: #707070;
+            --error-color: #ff4757;
         }
 
         * {
@@ -31,15 +29,14 @@
         }
 
         body {
-            font-family: "Inter", sans-serif;
-            background: var(--dark-bg);
-            min-height: 100vh;
-            color: var(--text-primary);
+            font-family: "Inter", sans-serif !important;
+            background: radial-gradient(ellipse at top, #1a1a2e 0%, #16213e 50%, #0f0f23 100%) !important;
+            min-height: 100vh !important;
+            color: var(--text-primary) !important;
             overflow-x: hidden;
             line-height: 1.6;
         }
 
-        /* Background Effects */
         .background-effects {
             position: fixed;
             top: 0;
@@ -47,8 +44,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: -1;
-            overflow: hidden;
+            z-index: 1;
         }
 
         .floating-shapes {
@@ -60,9 +56,8 @@
         .shape {
             position: absolute;
             border-radius: 50%;
-            background: linear-gradient(45deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.05));
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1));
             animation: float 20s ease-in-out infinite;
-            filter: blur(40px);
         }
 
         .shape:nth-child(1) {
@@ -90,23 +85,52 @@
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            33% { transform: translateY(-30px) rotate(120deg); opacity: 0.6; }
-            66% { transform: translateY(30px) rotate(240deg); opacity: 0.4; }
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+                opacity: 0.3;
+            }
+            33% {
+                transform: translateY(-30px) rotate(120deg);
+                opacity: 0.6;
+            }
+            66% {
+                transform: translateY(30px) rotate(240deg);
+                opacity: 0.4;
+            }
         }
 
-        /* Navigation */
-        .navbar {
-            position: fixed;
+        .grid-overlay {
+            position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 0;
-            transition: var(--transition);
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 30s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        .navbar {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 1000 !important;
+            background: rgba(10, 10, 10, 0.9) !important;
+            backdrop-filter: blur(20px) !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            padding: 1rem 0 !important;
+            transition: all 0.3s ease;
         }
 
         .nav-container {
@@ -119,12 +143,12 @@
         }
 
         .nav-logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            background: var(--accent-gradient) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -142,16 +166,16 @@
         }
 
         .nav-link {
-            color: var(--text-secondary);
-            text-decoration: none;
+            color: var(--text-secondary) !important;
+            text-decoration: none !important;
             font-weight: 500;
-            transition: var(--transition);
+            transition: color 0.3s ease;
             position: relative;
             padding: 0.5rem 0;
         }
 
-        .nav-link:hover, .nav-link.active {
-            color: var(--text-primary);
+        .nav-link:hover {
+            color: var(--text-primary) !important;
         }
 
         .nav-link::after {
@@ -162,10 +186,18 @@
             width: 0;
             height: 2px;
             background: var(--accent-gradient);
-            transition: var(--transition);
+            transition: width 0.3s ease;
         }
 
-        .nav-link:hover::after, .nav-link.active::after {
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .nav-link.active {
+            color: var(--text-primary) !important;
+        }
+
+        .nav-link.active::after {
             width: 100%;
         }
 
@@ -174,19 +206,17 @@
             cursor: pointer;
             flex-direction: column;
             gap: 5px;
-            z-index: 1100;
         }
 
         .bar {
             width: 25px;
             height: 3px;
             background: var(--text-primary);
-            transition: var(--transition);
+            transition: 0.3s;
         }
 
-        /* Breadcrumb */
         .breadcrumb {
-            background: rgba(30, 41, 59, 0.7);
+            background: rgba(255, 255, 255, 0.05);
             padding: 1rem 0;
             margin-top: 70px;
         }
@@ -199,13 +229,12 @@
             align-items: center;
             gap: 0.5rem;
             color: var(--text-secondary);
-            font-size: 0.9rem;
         }
 
         .breadcrumb a {
             color: var(--text-secondary);
             text-decoration: none;
-            transition: var(--transition);
+            transition: color 0.3s ease;
         }
 
         .breadcrumb a:hover {
@@ -221,7 +250,6 @@
             font-weight: 500;
         }
 
-        /* Main Content */
         .main-content {
             padding: 2rem 0;
             min-height: calc(100vh - 200px);
@@ -243,13 +271,12 @@
 
         .page-header h1 {
             font-size: 2.5rem;
-            font-weight: 800;
+            font-weight: 700;
             background: var(--accent-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 1rem;
-            letter-spacing: -0.5px;
+            margin-bottom: 0.5rem;
         }
 
         .page-header p {
@@ -259,13 +286,12 @@
             margin: 0 auto;
         }
 
-        /* Search Section */
         .search-section {
             background: var(--card-bg);
-            border-radius: var(--radius);
+            border-radius: 16px;
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             border: 1px solid var(--border-color);
             backdrop-filter: blur(10px);
         }
@@ -301,17 +327,17 @@
             width: 100%;
             padding: 1rem 1rem 1rem 2.5rem;
             border: 2px solid var(--border-color);
-            border-radius: var(--radius);
+            border-radius: 12px;
             font-size: 1rem;
-            transition: var(--transition);
-            background: rgba(15, 23, 42, 0.5);
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.2);
             color: var(--text-primary);
         }
 
         .search-input:focus {
             outline: none;
-            border-color: var(--info-color);
-            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .search-input::placeholder {
@@ -320,7 +346,7 @@
 
         .search-input.error {
             border-color: var(--error-color);
-            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+            box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
         }
 
         .search-btn {
@@ -328,20 +354,19 @@
             background: var(--accent-gradient);
             color: #000;
             border: none;
-            border-radius: var(--radius);
+            border-radius: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 0.5rem;
             white-space: nowrap;
             font-size: 1rem;
-            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
         }
 
         .search-btn:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
         }
 
@@ -351,82 +376,58 @@
             transform: none;
         }
 
-        /* Filters */
         .filters-row {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto;
             gap: 1rem;
-            align-items: start;
-        }
-
-        .filter-select-container {
-            position: relative;
-            margin-bottom: 1.5rem;
+            align-items: center;
         }
 
         .filter-select {
-            width: 100%;
             padding: 0.875rem 1rem;
             border: 2px solid var(--border-color);
-            border-radius: var(--radius);
+            border-radius: 12px;
             font-size: 0.95rem;
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(0, 0, 0, 0.2);
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             color: var(--text-primary);
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 16px;
         }
 
         .filter-select:focus {
             outline: none;
-            border-color: var(--info-color);
-            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .filter-select.error {
             border-color: var(--error-color);
-            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-        }
-
-        .salary-container {
-            grid-column: span 2;
-            display: flex;
-            flex-direction: column;
+            box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
         }
 
         .salary-range {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            flex-wrap: nowrap;
-        }
-
-        .salary-controls {
-            position: relative;
-            flex: 1;
-            min-width: 120px;
+            gap: 0.5rem;
         }
 
         .salary-input {
-            width: 100%;
-            padding: 0.875rem 2.5rem 0.875rem 1rem;
+            flex: 1;
+            padding: 0.875rem 1rem;
             border: 2px solid var(--border-color);
-            border-radius: var(--radius);
+            border-radius: 12px;
             font-size: 0.95rem;
-            text-align: left;
-            background: rgba(15, 23, 42, 0.5);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
             color: var(--text-primary);
-            transition: var(--transition);
+            transition: all 0.3s ease;
+            position: relative;
         }
 
         .salary-input:focus {
             outline: none;
-            border-color: var(--info-color);
-            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .salary-input::placeholder {
@@ -435,22 +436,27 @@
 
         .salary-input.error {
             border-color: var(--error-color);
-            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+            box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
+        }
+
+        .salary-controls {
+            position: relative;
+            flex: 1;
         }
 
         .salary-increment-btns {
             position: absolute;
-            right: 8px;
+            right: 5px;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 1px;
         }
 
         .salary-increment-btn {
-            width: 24px;
-            height: 18px;
+            width: 20px;
+            height: 15px;
             background: rgba(255, 255, 255, 0.1);
             border: none;
             color: var(--text-secondary);
@@ -459,8 +465,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: var(--transition);
-            border-radius: 4px;
+            transition: all 0.2s ease;
         }
 
         .salary-increment-btn:hover {
@@ -470,40 +475,36 @@
 
         .clear-filters-btn {
             padding: 0.875rem 1.5rem;
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(0, 0, 0, 0.2);
             color: var(--text-secondary);
             border: 2px solid var(--border-color);
-            border-radius: var(--radius);
+            border-radius: 12px;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 0.5rem;
             white-space: nowrap;
             font-weight: 500;
-            align-self: flex-start;
         }
 
         .clear-filters-btn:hover {
             background: rgba(255, 255, 255, 0.1);
             color: var(--text-primary);
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
 
         .error-message {
             color: var(--error-color);
             font-size: 0.85rem;
+            margin-top: 0.5rem;
             display: none;
-            position: absolute;
-            bottom: -22px;
-            left: 0;
-            width: 100%;
         }
 
         .form-validation-summary {
-            background: rgba(255, 107, 107, 0.1);
+            background: rgba(255, 71, 87, 0.1);
             border: 1px solid var(--error-color);
-            border-radius: var(--radius);
+            border-radius: 8px;
             padding: 1rem;
             margin-bottom: 1rem;
             display: none;
@@ -519,7 +520,6 @@
             margin-left: 1.5rem;
         }
 
-        /* Results */
         .results-info {
             display: flex;
             justify-content: space-between;
@@ -535,7 +535,7 @@
 
         .results-count .count {
             font-weight: 700;
-            color: var(--info-color);
+            color: #3b82f6;
         }
 
         .sort-options {
@@ -547,18 +547,17 @@
         .sort-select {
             padding: 0.5rem 1rem;
             border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
             cursor: pointer;
             color: var(--text-primary);
         }
 
         .sort-select:focus {
             outline: none;
-            border-color: var(--info-color);
+            border-color: #3b82f6;
         }
 
-        /* Loading Spinner */
         .loading-spinner {
             display: flex;
             flex-direction: column;
@@ -572,50 +571,50 @@
             width: 40px;
             height: 40px;
             border: 4px solid rgba(255, 255, 255, 0.1);
-            border-top: 4px solid var(--info-color);
+            border-top: 4px solid #3b82f6;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 1rem;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
-        /* Jobs Grid */
         .jobs-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 1.5rem;
+            gap: 2rem;
             margin-bottom: 3rem;
         }
 
         .job-card {
             background: var(--card-bg);
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
-            transition: var(--transition);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
             border: 1px solid var(--border-color);
             position: relative;
             cursor: pointer;
             backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
         }
 
         .job-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .job-header {
             display: flex;
             gap: 1rem;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
             position: relative;
         }
 
@@ -646,25 +645,24 @@
         }
 
         .job-title {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 700;
             color: var(--text-primary);
-            margin: 0 0 0.25rem 0;
+            margin: 0 0 0.5rem 0;
             line-height: 1.3;
         }
 
         .company-name {
             color: var(--text-secondary);
             font-weight: 500;
-            margin: 0 0 0.5rem 0;
-            font-size: 0.95rem;
+            margin: 0 0 0.75rem 0;
+            font-size: 1rem;
         }
 
         .job-meta {
             display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            font-size: 0.85rem;
+            gap: 1.5rem;
+            font-size: 0.9rem;
             color: var(--text-secondary);
         }
 
@@ -684,41 +682,44 @@
             right: 0;
             background: none;
             border: none;
-            font-size: 1.25rem;
+            font-size: 1.4rem;
             color: var(--text-muted);
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             padding: 0.5rem;
             border-radius: 8px;
         }
 
         .save-job-btn:hover {
-            color: var(--error-color);
+            color: #ef4444;
             background: rgba(239, 68, 68, 0.1);
             transform: scale(1.1);
         }
 
         .save-job-btn.saved {
-            color: var(--error-color);
+            color: #ef4444;
+        }
+
+        .save-job-btn.saved i {
+            font-weight: 900;
         }
 
         .job-description {
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
             color: var(--text-secondary);
             line-height: 1.6;
             font-size: 0.95rem;
-            flex: 1;
         }
 
         .job-tags {
             display: flex;
             flex-wrap: wrap;
             gap: 0.5rem;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
         }
 
         .tag {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.1);
             color: var(--text-secondary);
             padding: 0.3rem 0.8rem;
             border-radius: 20px;
@@ -739,7 +740,7 @@
             display: flex;
             flex-direction: column;
             gap: 0.4rem;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: var(--text-secondary);
         }
 
@@ -750,7 +751,7 @@
         }
 
         .salary {
-            color: var(--success-color) !important;
+            color: #059669 !important;
             font-weight: 600;
         }
 
@@ -761,20 +762,20 @@
 
         .view-job-btn {
             padding: 0.6rem 1.2rem;
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(0, 0, 0, 0.2);
             color: var(--text-primary);
             text-decoration: none;
-            border-radius: var(--radius);
+            border-radius: 8px;
             font-size: 0.9rem;
             font-weight: 500;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             border: 1px solid var(--border-color);
         }
 
         .view-job-btn:hover {
             background: rgba(255, 255, 255, 0.1);
             color: var(--text-primary);
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
 
         .apply-btn {
@@ -782,18 +783,18 @@
             background: var(--accent-gradient);
             color: #000;
             border: none;
-            border-radius: var(--radius);
+            border-radius: 8px;
             font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 0.4rem;
         }
 
         .apply-btn:hover {
-            transform: translateY(-2px);
+            transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3);
         }
 
@@ -823,7 +824,6 @@
             font-size: 4rem;
             color: var(--text-muted);
             margin-bottom: 1.5rem;
-            opacity: 0.5;
         }
 
         .no-jobs h3 {
@@ -839,7 +839,6 @@
             margin-right: auto;
         }
 
-        /* Pagination */
         .pagination {
             display: flex;
             flex-direction: column;
@@ -859,7 +858,7 @@
             align-items: center;
             gap: 0.5rem;
             background: var(--card-bg);
-            border-radius: var(--radius);
+            border-radius: 12px;
             padding: 1rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             border: 1px solid var(--border-color);
@@ -867,13 +866,13 @@
 
         .pagination-btn {
             padding: 0.75rem 1rem;
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(0, 0, 0, 0.2);
             color: var(--text-primary);
             text-decoration: none;
             border: 1px solid var(--border-color);
-            border-radius: var(--radius);
+            border-radius: 8px;
             font-weight: 500;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -881,9 +880,9 @@
 
         .pagination-btn:hover {
             background: rgba(255, 255, 255, 0.1);
-            border-color: var(--info-color);
-            color: var(--info-color);
-            transform: translateY(-2px);
+            border-color: #3b82f6;
+            color: #3b82f6;
+            transform: translateY(-1px);
         }
 
         .page-numbers {
@@ -894,28 +893,28 @@
 
         .page-number {
             padding: 0.6rem 0.8rem;
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(0, 0, 0, 0.2);
             color: var(--text-primary);
             text-decoration: none;
             border: 1px solid var(--border-color);
-            border-radius: var(--radius);
+            border-radius: 8px;
             font-weight: 500;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             min-width: 40px;
             text-align: center;
         }
 
         .page-number:hover {
             background: rgba(255, 255, 255, 0.1);
-            border-color: var(--info-color);
-            color: var(--info-color);
-            transform: translateY(-2px);
+            border-color: #3b82f6;
+            color: #3b82f6;
+            transform: translateY(-1px);
         }
 
         .page-number.active {
-            background: var(--info-color);
+            background: #3b82f6;
             color: white;
-            border-color: var(--info-color);
+            border-color: #3b82f6;
         }
 
         .page-ellipsis {
@@ -923,13 +922,12 @@
             color: var(--text-muted);
         }
 
-        /* Toast */
         .toast {
             position: fixed;
             top: 20px;
             right: 20px;
             background: var(--card-bg);
-            border-radius: var(--radius);
+            border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
             padding: 1rem 1.5rem;
             display: none;
@@ -937,9 +935,9 @@
             gap: 1rem;
             z-index: 1000;
             max-width: 400px;
-            border-left: 4px solid var(--info-color);
+            border-left: 4px solid #3b82f6;
             transform: translateX(400px);
-            transition: var(--transition);
+            transition: all 0.3s ease;
             backdrop-filter: blur(10px);
         }
 
@@ -949,11 +947,11 @@
         }
 
         .toast.success {
-            border-left-color: var(--success-color);
+            border-left-color: #10b981;
         }
 
         .toast.error {
-            border-left-color: var(--error-color);
+            border-left-color: #ef4444;
         }
 
         .toast-content {
@@ -968,15 +966,15 @@
         }
 
         .toast.success .toast-icon {
-            color: var(--success-color);
+            color: #10b981;
         }
 
         .toast.error .toast-icon {
-            color: var(--error-color);
+            color: #ef4444;
         }
 
         .toast.info .toast-icon {
-            color: var(--info-color);
+            color: #3b82f6;
         }
 
         .toast-message {
@@ -991,7 +989,7 @@
             cursor: pointer;
             padding: 0.25rem;
             border-radius: 4px;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             font-size: 1.2rem;
         }
 
@@ -1000,9 +998,8 @@
             color: var(--text-primary);
         }
 
-        /* Footer */
         .footer {
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(20px);
             border-top: 1px solid var(--border-color);
             padding: 3rem 0 2rem;
@@ -1021,23 +1018,11 @@
         .footer-section h3 {
             font-size: 1.3rem;
             color: var(--text-primary);
-            margin-bottom: 1.5rem;
-            position: relative;
-            padding-bottom: 0.5rem;
-        }
-
-        .footer-section h3::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 40px;
-            height: 2px;
-            background: var(--accent-gradient);
+            margin-bottom: 1rem;
         }
 
         .footer-section p, .footer-section li {
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
             color: var(--text-secondary);
         }
 
@@ -1048,13 +1033,11 @@
         .footer-section a {
             color: var(--text-secondary);
             text-decoration: none;
-            transition: var(--transition);
-            display: inline-block;
+            transition: color 0.3s ease;
         }
 
         .footer-section a:hover {
             color: var(--text-primary);
-            transform: translateX(5px);
         }
 
         .footer-bottom {
@@ -1066,7 +1049,6 @@
             font-size: 0.9rem;
         }
 
-        /* Responsive */
         @media (max-width: 1024px) {
             .search-row {
                 grid-template-columns: 1fr;
@@ -1074,16 +1056,15 @@
             }
 
             .filters-row {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr;
             }
-            
-            .salary-container {
-                grid-column: span 2;
+
+            .salary-range {
+                grid-column: 1 / -1;
             }
-            
-            .clear-filters-btn {
-                grid-column: span 2;
-                width: 100%;
+
+            .jobs-grid {
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             }
         }
 
@@ -1091,16 +1072,16 @@
             .nav-menu {
                 position: fixed;
                 left: -100%;
-                top: 0;
-                height: 100vh;
+                top: 70px;
                 gap: 0;
                 flex-direction: column;
                 background-color: var(--card-bg);
-                width: 280px;
-                padding: 6rem 2rem 2rem;
-                transition: var(--transition);
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+                width: 100%;
+                text-align: center;
+                transition: 0.3s;
+                box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
                 z-index: 1000;
+                padding: 2rem 0;
                 backdrop-filter: blur(20px);
             }
 
@@ -1173,23 +1154,11 @@
             }
 
             .search-section {
-                padding: 1.25rem;
-            }
-
-            .filters-row {
-                grid-template-columns: 1fr;
-            }
-
-            .salary-container, .clear-filters-btn {
-                grid-column: 1;
-            }
-
-            .salary-range {
-                flex-direction: column;
+                padding: 1rem;
             }
 
             .job-card {
-                padding: 1.25rem;
+                padding: 1rem;
             }
 
             .job-header {
@@ -1217,6 +1186,7 @@
             <div class="shape"></div>
             <div class="shape"></div>
         </div>
+        <div class="grid-overlay"></div>
     </div>
 
     <!-- Navigation -->
@@ -1283,14 +1253,14 @@
                         <div class="search-field">
                             <i class="fas fa-search"></i>
                             <input type="text" name="search" placeholder="Rechercher un poste, entreprise..." 
-                                   value="{{ search_params.search }}" 
+                                   value="{{ search_params.search if search_params else '' }}" 
                                    class="search-input" id="searchInput">
                             <div class="error-message" id="searchError">Ce champ est requis</div>
                         </div>
                         <div class="search-field">
                             <i class="fas fa-map-marker-alt"></i>
                             <input type="text" name="location" placeholder="Ville, région..." 
-                                   value="{{ search_params.location }}" 
+                                   value="{{ search_params.location if search_params else '' }}" 
                                    class="search-input" id="locationInput">
                             <div class="error-message" id="locationError">Ce champ est requis</div>
                         </div>
@@ -1301,60 +1271,57 @@
                     </div>
                     
                     <div class="filters-row">
-                        <div class="filter-select-container">
-                            <select name="category" class="filter-select" id="categorySelect">
-                                <option value="">Sélectionnez une catégorie</option>
-                                {% for category in categories %}
-                                <option value="{{ category }}" {% if search_params.category == category %}selected{% endif %}>
-                                    {{ category }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <div class="error-message" id="categoryError">Veuillez sélectionner une catégorie</div>
-                        </div>
+                        <select name="category" class="filter-select" id="categorySelect">
+                            <option value="">Toutes les catégories</option>
+                            <option value="Développement" {% if search_params and search_params.category == 'Développement' %}selected{% endif %}>Développement</option>
+                            <option value="Data & Analytics" {% if search_params and search_params.category == 'Data & Analytics' %}selected{% endif %}>Data & Analytics</option>
+                            <option value="Design" {% if search_params and search_params.category == 'Design' %}selected{% endif %}>Design</option>
+                            <option value="Marketing" {% if search_params and search_params.category == 'Marketing' %}selected{% endif %}>Marketing</option>
+                            <option value="Finance" {% if search_params and search_params.category == 'Finance' %}selected{% endif %}>Finance</option>
+                            <option value="Ressources Humaines" {% if search_params and search_params.category == 'Ressources Humaines' %}selected{% endif %}>Ressources Humaines</option>
+                        </select>
+                        <div class="error-message" id="categoryError">Veuillez sélectionner une catégorie</div>
                         
-                        <div class="filter-select-container">
-                            <select name="employment_type" class="filter-select" id="employmentTypeSelect">
-                                <option value="">Sélectionnez le type de contrat</option>
-                                <option value="CDI" {% if search_params.employment_type == 'CDI' %}selected{% endif %}>CDI</option>
-                                <option value="CDD" {% if search_params.employment_type == 'CDD' %}selected{% endif %}>CDD</option>
-                                <option value="STAGE" {% if search_params.employment_type == 'STAGE' %}selected{% endif %}>Stage</option>
-                                <option value="FREELANCE" {% if search_params.employment_type == 'FREELANCE' %}selected{% endif %}>Freelance</option>
-                                <option value="ALTERNANCE" {% if search_params.employment_type == 'ALTERNANCE' %}selected{% endif %}>Alternance</option>
-                            </select>
-                            <div class="error-message" id="employmentTypeError">Veuillez sélectionner un type de contrat</div>
-                        </div>
+                        <select name="employment_type" class="filter-select" id="employmentTypeSelect">
+                            <option value="">Tous les types de contrat</option>
+                            <option value="CDI" {% if search_params and search_params.employment_type == 'CDI' %}selected{% endif %}>CDI</option>
+                            <option value="CDD" {% if search_params and search_params.employment_type == 'CDD' %}selected{% endif %}>CDD</option>
+                            <option value="STAGE" {% if search_params and search_params.employment_type == 'STAGE' %}selected{% endif %}>Stage</option>
+                            <option value="FREELANCE" {% if search_params and search_params.employment_type == 'FREELANCE' %}selected{% endif %}>Freelance</option>
+                            <option value="ALTERNANCE" {% if search_params and search_params.employment_type == 'ALTERNANCE' %}selected{% endif %}>Alternance</option>
+                        </select>
+                        <div class="error-message" id="employmentTypeError">Veuillez sélectionner un type de contrat</div>
                         
-                        <div class="salary-container">
-                            <div class="salary-range">
-                                <div class="salary-controls">
-                                    <input type="number" name="salary_min" placeholder="Salaire min (€)" 
-                                        value="{{ search_params.salary_min }}" class="salary-input" id="salaryMinInput" min="1000" step="1000">
-                                    <div class="salary-increment-btns">
-                                        <button type="button" class="salary-increment-btn" onclick="incrementSalary('salaryMinInput', 1000)">
-                                            <i class="fas fa-chevron-up"></i>
-                                        </button>
-                                        <button type="button" class="salary-increment-btn" onclick="incrementSalary('salaryMinInput', -1000)">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <span style="margin: 0 5px">-</span>
-                                <div class="salary-controls">
-                                    <input type="number" name="salary_max" placeholder="Salaire max (€)" 
-                                        value="{{ search_params.salary_max }}" class="salary-input" id="salaryMaxInput" min="1000" step="1000">
-                                    <div class="salary-increment-btns">
-                                        <button type="button" class="salary-increment-btn" onclick="incrementSalary('salaryMaxInput', 1000)">
-                                            <i class="fas fa-chevron-up"></i>
-                                        </button>
-                                        <button type="button" class="salary-increment-btn" onclick="incrementSalary('salaryMaxInput', -1000)">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </button>
-                                    </div>
+                        <div class="salary-range">
+                            <div class="salary-controls">
+                                <input type="number" name="salary_min" placeholder="Salaire min (€)" 
+                                       value="{{ search_params.salary_min if search_params else '' }}" 
+                                       class="salary-input" id="salaryMinInput" min="1000" step="1000">
+                                <div class="salary-increment-btns">
+                                    <button type="button" class="salary-increment-btn" onclick="incrementSalary('salaryMinInput', 1000)">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <button type="button" class="salary-increment-btn" onclick="incrementSalary('salaryMinInput', -1000)">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="error-message" id="salaryError">Veuillez saisir une fourchette de salaire valide</div>
+                            <span>-</span>
+                            <div class="salary-controls">
+                                <input type="number" name="salary_max" placeholder="Salaire max (€)" 
+                                       value="{{ search_params.salary_max if search_params else '' }}" 
+                                       class="salary-input" id="salaryMaxInput" min="1000" step="1000">
+                                <div class="salary-increment-btns">
+                                    <button type="button" class="salary-increment-btn" onclick="incrementSalary('salaryMaxInput', 1000)">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <button type="button" class="salary-increment-btn" onclick="incrementSalary('salaryMaxInput', -1000)">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+                        <div class="error-message" id="salaryError">Veuillez saisir une fourchette de salaire valide</div>
                         
                         <button type="button" class="clear-filters-btn" onclick="clearFilters()">
                             <i class="fas fa-times"></i>
@@ -1367,7 +1334,7 @@
             <!-- Results Info -->
             <div class="results-info">
                 <div class="results-count">
-                    <span class="count">{{ pagination.total_jobs }}</span> offres trouvées
+                    <span class="count">{{ pagination.total_jobs if pagination else 0 }}</span> offres trouvées
                 </div>
                 <div class="sort-options">
                     <select class="sort-select" onchange="sortJobs(this.value)" id="sortSelect">
@@ -1375,6 +1342,7 @@
                         <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Plus anciennes</option>
                         <option value="salary_high" {% if sort == 'salary_high' %}selected{% endif %}>Salaire décroissant</option>
                         <option value="salary_low" {% if sort == 'salary_low' %}selected{% endif %}>Salaire croissant</option>
+                        <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>Pertinence</option>
                     </select>
                 </div>
             </div>
@@ -1395,16 +1363,16 @@
                                 {% if job.company and job.company.logo_url %}
                                     <img src="{{ job.company.logo_url }}" alt="{{ job.company.company_name }}">
                                 {% else %}
-                                    <i class="fas fa-building"></i>
+                                    {{ job.company.company_name[0] if job.company else 'C' }}
                                 {% endif %}
                             </div>
                             <div class="job-info">
                                 <h3 class="job-title">{{ job.title }}</h3>
-                                <p class="company-name">{{ job.company.company_name if job.company else 'Entreprise Confidentielle' }}</p>
+                                <p class="company-name">{{ job.company.company_name if job.company else 'Entreprise' }}</p>
                                 <div class="job-meta">
                                     <span class="location">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        {{ job.company.address if job.company and job.company.address else 'Non spécifié' }}
+                                        {{ job.company.address.split(',')[0] if job.company and job.company.address else 'Non spécifié' }}
                                     </span>
                                     <span class="employment-type">
                                         <i class="fas fa-briefcase"></i>
@@ -1422,24 +1390,32 @@
                         </div>
                         
                         <div class="job-description">
-                            <p>{{ job.description[:200] }}...</p>
+                            <p>{{ job.description[:200] }}{% if job.description|length > 200 %}...{% endif %}</p>
                         </div>
                         
                         <div class="job-tags">
                             <span class="tag">{{ job.employment_type }}</span>
-                            <span class="tag">{{ job.department.name if job.department else 'Non spécifié' }}</span>
+                            {% if job.department %}
+                                <span class="tag">{{ job.department.name }}</span>
+                            {% endif %}
+                            {% if job.priority == 'urgent' %}
+                                <span class="tag">Urgent</span>
+                            {% endif %}
                         </div>
                         
                         <div class="job-footer">
                             <div class="job-stats">
+                                {% if job.salary_min and job.salary_max %}
                                 <span class="salary">
                                     <i class="fas fa-euro-sign"></i>
-                                    {% if job.salary_min and job.salary_max %}
-                                        {{ job.salary_min|int }} - {{ job.salary_max|int }} €
-                                    {% else %}
-                                        Salaire non spécifié
-                                    {% endif %}
+                                    {{ "{:,.0f}".format(job.salary_min) }} - {{ "{:,.0f}".format(job.salary_max) }} {{ job.currency }}
                                 </span>
+                                {% elif job.salary_min %}
+                                <span class="salary">
+                                    <i class="fas fa-euro-sign"></i>
+                                    À partir de {{ "{:,.0f}".format(job.salary_min) }} {{ job.currency }}
+                                </span>
+                                {% endif %}
                                 <span class="applications">
                                     <i class="fas fa-users"></i>
                                     {{ job.applications_count }} candidatures
@@ -1457,7 +1433,7 @@
                         </div>
                         
                         <div class="job-date">
-                            Publié le {{ job.created_at.strftime('%d/%m/%Y') }}
+                            Publié le {{ job.created_at.strftime('%d/%m/%Y') if job.created_at else 'Récemment' }}
                         </div>
                     </div>
                     {% endfor %}
@@ -1467,9 +1443,8 @@
                             <i class="fas fa-search"></i>
                         </div>
                         <h3>Aucune offre trouvée</h3>
-                        <p>Essayez de modifier vos critères de recherche</p>
+                        <p>Essayez de modifier vos critères de recherche ou explorez d'autres catégories</p>
                         <button class="clear-filters-btn" onclick="clearFilters()">
-                            <i class="fas fa-times"></i>
                             Effacer les filtres
                         </button>
                     </div>
@@ -1477,20 +1452,17 @@
             </div>
 
             <!-- Pagination -->
-            {% if pagination.total_pages > 1 %}
+            {% if pagination and pagination.total_pages > 1 %}
             <div class="pagination">
                 <div class="pagination-info">
-                    Page {{ pagination.current_page }} sur {{ pagination.total_pages }} ({{ pagination.total_jobs }} offres au total)
+                    Page {{ pagination.current_page }} sur {{ pagination.total_pages }}
+                    ({{ pagination.total_jobs }} offres au total)
                 </div>
                 
                 <div class="pagination-controls">
                     {% if pagination.has_prev %}
-                    <a href="/jobs?page={{ pagination.prev_page }}&search={{ search_params.search }}&location={{ search_params.location }}&category={{ search_params.category }}&employment_type={{ search_params.employment_type }}&salary_min={{ search_params.salary_min }}&salary_max={{ search_params.salary_max }}&sort={{ sort }}" class="pagination-btn">
-                        <i class="fas fa-chevron-left"></i>
-                        Précédent
-                    </a>
-                    {% else %}
-                    <a class="pagination-btn disabled">
+                    <a href="?page={{ pagination.prev_page }}{% for key, value in request.query_params.items() %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="pagination-btn">
                         <i class="fas fa-chevron-left"></i>
                         Précédent
                     </a>
@@ -1499,20 +1471,21 @@
                     <div class="page-numbers">
                         {% for page_num in range(1, pagination.total_pages + 1) %}
                             {% if page_num == pagination.current_page %}
-                            <span class="page-number active">{{ page_num }}</span>
-                            {% else %}
-                            <a href="/jobs?page={{ page_num }}&search={{ search_params.search }}&location={{ search_params.location }}&category={{ search_params.category }}&employment_type={{ search_params.employment_type }}&salary_min={{ search_params.salary_min }}&salary_max={{ search_params.salary_max }}&sort={{ sort }}" class="page-number">{{ page_num }}</a>
+                                <span class="page-number active">{{ page_num }}</span>
+                            {% elif page_num <= 3 or page_num > pagination.total_pages - 3 or (page_num >= pagination.current_page - 1 and page_num <= pagination.current_page + 1) %}
+                                <a href="?page={{ page_num }}{% for key, value in request.query_params.items() %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                   class="page-number">{{ page_num }}</a>
+                            {% elif page_num == 4 and pagination.current_page > 5 %}
+                                <span class="page-ellipsis">...</span>
+                            {% elif page_num == pagination.total_pages - 3 and pagination.current_page < pagination.total_pages - 4 %}
+                                <span class="page-ellipsis">...</span>
                             {% endif %}
                         {% endfor %}
                     </div>
                     
                     {% if pagination.has_next %}
-                    <a href="/jobs?page={{ pagination.next_page }}&search={{ search_params.search }}&location={{ search_params.location }}&category={{ search_params.category }}&employment_type={{ search_params.employment_type }}&salary_min={{ search_params.salary_min }}&salary_max={{ search_params.salary_max }}&sort={{ sort }}" class="pagination-btn">
-                        Suivant
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                    {% else %}
-                    <a class="pagination-btn disabled">
+                    <a href="?page={{ pagination.next_page }}{% for key, value in request.query_params.items() %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="pagination-btn">
                         Suivant
                         <i class="fas fa-chevron-right"></i>
                     </a>
@@ -1528,7 +1501,7 @@
         <div class="footer-content">
             <div class="footer-section">
                 <h3>CV Analyzer Pro</h3>
-                <p>Votre partenaire pour une carrière réussie. Nous vous aidons à trouver les meilleures opportunités et à optimiser votre parcours professionnel.</p>
+                <p>Votre partenaire pour une carrière réussie</p>
             </div>
             <div class="footer-section">
                 <h4>Services</h4>
@@ -1536,26 +1509,15 @@
                     <li><a href="/analyze">Analyse CV</a></li>
                     <li><a href="/jobs">Offres d'emploi</a></li>
                     <li><a href="/profile">Profil candidat</a></li>
-                    <li><a href="#">Conseils carrière</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h4>Support</h4>
                 <ul>
-                    <li><a href="#">Centre d'aide</a></li>
-                    <li><a href="#">Nous contacter</a></li>
+                    <li><a href="#">Aide</a></li>
+                    <li><a href="#">Contact</a></li>
                     <li><a href="#">FAQ</a></li>
-                    <li><a href="#">Conditions d'utilisation</a></li>
                 </ul>
-            </div>
-            <div class="footer-section">
-                <h4>Réseaux sociaux</h4>
-                <div class="social-links">
-                    <a href="#"><i class="fab fa-linkedin"></i> LinkedIn</a>
-                    <a href="#"><i class="fab fa-twitter"></i> Twitter</a>
-                    <a href="#"><i class="fab fa-facebook"></i> Facebook</a>
-                    <a href="#"><i class="fab fa-instagram"></i> Instagram</a>
-                </div>
             </div>
         </div>
         <div class="footer-bottom">
@@ -1602,11 +1564,20 @@
                 });
             }
             
-            // Initialize form validation
+            // Initialize form validation (now more flexible)
             initializeFormValidation()
+
+            // Initialize search functionality
+            initializeSearch()
 
             // Initialize job interactions
             initializeJobInteractions()
+
+            // Initialize filters
+            initializeFilters()
+
+            // Initialize pagination
+            initializePagination()
 
             // Initialize toast notifications
             initializeToast()
@@ -1625,8 +1596,8 @@
             const validationSummary = document.getElementById('validationSummary');
             const validationErrors = document.getElementById('validationErrors');
 
-            // Real-time validation
-            const requiredFields = [
+            // Optional field validation - only validate if user has entered data
+            const fields = [
                 { id: 'searchInput', name: 'Recherche', errorId: 'searchError' },
                 { id: 'locationInput', name: 'Localisation', errorId: 'locationError' },
                 { id: 'categorySelect', name: 'Catégorie', errorId: 'categoryError' },
@@ -1635,31 +1606,34 @@
                 { id: 'salaryMaxInput', name: 'Salaire maximum', errorId: 'salaryError' }
             ];
 
-            requiredFields.forEach(field => {
+            fields.forEach(field => {
                 const element = document.getElementById(field.id);
                 if (element) {
-                    element.addEventListener('blur', () => validateField(field));
+                    element.addEventListener('blur', () => validateFieldOptional(field));
                     element.addEventListener('input', () => clearFieldError(field));
                 }
             });
 
-            function validateField(field) {
+            function validateFieldOptional(field) {
                 const element = document.getElementById(field.id);
                 const errorElement = document.getElementById(field.errorId);
                 
-                if (!element.value.trim()) {
-                    element.classList.add('error');
-                    if (errorElement) {
-                        errorElement.style.display = 'block';
+                // Only validate if field has content
+                if (element.value.trim()) {
+                    // Special validation for salary fields
+                    if (field.id.includes('salary')) {
+                        return validateSalaryRange();
                     }
-                    return false;
+                    
+                    // Clear any existing errors for valid content
+                    element.classList.remove('error');
+                    if (errorElement) {
+                        errorElement.style.display = 'none';
+                    }
+                    return true;
                 }
                 
-                // Special validation for salary fields
-                if (field.id.includes('salary')) {
-                    return validateSalaryRange();
-                }
-                
+                // No validation required for empty fields
                 return true;
             }
 
@@ -1667,11 +1641,9 @@
                 const element = document.getElementById(field.id);
                 const errorElement = document.getElementById(field.errorId);
                 
-                if (element.value.trim()) {
-                    element.classList.remove('error');
-                    if (errorElement) {
-                        errorElement.style.display = 'none';
-                    }
+                element.classList.remove('error');
+                if (errorElement) {
+                    errorElement.style.display = 'none';
                 }
             }
 
@@ -1683,10 +1655,11 @@
                 const minValue = parseInt(minInput.value);
                 const maxValue = parseInt(maxInput.value);
                 
-                let isValid = true;
-                let errorMessage = '';
-
+                // Only validate if both fields have values
                 if (minInput.value && maxInput.value) {
+                    let isValid = true;
+                    let errorMessage = '';
+
                     if (minValue >= maxValue) {
                         errorMessage = 'Le salaire minimum doit être inférieur au salaire maximum';
                         isValid = false;
@@ -1694,41 +1667,46 @@
                         errorMessage = 'Le salaire doit être d\'au moins 1000€';
                         isValid = false;
                     }
+
+                    if (!isValid) {
+                        minInput.classList.add('error');
+                        maxInput.classList.add('error');
+                        if (errorElement) {
+                            errorElement.textContent = errorMessage;
+                            errorElement.style.display = 'block';
+                        }
+                    } else {
+                        minInput.classList.remove('error');
+                        maxInput.classList.remove('error');
+                        if (errorElement) {
+                            errorElement.style.display = 'none';
+                        }
+                    }
+
+                    return isValid;
                 }
 
-                if (!isValid) {
-                    minInput.classList.add('error');
-                    maxInput.classList.add('error');
-                    if (errorElement) {
-                        errorElement.textContent = errorMessage;
-                        errorElement.style.display = 'block';
-                    }
-                } else {
-                    minInput.classList.remove('error');
-                    maxInput.classList.remove('error');
-                    if (errorElement) {
-                        errorElement.style.display = 'none';
-                    }
+                // Clear errors if one or both fields are empty
+                minInput.classList.remove('error');
+                maxInput.classList.remove('error');
+                if (errorElement) {
+                    errorElement.style.display = 'none';
                 }
-
-                return isValid;
+                
+                return true;
             }
 
             function validateForm() {
                 let isValid = true;
                 const errors = [];
 
-                requiredFields.forEach(field => {
-                    if (!validateField(field)) {
-                        isValid = false;
-                        errors.push(field.name + ' est requis');
-                    }
-                });
-
+                // Check salary range if both values are provided
                 if (!validateSalaryRange()) {
                     isValid = false;
+                    errors.push('Fourchette de salaire invalide');
                 }
 
+                // Form is valid if no errors (we don't require any fields to be filled)
                 if (!isValid) {
                     validationErrors.innerHTML = '';
                     errors.forEach(error => {
@@ -1747,18 +1725,15 @@
                 return isValid;
             }
 
-            // Form submission validation
+            // Form submission - now allows real submission to backend
             if (form) {
                 form.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    
                     if (validateForm()) {
-                        console.log("Form validation passed, submitting...");
+                        console.log("Form validation passed, submitting to backend...");
                         showLoadingSpinner();
-                        
-                        // Submit the form
-                        form.submit();
+                        // Let the form submit naturally to the backend - don't prevent default
                     } else {
+                        e.preventDefault(); // Only prevent if validation fails
                         showToast("Veuillez corriger les erreurs dans le formulaire", "error");
                     }
                 });
@@ -1823,6 +1798,67 @@
             }, 150);
         }
 
+        function initializeSearch() {
+            const searchForm = document.querySelector("#jobSearchForm");
+            
+            // Auto-submit form on filter changes
+            const filterSelects = document.querySelectorAll(".filter-select");
+            const salaryInputs = document.querySelectorAll(".salary-input");
+
+            filterSelects.forEach((select) => {
+                select.addEventListener("change", () => {
+                    console.log("Filter changed:", select.name, select.value);
+                    if (searchForm) {
+                        // Validate salary fields before submitting
+                        const salaryMin = document.getElementById('salaryMinInput').value;
+                        const salaryMax = document.getElementById('salaryMaxInput').value;
+                        
+                        // Clear empty salary fields to prevent validation errors
+                        if (!salaryMin || salaryMin.trim() === '') {
+                            document.getElementById('salaryMinInput').value = '';
+                        }
+                        if (!salaryMax || salaryMax.trim() === '') {
+                            document.getElementById('salaryMaxInput').value = '';
+                        }
+                        
+                        showLoadingSpinner();
+                        
+                        // Add error handling
+                        try {
+                            searchForm.submit();
+                        } catch (error) {
+                            console.error("Form submission error:", error);
+                            hideLoadingSpinner();
+                            showToast("Erreur lors de la recherche", "error");
+                        }
+                    }
+                });
+            });
+
+            salaryInputs.forEach((input) => {
+                input.addEventListener("blur", () => {
+                    console.log("Salary input changed:", input.name, input.value);
+                    if (input.value && input.value.trim() !== '' && searchForm) {
+                        // Validate that it's a valid number
+                        const value = parseInt(input.value);
+                        if (!isNaN(value) && value > 0) {
+                            showLoadingSpinner();
+                            
+                            try {
+                                searchForm.submit();
+                            } catch (error) {
+                                console.error("Form submission error:", error);
+                                hideLoadingSpinner();
+                                showToast("Erreur lors de la recherche", "error");
+                            }
+                        } else {
+                            showToast("Veuillez saisir un salaire valide", "warning");
+                        }
+                    }
+                });
+            });
+        }
+
         function initializeJobInteractions() {
             console.log("Initializing job interactions...")
 
@@ -1846,11 +1882,14 @@
                     }
                 }
 
-                // Show toast notification
-                showToast(
-                    isSaved ? "Offre retirée des favoris" : "Offre ajoutée aux favoris", 
-                    "success"
-                );
+                // Make API call
+                const method = isSaved ? "DELETE" : "POST"
+                setTimeout(() => {
+                    showToast(
+                        isSaved ? "Offre retirée des favoris" : "Offre ajoutée aux favoris", 
+                        "success"
+                    );
+                }, 300);
             }
 
             // Quick apply functionality
@@ -1889,20 +1928,78 @@
                     const jobId = this.dataset.jobId
                     if (jobId) {
                         console.log(`Navigating to job ${jobId}`);
-                        window.location.href = `/jobs/${jobId}`;
+                        // In a real app: window.location.href = `/jobs/${jobId}`
                     }
                 })
             })
         }
 
-        window.clearFilters = () => {
-            window.location.href = "/jobs";
+        function initializeFilters() {
+            console.log("Initializing filters...")
+
+            // Clear filters functionality
+            window.clearFilters = () => {
+                console.log("Clearing filters...")
+    
+                const form = document.querySelector("#jobSearchForm");
+                if (form) {
+                    // Reset form fields
+                    const inputs = form.querySelectorAll("input, select");
+                    inputs.forEach((input) => {
+                        if (input.type === "text" || input.type === "number") {
+                            input.value = "";
+                        } else if (input.tagName === "SELECT") {
+                            input.selectedIndex = 0;
+                        }
+                    });
+                    
+                    // Clear all error states
+                    document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+                    document.querySelectorAll('.error-message').forEach(el => el.style.display = 'none');
+                    document.getElementById('validationSummary').style.display = 'none';
+                    
+                    showLoadingSpinner();
+                    form.submit(); // Actually submit the cleared form
+                }
+            }
+
+            // Sort functionality
+            window.sortJobs = (sortBy) => {
+                console.log("Sorting jobs by:", sortBy)
+    
+                const url = new URL(window.location);
+                url.searchParams.set("sort", sortBy);
+                url.searchParams.set("page", "1"); // Reset to first page
+                
+                showLoadingSpinner();
+                window.location.href = url.toString(); // Actually navigate to sorted results
+            }
         }
 
-        window.sortJobs = (sortBy) => {
-            const url = new URL(window.location.href);
-            url.searchParams.set('sort', sortBy);
-            window.location.href = url.toString();
+        function initializePagination() {
+            console.log("Initializing pagination...")
+
+            // Add smooth scrolling to top when pagination is clicked
+            const paginationLinks = document.querySelectorAll(".pagination a")
+
+            paginationLinks.forEach((link) => {
+                link.addEventListener("click", (e) => {
+                    console.log("Pagination link clicked:", link.href)
+                    showLoadingSpinner()
+                    // Don't prevent default - let the link work normally
+                    
+                    // Scroll to top of main content after a short delay
+                    setTimeout(() => {
+                        const mainContent = document.querySelector(".main-content")
+                        if (mainContent) {
+                            mainContent.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                            })
+                        }
+                    }, 100);
+                })
+            })
         }
 
         function initializeToast() {
@@ -2031,7 +2128,7 @@
 
             jobCards.forEach((card) => {
                 card.addEventListener("mouseenter", function () {
-                    this.style.transform = "translateY(-5px)"
+                    this.style.transform = "translateY(-4px)"
                 })
 
                 card.addEventListener("mouseleave", function () {
@@ -2043,7 +2140,60 @@
         // Page performance monitoring
         window.addEventListener("load", () => {
             console.log("Jobs page loaded successfully")
+            hideLoadingSpinner()
         })
+
+// Global error handler to prevent stuck loading states
+window.addEventListener('error', (e) => {
+    console.error('Global error caught:', e.error);
+    hideLoadingSpinner();
+});
+
+// Handle unhandled promise rejections
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Unhandled promise rejection:', e.reason);
+    hideLoadingSpinner();
+});
+
+// Add a timeout to hide loading spinner if it's been showing too long
+let loadingTimeout;
+function showLoadingSpinner() {
+    console.log("Showing loading spinner...")
+    document.getElementById("loadingSpinner").style.display = "flex"
+    document.querySelector(".jobs-grid").style.opacity = "0.6"
+    document.querySelector(".jobs-grid").style.pointerEvents = "none"
+    
+    // Disable search button
+    const searchBtn = document.getElementById("searchBtn");
+    if (searchBtn) {
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recherche...';
+    }
+    
+    // Set a timeout to hide loading spinner if it takes too long
+    clearTimeout(loadingTimeout);
+    loadingTimeout = setTimeout(() => {
+        console.warn("Loading timeout reached, hiding spinner");
+        hideLoadingSpinner();
+        showToast("La recherche prend plus de temps que prévu", "warning");
+    }, 10000); // 10 second timeout
+}
+
+function hideLoadingSpinner() {
+    console.log("Hiding loading spinner...")
+    clearTimeout(loadingTimeout);
+    
+    document.getElementById("loadingSpinner").style.display = "none"
+    document.querySelector(".jobs-grid").style.opacity = "1"
+    document.querySelector(".jobs-grid").style.pointerEvents = "auto"
+    
+    // Re-enable search button
+    const searchBtn = document.getElementById("searchBtn");
+    if (searchBtn) {
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = '<i class="fas fa-search"></i> Rechercher';
+    }
+}
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DateTime, Numeric, Enum, Date
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DateTime, Numeric, Enum, Date, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -165,8 +165,8 @@ class Application(Base):
     id = Column(Integer, primary_key=True, index=True)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
     candidate_profile_id = Column(Integer, ForeignKey("profile_candidat.id"), nullable=False)
-    application_date = Column(DateTime, default=func.now())
-    status = Column(Enum('pending', 'reviewed', 'interview_scheduled', 'interview_completed', 'accepted', 'rejected', 'withdrawn', name='application_status'), default='pending')
+    application_date = Column(DateTime, default=datetime.utcnow)
+    status = Column(Enum('pending', 'reviewed', 'interview_scheduled', 'interview_completed', 'accepted', 'rejected', 'withdrawn'), default='pending')
     hr_rating = Column(Numeric(3, 2))
     hr_notes = Column(Text)
     interview_date = Column(DateTime)
@@ -176,12 +176,34 @@ class Application(Base):
     decision_date = Column(DateTime)
     decision_reason = Column(Text)
     source = Column(String(100))
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), nullable=False, unique=True)
+    password_hash = Column(String(255))
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    google_id = Column(String(255), unique=True)
+    profile_picture = Column(String(500))
+    is_active = Column(Integer, default=1)
+    is_verified = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+# Session model for remember me functionality
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    session_token = Column(String(255), nullable=False, unique=True)
+    expires_at = Column(DateTime, nullable=False)
+    is_remember_me = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
-    job = relationship("Job")
-    candidate_profile = relationship("ProfileCandidat")
-    reviewer = relationship("HrAdmin")
+    user = relationship("User")
 
 # Helper functions for job operations
 def get_jobs_with_pagination(page=1, per_page=9, search_query=None, location=None, category=None, employment_type=None, salary_min=None, salary_max=None):
@@ -352,3 +374,4 @@ def get_job_by_id(job_id):
         return None
     finally:
         db.close()
+

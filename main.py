@@ -1,8 +1,8 @@
 import json
-from fastapi import FastAPI, Request, UploadFile, File, Form, Query, Depends
+from fastapi import FastAPI, Request, UploadFile, File, Form, Query, Depends, HTTPException, Cookie, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from models import get_jobs_with_pagination, get_job_by_id
 import extract_information_cv.text_extractor as text_extractor
 import extract_information_cv.textcleaner as textcleaner
@@ -15,12 +15,16 @@ import os
 from dotenv import load_dotenv
 from database import engine, SessionLocal
 from typing import Optional
-from models import Job, Company, Department
+from models import Job, Company, Department, Application, ProfileCandidat, User, UserSession
 import models
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, or_, and_
 import math
 import re
+from auth import (
+    authenticate_user, create_user, hash_password, create_user_session, 
+    get_user_from_session, delete_user_session
+)
 
 load_dotenv()
 app = FastAPI()
@@ -47,6 +51,27 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 # Templates
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=templates_dir)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
+    """Get current user from session"""
+    session_token = request.cookies.get("session_token")
+    if not session_token:
+        return None
+    return get_user_from_session(db, session_token)
+
+def require_auth(request: Request, db: Session = Depends(get_db)) -> User:
+    """Require authentication, raise 401 if not authenticated"""
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return user
 
 def parse_skills(skills_data):
     """Parse skills list to extract name and percentage"""
@@ -97,19 +122,30 @@ def parse_skills(skills_data):
     return parsed_skills
 
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    return templates.TemplateResponse("client-dep/index.html", {"request": request})
+def home(request: Request, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    return templates.TemplateResponse("client-dep/index.html", {
+        "request": request,
+        "current_user": current_user
+    })
 
 @app.get("/analyze", response_class=HTMLResponse)
-def analyze_page(request: Request):
-    return templates.TemplateResponse("client-dep/analyze.html", {"request": request})
+def analyze_page(request: Request, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    return templates.TemplateResponse("client-dep/analyze.html", {
+        "request": request,
+        "current_user": current_user
+    })
 
 @app.post("/scan", response_class=HTMLResponse)
 async def scan_file(
     request: Request,
     filetoscan: UploadFile = File(...),
-    selectedProfiles: str = Form(...)
+    selectedProfiles: str = Form(...),
+    db: Session = Depends(get_db)
 ):
+    current_user = get_current_user(request, db)
+    
     # Créer le dossier uploads s'il n'existe pas
     os.makedirs("uploads", exist_ok=True)
     
@@ -126,7 +162,7 @@ async def scan_file(
     """
     images_text = ['', '', 'sam']
 
-    summary = """Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent.Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent.Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent.Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent.Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent."""
+    summary = """Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent."""
 
     score = 68.02
 
@@ -185,8 +221,8 @@ async def scan_file(
     skills_titles = [skill.split(":")[0] for skill in data_json["skills"]]
     skills_titles_str = ", ".join(skills_titles)
 
-    # Insérer les données en base
-    candidate_id = insert_candidate_data(data_json, summary)
+    # Insérer les données en base et lier au user si connecté
+    candidate_id = insert_candidate_data(data_json, summary, current_user.id if current_user else None)
 
     # Ensuite on affiche la page avec les résultats
     return templates.TemplateResponse("client-dep/result.html", {
@@ -198,12 +234,14 @@ async def scan_file(
         "score": score,
         "user_info": data_json,
         "skills_titles": skills_titles_str,
-        "candidate_id": candidate_id
+        "candidate_id": candidate_id,
+        "current_user": current_user
     })
 
 @app.get("/profile/{candidate_id}", response_class=HTMLResponse)
-def profile_detail(request: Request, candidate_id: int):
-    db = SessionLocal()
+def profile_detail(request: Request, candidate_id: int, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    
     try:
         # Récupérer les données du candidat depuis la base
         profile = db.query(models.ProfileCandidat).filter(models.ProfileCandidat.id == candidate_id).first()
@@ -214,7 +252,8 @@ def profile_detail(request: Request, candidate_id: int):
                 "profile": None,
                 "contact": None,
                 "analyse": None,
-                "parsed_skills": []
+                "parsed_skills": [],
+                "current_user": current_user
             })
         
         contact = db.query(models.Contact).filter(models.Contact.id == profile.contact_id).first()
@@ -296,7 +335,8 @@ def profile_detail(request: Request, candidate_id: int):
             "profile": profile_data,
             "contact": contact,
             "analyse": analyse,
-            "parsed_skills": parsed_skills
+            "parsed_skills": parsed_skills,
+            "current_user": current_user
         })
     except Exception as e:
         print(f"Erreur dans profile_detail: {e}")
@@ -307,10 +347,9 @@ def profile_detail(request: Request, candidate_id: int):
             "profile": None,
             "contact": None,
             "analyse": None,
-            "parsed_skills": []
+            "parsed_skills": [],
+            "current_user": current_user
         })
-    finally:
-        db.close()
 
 class TopicRequest(BaseModel):
     topic: str
@@ -325,31 +364,6 @@ async def create_detailed_analysis(request: Request):
     try:
         data = await request.json()
         pdf_text = data.get('pdf_text')
-        """
-        print("Hello from create_detailed_analysis")
-        print("PDF text length:", len(pdf_text) if pdf_text else 0)
-        
-        print("Generating categorie scores...")
-        categorie_scores_raw = data_generator.generate_categorie_scores(pdf_text)
-        print("Categorie scores generated:", categorie_scores_raw[:200] + "..." if len(categorie_scores_raw) > 200 else categorie_scores_raw)
-        
-        print("Generating good points...")
-        good_points_raw = data_generator.generate_good_points(pdf_text)
-        print("Good points generated:", good_points_raw[:200] + "..." if len(good_points_raw) > 200 else good_points_raw)
-        
-        print("Generating weak points...")
-        weak_points_raw = data_generator.generate_weak_points(pdf_text)
-        print("Weak points generated:", weak_points_raw[:200] + "..." if len(weak_points_raw) > 200 else weak_points_raw)
-        
-        print("Generating improvements...")
-        improvements_raw = data_generator.generate_improvements(pdf_text, good_points_raw, weak_points_raw, categorie_scores_raw)
-        print("Improvements generated:", improvements_raw[:200] + "..." if len(improvements_raw) > 200 else improvements_raw)
-        
-        # Parse the results
-        categorie_scores = parse_category_scores(categorie_scores_raw)
-        good_points = parse_bullet_points(good_points_raw)
-        weak_points = parse_bullet_points(weak_points_raw)
-        improvements = parse_bullet_points(improvements_raw)"""
         
         # For testing, return sample data
         return {
@@ -397,85 +411,98 @@ async def create_detailed_analysis(request: Request):
         print(f"Error in create_detailed_analysis: {str(e)}")
         return {"success": False, "error": str(e)}
 
-def parse_category_scores(raw_text):
-    """Parse category scores from raw text"""
-    try:
-        # Try to find JSON in the text
-        json_match = re.search(r'\{[^}]*\}', raw_text)
-        if json_match:
-            json_str = json_match.group()
-            return json.loads(json_str)
-        else:
-            # Fallback: create default scores
-            return {
-                "Work Experience": 75,
-                "Skills & Technical Expertise": 80,
-                "Education": 70,
-                "Certifications & Training": 65,
-                "Soft Skills & Leadership": 72,
-                "Overall Structure & Presentation": 78
-            }
-    except Exception as e:
-        print(f"Error parsing category scores: {e}")
-        return {
-            "Work Experience": 75,
-            "Skills & Technical Expertise": 80,
-            "Education": 70,
-            "Certifications & Training": 65,
-            "Soft Skills & Leadership": 72,
-            "Overall Structure & Presentation": 78
-        }
-
-def parse_bullet_points(raw_text):
-    """Parse bullet points from raw text"""
-    try:
-        # Split by lines and filter bullet points
-        lines = raw_text.split('\n')
-        bullet_points = []
-        
-        for line in lines:
-            line = line.strip()
-            # Remove bullet point markers
-            if line.startswith('•') or line.startswith('-') or line.startswith('*'):
-                bullet_points.append(line[1:].strip())
-            elif line.startswith('- '):
-                bullet_points.append(line[2:].strip())
-            elif line and not line.startswith('#') and len(line) > 10:
-                # If it's a substantial line without bullet markers, include it
-                bullet_points.append(line)
-        
-        # Filter out empty or very short points
-        bullet_points = [point for point in bullet_points if len(point) > 5]
-        
-        return bullet_points[:8]  # Limit to 8 points max
-        
-    except Exception as e:
-        print(f"Error parsing bullet points: {e}")
-        return ["Erreur lors de l'analyse des points"]
-
+# Authentication routes
 @app.get("/login", response_class=HTMLResponse)
-def home(request: Request):
+def login_page(request: Request, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    if current_user:
+        return RedirectResponse(url="/", status_code=302)
     return templates.TemplateResponse("client-dep/auth/login.html", {"request": request})
 
-@app.get("/dashboard", response_class=HTMLResponse)
-def home1(request: Request):
-    return templates.TemplateResponse("HR-dep/dashboard-admin.html", {"request": request})
+@app.post("/login")
+async def login(
+    request: Request,
+    response: Response,
+    email: str = Form(...),
+    password: str = Form(...),
+    remember_me: bool = Form(False),
+    db: Session = Depends(get_db)
+):
+    try:
+        user = authenticate_user(db, email, password)
+        if not user:
+            return {"success": False, "message": "Email ou mot de passe incorrect"}
+        
+        if not user.is_active:
+            return {"success": False, "message": "Compte désactivé"}
+        
+        # Create session
+        session_token = create_user_session(db, user.id, remember_me)
+        
+        # Set cookie
+        max_age = 30 * 24 * 60 * 60 if remember_me else 24 * 60 * 60  # 30 days or 1 day
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            max_age=max_age,
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax"
+        )
+        
+        return {"success": True, "message": "Connexion réussie"}
+        
+    except Exception as e:
+        print(f"Login error: {str(e)}")
+        return {"success": False, "message": "Erreur lors de la connexion"}
 
 @app.get("/signup", response_class=HTMLResponse)
-def home2(request: Request):
-    return templates.TemplateResponse("client-dep/auth/signup.html", {"request": request})
+def signup_page(request: Request, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    if current_user:
+        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse("client-dep/auth/client-signup.html", {"request": request})
 
-
-@app.get("/hr-login", response_class=HTMLResponse)
-def home3(request: Request):
-    return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
-
-def get_db():
-    db = SessionLocal()
+@app.post("/signup")
+async def signup(
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db)
+):
     try:
-        yield db
-    finally:
-        db.close()
+        # Validation
+        if password != confirm_password:
+            return {"success": False, "message": "Les mots de passe ne correspondent pas"}
+        
+        if len(password) < 8:
+            return {"success": False, "message": "Le mot de passe doit contenir au moins 8 caractères"}
+        
+        # Check if user exists
+        existing_user = db.query(User).filter(User.email == email).first()
+        if existing_user:
+            return {"success": False, "message": "Un compte avec cet email existe déjà"}
+        
+        # Create user
+        user = create_user(db, email, password, first_name, last_name)
+        
+        return {"success": True, "message": "Compte créé avec succès! Vous pouvez maintenant vous connecter."}
+        
+    except Exception as e:
+        print(f"Signup error: {str(e)}")
+        return {"success": False, "message": "Erreur lors de la création du compte"}
+
+@app.post("/logout")
+async def logout(request: Request, response: Response, db: Session = Depends(get_db)):
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        delete_user_session(db, session_token)
+    
+    response.delete_cookie("session_token")
+    return {"success": True, "message": "Déconnexion réussie"}
 
 # Pagination helper class
 class Pagination:
@@ -501,14 +528,6 @@ class SearchParams:
         self.salary_min = salary_min
         self.salary_max = salary_max
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("client-dep/index.html", {"request": request})
-
-@app.get("/analyze", response_class=HTMLResponse)
-async def analyze(request: Request):
-    return templates.TemplateResponse("client-dep/analyze.html", {"request": request})
-
 @app.get("/jobs", response_class=HTMLResponse)
 async def jobs_page(
     request: Request,
@@ -518,54 +537,118 @@ async def jobs_page(
     location: str = Query(""),
     category: str = Query(""),
     employment_type: str = Query(""),
-    salary_min: Optional[int] = Query(None),
-    salary_max: Optional[int] = Query(None),
+    salary_min: Optional[str] = Query(None),
+    salary_max: Optional[str] = Query(None),
     sort: str = Query("newest")
 ):
+    current_user = get_current_user(request, db)
+    
+    # Convert salary strings to integers, handling empty strings
+    salary_min_int = None
+    salary_max_int = None
+
+    if salary_min and salary_min.strip():
+        try:
+            salary_min_int = int(salary_min)
+        except ValueError:
+            salary_min_int = None
+
+    if salary_max and salary_max.strip():
+        try:
+            salary_max_int = int(salary_max)
+        except ValueError:
+            salary_max_int = None
+
+    print(f"Salary filters - Min: {salary_min_int}, Max: {salary_max_int}")
+    
     per_page = 12
     
-    # Build base query with all necessary joins
+    # Build base query with eager loading
     query = db.query(Job).options(
         joinedload(Job.company),
         joinedload(Job.department)
     )
     
-    # Apply filters
+    # Always join Company and Department for flexible searching
+    query = query.join(Company, Job.company_id == Company.id, isouter=True)
+    query = query.join(Department, Job.department_id == Department.id, isouter=True)
+    
+    # Apply filters - only add filters that have values
     filters = [Job.status == 'active']
     
-    # Search filter
-    if search:
-        query = query.join(Company)
+    # Search filter - search across multiple fields with flexible matching
+    if search and search.strip():
+        search_term = f"%{search.strip()}%"
         search_filter = or_(
-            Job.title.ilike(f"%{search}%"),
-            Job.description.ilike(f"%{search}%"),
-            Company.company_name.ilike(f"%{search}%")
+            Job.title.ilike(search_term),
+            Job.description.ilike(search_term),
+            Job.requirements.ilike(search_term),
+            Company.company_name.ilike(search_term),
+            Department.name.ilike(search_term),
+            # Also search in job tags if they exist
+            Job.tags.ilike(search_term) if hasattr(Job, 'tags') else False
         )
         filters.append(search_filter)
     
-    # Location filter
-    if location:
-        query = query.join(Company)
-        filters.append(Company.address.ilike(f"%{location}%"))
+    # Location filter - flexible location matching
+    if location and location.strip():
+        location_term = f"%{location.strip()}%"
+        location_filter = or_(
+            Company.address.ilike(location_term),
+            Job.location.ilike(location_term) if hasattr(Job, 'location') else False
+        )
+        filters.append(location_filter)
     
-    # Category filter
-    if category:
-        query = query.join(Department)
-        filters.append(Department.name.ilike(f"%{category}%"))
+    # Category filter - flexible category matching
+    if category and category.strip():
+        category_term = f"%{category.strip()}%"
+        category_filter = or_(
+            Department.name.ilike(category_term),
+            Job.title.ilike(category_term),
+            Job.description.ilike(category_term),
+            Job.tags.ilike(category_term) if hasattr(Job, 'tags') else False
+        )
+        filters.append(category_filter)
     
-    # Employment type filter
-    if employment_type:
-        filters.append(Job.employment_type == employment_type)
+    # Employment type filter - flexible matching
+    if employment_type and employment_type.strip():
+        if employment_type.lower() != 'all':
+            employment_filter = or_(
+                Job.employment_type.ilike(f"%{employment_type}%"),
+                Job.employment_type == employment_type
+            )
+            filters.append(employment_filter)
     
-    # Salary filters
-    if salary_min:
-        filters.append(Job.salary_min >= salary_min)
-    
-    if salary_max:
-        filters.append(Job.salary_max <= salary_max)
+    # Improved salary filters
+    if salary_min_int and salary_min_int > 0:
+        # User wants jobs that pay at least salary_min_int
+        # Include jobs where the maximum salary meets the minimum requirement
+        # OR where minimum salary meets the requirement (if max is null)
+        salary_min_filter = or_(
+            and_(Job.salary_max.isnot(None), Job.salary_max >= salary_min_int),
+            and_(Job.salary_max.is_(None), Job.salary_min >= salary_min_int),
+            # Also include jobs where salary_min >= user's minimum (they definitely meet the requirement)
+            Job.salary_min >= salary_min_int
+        )
+        filters.append(salary_min_filter)
+        print(f"Applied minimum salary filter: >= {salary_min_int}")
+
+    if salary_max_int and salary_max_int > 0:
+        # User wants jobs within their budget (salary_max_int)
+        # Include jobs where the minimum salary is within budget
+        # OR where maximum salary is within budget (if min is null)
+        salary_max_filter = or_(
+            and_(Job.salary_min.isnot(None), Job.salary_min <= salary_max_int),
+            and_(Job.salary_min.is_(None), Job.salary_max <= salary_max_int),
+            # Also include jobs where salary_max <= user's maximum (they're definitely within budget)
+            Job.salary_max <= salary_max_int
+        )
+        filters.append(salary_max_filter)
+        print(f"Applied maximum salary filter: <= {salary_max_int}")
     
     # Apply all filters
-    query = query.filter(and_(*filters))
+    if filters:
+        query = query.filter(and_(*filters))
     
     # Apply sorting
     if sort == "newest":
@@ -576,23 +659,51 @@ async def jobs_page(
         query = query.order_by(Job.salary_max.desc().nullslast())
     elif sort == "salary_low":
         query = query.order_by(Job.salary_min.asc().nullslast())
+    elif sort == "relevance" and search:
+        # For relevance, prioritize title matches, then company, then description
+        query = query.order_by(
+            Job.title.ilike(f"%{search}%").desc(),
+            Company.company_name.ilike(f"%{search}%").desc(),
+            Job.created_at.desc()
+        )
+    else:
+        # Default to newest
+        query = query.order_by(Job.created_at.desc())
     
     # Get total count
     total_jobs = query.count()
+    print(f"Total jobs found: {total_jobs}")
     
     # Apply pagination
     offset = (page - 1) * per_page
     jobs = query.offset(offset).limit(per_page).all()
     
+    # Debug: print some job salary info
+    for job in jobs[:3]:  # Just first 3 jobs
+        print(f"Job: {job.title}, Salary: {job.salary_min}-{job.salary_max}")
+    
     # Create pagination object
     pagination = Pagination(page, per_page, total_jobs)
     
     # Create search params object
-    search_params = SearchParams(search, location, category, employment_type, salary_min, salary_max)
+    search_params = SearchParams(search, location, category, employment_type, salary_min_int, salary_max_int)
     
-    # Get all departments for category dropdown
-    departments = db.query(Department.name).distinct().all()
-    categories = [dept[0] for dept in departments]
+    # Get all departments for category dropdown - make it more flexible
+    try:
+        departments = db.query(Department.name).filter(Department.name.isnot(None)).distinct().all()
+        categories = [dept[0] for dept in departments if dept[0]]
+        
+        # Add some common categories if none exist
+        if not categories:
+            categories = [
+                "Développement", "Marketing", "Design", "Finance", 
+                "Ressources Humaines", "Ventes", "Support Client"
+            ]
+    except:
+        categories = [
+            "Développement", "Marketing", "Design", "Finance", 
+            "Ressources Humaines", "Ventes", "Support Client"
+        ]
     
     return templates.TemplateResponse("client-dep/jobs.html", {
         "request": request,
@@ -600,10 +711,15 @@ async def jobs_page(
         "pagination": pagination,
         "search_params": search_params,
         "sort": sort,
-        "categories": categories
+        "categories": categories,
+        "total_jobs": total_jobs,
+        "current_user": current_user
     })
+
 @app.get("/jobs/{job_id}", response_class=HTMLResponse)
 async def job_detail(request: Request, job_id: int, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    
     job = db.query(Job).options(
         joinedload(Job.company),
         joinedload(Job.department)
@@ -613,57 +729,148 @@ async def job_detail(request: Request, job_id: int, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail="Job not found")
     
     # Increment view count
-    job.views_count += 1
+    job.views_count = (job.views_count or 0) + 1
     db.commit()
+    
+    # Check if user has applied
+    has_applied = False
+    if current_user:
+        application = db.query(Application).filter(
+            and_(Application.job_id == job_id, Application.user_id == current_user.id)
+        ).first()
+        has_applied = application is not None
     
     return templates.TemplateResponse("client-dep/job_detail.html", {
         "request": request,
-        "job": job
+        "job": job,
+        "current_user": current_user,
+        "has_applied": has_applied
     })
-
-@app.get("/profile", response_class=HTMLResponse)
-async def profile(request: Request):
-    return templates.TemplateResponse("client-dep/profile_detail.html", {"request": request})
-
-@app.get("/result", response_class=HTMLResponse)
-async def result(request: Request):
-    return templates.TemplateResponse("client-dep/result.html", {"request": request})
-
-@app.get("/auth/login", response_class=HTMLResponse)
-async def login(request: Request):
-    return templates.TemplateResponse("client-dep/auth/login.html", {"request": request})
-
-@app.get("/auth/signup", response_class=HTMLResponse)
-async def signup(request: Request):
-    return templates.TemplateResponse("client-dep/auth/client-signup.html", {"request": request})
 
 # API endpoints for job interactions
 @app.post("/api/jobs/{job_id}/save")
-async def save_job(job_id: int, db: Session = Depends(get_db)):
+async def save_job(job_id: int, request: Request, db: Session = Depends(get_db)):
     """Save job to user's favorites"""
-    # This would typically save to a user's saved jobs
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return {"success": False, "message": "Vous devez être connecté pour sauvegarder une offre"}
+    
+    # This would typically save to a user's saved jobs table
     # For now, just return success
     return {"success": True, "message": "Offre ajoutée aux favoris"}
 
 @app.delete("/api/jobs/{job_id}/save")
-async def unsave_job(job_id: int, db: Session = Depends(get_db)):
+async def unsave_job(job_id: int, request: Request, db: Session = Depends(get_db)):
     """Remove job from user's favorites"""
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return {"success": False, "message": "Vous devez être connecté"}
+    
     # This would typically remove from user's saved jobs
     # For now, just return success
     return {"success": True, "message": "Offre retirée des favoris"}
 
+class ApplicationRequest(BaseModel):
+    message: Optional[str] = None
+
 @app.post("/api/jobs/{job_id}/apply")
-async def apply_to_job(job_id: int, db: Session = Depends(get_db)):
-    """Submit job application"""
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+async def apply_to_job(job_id: int, application_data: ApplicationRequest, request: Request, db: Session = Depends(get_db)):
+    """Submit job application - requires authentication"""
+    try:
+        # Require authentication
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"success": False, "message": "Vous devez être connecté pour postuler à une offre"}
+        
+        # Check if job exists
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Get user's candidate profile
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == current_user.id).first()
+        if not candidate_profile:
+            return {"success": False, "message": "Vous devez d'abord analyser votre CV pour créer votre profil candidat"}
+        
+        # Check if application already exists
+        existing_application = db.query(Application).filter(
+            and_(Application.job_id == job_id, Application.user_id == current_user.id)
+        ).first()
+        
+        if existing_application:
+            return {"success": False, "message": "Vous avez déjà postulé à cette offre"}
+        
+        # Create new application
+        new_application = Application(
+            job_id=job_id,
+            candidate_profile_id=candidate_profile.id,
+            user_id=current_user.id,
+            status='pending',
+            source='job_portal'
+        )
+        
+        db.add(new_application)
+        
+        # Increment application count for the job
+        job.applications_count = (job.applications_count or 0) + 1
+        
+        db.commit()
+        
+        print(f"Application created: Job {job_id}, User {current_user.id}, Candidate {candidate_profile.id}")
+        
+        return {
+            "success": True, 
+            "message": f"Candidature envoyée avec succès pour le poste '{job.title}'!",
+            "application_id": new_application.id
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error applying to job: {str(e)}")
+        return {"success": False, "message": "Erreur lors de l'envoi de la candidature"}
+
+@app.get("/api/jobs/{job_id}/application-status")
+async def check_application_status(job_id: int, request: Request, db: Session = Depends(get_db)):
+    """Check if user has already applied to this job"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"has_applied": False}
+        
+        application = db.query(Application).filter(
+            and_(Application.job_id == job_id, Application.user_id == current_user.id)
+        ).first()
+        
+        if application:
+            return {
+                "has_applied": True,
+                "application_date": application.application_date.isoformat(),
+                "status": application.status
+            }
+        else:
+            return {"has_applied": False}
+            
+    except Exception as e:
+        print(f"Error checking application status: {str(e)}")
+        return {"has_applied": False}
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard_page(request: Request, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
     
-    # Increment application count
-    job.applications_count = (job.applications_count or 0) + 1
-    db.commit()
+    # Get user's applications
+    applications = db.query(Application).options(
+        joinedload(Application.job).joinedload(Job.company),
+        joinedload(Application.job).joinedload(Job.department)
+    ).filter(Application.user_id == current_user.id).order_by(Application.created_at.desc()).all()
     
-    return {"success": True, "message": "Candidature envoyée avec succès!"}
+    return templates.TemplateResponse("client-dep/dashboard.html", {
+        "request": request,
+        "current_user": current_user,
+        "applications": applications
+    })
 
 if __name__ == "__main__":
     import uvicorn
