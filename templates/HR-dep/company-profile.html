@@ -5,513 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profil Entreprise - CV Analyzer Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .company-info h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-        }
-
-        .company-details {
-            color: #666;
-            font-size: 1.1rem;
-        }
-
-        .company-logo {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 2rem;
-            margin-right: 20px;
-        }
-
-        .company-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 20px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .content {
-            display: grid;
-            gap: 30px;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .card h2 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card h2 i {
-            color: #667eea;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .info-item {
-            padding: 15px;
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 12px;
-            border-left: 4px solid #667eea;
-        }
-
-        .info-item label {
-            font-weight: 600;
-            color: #667eea;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-            display: block;
-        }
-
-        .info-item span {
-            color: #333;
-            font-size: 1.1rem;
-        }
-
-        .info-item a {
-            color: #667eea;
-            text-decoration: none;
-        }
-
-        .info-item a:hover {
-            text-decoration: underline;
-        }
-
-        .users-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .user-card {
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 15px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-
-        .user-card:hover {
-            border-color: #667eea;
-            transform: translateY(-2px);
-        }
-
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-
-        .user-info h4 {
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .user-email {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-        }
-
-        .user-meta {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .badge-role {
-            background: rgba(52, 152, 219, 0.2);
-            color: #3498db;
-        }
-
-        .badge-access {
-            background: rgba(39, 174, 96, 0.2);
-            color: #27ae60;
-        }
-
-        .badge-active {
-            background: rgba(39, 174, 96, 0.2);
-            color: #27ae60;
-        }
-
-        .badge-inactive {
-            background: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .social-link {
-            padding: 12px 20px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .social-link.linkedin {
-            background: rgba(0, 119, 181, 0.1);
-            color: #0077b5;
-            border: 2px solid rgba(0, 119, 181, 0.3);
-        }
-
-        .social-link.twitter {
-            background: rgba(29, 161, 242, 0.1);
-            color: #1da1f2;
-            border: 2px solid rgba(29, 161, 242, 0.3);
-        }
-
-        .social-link.facebook {
-            background: rgba(24, 119, 242, 0.1);
-            color: #1877f2;
-            border: 2px solid rgba(24, 119, 242, 0.3);
-        }
-
-        .social-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .no-company {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .no-company i {
-            font-size: 4rem;
-            color: #667eea;
-            margin-bottom: 20px;
-        }
-
-        .no-company h2 {
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        .no-company p {
-            font-size: 1.1rem;
-            margin-bottom: 30px;
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .modal-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal {
-            background: white;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-        }
-
-        .modal-overlay.show .modal {
-            transform: scale(1);
-        }
-
-        .modal-header {
-            padding: 25px 30px 15px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            color: #333;
-            font-size: 1.5rem;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #999;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-
-        .modal-close:hover {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        .modal-form {
-            padding: 25px 30px 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #eee;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 15px;
-            justify-content: flex-end;
-            margin-top: 25px;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .company-info h1 {
-                font-size: 2rem;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .users-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .social-links {
-                justify-content: center;
-            }
-
-            .section-header {
-                flex-direction: column;
-                text-align: center;
-            }
-        }
-
-        /* Animation */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .card {
-            animation: fadeInUp 0.6s ease forwards;
-        }
-
-        .card:nth-child(2) {
-            animation-delay: 0.1s;
-        }
-
-        .card:nth-child(3) {
-            animation-delay: 0.2s;
-        }
-
-        .card:nth-child(4) {
-            animation-delay: 0.3s;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/company-profile.css">
 </head>
 <body>
-    <div class="container">
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="profile-container">
         <!-- Header -->
-        <div class="header">
+        <div class="profile-header">
             <div class="header-content">
-                <div style="display: flex; align-items: center;">
+                <div style="display: flex; align-items: center; flex: 1;">
                     <div class="company-logo">
                         {% if company and company.logo_url %}
-                            <img src="{{ company.logo_url }}" alt="Logo">
+                            <img src="{{ company.logo_url }}" alt="Logo {{ company.company_name }}">
                         {% else %}
                             <i class="fas fa-building"></i>
                         {% endif %}
@@ -519,87 +33,136 @@
                     <div class="company-info">
                         <h1>{{ company.company_name if company else "Entreprise non configurée" }}</h1>
                         {% if company %}
-                            <div class="company-details">
-                                {{ company.industry|title }} • {{ company.company_size }} employés
-                                {% if company.description %}
-                                    <br>{{ company.description }}
+                            <div class="company-industry">
+                                <i class="fas fa-industry"></i>
+                                {{ company.industry|title }}
+                                {% if company.company_size %}
+                                    • {{ company.company_size }} employés
                                 {% endif %}
                             </div>
+                            {% if company.description %}
+                                <div class="company-description">
+                                    {{ company.description }}
+                                </div>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
-                <div style="display: flex; gap: 15px;">
-                    <button class="btn btn-primary" onclick="editCompany()">
-                        <i class="fas fa-edit"></i> Modifier
+                <div class="header-actions">
+                    <button class="btn-back" onclick="goToDashboard()">
+                        <i class="fas fa-arrow-left"></i>
+                        Retour
                     </button>
-                    <button class="btn btn-secondary" onclick="goToDashboard()">
-                        <i class="fas fa-arrow-left"></i> Retour
+                    <button class="btn-edit" onclick="editCompany()">
+                        <i class="fas fa-edit"></i>
+                        Modifier
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Content -->
-        <div class="content">
+        <div class="profile-content">
             {% if company %}
+                <!-- Vue d'ensemble -->
+                <div class="info-section">
+                    <h2><i class="fas fa-chart-line"></i> Vue d'ensemble</h2>
+                    <div class="overview-grid">
+                        <div class="overview-card">
+                            <div class="overview-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="overview-content">
+                                <h3>Fondée en</h3>
+                                <p>{{ company.founded_year if company.founded_year else "Non spécifié" }}</p>
+                            </div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="overview-content">
+                                <h3>Taille</h3>
+                                <p>{{ company.company_size }} employés</p>
+                            </div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-icon">
+                                <i class="fas fa-industry"></i>
+                            </div>
+                            <div class="overview-content">
+                                <h3>Secteur</h3>
+                                <p>{{ company.industry|title }}</p>
+                            </div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-icon">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div class="overview-content">
+                                <h3>Administrateurs</h3>
+                                <p>{{ company_admins|length }} utilisateur{{ 's' if company_admins|length > 1 else '' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Informations générales -->
-                <div class="card">
+                <div class="info-section">
                     <h2><i class="fas fa-info-circle"></i> Informations générales</h2>
                     <div class="info-grid">
                         <div class="info-item">
-                            <label>Nom de l'entreprise</label>
+                            <label><i class="fas fa-building"></i> Nom de l'entreprise</label>
                             <span>{{ company.company_name }}</span>
                         </div>
                         <div class="info-item">
-                            <label>Secteur d'activité</label>
+                            <label><i class="fas fa-industry"></i> Secteur d'activité</label>
                             <span>{{ company.industry|title }}</span>
                         </div>
                         <div class="info-item">
-                            <label>Taille</label>
+                            <label><i class="fas fa-users"></i> Taille de l'entreprise</label>
                             <span>{{ company.company_size }} employés</span>
                         </div>
                         {% if company.founded_year %}
                         <div class="info-item">
-                            <label>Année de création</label>
+                            <label><i class="fas fa-calendar-alt"></i> Année de création</label>
                             <span>{{ company.founded_year }}</span>
                         </div>
                         {% endif %}
-                    </div>
-                    {% if company.description %}
-                    <div style="margin-top: 20px;">
-                        <div class="info-item">
-                            <label>Description</label>
+                        {% if company.description %}
+                        <div class="info-item full-width">
+                            <label><i class="fas fa-align-left"></i> Description</label>
                             <span>{{ company.description }}</span>
                         </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
 
                 <!-- Coordonnées -->
-                <div class="card">
+                <div class="info-section">
                     <h2><i class="fas fa-map-marker-alt"></i> Coordonnées</h2>
                     <div class="info-grid">
                         {% if company.address %}
                         <div class="info-item">
-                            <label>Adresse</label>
+                            <label><i class="fas fa-map-marker-alt"></i> Adresse</label>
                             <span>{{ company.address }}</span>
                         </div>
                         {% endif %}
                         {% if company.phone %}
                         <div class="info-item">
-                            <label>Téléphone</label>
+                            <label><i class="fas fa-phone"></i> Téléphone</label>
                             <span>{{ company.phone }}</span>
                         </div>
                         {% endif %}
                         {% if company.email %}
                         <div class="info-item">
-                            <label>Email</label>
+                            <label><i class="fas fa-envelope"></i> Email</label>
                             <span><a href="mailto:{{ company.email }}">{{ company.email }}</a></span>
                         </div>
                         {% endif %}
                         {% if company.website %}
                         <div class="info-item">
-                            <label>Site web</label>
+                            <label><i class="fas fa-globe"></i> Site web</label>
                             <span><a href="{{ company.website }}" target="_blank">{{ company.website }}</a></span>
                         </div>
                         {% endif %}
@@ -608,22 +171,25 @@
 
                 <!-- Réseaux sociaux -->
                 {% if company.linkedin_url or company.twitter_url or company.facebook_url %}
-                <div class="card">
+                <div class="info-section">
                     <h2><i class="fas fa-share-alt"></i> Réseaux sociaux</h2>
                     <div class="social-links">
                         {% if company.linkedin_url %}
                         <a href="{{ company.linkedin_url }}" target="_blank" class="social-link linkedin">
-                            <i class="fab fa-linkedin"></i> LinkedIn
+                            <i class="fab fa-linkedin"></i>
+                            LinkedIn
                         </a>
                         {% endif %}
                         {% if company.twitter_url %}
                         <a href="{{ company.twitter_url }}" target="_blank" class="social-link twitter">
-                            <i class="fab fa-twitter"></i> Twitter
+                            <i class="fab fa-twitter"></i>
+                            Twitter
                         </a>
                         {% endif %}
                         {% if company.facebook_url %}
                         <a href="{{ company.facebook_url }}" target="_blank" class="social-link facebook">
-                            <i class="fab fa-facebook"></i> Facebook
+                            <i class="fab fa-facebook"></i>
+                            Facebook
                         </a>
                         {% endif %}
                     </div>
@@ -631,11 +197,12 @@
                 {% endif %}
 
                 <!-- Utilisateurs -->
-                <div class="card">
+                <div class="info-section">
                     <div class="section-header">
                         <h2><i class="fas fa-users"></i> Utilisateurs ({{ company_admins|length }})</h2>
-                        <button class="btn btn-primary" onclick="openAddUserModal()">
-                            <i class="fas fa-user-plus"></i> Ajouter utilisateur
+                        <button class="btn-add" onclick="openAddUserModal()">
+                            <i class="fas fa-user-plus"></i>
+                            Ajouter utilisateur
                         </button>
                     </div>
                     
@@ -649,14 +216,14 @@
                                 <h4>{{ admin.first_name }} {{ admin.last_name }}</h4>
                                 <div class="user-email">{{ admin.email }}</div>
                                 <div class="user-meta">
-                                    <span class="badge badge-role">{{ admin.role|title }}</span>
-                                    <span class="badge badge-access">{{ admin.access_level|title }}</span>
-                                    <span class="badge {{ 'badge-active' if admin.is_active else 'badge-inactive' }}">
+                                    <span class="user-role">{{ admin.role|title }}</span>
+                                    <span class="user-access">{{ admin.access_level|title }}</span>
+                                    <span class="user-status {{ 'active' if admin.is_active else 'inactive' }}">
                                         {{ 'Actif' if admin.is_active else 'Inactif' }}
                                     </span>
                                 </div>
                                 {% if admin.last_login %}
-                                <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">
+                                <div class="user-last-login">
                                     Dernière connexion: {{ admin.last_login.strftime('%d/%m/%Y %H:%M') }}
                                 </div>
                                 {% endif %}
@@ -667,13 +234,16 @@
                 </div>
             {% else %}
                 <!-- Pas d'entreprise -->
-                <div class="card">
+                <div class="info-section">
                     <div class="no-company">
-                        <i class="fas fa-building"></i>
+                        <div class="no-company-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
                         <h2>Aucune entreprise configurée</h2>
                         <p>Vous devez d'abord configurer votre entreprise pour accéder à cette page.</p>
-                        <button class="btn btn-primary" onclick="goToSetup()">
-                            <i class="fas fa-cog"></i> Configurer maintenant
+                        <button class="btn-setup" onclick="goToSetup()">
+                            <i class="fas fa-cog"></i>
+                            Configurer maintenant
                         </button>
                     </div>
                 </div>
@@ -681,11 +251,11 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal Ajouter Utilisateur -->
     <div class="modal-overlay" id="addUserModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>Ajouter un utilisateur</h3>
+                <h3><i class="fas fa-user-plus"></i> Ajouter un utilisateur</h3>
                 <button class="modal-close" onclick="closeAddUserModal()">
                     <i class="fas fa-times"></i>
                 </button>
@@ -693,29 +263,29 @@
             
             <form id="addUserForm" class="modal-form">
                 <div class="form-group">
-                    <label for="userEmail">Email *</label>
-                    <input type="email" id="userEmail" name="email" required>
+                    <label for="userEmail"><i class="fas fa-envelope"></i> Email *</label>
+                    <input type="email" id="userEmail" name="email" required placeholder="exemple@email.com">
                 </div>
                 
                 <div class="form-group">
-                    <label for="userPassword">Mot de passe *</label>
-                    <input type="password" id="userPassword" name="password" required>
+                    <label for="userPassword"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <input type="password" id="userPassword" name="password" required placeholder="Mot de passe sécurisé">
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="userFirstName">Prénom *</label>
-                        <input type="text" id="userFirstName" name="first_name" required>
+                        <label for="userFirstName"><i class="fas fa-user"></i> Prénom *</label>
+                        <input type="text" id="userFirstName" name="first_name" required placeholder="Prénom">
                     </div>
                     <div class="form-group">
-                        <label for="userLastName">Nom *</label>
-                        <input type="text" id="userLastName" name="last_name" required>
+                        <label for="userLastName"><i class="fas fa-user"></i> Nom *</label>
+                        <input type="text" id="userLastName" name="last_name" required placeholder="Nom">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="userRole">Rôle</label>
+                        <label for="userRole"><i class="fas fa-user-tag"></i> Rôle</label>
                         <select id="userRole" name="role">
                             <option value="hr_admin">HR Admin</option>
                             <option value="hr_manager">HR Manager</option>
@@ -723,7 +293,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="userAccess">Niveau d'accès</label>
+                        <label for="userAccess"><i class="fas fa-key"></i> Niveau d'accès</label>
                         <select id="userAccess" name="access_level">
                             <option value="admin">Admin</option>
                             <option value="viewer">Viewer</option>
@@ -733,11 +303,13 @@
                 </div>
                 
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">
+                    <button type="button" class="btn-cancel" onclick="closeAddUserModal()">
+                        <i class="fas fa-times"></i>
                         Annuler
                     </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i> Créer utilisateur
+                    <button type="submit" class="btn-create">
+                        <i class="fas fa-user-plus"></i>
+                        Créer utilisateur
                     </button>
                 </div>
             </form>
@@ -793,16 +365,19 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('Utilisateur créé avec succès !');
+                    // Notification de succès
+                    showNotification('Utilisateur créé avec succès !', 'success');
                     closeAddUserModal();
-                    location.reload();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
                 } else {
-                    alert('Erreur: ' + result.message);
+                    showNotification('Erreur: ' + result.message, 'error');
                 }
                 
             } catch (error) {
                 console.error('Erreur:', error);
-                alert('Erreur de connexion au serveur');
+                showNotification('Erreur de connexion au serveur', 'error');
             }
         });
         
@@ -812,6 +387,46 @@
                 closeAddUserModal();
             }
         });
+
+        // Système de notifications
+        function showNotification(message, type = 'info') {
+            // Supprimer les notifications existantes
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notif => notif.remove());
+
+            // Créer la nouvelle notification
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+                <button class="notification-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            // Ajouter au DOM
+            document.body.appendChild(notification);
+
+            // Animation d'entrée
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            // Suppression automatique après 5 secondes
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        if (notification.parentElement) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
     </script>
 </body>
 </html>

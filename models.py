@@ -162,7 +162,6 @@ class Job(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     # Statistiques
-    views_count = Column(Integer, default=0)
     applications_count = Column(Integer, default=0)
 
 class Application(Base):
@@ -192,3 +191,29 @@ class Application(Base):
     source = Column(String(100))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+# NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    
+    # Type d'action et entité concernée
+    action_type = Column(Enum('create', 'update', 'delete', 'login', 'logout'), nullable=False)
+    entity_type = Column(Enum('department', 'employee', 'job', 'user', 'company', 'application'), nullable=False)
+    entity_id = Column(Integer)  # ID de l'entité concernée
+    
+    # Description de l'activité
+    description = Column(Text, nullable=False)
+    details = Column(JSON)  # Détails supplémentaires en JSON
+    
+    # Métadonnées
+    ip_address = Column(String(45))  # Pour IPv4 et IPv6
+    user_agent = Column(Text)
+    created_at = Column(DateTime, default=func.now())
+    
+    # Relations
+    company = relationship("Company")
+    admin = relationship("HRAdmin")

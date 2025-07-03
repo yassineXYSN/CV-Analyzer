@@ -12,7 +12,7 @@ from insert_to_db import insert_candidate_data
 from auth_utils import authenticate_user, create_admin_user
 from company_utils import create_company, update_company, get_user_company, get_company_admins, add_user_to_company
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import os
 from dotenv import load_dotenv
 from database import engine, SessionLocal
@@ -344,6 +344,10 @@ def company_profile_page(request: Request):
         traceback.print_exc()
         return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
 
+@app.get("/hr-reports", response_class=HTMLResponse)
+def hr_reports_page(request: Request):
+    return templates.TemplateResponse("HR-dep/hr-reports.html", {"request": request})
+
 @app.get("/employee-profile", response_class=HTMLResponse)
 def employee_profile_page(request: Request):
     return templates.TemplateResponse("HR-dep/employee-profile.html", {"request": request})
@@ -524,21 +528,6 @@ async def create_department(department_data: DepartmentRequest):
             db.refresh(new_department)
             
             print(f"✅ DEPT API: Département créé avec ID: {new_department.id}")
-            
-            # Enregistrer l'activité
-            try:
-                log_activity(
-                    company_id=company.id,
-                    admin_id=user_id,
-                    action_type='create',
-                    entity_type='department',
-                    entity_id=new_department.id,
-                    description=f"Création du département '{department_data.name}'",
-                    details={"department_name": department_data.name, "manager": department_data.manager_name}
-                )
-                print(f"✅ DEPT API: Activité enregistrée pour département {new_department.id}")
-            except Exception as e:
-                print(f"⚠️ DEPT API: Erreur enregistrement activité: {e}")
             
             # Retourner les données du département créé
             department_info = {
@@ -734,21 +723,6 @@ async def create_employee(employee_data: EmployeeRequest):
             
             print(f"✅ EMP API: Employé créé avec ID: {new_employee.id}")
             
-            # Enregistrer l'activité
-            try:
-                log_activity(
-                    company_id=company.id,
-                    admin_id=user_id,
-                    action_type='create',
-                    entity_type='employee',
-                    entity_id=new_employee.id,
-                    description=f"Ajout de l'employé '{employee_data.first_name} {employee_data.last_name}'",
-                    details={"employee_name": f"{employee_data.first_name} {employee_data.last_name}", "position": employee_data.position, "department": department.name}
-                )
-                print(f"✅ EMP API: Activité enregistrée pour employé {new_employee.id}")
-            except Exception as e:
-                print(f"⚠️ EMP API: Erreur enregistrement activité: {e}")
-            
             # Retourner les données de l'employé créé
             employee_info = {
                 "id": new_employee.id,
@@ -859,7 +833,6 @@ async def create_job(job_data: JobRequest):
                 status='active',
                 assigned_employee_id=job_data.assigned_employee_id,
                 deadline=deadline_obj,
-                views_count=0,
                 applications_count=0
             )
             
@@ -868,21 +841,6 @@ async def create_job(job_data: JobRequest):
             db.refresh(new_job)
             
             print(f"✅ JOB API: Poste créé avec ID: {new_job.id}")
-            
-            # Enregistrer l'activité
-            try:
-                log_activity(
-                    company_id=company.id,
-                    admin_id=user_id,
-                    action_type='create',
-                    entity_type='job',
-                    entity_id=new_job.id,
-                    description=f"Création du poste '{job_data.title}'",
-                    details={"job_title": job_data.title, "department": department.name, "priority": job_data.priority}
-                )
-                print(f"✅ JOB API: Activité enregistrée pour poste {new_job.id}")
-            except Exception as e:
-                print(f"⚠️ JOB API: Erreur enregistrement activité: {e}")
             
             # Retourner les données du poste créé
             job_info = {
@@ -902,7 +860,6 @@ async def create_job(job_data: JobRequest):
                 "assigned_employee_id": new_job.assigned_employee_id,
                 "assigned_employee_name": f"{assigned_employee.first_name} {assigned_employee.last_name}" if assigned_employee else None,
                 "deadline": new_job.deadline.isoformat() if new_job.deadline else None,
-                "views_count": new_job.views_count,
                 "applications_count": new_job.applications_count,
                 "created_at": new_job.created_at.isoformat() if new_job.created_at else None
             }
@@ -1048,7 +1005,6 @@ async def get_jobs():
                     "assigned_employee_id": job.assigned_employee_id,
                     "assigned_employee_name": f"{assigned_employee.first_name} {assigned_employee.last_name}" if assigned_employee else None,
                     "deadline": job.deadline.isoformat() if job.deadline else None,
-                    "views_count": job.views_count,
                     "applications_count": job.applications_count,
                     "created_at": job.created_at.isoformat() if job.created_at else None
                 })
@@ -1068,6 +1024,120 @@ async def get_jobs():
         
     except Exception as e:
         print(f"❌ JOB LIST API: Erreur critique: {e}")
+        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+
+@app.get("/api/job/{job_id}")
+async def get_job_details(job_id: int):
+    """API pour récupérer les détails d'un poste spécifique"""
+    try:
+        print(f"🔍 JOB DETAIL API: Récupération poste ID: {job_id}")
+        
+        # Vérifier la session utilisateur
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        # Récupérer l'entreprise de l'utilisateur
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
+        
+        # Récupérer le poste
+        db = SessionLocal()
+        try:
+            job = db.query(models.Job).filter(
+                models.Job.id == job_id,
+                models.Job.company_id == company.id
+            ).first()
+            
+            if not job:
+                print(f"❌ JOB DETAIL API: Poste {job_id} non trouvé")
+                return {"success": False, "message": "Poste non trouvé"}
+            
+            # Récupérer le département
+            department = db.query(models.Department).filter(
+                models.Department.id == job.department_id
+            ).first()
+            
+            # Récupérer l'employé assigné
+            assigned_employee = None
+            if job.assigned_employee_id:
+                assigned_employee = db.query(models.Employee).filter(
+                    models.Employee.id == job.assigned_employee_id
+                ).first()
+            
+            # Récupérer les candidatures réelles
+            applications = db.query(models.Application).filter(
+                models.Application.job_id == job_id
+            ).all()
+            
+            applications_list = []
+            for app in applications:
+                # Récupérer le profil candidat
+                candidate = db.query(models.ProfileCandidat).filter(
+                    models.ProfileCandidat.id == app.candidate_profile_id
+                ).first()
+                
+                if candidate:
+                    applications_list.append({
+                        "id": app.id,
+                        "name": candidate.name,
+                        "title": candidate.title,
+                        "status": app.status,
+                        "application_date": app.application_date.isoformat() if app.application_date else None,
+                        "hr_rating": float(app.hr_rating) if app.hr_rating else None,
+                        "hr_notes": app.hr_notes
+                    })
+            
+            # Calculer les jours restants
+            days_remaining = None
+            if job.deadline:
+                today = date.today()
+                days_remaining = (job.deadline - today).days
+                days_remaining = max(0, days_remaining)
+            
+            job_data = {
+                "id": job.id,
+                "title": job.title,
+                "description": job.description,
+                "requirements": job.requirements,
+                "responsibilities": job.responsibilities,
+                "employment_type": job.employment_type,
+                "salary_min": float(job.salary_min) if job.salary_min else None,
+                "salary_max": float(job.salary_max) if job.salary_max else None,
+                "currency": job.currency,
+                "priority": job.priority,
+                "status": job.status,
+                "department_id": job.department_id,
+                "department_name": department.name if department else "N/A",
+                "assigned_employee_id": job.assigned_employee_id,
+                "assigned_employee_name": f"{assigned_employee.first_name} {assigned_employee.last_name}" if assigned_employee else None,
+                "deadline": job.deadline.isoformat() if job.deadline else None,
+                "days_remaining": days_remaining,
+                "applications_count": len(applications_list),
+                "applications": applications_list,
+                "created_at": job.created_at.isoformat() if job.created_at else None
+            }
+            
+            print(f"✅ JOB DETAIL API: Poste trouvé avec {len(applications_list)} candidatures")
+            
+            return {
+                "success": True,
+                "job": job_data
+            }
+            
+        except Exception as e:
+            print(f"❌ JOB DETAIL API: Erreur récupération poste: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "message": f"Erreur lors de la récupération du poste: {str(e)}"}
+        finally:
+            db.close()
+        
+    except Exception as e:
+        print(f"❌ JOB DETAIL API: Erreur critique: {e}")
+        import traceback
+        traceback.print_exc()
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
 @app.post("/api/create-user")
@@ -1296,129 +1366,6 @@ async def get_dashboard_stats():
     except Exception as e:
         print(f"❌ STATS API: Erreur critique: {e}")
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
-
-@app.get("/api/recent-activity")
-async def get_recent_activity():
-    """API pour récupérer l'activité récente"""
-    try:
-        print(f"🔍 ACTIVITY API: Début récupération activité récente")
-        
-        user_id = current_user_session.get('user_id')
-        if not user_id:
-            print(f"❌ ACTIVITY API: Utilisateur non connecté")
-            return {"success": False, "message": "Utilisateur non connecté"}
-        
-        print(f"✅ ACTIVITY API: User ID: {user_id}")
-        
-        # Récupérer l'entreprise de l'utilisateur
-        company = get_user_company(user_id)
-        if not company:
-            print(f"❌ ACTIVITY API: Aucune entreprise trouvée")
-            return {"success": False, "message": "Aucune entreprise associée"}
-        
-        print(f"✅ ACTIVITY API: Company ID: {company.id}")
-        
-        db = SessionLocal()
-        try:
-            # Compter d'abord le nombre total d'activités
-            total_activities = db.query(models.ActivityLog).filter(
-                models.ActivityLog.company_id == company.id
-            ).count()
-            
-            print(f"📊 ACTIVITY API: {total_activities} activités totales trouvées")
-            
-            # Récupérer les 10 dernières activités
-            activities = db.query(models.ActivityLog).filter(
-                models.ActivityLog.company_id == company.id
-            ).order_by(models.ActivityLog.created_at.desc()).limit(10).all()
-            
-            print(f"📋 ACTIVITY API: {len(activities)} activités récupérées")
-            
-            activities_list = []
-            for activity in activities:
-                print(f"🔍 ACTIVITY API: Traitement activité ID {activity.id}")
-                
-                # Récupérer l'admin qui a fait l'action
-                admin = None
-                admin_name = "Utilisateur inconnu"
-                
-                if activity.admin_id:
-                    admin = db.query(models.HRAdmin).filter(
-                        models.HRAdmin.id == activity.admin_id
-                    ).first()
-                    
-                    if admin:
-                        admin_name = f"{admin.first_name} {admin.last_name}"
-                        print(f"👤 ACTIVITY API: Admin trouvé: {admin_name}")
-                    else:
-                        print(f"⚠️ ACTIVITY API: Admin ID {activity.admin_id} non trouvé")
-                
-                activity_data = {
-                    "id": activity.id,
-                    "action_type": activity.action_type,
-                    "entity_type": activity.entity_type,
-                    "entity_id": activity.entity_id,
-                    "description": activity.description,
-                    "admin_name": admin_name,
-                    "created_at": activity.created_at.isoformat() if activity.created_at else None,
-                    "details": activity.details
-                }
-                
-                activities_list.append(activity_data)
-                print(f"✅ ACTIVITY API: Activité ajoutée: {activity.description}")
-            
-            print(f"✅ ACTIVITY API: {len(activities_list)} activités préparées pour envoi")
-            
-            return {"success": True, "activities": activities_list}
-            
-        except Exception as e:
-            print(f"❌ ACTIVITY API: Erreur récupération activités: {e}")
-            import traceback
-            traceback.print_exc()
-            return {"success": False, "message": f"Erreur lors de la récupération des activités: {str(e)}"}
-        finally:
-            db.close()
-        
-    except Exception as e:
-        print(f"❌ ACTIVITY API: Erreur critique: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
-
-def log_activity(company_id: int, admin_id: int, action_type: str, entity_type: str, entity_id: int, description: str, details: dict = None):
-    """Fonction pour enregistrer une activité"""
-    try:
-        print(f"📝 ACTIVITY LOG: Tentative d'enregistrement - {description}")
-        db = SessionLocal()
-        try:
-            activity = models.ActivityLog(
-                company_id=company_id,
-                admin_id=admin_id,
-                action_type=action_type,
-                entity_type=entity_type,
-                entity_id=entity_id,
-                description=description,
-                details=details,
-                created_at=datetime.now()
-            )
-            
-            db.add(activity)
-            db.commit()
-            db.refresh(activity)
-            print(f"✅ ACTIVITY LOG: Activité enregistrée avec ID {activity.id} - {description}")
-            
-        except Exception as e:
-            db.rollback()
-            print(f"❌ ACTIVITY LOG: Erreur enregistrement: {e}")
-            import traceback
-            traceback.print_exc()
-        finally:
-            db.close()
-            
-    except Exception as e:
-        print(f"❌ ACTIVITY LOG: Erreur critique: {e}")
-        import traceback
-        traceback.print_exc()
 
 # Autres routes existantes...
 class TopicRequest(BaseModel):

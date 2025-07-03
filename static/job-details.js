@@ -1,48 +1,44 @@
 // Variables globales
 let currentJob = null
 let applications = []
-const requiredSkills = ["JavaScript", "React", "Node.js", "MongoDB", "Git", "Agile"]
 
 // Charger les données du job au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 Page job-details chargée")
   loadJobData()
-  loadApplications()
-  renderSkills()
-  renderApplications()
-  renderTimeline()
 })
 
 // Charger les données du job depuis localStorage ou URL
 function loadJobData() {
+  console.log("📊 Début chargement des données")
+
   // Essayer de récupérer l'ID depuis l'URL
   const urlParams = new URLSearchParams(window.location.search)
   const jobId = urlParams.get("id")
 
+  console.log("🔍 Job ID depuis URL:", jobId)
+
   if (jobId) {
     // Charger depuis l'API
+    console.log("🌐 Chargement depuis API")
     loadJobFromAPI(jobId)
   } else {
     // Essayer localStorage
+    console.log("💾 Tentative chargement depuis localStorage")
     const jobData = localStorage.getItem("selectedJob")
     if (jobData) {
-      currentJob = JSON.parse(jobData)
-      displayJobInfo()
-    } else {
-      // Données par défaut si aucune donnée n'est trouvée
-      currentJob = {
-        id: 1,
-        title: "Développeur Full-Stack Senior",
-        department_id: 1,
-        employment_type: "CDI",
-        salary_min: 45000,
-        salary_max: 55000,
-        description:
-          "Nous recherchons un développeur full-stack expérimenté pour rejoindre notre équipe dynamique. Vous travaillerez sur des projets innovants utilisant les dernières technologies web.",
-        priority: "normal",
-        deadline: "2024-04-15",
-        created_at: new Date(),
+      try {
+        currentJob = JSON.parse(jobData)
+        console.log("✅ Données chargées depuis localStorage:", currentJob)
+        displayJobInfo()
+        renderApplications()
+      } catch (error) {
+        console.error("❌ Erreur parsing localStorage:", error)
+        showError("Erreur lors du chargement des données du poste")
       }
-      displayJobInfo()
+    } else {
+      console.log("❌ Aucune donnée trouvée")
+      showError("Aucun poste sélectionné. Veuillez retourner au dashboard et sélectionner un poste.")
     }
   }
 }
@@ -50,147 +46,220 @@ function loadJobData() {
 // Charger le job depuis l'API
 async function loadJobFromAPI(jobId) {
   try {
+    console.log(`🔄 Chargement job ID: ${jobId}`)
+    showLoading("Chargement des détails du poste...")
+
     const response = await fetch(`/api/job/${jobId}`)
+    console.log("📡 Réponse API:", response.status)
+
     if (response.ok) {
       const result = await response.json()
+      console.log("📦 Données reçues:", result)
+
       if (result.success) {
         currentJob = result.job
+        applications = result.job.applications || []
+
+        console.log("✅ Job chargé:", currentJob.title)
+        console.log("👥 Candidatures:", applications.length)
+
+        // Masquer le loading et afficher les données
+        hideLoading()
         displayJobInfo()
+        renderApplications()
+      } else {
+        console.error("❌ Erreur API:", result.message)
+        showError(result.message || "Erreur lors du chargement du poste")
       }
+    } else {
+      console.error("❌ Erreur HTTP:", response.status)
+      showError("Erreur de connexion au serveur")
     }
   } catch (error) {
-    console.error("Erreur chargement job:", error)
-    // Utiliser des données par défaut en cas d'erreur
-    loadJobData()
+    console.error("❌ Erreur critique:", error)
+    showError("Erreur lors du chargement des données")
+  }
+}
+
+// Masquer le loading
+function hideLoading() {
+  const loadingOverlay = document.querySelector(".loading-overlay")
+  if (loadingOverlay) {
+    loadingOverlay.remove()
   }
 }
 
 // Afficher les informations du job
 function displayJobInfo() {
-  if (!currentJob) return
-
-  // Informations principales
-  document.getElementById("jobTitle").textContent = currentJob.title
-  document.getElementById("jobDepartment").textContent =
-    currentJob.department_name || getDepartmentName(currentJob.department_id)
-  document.getElementById("jobDescription").textContent = currentJob.description
-
-  // Badges
-  document.getElementById("jobType").textContent = currentJob.employment_type.toUpperCase()
-
-  const priorityElement = document.getElementById("jobPriority")
-  priorityElement.textContent = currentJob.priority
-  priorityElement.className = `job-badge priority ${currentJob.priority}`
-
-  // Salaire
-  let salaryText = "Non spécifié"
-  if (currentJob.salary_min && currentJob.salary_max) {
-    salaryText = `€ ${currentJob.salary_min} - ${currentJob.salary_max}`
-  } else if (currentJob.salary_min) {
-    salaryText = `€ ${currentJob.salary_min}+`
-  }
-  document.getElementById("jobSalary").textContent = salaryText
-
-  // Détails
-  document.getElementById("contractType").textContent = currentJob.employment_type.toUpperCase()
-  document.getElementById("jobDeadline").textContent = currentJob.deadline
-    ? new Date(currentJob.deadline).toLocaleDateString("fr-FR")
-    : "Non définie"
-  document.getElementById("jobCreated").textContent = new Date(currentJob.created_at).toLocaleDateString("fr-FR")
-
-  // Employé assigné
-  const assignedEmployee = currentJob.assigned_employee_name || "Non assigné"
-  document.getElementById("assignedEmployee").textContent = assignedEmployee
-
-  // Statistiques simulées
-  document.getElementById("jobViews").textContent = currentJob.views_count || Math.floor(Math.random() * 500) + 100
-  document.getElementById("jobApplications").textContent = currentJob.applications_count || applications.length
-
-  // Calculer les jours restants
-  if (currentJob.deadline) {
-    const deadline = new Date(currentJob.deadline)
-    const today = new Date()
-    const daysRemaining = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24))
-    document.getElementById("daysRemaining").textContent = Math.max(0, daysRemaining)
+  if (!currentJob) {
+    console.error("❌ Aucun job à afficher")
+    return
   }
 
-  // Taux de conversion simulé
-  document.getElementById("conversionRate").textContent = (Math.random() * 10).toFixed(1) + "%"
-}
+  console.log("🎨 Affichage des informations du job")
+  console.log("📋 Données du job:", currentJob)
 
-// Obtenir le nom du département (simulé)
-function getDepartmentName(departmentId) {
-  const departments = {
-    1: "Développement",
-    2: "Ressources Humaines",
-    3: "Marketing",
-    4: "Ventes",
-    5: "Support",
+  try {
+    // Vérifier et afficher les informations principales
+    const titleElement = document.getElementById("jobTitle")
+    if (titleElement) {
+      titleElement.textContent = currentJob.title || "Titre non disponible"
+      console.log("✅ Titre affiché:", currentJob.title)
+    } else {
+      console.warn("⚠️ Element jobTitle non trouvé dans le DOM")
+    }
+
+    const departmentElement = document.getElementById("jobDepartment")
+    if (departmentElement) {
+      departmentElement.textContent = currentJob.department_name || "Département non spécifié"
+      console.log("✅ Département affiché:", currentJob.department_name)
+    } else {
+      console.warn("⚠️ Element jobDepartment non trouvé dans le DOM")
+    }
+
+    const descriptionElement = document.getElementById("jobDescription")
+    if (descriptionElement) {
+      descriptionElement.textContent = currentJob.description || "Description non disponible"
+      console.log("✅ Description affichée")
+    } else {
+      console.warn("⚠️ Element jobDescription non trouvé dans le DOM")
+    }
+
+    // Responsabilités
+    const responsibilitiesElement = document.getElementById("jobResponsibilities")
+    if (responsibilitiesElement) {
+      responsibilitiesElement.textContent = currentJob.responsibilities || "Aucune responsabilité spécifiée"
+      console.log("✅ Responsabilités affichées")
+    } else {
+      console.warn("⚠️ Element jobResponsibilities non trouvé dans le DOM")
+    }
+
+    // Meta informations
+    const typeElement = document.getElementById("jobType")
+    if (typeElement) {
+      typeElement.textContent = (currentJob.employment_type || "").toUpperCase()
+    } else {
+      console.warn("⚠️ Element jobType non trouvé")
+    }
+
+    const priorityElement = document.getElementById("jobPriority")
+    if (priorityElement) {
+      priorityElement.textContent = (currentJob.priority || "").toUpperCase()
+    } else {
+      console.warn("⚠️ Element jobPriority non trouvé")
+    }
+
+    const deadlineElement = document.getElementById("jobDeadline")
+    if (deadlineElement) {
+      deadlineElement.textContent = currentJob.deadline
+        ? new Date(currentJob.deadline).toLocaleDateString("fr-FR")
+        : "Non définie"
+    } else {
+      console.warn("⚠️ Element jobDeadline non trouvé")
+    }
+
+    // Statut
+    const statusElement = document.getElementById("jobStatus")
+    if (statusElement) {
+      statusElement.textContent = (currentJob.status || "").toUpperCase()
+      statusElement.className = `status-badge ${currentJob.status || "draft"}`
+    } else {
+      console.warn("⚠️ Element jobStatus non trouvé")
+    }
+
+    // Salaire
+    const salaryElement = document.getElementById("jobSalary")
+    if (salaryElement) {
+      let salaryText = "Non spécifié"
+      if (currentJob.salary_min && currentJob.salary_max) {
+        salaryText = `€ ${currentJob.salary_min} - ${currentJob.salary_max}`
+      } else if (currentJob.salary_min) {
+        salaryText = `€ ${currentJob.salary_min}+`
+      }
+      salaryElement.textContent = salaryText
+    } else {
+      console.warn("⚠️ Element jobSalary non trouvé")
+    }
+
+    // Détails
+    const contractTypeElement = document.getElementById("contractType")
+    if (contractTypeElement) {
+      contractTypeElement.textContent = (currentJob.employment_type || "").toUpperCase()
+    } else {
+      console.warn("⚠️ Element contractType non trouvé")
+    }
+
+    const jobCreatedElement = document.getElementById("jobCreated")
+    if (jobCreatedElement) {
+      jobCreatedElement.textContent = new Date(currentJob.created_at).toLocaleDateString("fr-FR")
+    } else {
+      console.warn("⚠️ Element jobCreated non trouvé")
+    }
+
+    const assignedEmployeeElement = document.getElementById("assignedEmployee")
+    if (assignedEmployeeElement) {
+      assignedEmployeeElement.textContent = currentJob.assigned_employee_name || "Non assigné"
+    } else {
+      console.warn("⚠️ Element assignedEmployee non trouvé")
+    }
+
+    // Statistiques réelles
+    const applicationsElement = document.getElementById("jobApplications")
+    if (applicationsElement) {
+      applicationsElement.textContent = currentJob.applications_count || 0
+    } else {
+      console.warn("⚠️ Element jobApplications non trouvé")
+    }
+
+    const daysRemainingElement = document.getElementById("daysRemaining")
+    if (daysRemainingElement) {
+      if (currentJob.days_remaining !== null && currentJob.days_remaining !== undefined) {
+        daysRemainingElement.textContent = currentJob.days_remaining
+      } else {
+        daysRemainingElement.textContent = "--"
+      }
+    } else {
+      console.warn("⚠️ Element daysRemaining non trouvé")
+    }
+
+    console.log("✅ Informations affichées avec succès")
+  } catch (error) {
+    console.error("❌ Erreur lors de l'affichage:", error)
+    showError("Erreur lors de l'affichage des données")
   }
-  return departments[departmentId] || "Département inconnu"
 }
 
 // Fonction pour retourner au dashboard
 function goBackToDashboard() {
+  console.log("🔙 Retour au dashboard")
   window.location.href = "/dashboard"
-}
-
-// Charger les candidatures
-function loadApplications() {
-  // Candidatures simulées
-  applications = [
-    {
-      id: 1,
-      name: "Marie Dubois",
-      email: "marie.dubois@email.com",
-      status: "pending",
-      appliedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: 2,
-      name: "Pierre Martin",
-      email: "pierre.martin@email.com",
-      status: "reviewed",
-      appliedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: 3,
-      name: "Sophie Laurent",
-      email: "sophie.laurent@email.com",
-      status: "accepted",
-      appliedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: 4,
-      name: "Thomas Durand",
-      email: "thomas.durand@email.com",
-      status: "pending",
-      appliedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    },
-  ]
-}
-
-// Rendre les compétences
-function renderSkills() {
-  const skillsContainer = document.getElementById("requiredSkills")
-  skillsContainer.innerHTML = requiredSkills.map((skill) => `<div class="skill-tag">${skill}</div>`).join("")
 }
 
 // Rendre les candidatures
 function renderApplications(filter = "all") {
+  console.log(`👥 Rendu des candidatures (filtre: ${filter})`)
+
   const container = document.getElementById("applicationsList")
+  if (!container) {
+    console.error("❌ Container applicationsList non trouvé")
+    return
+  }
 
   let filteredApplications = applications
   if (filter !== "all") {
     filteredApplications = applications.filter((app) => app.status === filter)
   }
 
+  console.log(`📊 ${filteredApplications.length} candidatures à afficher`)
+
   if (filteredApplications.length === 0) {
     container.innerHTML = `
-            <div class="empty-state">
-                <p>Aucune candidature ${filter === "all" ? "" : filter}</p>
-            </div>
-        `
+      <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <h4>Aucune candidature ${filter === "all" ? "" : filter}</h4>
+        <p>Les candidatures apparaîtront ici une fois soumises.</p>
+      </div>
+    `
     return
   }
 
@@ -198,19 +267,23 @@ function renderApplications(filter = "all") {
     .map(
       (app) => `
         <div class="application-item">
-            <div class="applicant-avatar">${app.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}</div>
-            <div class="applicant-info">
-                <div class="applicant-name">${app.name}</div>
-                <div class="applicant-email">${app.email}</div>
+          <div class="applicant-avatar">${app.name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")}</div>
+          <div class="applicant-info">
+            <div class="applicant-name">${app.name}</div>
+            <div class="applicant-title">${app.title || "Candidat"}</div>
+            <div class="application-date">
+              Candidature: ${new Date(app.application_date).toLocaleDateString("fr-FR")}
             </div>
-            <div class="application-status ${app.status}">
-                ${getStatusText(app.status)}
-            </div>
+            ${app.hr_rating ? `<div class="hr-rating">Note HR: ${app.hr_rating}/5 ⭐</div>` : ""}
+          </div>
+          <div class="application-status ${app.status}">
+            ${getStatusText(app.status)}
+          </div>
         </div>
-    `,
+      `,
     )
     .join("")
 }
@@ -220,50 +293,13 @@ function getStatusText(status) {
   const statusTexts = {
     pending: "En attente",
     reviewed: "Examinée",
+    interview_scheduled: "Entretien programmé",
+    interview_completed: "Entretien terminé",
     accepted: "Acceptée",
     rejected: "Rejetée",
+    withdrawn: "Retirée",
   }
   return statusTexts[status] || status
-}
-
-// Rendre la timeline
-function renderTimeline() {
-  const timeline = document.getElementById("jobTimeline")
-  const timelineItems = [
-    {
-      icon: "fa-plus",
-      title: "Poste créé",
-      description: "Le poste a été publié et est maintenant visible",
-      date: "Aujourd'hui",
-    },
-    {
-      icon: "fa-eye",
-      title: "Première vue",
-      description: "Le poste a reçu sa première consultation",
-      date: "Il y a 2 heures",
-    },
-    {
-      icon: "fa-file-alt",
-      title: "Première candidature",
-      description: "Marie Dubois a postulé pour ce poste",
-      date: "Il y a 1 jour",
-    },
-  ]
-
-  timeline.innerHTML = timelineItems
-    .map(
-      (item) => `
-        <div class="timeline-item">
-            <div class="timeline-icon"><i class="fas ${item.icon}"></i></div>
-            <div class="timeline-content">
-                <h4>${item.title}</h4>
-                <p>${item.description}</p>
-                <span class="timeline-date">${item.date}</span>
-            </div>
-        </div>
-    `,
-    )
-    .join("")
 }
 
 // Fonctions pour les actions
@@ -272,6 +308,11 @@ function editJob() {
 }
 
 function shareJob() {
+  if (!currentJob) {
+    showNotification("Aucun poste à partager", "error")
+    return
+  }
+
   if (navigator.share) {
     navigator
       .share({
@@ -313,48 +354,64 @@ function closeJob() {
 
 // Filtrer les candidatures
 function filterApplications(filter) {
+  console.log(`🔍 Filtrage: ${filter}`)
+
   // Mettre à jour les boutons actifs
   document.querySelectorAll(".filter-btn").forEach((btn) => {
     btn.classList.remove("active")
   })
-  event.target.classList.add("active")
+
+  // Trouver le bouton cliqué et l'activer
+  const clickedBtn = Array.from(document.querySelectorAll(".filter-btn")).find((btn) =>
+    btn.textContent.toLowerCase().includes(filter === "all" ? "toutes" : filter),
+  )
+  if (clickedBtn) {
+    clickedBtn.classList.add("active")
+  }
 
   renderApplications(filter)
 }
 
-// Gestion des compétences
-function addRequiredSkill() {
-  document.getElementById("skillModal").classList.add("show")
-  document.body.style.overflow = "hidden"
+// Fonctions utilitaires
+function showLoading(message) {
+  console.log("⏳ Affichage loading:", message)
+
+  // Supprimer le loading existant
+  hideLoading()
+
+  const loadingHTML = `
+    <div class="loading-overlay">
+      <div class="loading-content">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>${message}</p>
+      </div>
+    </div>
+  `
+  document.body.insertAdjacentHTML("beforeend", loadingHTML)
 }
 
-function closeSkillModal() {
-  document.getElementById("skillModal").classList.remove("show")
-  document.body.style.overflow = "auto"
-  document.getElementById("skillForm").reset()
-}
+function showError(message) {
+  console.log("❌ Affichage erreur:", message)
 
-function saveSkill() {
-  const skillName = document.getElementById("skillName").value.trim()
-
-  if (!skillName) {
-    showNotification("Veuillez saisir une compétence", "error")
-    return
-  }
-
-  if (requiredSkills.includes(skillName)) {
-    showNotification("Cette compétence existe déjà", "warning")
-    return
-  }
-
-  requiredSkills.push(skillName)
-  renderSkills()
-  closeSkillModal()
-  showNotification("Compétence ajoutée avec succès !", "success")
+  const errorHTML = `
+    <div class="error-overlay">
+      <div class="error-content">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h2>Erreur</h2>
+        <p>${message}</p>
+        <button onclick="goBackToDashboard()" class="btn-primary">
+          <i class="fas fa-arrow-left"></i> Retour au Dashboard
+        </button>
+      </div>
+    </div>
+  `
+  document.body.innerHTML = errorHTML
 }
 
 // Système de notifications
 function showNotification(message, type = "info") {
+  console.log(`📢 Notification ${type}:`, message)
+
   const notification = document.createElement("div")
   notification.className = `notification ${type}`
 
@@ -373,31 +430,31 @@ function showNotification(message, type = "info") {
   }
 
   notification.innerHTML = `
-        <i class="fas ${icons[type]}"></i>
-        <span>${message}</span>
-        <button class="notification-close" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
-    `
+    <i class="fas ${icons[type]}"></i>
+    <span>${message}</span>
+    <button class="notification-close" onclick="this.parentElement.remove()">
+      <i class="fas fa-times"></i>
+    </button>
+  `
 
   notification.style.cssText = `
-        position: fixed;
-        top: 2rem;
-        right: 2rem;
-        background: ${colors[type]};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        z-index: 10000;
-        backdrop-filter: blur(10px);
-        animation: slideInRight 0.3s ease;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        min-width: 300px;
-        max-width: 400px;
-    `
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    background: ${colors[type]};
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 10000;
+    backdrop-filter: blur(10px);
+    animation: slideInRight 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    min-width: 300px;
+    max-width: 400px;
+  `
 
   document.body.appendChild(notification)
 
@@ -411,70 +468,19 @@ function showNotification(message, type = "info") {
   }, 4000)
 }
 
-// Fermer les modals en cliquant à l'extérieur
+// Gestion des événements globaux
 document.addEventListener("click", (e) => {
-  if (e.target.classList.contains("modal-overlay")) {
-    e.target.classList.remove("show")
-    document.body.style.overflow = "auto"
+  // Gestion des boutons de filtre
+  if (e.target.classList.contains("filter-btn")) {
+    const filterText = e.target.textContent.toLowerCase()
+    let filter = "all"
+
+    if (filterText.includes("attente")) filter = "pending"
+    else if (filterText.includes("examinées")) filter = "reviewed"
+    else if (filterText.includes("acceptées")) filter = "accepted"
+
+    filterApplications(filter)
   }
 })
 
-// Fermer les modals avec Escape
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    const openModal = document.querySelector(".modal-overlay.show")
-    if (openModal) {
-      openModal.classList.remove("show")
-      document.body.style.overflow = "auto"
-    }
-  }
-})
-
-// Ajouter les animations CSS
-const style = document.createElement("style")
-style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-
-    .notification-close {
-        background: none;
-        border: none;
-        color: white;
-        cursor: pointer;
-        padding: 0.25rem;
-        border-radius: 4px;
-        transition: all 0.3s ease;
-        margin-left: auto;
-    }
-
-    .notification-close:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 2rem;
-        color: #7f8c8d;
-        font-style: italic;
-    }
-`
-document.head.appendChild(style)
+console.log("✅ Script job-details.js chargé complètement")

@@ -57,8 +57,9 @@
                             <label class="form-label" for="companyName">
                                 <i class="fas fa-building"></i>
                                 Nom de l'entreprise *
+                                <span class="required-indicator">*</span>
                             </label>
-                            <input type="text" id="companyName" name="company_name" class="form-input" required>
+                            <input type="text" id="companyName" name="company_name" class="form-input" required placeholder="Ex: TechCorp Solutions">
                             <div class="input-feedback"></div>
                         </div>
                         
@@ -66,18 +67,24 @@
                             <label class="form-label" for="industry">
                                 <i class="fas fa-industry"></i>
                                 Secteur d'activité *
+                                <span class="required-indicator">*</span>
                             </label>
                             <select id="industry" name="industry" class="form-select" required>
-                                <option value="">Sélectionnez un secteur</option>
-                                <option value="tech">Technologie</option>
-                                <option value="finance">Finance</option>
-                                <option value="healthcare">Santé</option>
-                                <option value="education">Éducation</option>
-                                <option value="retail">Commerce</option>
-                                <option value="manufacturing">Industrie</option>
-                                <option value="consulting">Conseil</option>
-                                <option value="media">Médias</option>
-                                <option value="other">Autre</option>
+                                <option value="">-- Choisissez votre secteur --</option>
+                                <option value="tech">Technologie & Informatique</option>
+                                <option value="finance">Finance & Banque</option>
+                                <option value="healthcare">Santé & Médical</option>
+                                <option value="education">Éducation & Formation</option>
+                                <option value="retail">Commerce & Vente</option>
+                                <option value="manufacturing">Industrie & Manufacturing</option>
+                                <option value="consulting">Conseil & Services</option>
+                                <option value="media">Médias & Communication</option>
+                                <option value="construction">BTP & Construction</option>
+                                <option value="transport">Transport & Logistique</option>
+                                <option value="energy">Énergie & Environnement</option>
+                                <option value="food">Agroalimentaire</option>
+                                <option value="tourism">Tourisme & Hôtellerie</option>
+                                <option value="other">Autre secteur</option>
                             </select>
                             <div class="input-feedback"></div>
                         </div>
@@ -86,24 +93,25 @@
                             <label class="form-label" for="companySize">
                                 <i class="fas fa-users"></i>
                                 Taille de l'entreprise *
+                                <span class="required-indicator">*</span>
                             </label>
                             <select id="companySize" name="company_size" class="form-select" required>
-                                <option value="">Sélectionnez la taille</option>
-                                <option value="1-10">1-10 employés</option>
-                                <option value="11-50">11-50 employés</option>
-                                <option value="51-200">51-200 employés</option>
-                                <option value="201-1000">201-1000 employés</option>
-                                <option value="1000+">1000+ employés</option>
+                                <option value="">-- Sélectionnez la taille --</option>
+                                <option value="1-10">Très petite entreprise (1-10 employés)</option>
+                                <option value="11-50">Petite entreprise (11-50 employés)</option>
+                                <option value="51-200">Moyenne entreprise (51-200 employés)</option>
+                                <option value="201-1000">Grande entreprise (201-1000 employés)</option>
+                                <option value="1000+">Très grande entreprise (1000+ employés)</option>
                             </select>
                             <div class="input-feedback"></div>
                         </div>
                         
                         <div class="form-group">
-                            <label class="form-label" for="foundedYear">
+                            <label class="form-label" for="foundedDate">
                                 <i class="fas fa-calendar"></i>
-                                Année de création
+                                Date de création
                             </label>
-                            <input type="number" id="foundedYear" name="founded_year" class="form-input" min="1800" max="2024">
+                            <input type="date" id="foundedDate" name="founded_date" class="form-input">
                             <div class="input-feedback"></div>
                         </div>
 
@@ -112,7 +120,7 @@
                                 <i class="fas fa-align-left"></i>
                                 Description de l'entreprise
                             </label>
-                            <textarea id="description" name="description" class="form-textarea large" placeholder="Décrivez votre entreprise, ses activités, sa mission..."></textarea>
+                            <textarea id="description" name="description" class="form-textarea large" placeholder="Décrivez votre entreprise : activités principales, mission, valeurs, spécialités... Cette description aidera à mieux comprendre votre organisation."></textarea>
                             <div class="char-counter">0 / 500</div>
                             <div class="input-feedback"></div>
                         </div>
@@ -127,16 +135,16 @@
                         <div class="form-group full-width">
                             <label class="form-label" for="address">
                                 <i class="fas fa-map-marker-alt"></i>
-                                Adresse
+                                Adresse complète
                             </label>
-                            <textarea id="address" name="address" class="form-textarea" placeholder="Adresse complète de l'entreprise"></textarea>
+                            <textarea id="address" name="address" class="form-textarea" placeholder="123 Rue de la République&#10;75001 Paris, France"></textarea>
                             <div class="input-feedback"></div>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label" for="phone">
                                 <i class="fas fa-phone"></i>
-                                Téléphone
+                                Téléphone principal
                             </label>
                             <input type="tel" id="phone" name="phone" class="form-input" placeholder="+33 1 23 45 67 89">
                             <div class="input-feedback"></div>
@@ -145,9 +153,9 @@
                         <div class="form-group">
                             <label class="form-label" for="email">
                                 <i class="fas fa-envelope"></i>
-                                Email
+                                Email de contact
                             </label>
-                            <input type="email" id="email" name="email" class="form-input" placeholder="contact@entreprise.com">
+                            <input type="email" id="email" name="email" class="form-input" placeholder="contact@votre-entreprise.com">
                             <div class="input-feedback"></div>
                         </div>
 
@@ -156,55 +164,162 @@
                                 <i class="fas fa-globe"></i>
                                 Site web
                             </label>
-                            <input type="url" id="website" name="website" class="form-input" placeholder="https://www.entreprise.com">
+                            <input type="url" id="website" name="website" class="form-input" placeholder="https://www.votre-entreprise.com">
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="linkedinUrl">
+                                <i class="fab fa-linkedin"></i>
+                                LinkedIn (optionnel)
+                            </label>
+                            <input type="url" id="linkedinUrl" name="linkedin_url" class="form-input" placeholder="https://linkedin.com/company/votre-entreprise">
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="twitterUrl">
+                                <i class="fab fa-twitter"></i>
+                                Twitter (optionnel)
+                            </label>
+                            <input type="url" id="twitterUrl" name="twitter_url" class="form-input" placeholder="https://twitter.com/votre-entreprise">
                             <div class="input-feedback"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Step 3: Summary -->
-                <div class="step-content" data-step="3">
-                    <h2><i class="fas fa-check-circle"></i> Récapitulatif</h2>
-                    
-                    <div class="summary-container">
-                        <div class="summary-card">
-                            <h3><i class="fas fa-building"></i> Informations générales</h3>
-                            <div class="summary-content" id="basicSummary">
-                                <!-- Filled by JavaScript -->
+                <!-- Step 3: Enhanced Summary -->
+                <div class="step-content step-3-wide" data-step="3">
+                    <div class="final-step-header">
+                        <div class="success-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h2>Récapitulatif de votre entreprise</h2>
+                        <p>Vérifiez les informations avant de finaliser la configuration</p>
+                    </div>
+
+                    <!-- Company Preview Card -->
+                    <div class="company-preview-card">
+                        <div class="company-header">
+                            <div class="company-logo-placeholder">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="company-basic-info">
+                                <h3 id="previewCompanyName">Nom de l'entreprise</h3>
+                                <p id="previewIndustry">Secteur d'activité</p>
+                                <div class="company-meta">
+                                    <span id="previewSize">Taille</span>
+                                    <span class="separator">•</span>
+                                    <span id="previewDate">Date de création</span>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="summary-card">
-                            <h3><i class="fas fa-map-marker-alt"></i> Coordonnées</h3>
-                            <div class="summary-content" id="contactSummary">
-                                <!-- Filled by JavaScript -->
+                        <div class="company-description" id="previewDescription">
+                            Description de l'entreprise...
+                        </div>
+
+                        <div class="company-details-grid">
+                            <div class="company-contact-info">
+                                <div class="contact-item" id="previewEmail" style="display: none;">
+                                    <i class="fas fa-envelope"></i>
+                                    <span></span>
+                                </div>
+                                <div class="contact-item" id="previewPhone" style="display: none;">
+                                    <i class="fas fa-phone"></i>
+                                    <span></span>
+                                </div>
+                                <div class="contact-item" id="previewWebsite" style="display: none;">
+                                    <i class="fas fa-globe"></i>
+                                    <span></span>
+                                </div>
+                                <div class="contact-item" id="previewAddress" style="display: none;">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+
+                            <div class="social-links" id="socialLinks" style="display: none;">
+                                <div class="social-item" id="previewLinkedin" style="display: none;">
+                                    <i class="fab fa-linkedin"></i>
+                                    <span>LinkedIn</span>
+                                </div>
+                                <div class="social-item" id="previewTwitter" style="display: none;">
+                                    <i class="fab fa-twitter"></i>
+                                    <span>Twitter</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="welcome-message">
-                        <div class="welcome-icon">
-                            <i class="fas fa-rocket"></i>
+                    <!-- Configuration Status and Next Steps in same row -->
+                    <div class="bottom-sections-grid">
+                        <!-- Configuration Status -->
+                        <div class="configuration-status">
+                            <h3><i class="fas fa-clipboard-check"></i> État de la configuration</h3>
+                            <div class="status-grid">
+                                <div class="status-item" id="statusRequired">
+                                    <div class="status-icon">
+                                        <i class="fas fa-circle-check"></i>
+                                    </div>
+                                    <div class="status-content">
+                                        <h4>Informations obligatoires</h4>
+                                        <p>Tous les champs requis sont remplis</p>
+                                    </div>
+                                </div>
+                                <div class="status-item" id="statusContact">
+                                    <div class="status-icon">
+                                        <i class="fas fa-circle-check"></i>
+                                    </div>
+                                    <div class="status-content">
+                                        <h4>Coordonnées</h4>
+                                        <p>Informations de contact ajoutées</p>
+                                    </div>
+                                </div>
+                                <div class="status-item" id="statusReady">
+                                    <div class="status-icon">
+                                        <i class="fas fa-rocket"></i>
+                                    </div>
+                                    <div class="status-content">
+                                        <h4>Prêt à démarrer</h4>
+                                        <p>Configuration prête à être finalisée</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <h3>Prêt à commencer !</h3>
-                        <p>Votre entreprise sera configurée et vous pourrez accéder à toutes les fonctionnalités de CV Analyzer Pro.</p>
-                        
-                        <div class="features-preview">
-                            <div class="feature-item">
-                                <i class="fas fa-users"></i>
-                                <span>Gestion des candidats</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-file-alt"></i>
-                                <span>Analyse des CV</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-chart-bar"></i>
-                                <span>Rapports détaillés</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-briefcase"></i>
-                                <span>Gestion des postes</span>
+
+                        <!-- Next Steps Preview -->
+                        <div class="next-steps-preview">
+                            <h3><i class="fas fa-arrow-right"></i> Prochaines étapes</h3>
+                            <div class="steps-grid">
+                                <div class="next-step-item">
+                                    <div class="step-icon">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                    </div>
+                                    <h4>Tableau de bord</h4>
+                                    <p>Accédez à votre espace de gestion</p>
+                                </div>
+                                <div class="next-step-item">
+                                    <div class="step-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <h4>Équipe</h4>
+                                    <p>Invitez vos collaborateurs</p>
+                                </div>
+                                <div class="next-step-item">
+                                    <div class="step-icon">
+                                        <i class="fas fa-briefcase"></i>
+                                    </div>
+                                    <h4>Postes</h4>
+                                    <p>Créez vos premières offres</p>
+                                </div>
+                                <div class="next-step-item">
+                                    <div class="step-icon">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <h4>Candidatures</h4>
+                                    <p>Analysez les CV reçus</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -303,9 +418,9 @@
             nextBtn.style.display = step < totalSteps ? 'flex' : 'none';
             submitBtn.style.display = step === totalSteps ? 'flex' : 'none';
             
-            // Update summary on last step
+            // Update preview on last step
             if (step === totalSteps) {
-                updateSummary();
+                updateCompanyPreview();
             }
         }
 
@@ -333,23 +448,75 @@
         function validateCurrentStep() {
             const currentStepElement = document.querySelector(`[data-step="${currentStep}"]`);
             const requiredFields = currentStepElement.querySelectorAll('[required]');
+            const allFields = currentStepElement.querySelectorAll('input, select, textarea');
             let isValid = true;
             
             console.log(`🔍 FRONTEND: Validation étape ${currentStep} - ${requiredFields.length} champs requis`);
             
+            // Validate required fields
             requiredFields.forEach(field => {
                 const feedback = field.parentElement.querySelector('.input-feedback');
                 
                 if (!field.value.trim()) {
-                    feedback.textContent = 'Ce champ est requis';
+                    feedback.textContent = 'Ce champ est obligatoire';
                     feedback.className = 'input-feedback error';
                     field.style.borderColor = 'var(--error-color)';
+                    field.style.boxShadow = '0 0 0 2px rgba(231, 76, 60, 0.2)';
                     isValid = false;
                     console.log(`❌ FRONTEND: Champ requis vide: ${field.name}`);
                 } else {
-                    feedback.textContent = '';
-                    feedback.className = 'input-feedback';
-                    field.style.borderColor = 'var(--border-color)';
+                    feedback.textContent = '✓ Valide';
+                    feedback.className = 'input-feedback success';
+                    field.style.borderColor = 'var(--success-color)';
+                    field.style.boxShadow = '0 0 0 2px rgba(39, 174, 96, 0.2)';
+                }
+            });
+            
+            // Additional validation for specific fields
+            allFields.forEach(field => {
+                const feedback = field.parentElement.querySelector('.input-feedback');
+                
+                // Email validation
+                if (field.type === 'email' && field.value.trim()) {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(field.value)) {
+                        feedback.textContent = 'Format d\'email invalide';
+                        feedback.className = 'input-feedback error';
+                        field.style.borderColor = 'var(--error-color)';
+                        isValid = false;
+                    }
+                }
+                
+                // URL validation
+                if (field.type === 'url' && field.value.trim()) {
+                    try {
+                        new URL(field.value);
+                        if (!field.required && feedback.className !== 'input-feedback error') {
+                            feedback.textContent = '✓ URL valide';
+                            feedback.className = 'input-feedback success';
+                            field.style.borderColor = 'var(--success-color)';
+                        }
+                    } catch {
+                        feedback.textContent = 'URL invalide (doit commencer par http:// ou https://)';
+                        feedback.className = 'input-feedback error';
+                        field.style.borderColor = 'var(--error-color)';
+                        isValid = false;
+                    }
+                }
+                
+                // Phone validation
+                if (field.type === 'tel' && field.value.trim()) {
+                    const phoneRegex = /^[\+]?[0-9\s\-$$$$\.]{8,}$/;
+                    if (!phoneRegex.test(field.value)) {
+                        feedback.textContent = 'Format de téléphone invalide';
+                        feedback.className = 'input-feedback error';
+                        field.style.borderColor = 'var(--error-color)';
+                        isValid = false;
+                    } else if (!field.required && feedback.className !== 'input-feedback error') {
+                        feedback.textContent = '✓ Numéro valide';
+                        feedback.className = 'input-feedback success';
+                        field.style.borderColor = 'var(--success-color)';
+                    }
                 }
             });
             
@@ -357,41 +524,117 @@
             return isValid;
         }
 
-        function updateSummary() {
-            console.log('📋 FRONTEND: Mise à jour du récapitulatif');
-            
-            const basicSummary = document.getElementById('basicSummary');
-            const contactSummary = document.getElementById('contactSummary');
+        function updateCompanyPreview() {
+            console.log('📋 FRONTEND: Mise à jour de l\'aperçu entreprise');
             
             // Basic information
-            const basicInfo = [
-                { label: 'Entreprise', value: document.getElementById('companyName').value },
-                { label: 'Secteur', value: document.getElementById('industry').value },
-                { label: 'Taille', value: document.getElementById('companySize').value },
-                { label: 'Année', value: document.getElementById('foundedYear').value }
-            ].filter(item => item.value);
+            const companyName = document.getElementById('companyName').value || 'Nom de l\'entreprise';
+            const industry = document.getElementById('industry').selectedOptions[0]?.text || 'Secteur d\'activité';
+            const companySize = document.getElementById('companySize').selectedOptions[0]?.text || 'Taille non spécifiée';
+            const foundedDate = document.getElementById('foundedDate').value;
+            const description = document.getElementById('description').value || 'Aucune description fournie.';
             
-            basicSummary.innerHTML = basicInfo.map(item => `
-                <div class="summary-item">
-                    <span class="summary-label">${item.label}</span>
-                    <span class="summary-value">${item.value}</span>
-                </div>
-            `).join('');
+            // Update preview
+            document.getElementById('previewCompanyName').textContent = companyName;
+            document.getElementById('previewIndustry').textContent = industry;
+            document.getElementById('previewSize').textContent = companySize;
+            
+            if (foundedDate) {
+                const date = new Date(foundedDate);
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('previewDate').textContent = `Créée le ${date.toLocaleDateString('fr-FR', options)}`;
+            } else {
+                document.getElementById('previewDate').textContent = 'Date de création non spécifiée';
+            }
+            
+            document.getElementById('previewDescription').textContent = description;
             
             // Contact information
-            const contactInfo = [
-                { label: 'Email', value: document.getElementById('email').value },
-                { label: 'Téléphone', value: document.getElementById('phone').value },
-                { label: 'Site web', value: document.getElementById('website').value },
-                { label: 'Adresse', value: document.getElementById('address').value }
-            ].filter(item => item.value);
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const website = document.getElementById('website').value;
+            const address = document.getElementById('address').value;
+            const linkedin = document.getElementById('linkedinUrl').value;
+            const twitter = document.getElementById('twitterUrl').value;
             
-            contactSummary.innerHTML = contactInfo.map(item => `
-                <div class="summary-item">
-                    <span class="summary-label">${item.label}</span>
-                    <span class="summary-value">${item.value}</span>
-                </div>
-            `).join('');
+            // Update contact items
+            updateContactItem('previewEmail', email);
+            updateContactItem('previewPhone', phone);
+            updateContactItem('previewWebsite', website);
+            updateContactItem('previewAddress', address);
+            
+            // Update social links
+            updateSocialItem('previewLinkedin', linkedin);
+            updateSocialItem('previewTwitter', twitter);
+            
+            // Show/hide social links container
+            const socialContainer = document.getElementById('socialLinks');
+            if (linkedin || twitter) {
+                socialContainer.style.display = 'flex';
+            } else {
+                socialContainer.style.display = 'none';
+            }
+            
+            // Update configuration status
+            updateConfigurationStatus();
+        }
+
+        function updateContactItem(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (value) {
+                element.style.display = 'flex';
+                element.querySelector('span').textContent = value;
+            } else {
+                element.style.display = 'none';
+            }
+        }
+
+        function updateSocialItem(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (value) {
+                element.style.display = 'flex';
+            } else {
+                element.style.display = 'none';
+            }
+        }
+
+        function updateConfigurationStatus() {
+            const requiredFields = document.querySelectorAll('[required]');
+            const allRequiredFilled = Array.from(requiredFields).every(field => field.value.trim());
+            
+            const statusRequired = document.getElementById('statusRequired');
+            const statusContact = document.getElementById('statusContact');
+            const statusReady = document.getElementById('statusReady');
+            
+            // Check required fields
+            if (allRequiredFilled) {
+                statusRequired.classList.add('completed');
+                statusRequired.querySelector('i').className = 'fas fa-circle-check';
+            } else {
+                statusRequired.classList.remove('completed');
+                statusRequired.querySelector('i').className = 'fas fa-circle-xmark';
+            }
+            
+            // Check contact info
+            const hasContact = document.getElementById('email').value || 
+                              document.getElementById('phone').value || 
+                              document.getElementById('website').value;
+            if (hasContact) {
+                statusContact.classList.add('completed');
+                statusContact.querySelector('i').className = 'fas fa-circle-check';
+            } else {
+                statusContact.classList.remove('completed');
+                statusContact.querySelector('i').className = 'fas fa-circle-xmark';
+            }
+            
+            // Check ready status
+            if (allRequiredFilled) {
+                statusReady.classList.add('completed');
+                statusReady.querySelector('i').className = 'fas fa-rocket';
+            } else {
+                statusReady.classList.remove('completed');
+                statusReady.querySelector('i').className = 'fas fa-hourglass-half';
+            }
         }
 
         // Form submission with detailed logging
@@ -409,11 +652,7 @@
             
             for (let [key, value] of formData.entries()) {
                 if (value.trim()) {
-                    if (key === 'founded_year') {
-                        companyData[key] = parseInt(value);
-                    } else {
-                        companyData[key] = value.trim();
-                    }
+                    companyData[key] = value.trim();
                 }
             }
             
