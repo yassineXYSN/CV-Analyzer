@@ -549,6 +549,8 @@
         let jobs = [];
         let currentUser = null;
         let expandedDepartments = new Set();
+        let filteredDepartments = []; // Pour stocker les départements filtrés
+        let isSearchActive = false; // Pour savoir si une recherche est active
         
         // Initialisation du dashboard
         document.addEventListener('DOMContentLoaded', function() {
@@ -761,7 +763,13 @@
             } else {
                 expandedDepartments.add(departmentId);
             }
-            displayDepartments();
+            
+            // Réafficher les départements (filtrés ou non)
+            if (isSearchActive) {
+                displayFilteredDepartments(filteredDepartments);
+            } else {
+                displayDepartments();
+            }
         }
         
         // Fonction pour créer un département
@@ -880,7 +888,7 @@
         
         // Fonction pour créer un poste
         async function createJob() {
-            console.log('💼 FRONTEND: Début création poste');
+            console.log('💼 FRONTEND: Début cr��ation poste');
             
             const title = document.getElementById('jobTitle').value.trim();
             const departmentId = document.getElementById('jobDepartment').value;
@@ -963,7 +971,18 @@
                 if (result.success) {
                     departments = result.departments || [];
                     console.log(`✅ FRONTEND: ${departments.length} départements chargés`);
-                    displayDepartments();
+                    
+                    // Si une recherche est active, refiltrer les résultats
+                    if (isSearchActive) {
+                        const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+                        if (searchTerm) {
+                            filterDepartments();
+                        } else {
+                            displayDepartments();
+                        }
+                    } else {
+                        displayDepartments();
+                    }
                 } else {
                     console.error('❌ FRONTEND: Erreur chargement départements:', result.message);
                 }
@@ -1036,8 +1055,41 @@
                 return;
             }
             
+            renderDepartmentsList(departments);
+        }
+        
+        // Fonction pour afficher les départements filtrés
+        function displayFilteredDepartments(filteredDepts) {
+            const departmentsList = document.getElementById('departmentsList');
+            
+            if (!departmentsList) {
+                console.error('❌ FRONTEND: Element departmentsList non trouvé');
+                return;
+            }
+            
+            if (filteredDepts.length === 0) {
+                departmentsList.innerHTML = `
+                    <div class="empty-departments">
+                        <div class="empty-icon"><i class="fas fa-search"></i></div>
+                        <h4>Aucun résultat trouvé</h4>
+                        <p>Aucun département ne correspond à votre recherche</p>
+                        <button class="empty-btn" onclick="clearSearch()">
+                            <i class="fas fa-times"></i> Effacer la recherche
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            renderDepartmentsList(filteredDepts);
+        }
+        
+        // Fonction pour générer le HTML des départements
+        function renderDepartmentsList(deptList) {
+            const departmentsList = document.getElementById('departmentsList');
             let html = '';
-            departments.forEach(dept => {
+            
+            deptList.forEach(dept => {
                 const isExpanded = expandedDepartments.has(dept.id);
                 const departmentEmployees = employees.filter(emp => emp.department_id === dept.id);
                 const departmentJobs = jobs.filter(job => job.department_id === dept.id);
@@ -1196,10 +1248,66 @@
             console.log('🔍 FRONTEND: Filtrage candidatures:', value);
         }
         
+        // ==================== FONCTION DE RECHERCHE CORRIGÉE ====================
         function filterDepartments() {
             console.log('🔍 FRONTEND: Filtrage départements');
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            // Implémenter le filtrage...
+            
+            const searchInput = document.getElementById('searchInput');
+            if (!searchInput) {
+                console.error('❌ FRONTEND: Input de recherche non trouvé');
+                return;
+            }
+            
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            console.log(`🔍 FRONTEND: Terme de recherche: "${searchTerm}"`);
+            
+            // Si le terme de recherche est vide, afficher tous les départements
+            if (!searchTerm) {
+                console.log('🔍 FRONTEND: Recherche vide, affichage de tous les départements');
+                isSearchActive = false;
+                filteredDepartments = [];
+                displayDepartments();
+                return;
+            }
+            
+            // Marquer qu'une recherche est active
+            isSearchActive = true;
+            
+            // Filtrer les départements selon le terme de recherche
+            filteredDepartments = departments.filter(dept => {
+                const name = (dept.name || '').toLowerCase();
+                const description = (dept.description || '').toLowerCase();
+                const manager = (dept.manager_name || '').toLowerCase();
+                
+                const matches = name.includes(searchTerm) || 
+                               description.includes(searchTerm) || 
+                               manager.includes(searchTerm);
+                
+                if (matches) {
+                    console.log(`✅ FRONTEND: Département "${dept.name}" correspond à la recherche`);
+                }
+                
+                return matches;
+            });
+            
+            console.log(`🔍 FRONTEND: ${filteredDepartments.length} départements trouvés pour "${searchTerm}"`);
+            
+            // Afficher les départements filtrés
+            displayFilteredDepartments(filteredDepartments);
+        }
+        
+        // Fonction pour effacer la recherche
+        function clearSearch() {
+            console.log('🔍 FRONTEND: Effacement de la recherche');
+            
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            
+            isSearchActive = false;
+            filteredDepartments = [];
+            displayDepartments();
         }
         
         // Fermer les modales en cliquant à l'extérieur
