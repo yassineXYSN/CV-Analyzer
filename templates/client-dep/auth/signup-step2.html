@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compléter votre profil - CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/client-dep/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <div id="header-component"></div>
+
+    <div class="main-container">
+        <section class="hero-section" style="min-height: 40vh;">
+            <div class="hero-content">
+                <h1 class="hero-title">Complétez votre profil</h1>
+                <p class="hero-subtitle">
+                    Analysez votre CV pour créer votre profil professionnel
+                </p>
+            </div>
+        </section>
+
+        <section class="upload-section">
+            <div class="upload-container">
+                <form id="uploadForm" action="/signup/step2" method="post" enctype="multipart/form-data" class="upload-form">
+                    <h3 class="form-title">📄 Analysez votre CV</h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Votre CV (PDF ou Image)</label>
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <input type="file" id="filetoscan" name="filetoscan" class="file-input" required accept=".pdf,.jpg,.jpeg,.png">
+                            <div class="upload-icon">📁</div>
+                            <div class="upload-text" id="uploadText">Glissez-déposez votre CV ici</div>
+                            <div class="upload-subtext">ou cliquez pour sélectionner un fichier</div>
+                            <div class="upload-formats">
+                                <small>Formats supportés: PDF, JPG, JPEG, PNG • Taille max: 10MB</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <span>🔍 Analyser mon CV</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // File upload handling (same as analyze.js)
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('filetoscan');
+            const uploadText = document.getElementById('uploadText');
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    uploadText.textContent = e.target.files[0].name;
+                }
+            });
+            
+            const dropArea = document.getElementById('fileUploadArea');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.classList.add('highlight');
+            }
+            
+            function unhighlight() {
+                dropArea.classList.remove('highlight');
+            }
+            
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                fileInput.files = files;
+                uploadText.textContent = files[0].name;
+            }
+        });
+    </script>
+</body>
+</html>

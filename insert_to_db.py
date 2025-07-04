@@ -2,7 +2,7 @@ from database import SessionLocal
 from models import Contact, AnalyseCandidat, ProfileCandidat
 import json
 
-def insert_candidate_data(data_json, summary, user_id=None):
+def insert_candidate_data(data_json, summary, user_id):
     """Insert candidate data into database and optionally link to user"""
     db = SessionLocal()
     try:
@@ -22,22 +22,22 @@ def insert_candidate_data(data_json, summary, user_id=None):
         db.flush()  # Get the ID without committing
         
         # Insert profile with user link
-        profile = ProfileCandidat(
-            name=data_json["name"],
-            title=data_json["title"],
-            profile=data_json["profile"],
-            contact_id=contact.id,
-            analyse_id=analyse.id,
-            user_id=user_id,  # Link to user if provided
-            education=json.dumps(data_json["education"]),
-            languages=json.dumps(data_json["languages"]),
-            certificates=json.dumps(data_json["certificates"]),
-            skills=json.dumps(data_json["skills"])
+        new_profile = ProfileCandidat(
+            name=data_json.get('name', ''),
+            title=data_json.get('title', ''),
+            profile=data_json.get('profile', ''),
+            education=json.dumps(data_json.get('education', [])),
+            languages=json.dumps(data_json.get('languages', [])),
+            certificates=json.dumps(data_json.get('certificates', [])),
+            skills=json.dumps(data_json.get('skills', [])),
+            yearOfExperience=data_json.get('yearsOfExperience', '0'),
+            user_id=user_id,
+            profile_picture=None  # Default to None
         )
-        db.add(profile)
+        db.add(new_profile)
         db.commit()
         
-        return profile.id
+        return new_profile.id
         
     except Exception as e:
         db.rollback()

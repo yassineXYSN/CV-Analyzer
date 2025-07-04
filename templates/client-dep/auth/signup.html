@@ -384,20 +384,17 @@
             submitBtn.disabled = true
             btnContent.style.display = "none"
             loadingSpinner.style.display = "flex"
-
             try {
                 const response = await fetch('/signup', {
                     method: 'POST',
                     body: formData
-                })
+                });
 
-                const result = await response.json()
+                const result = await response.json();
 
                 if (result.success) {
-                    showFormSuccess(result.message)
-                    setTimeout(() => {
-                        window.location.href = "/login"
-                    }, 2000)
+                    // Redirect to step 2
+                    window.location.href = result.redirect_url;
                 } else {
                     showFormError(result.message)
                     // Reset button state

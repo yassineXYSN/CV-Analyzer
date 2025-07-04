@@ -318,7 +318,7 @@ def profile_detail(request: Request, candidate_id: int, db: Session = Depends(ge
             education=parsed_education,
             languages=parsed_languages,
             certificates=parsed_certificates,
-            years_of_experience=getattr(profile, 'yearOfExperience', None),
+            years_of_experience=profile.yearOfExperience,
             experience=getattr(profile, 'experience', None),
             projects=getattr(profile, 'projects', None),
             hobbies=getattr(profile, 'hobbies', None),
@@ -461,11 +461,12 @@ def signup_page(request: Request, db: Session = Depends(get_db)):
     current_user = get_current_user(request, db)
     if current_user:
         return RedirectResponse(url="/", status_code=302)
-    return templates.TemplateResponse("client-dep/auth/client-signup.html", {"request": request})
+    return templates.TemplateResponse("client-dep/auth/signup.html", {"request": request})
 
 @app.post("/signup")
 async def signup(
     request: Request,
+    response: Response,  # Add response parameter
     first_name: str = Form(...),
     last_name: str = Form(...),
     email: str = Form(...),
@@ -487,13 +488,163 @@ async def signup(
             return {"success": False, "message": "Un compte avec cet email existe déjà"}
         
         # Create user
+        # Create user
         user = create_user(db, email, password, first_name, last_name)
         
-        return {"success": True, "message": "Compte créé avec succès! Vous pouvez maintenant vous connecter."}
+        # Automatically log in the user
+        session_token = create_user_session(db, user.id, remember_me=False)
+        
+        # Set session cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            max_age=24 * 60 * 60,  # 1 day
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax"
+        )
+        
+        return {"success": True, "redirect_url": "/signup/step2"}
         
     except Exception as e:
         print(f"Signup error: {str(e)}")
         return {"success": False, "message": "Erreur lors de la création du compte"}
+    
+# Add new signup step routes
+@app.get("/signup/step2", response_class=HTMLResponse)
+def signup_step2_page(request: Request, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse("client-dep/auth/signup-step2.html", {
+        "request": request,
+        "current_user": current_user
+    })
+
+@app.post("/signup/step2")
+async def signup_step2(
+    request: Request,
+    response: Response,
+    filetoscan: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return {"success": False, "message": "Authentication required"}
+
+        current_user = get_current_user(request, db)
+    
+    # Créer le dossier uploads s'il n'existe pas
+    os.makedirs("uploads", exist_ok=True)
+    
+    file_location = f"uploads/{filetoscan.filename}"
+
+    # Save file to disk temporarily
+    with open(file_location, "wb") as f:
+        f.write(await filetoscan.read())
+
+    # For demonstration purposes, using test data instead of actual processing
+    pdf_text = """
+    youssef CHTOUROU COMPUTER SCIENCE STUDENT CONTACT yassinechtourou03@gmail.com +00216993465 www.linkedin.com 22 rue karatchi ABOUT ME Born on 16 January 2005. Currently pursuing the BD (Big Data) program at the Higher Institute of Arts and Multimedia (ISAMM) to become a Big Data engineer. Thrives on challenges with a sociable and motivated personality. Passionate about programming with proficiency in multiple languages, committed to expanding skills in the evolving tech field. EDUCATION Computer Science Licence ISAMM 2023-2026 Baccalaureate Mouhamed Dachraoui 2020-2023 EXPERTISE Adaptability Teamwork Communication Creativity LANGUAGES Arabic English French German DIPLOMAS AND CERTIFICATES Certificate PHP Udemy Certificate PHP Certificate CSS and Java Udemy Certificate CSS and Java Baccalaureate Diploma Excellent Grade in Mathematics Baccalaureate Python Intermediate Certificate Sololearn Python Certificate German Language Level A1 Certificate ECL Tunisie Centre d´examen Allemand Microsoft Azure AI Fundamentals: AI Overview Microsoft Profile SKILLS SUMMARY CSS: 80% PHP: 80% Python: 75% C: 75% HTML: 60% Java: 60% HOBBIES 80% 75% 75% 60% 60%
+    """
+    images_text = ['', '', 'sam']
+
+    summary = """Here is a critical summary based solely on the provided CV text: **The candidate is an undergraduate student currently pursuing a Big Data engineering program at ISAMM (2023-2026), having completed a Baccalaureate with an Excellent grade in Mathematics. Certificates in PHP, CSS, Java, and Python Intermediate level from Udemy/Sololearn indicate foundational technical skills, self-reported as proficient (CSS 80%, PHP 80%, Python 75%, C 75%, HTML 60%, Java 60%), along with a Microsoft Azure AI Fundamentals certificate demonstrating introductory AI knowledge. Soft skills claimed include Adaptability, Teamwork, Communication, and Creativity, and the candidate possesses multilingual capabilities (Arabic, English, French, German - with an A1 German certificate). Critical weaknesses include a complete absence of professional work experience, internships, relevant projects, or leadership roles listed. No specific big data tools, technologies, or frameworks relevant to the stated program goal are mentioned. The CV lacks concrete achievements or project examples validating skills, and the timeframe shows exclusively academic engagement with no practical application evidence. Job history, including dates and roles, is entirely absent."""
+
+    data_json = {
+        "certificates": [
+            "Certificate PHP",
+            "Udemy Certificate PHP",
+            "Certificate CSS and Java",
+            "Udemy Certificate CSS and Java",
+            "Baccalaureate Diploma",
+            "Excellent Grade in Mathematics Baccalaureate",
+            "Python Intermediate Certificate",
+            "Sololearn Python Certificate",
+            "German Language Level A1 Certificate",
+            "ECL Tunisie Centre d\u00b4examen Allemand",
+            "Microsoft Azure AI Fundamentals: AI Overview",
+            "Microsoft Profile"
+        ],
+        "contact": {
+            "address": "22 rue karatchi",
+            "email": "ahbedhmid@gmail.com",
+            "linkedin": "www.linkedin.com",
+            "phone": "99896635"
+        },
+        "education": [
+            {
+                "degree": "Computer Science Licence",
+                "institution": "ISAMM",
+                "years": "2023-2026"
+            },
+            {
+                "degree": "Baccalaureate",
+                "institution": "Mouhamed Dachraoui",
+                "years": "2020-2023"
+            }
+        ],
+        "languages": [
+            "Arabic",
+            "English",
+            "French",
+            "German"
+        ],
+        "name": "ahmed hamido",
+        "profile": "Born on 16 January 2005. Currently pursuing the BD (Big Data) program at the Higher Institute of Arts and Multimedia (ISAMM) to become a Big Data engineer. Thrives on challenges with a sociable and motivated personality. Passionate about programming with proficiency in multiple languages, committed to expanding skills in the evolving tech field.",
+        "skills": [
+            "CSS: 80%",
+            "PHP: 30%",
+            "Python: 75%",
+            "C: 75%",
+            "HTML: 60%",
+            "Java: 60%"
+        ],
+        "title": "COMPUTER SCIENCE STUDENT",
+        "yearsOfExperience": "0"
+    }
+    skills_titles = [skill.split(":")[0] for skill in data_json["skills"]]
+    skills_titles_str = ", ".join(skills_titles)
+
+    # Insérer les données en base et lier au user si connecté
+    candidate_id = insert_candidate_data(data_json, summary, current_user.id)
+
+    # Redirect to profile detail page
+    return RedirectResponse(url=f"/profile/{candidate_id}", status_code=303)
+
+@app.post("/profile/{candidate_id}/upload-picture")
+async def upload_profile_picture(
+    candidate_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
+):
+    # Check if the candidate profile belongs to the current user
+    profile = db.query(models.ProfileCandidat).filter(
+        models.ProfileCandidat.id == candidate_id,
+        models.ProfileCandidat.user_id == current_user.id
+    ).first()
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Create upload directory if not exists
+    os.makedirs("static/uploads/profile_pictures", exist_ok=True)
+    
+    # Generate unique filename
+    file_ext = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = f"static/uploads/profile_pictures/{unique_filename}"
+    
+    # Save the file
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+    
+    # Update profile in database
+    profile.profile_picture = f"/{file_path}"  # Store relative path
+    db.commit()
+    
+    return {"success": True, "profile_picture": profile.profile_picture}
 
 @app.post("/logout")
 async def logout(request: Request, response: Response, db: Session = Depends(get_db)):
@@ -502,7 +653,10 @@ async def logout(request: Request, response: Response, db: Session = Depends(get
         delete_user_session(db, session_token)
     
     response.delete_cookie("session_token")
-    return {"success": True, "message": "Déconnexion réussie"}
+    return templates.TemplateResponse("client-dep/index.html", {
+        "request": request,
+        "current_user": None
+    })
 
 @app.get("/api/auth/status")
 async def auth_status(request: Request, db: Session = Depends(get_db)):
@@ -767,11 +921,20 @@ async def job_detail(request: Request, job_id: int, db: Session = Depends(get_db
     # Check if user has applied
     has_applied = False
     if current_user:
-        application = db.query(Application).filter(
-            and_(Application.job_id == job_id, Application.user_id == current_user.id)
+        # Get the candidate profile for the current user
+        candidate_profile = db.query(ProfileCandidat).filter(
+            ProfileCandidat.user_id == current_user.id
         ).first()
-        has_applied = application is not None
-    
+
+        if candidate_profile:
+            application = db.query(Application).filter(
+                and_(
+                    Application.job_id == job_id,
+                    Application.candidate_profile_id == candidate_profile.id
+                )
+            ).first()
+            has_applied = application is not None
+
     return templates.TemplateResponse("client-dep/job_detail.html", {
         "request": request,
         "job": job,
