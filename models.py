@@ -43,9 +43,12 @@ class ProfileCandidat(Base):
     languages = Column(JSON)
     certificates = Column(JSON)
     skills = Column(JSON)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    profile_picture = Column(String(500))
 
     contact = relationship("Contact")
     analyse = relationship("AnalyseCandidat")
+    user = relationship("User")
 
 class HrAdmin(Base):
     __tablename__ = "hr_admins"

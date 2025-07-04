@@ -504,6 +504,38 @@ async def logout(request: Request, response: Response, db: Session = Depends(get
     response.delete_cookie("session_token")
     return {"success": True, "message": "Déconnexion réussie"}
 
+@app.get("/api/auth/status")
+async def auth_status(request: Request, db: Session = Depends(get_db)):
+    """Check current authentication status"""
+    try:
+        current_user = get_current_user(request, db)
+        if current_user:
+            return {
+                "authenticated": True,
+                "user": {
+                    "id": current_user.id,
+                    "email": current_user.email,
+                    "first_name": current_user.first_name,
+                    "last_name": current_user.last_name,
+                    "name": f"{current_user.first_name} {current_user.last_name}".strip(),
+                    "is_active": current_user.is_active
+                }
+            }
+        else:
+            return {"authenticated": False}
+    except Exception as e:
+        print(f"Auth status error: {str(e)}")
+        return {"authenticated": False}
+
+@app.get("/components/header.html", response_class=HTMLResponse)
+async def get_header_component(request: Request):
+    """Serve the header component"""
+    try:
+        with open("components/header.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<div>Header component not found</div>", status_code=404)
+
 # Pagination helper class
 class Pagination:
     def __init__(self, page: int, per_page: int, total: int):

@@ -1,4 +1,12 @@
-// Main JavaScript for CV Analyzer Pro
+document.addEventListener('DOMContentLoaded', async () => {
+      try {
+          const response = await fetch('/static/client-dep/components/header.html');
+          const headerHTML = await response.text();
+          document.getElementById('header-component').innerHTML = headerHTML;
+      } catch (error) {
+          console.error('Failed to load header component:', error);
+      }
+  });
 
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize animations

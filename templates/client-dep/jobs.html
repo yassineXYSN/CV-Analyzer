@@ -1190,38 +1190,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <a href="/">
-                    <i class="fas fa-chart-line"></i>
-                    CV Analyzer Pro
-                </a>
-            </div>
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="/" class="nav-link">Accueil</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/analyze" class="nav-link">Analyser CV</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/jobs" class="nav-link active">Emplois</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/profile" class="nav-link">Profil</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/auth/login" class="nav-link">Connexion</a>
-                </li>
-            </ul>
-            <div class="hamburger">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </div>
-        </div>
-    </nav>
+ <div id="header-component"></div>
 
     <!-- Breadcrumb -->
     <div class="breadcrumb">
@@ -2194,6 +2163,46 @@ function hideLoadingSpinner() {
         searchBtn.innerHTML = '<i class="fas fa-search"></i> Rechercher';
     }
 }
+document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/components/header.html');
+                if (response.ok) {
+                    const headerHTML = await response.text();
+                    document.getElementById('header-component').innerHTML = headerHTML;
+                    
+                    // Trigger a custom event to let other scripts know header is loaded
+                    window.dispatchEvent(new CustomEvent('headerLoaded'));
+                } else {
+                    console.error('Failed to load header component:', response.status);
+                    // Fallback: show a basic header
+                    document.getElementById('header-component').innerHTML = `
+                        <nav class="navbar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 1rem 0;">
+                            <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                    <a href="/" style="text-decoration: none; color: inherit;">CV Analyzer Pro</a>
+                                </div>
+                                <div style="display: flex; gap: 2rem; align-items: center;">
+                                    <a href="/" style="color: #a0a0a0; text-decoration: none;">Accueil</a>
+                                    <a href="/analyze" style="color: #a0a0a0; text-decoration: none;">Analyser CV</a>
+                                    <a href="/jobs" style="color: #a0a0a0; text-decoration: none;">Emplois</a>
+                                    {% if current_user %}
+                                    <a href="/dashboard" style="color: #a0a0a0; text-decoration: none;">Dashboard</a>
+                                    <form method="post" action="/logout" style="display: inline;">
+                                        <button type="submit" style="background: none; border: none; color: #a0a0a0; cursor: pointer;">Déconnexion</button>
+                                    </form>
+                                    {% else %}
+                                    <a href="/login" style="color: #a0a0a0; text-decoration: none;">Connexion</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </nav>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load header component:', error);
+            }
+        });
+
     </script>
 </body>
 </html>

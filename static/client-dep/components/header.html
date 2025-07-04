@@ -1,0 +1,705 @@
+<!-- Navigation Header Component -->
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="nav-logo">
+            <a href="/">
+                <i class="fas fa-chart-line"></i>
+                CV Analyzer Pro
+            </a>
+        </div>
+        
+        <ul class="nav-menu" id="navMenu">
+            <li class="nav-item">
+                <a href="/" class="nav-link" data-page="home">Accueil</a>
+            </li>
+            <li class="nav-item">
+                <a href="/analyze" class="nav-link" data-page="analyze">Analyser CV</a>
+            </li>
+            <li class="nav-item">
+                <a href="/jobs" class="nav-link" data-page="jobs">Emplois</a>
+            </li>
+            
+            <!-- User Menu - Shown when authenticated -->
+            <li class="nav-item user-menu-container" id="userMenuContainer" style="display: none;">
+                <div class="user-menu-trigger" id="userMenuTrigger">
+                    <div class="user-avatar" id="userAvatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span class="user-name" id="userName">Utilisateur</span>
+                    <i class="fas fa-chevron-down user-menu-arrow"></i>
+                </div>
+                
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="user-dropdown-header">
+                        <div class="user-info">
+                            <div class="user-avatar-large" id="userAvatarLarge">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="user-details">
+                                <div class="user-full-name" id="userFullName">Nom Utilisateur</div>
+                                <div class="user-email" id="userEmail">email@example.com</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-dropdown-menu">
+                        <a href="/dashboard" class="dropdown-item">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Tableau de bord</span>
+                        </a>
+                        <a href="/profile" class="dropdown-item">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Mon profil</span>
+                        </a>
+                        <a href="/applications" class="dropdown-item">
+                            <i class="fas fa-briefcase"></i>
+                            <span>Mes candidatures</span>
+                        </a>
+                        <a href="/saved-jobs" class="dropdown-item">
+                            <i class="fas fa-heart"></i>
+                            <span>Offres sauvegardées</span>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="/settings" class="dropdown-item">
+                            <i class="fas fa-cog"></i>
+                            <span>Paramètres</span>
+                        </a>
+                        <button class="dropdown-item logout-btn" onclick="HeaderComponent.logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Déconnexion</span>
+                        </button>
+                    </div>
+                </div>
+            </li>
+            
+            <!-- Guest Menu - Shown when not authenticated -->
+            <li class="nav-item guest-menu-container" id="guestMenuContainer">
+                <a href="/login" class="nav-link login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Connexion
+                </a>
+            </li>
+            <li class="nav-item guest-menu-container" id="guestMenuContainer2">
+                <a href="/signup" class="nav-link signup-btn">
+                    <i class="fas fa-user-plus"></i>
+                    Inscription
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Mobile hamburger menu -->
+        <div class="hamburger" id="hamburger">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+    </div>
+</nav>
+
+<style>
+/* Header Component Styles */
+.navbar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    background: rgba(10, 10, 10, 0.9) !important;
+    backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+    padding: 1rem 0 !important;
+    transition: all 0.3s ease;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-logo a {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+}
+
+.nav-link {
+    color: var(--text-secondary, #a0a0a0) !important;
+    text-decoration: none !important;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    position: relative;
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-link:hover {
+    color: var(--text-primary, #ffffff) !important;
+}
+
+.nav-link::after {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+    width: 100%;
+}
+
+.nav-link.active {
+    color: var(--text-primary, #ffffff) !important;
+}
+
+/* User Menu Styles */
+.user-menu-container {
+    position: relative;
+}
+
+.user-menu-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-menu-trigger:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.user-name {
+    color: var(--text-primary, #ffffff);
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.user-menu-arrow {
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.user-menu-trigger.active .user-menu-arrow {
+    transform: rotate(180deg);
+}
+
+/* User Dropdown */
+.user-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    min-width: 280px;
+    background: var(--card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(20px);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1001;
+}
+
+.user-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.user-dropdown-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-avatar-large {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.user-details {
+    flex: 1;
+}
+
+.user-full-name {
+    color: var(--text-primary, #ffffff);
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.user-email {
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 0.85rem;
+}
+
+.user-dropdown-menu {
+    padding: 0.5rem;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    color: var(--text-primary, #ffffff);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    font-size: 0.95rem;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #ffffff);
+}
+
+.dropdown-item i {
+    width: 16px;
+    color: var(--text-secondary, #a0a0a0);
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--border-color, rgba(255, 255, 255, 0.1));
+    margin: 0.5rem 0;
+}
+
+.logout-btn {
+    color: #ff4757 !important;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 71, 87, 0.1) !important;
+}
+
+/* Login/Signup buttons for guests */
+.login-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 0.5rem 1rem !important;
+}
+
+.signup-btn {
+    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+    color: #000 !important;
+    border-radius: 8px;
+    padding: 0.5rem 1rem !important;
+    font-weight: 600;
+}
+
+.signup-btn:hover {
+    color: #000 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+}
+
+/* Hamburger Menu */
+.hamburger {
+    display: none;
+    cursor: pointer;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bar {
+    width: 25px;
+    height: 3px;
+    background: var(--text-primary, #ffffff);
+    transition: 0.3s;
+    border-radius: 2px;
+}
+
+.hamburger.active .bar:nth-child(1) {
+    transform: rotate(-45deg) translate(-5px, 6px);
+}
+
+.hamburger.active .bar:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger.active .bar:nth-child(3) {
+    transform: rotate(45deg) translate(-5px, -6px);
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    .nav-menu {
+        position: fixed;
+        left: -100%;
+        top: 70px;
+        gap: 0;
+        flex-direction: column;
+        background: var(--card-bg, rgba(255, 255, 255, 0.05));
+        width: 100%;
+        text-align: center;
+        transition: 0.3s;
+        box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+        padding: 2rem 0;
+        align-items: center;
+    }
+
+    .nav-item {
+        margin: 1rem 0;
+    }
+
+    .nav-menu.active {
+        left: 0;
+    }
+
+    .hamburger {
+        display: flex;
+    }
+
+    .user-dropdown {
+        position: fixed;
+        top: 70px;
+        right: 1rem;
+        left: 1rem;
+        width: auto;
+        min-width: auto;
+    }
+}
+</style>
+
+<script>
+// Header Component JavaScript
+class HeaderComponent {
+    constructor() {
+        this.currentUser = null;
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.checkAuthStatus();
+        this.setActivePage();
+    }
+
+    setupEventListeners() {
+        // Hamburger menu
+        const hamburger = document.getElementById('hamburger');
+        const navMenu = document.getElementById('navMenu');
+        
+        if (hamburger && navMenu) {
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('active');
+                navMenu.classList.toggle('active');
+                
+                // Prevent body scroll when menu is open
+                if (navMenu.classList.contains('active')) {
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        }
+
+        // User menu dropdown
+        const userMenuTrigger = document.getElementById('userMenuTrigger');
+        const userDropdown = document.getElementById('userDropdown');
+        
+        if (userMenuTrigger && userDropdown) {
+            userMenuTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userMenuTrigger.classList.toggle('active');
+                userDropdown.classList.toggle('show');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!userMenuTrigger.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userMenuTrigger.classList.remove('active');
+                    userDropdown.classList.remove('show');
+                }
+            });
+        }
+
+        // Close mobile menu when clicking on links
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (navMenu && navMenu.classList.contains('active')) {
+                    hamburger.classList.remove('active');
+                    navMenu.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+    }
+
+    async checkAuthStatus() {
+        try {
+            // First try to check via API
+            const response = await fetch('/api/auth/status', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const userData = await response.json();
+                if (userData.authenticated && userData.user) {
+                    this.setUser(userData.user);
+                    return;
+                }
+            }
+            
+            // Fallback: check if we have user data passed from the server
+            // This would be set by the server-side template
+            if (window.currentUser) {
+                this.setUser(window.currentUser);
+                return;
+            }
+            
+            // If no user data found, set as guest
+            this.setGuest();
+            
+        } catch (error) {
+            console.log('Auth check failed, checking for server-side user data');
+            
+            // Fallback: check if we have user data from server
+            if (window.currentUser) {
+                this.setUser(window.currentUser);
+            } else {
+                this.setGuest();
+            }
+        }
+    }
+
+    setUser(user) {
+        this.currentUser = user;
+        
+        // Show user menu, hide guest menu
+        const userMenuContainer = document.getElementById('userMenuContainer');
+        const guestMenuContainers = document.querySelectorAll('.guest-menu-container');
+        
+        if (userMenuContainer) {
+            userMenuContainer.style.display = 'block';
+        }
+        
+        guestMenuContainers.forEach(container => {
+            container.style.display = 'none';
+        });
+
+        // Update user info in the menu
+        this.updateUserInfo(user);
+    }
+
+    setGuest() {
+        this.currentUser = null;
+        
+        // Hide user menu, show guest menu
+        const userMenuContainer = document.getElementById('userMenuContainer');
+        const guestMenuContainers = document.querySelectorAll('.guest-menu-container');
+        
+        if (userMenuContainer) {
+            userMenuContainer.style.display = 'none';
+        }
+        
+        guestMenuContainers.forEach(container => {
+            container.style.display = 'block';
+        });
+    }
+
+    updateUserInfo(user) {
+        const userName = document.getElementById('userName');
+        const userFullName = document.getElementById('userFullName');
+        const userEmail = document.getElementById('userEmail');
+        const userAvatar = document.getElementById('userAvatar');
+        const userAvatarLarge = document.getElementById('userAvatarLarge');
+
+        if (userName) {
+            userName.textContent = user.first_name || user.name || 'Utilisateur';
+        }
+
+        if (userFullName) {
+            userFullName.textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.name || 'Utilisateur';
+        }
+
+        if (userEmail) {
+            userEmail.textContent = user.email || '';
+        }
+
+        // Set avatar initials
+        const initials = this.getInitials(user.first_name, user.last_name, user.name);
+        if (userAvatar) {
+            userAvatar.textContent = initials;
+        }
+        if (userAvatarLarge) {
+            userAvatarLarge.textContent = initials;
+        }
+    }
+
+    getInitials(firstName, lastName, fullName) {
+        if (firstName && lastName) {
+            return `${firstName[0]}${lastName[0]}`.toUpperCase();
+        } else if (fullName) {
+            const names = fullName.split(' ');
+            if (names.length >= 2) {
+                return `${names[0][0]}${names[1][0]}`.toUpperCase();
+            } else {
+                return names[0][0].toUpperCase();
+            }
+        }
+        return 'U';
+    }
+
+    setActivePage() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.nav-link[data-page]');
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            const page = link.getAttribute('data-page');
+            
+            if (
+                (page === 'home' && currentPath === '/') ||
+                (page === 'analyze' && currentPath.includes('/analyze')) ||
+                (page === 'jobs' && currentPath.includes('/jobs'))
+            ) {
+                link.classList.add('active');
+            }
+        });
+    }
+
+    async logout() {
+        try {
+            const response = await fetch('/logout', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                // Clear any client-side user data
+                window.currentUser = null;
+                this.setGuest();
+                
+                // Show success message
+                if (window.showToast) {
+                    window.showToast('Déconnexion réussie', 'success');
+                }
+                
+                // Redirect to home page after a short delay
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } else {
+                console.error('Logout failed');
+                if (window.showToast) {
+                    window.showToast('Erreur lors de la déconnexion', 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+            if (window.showToast) {
+                window.showToast('Erreur lors de la déconnexion', 'error');
+            }
+        }
+    }
+
+    // Method to manually set user (for when user logs in)
+    static setCurrentUser(user) {
+        if (window.headerComponent) {
+            window.headerComponent.setUser(user);
+        }
+    }
+
+    // Method to manually set guest (for when user logs out)
+    static setGuest() {
+        if (window.headerComponent) {
+            window.headerComponent.setGuest();
+        }
+    }
+
+    // Static logout method for onclick handlers
+    static logout() {
+        if (window.headerComponent) {
+            window.headerComponent.logout();
+        }
+    }
+}
+
+// Initialize header component when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.headerComponent = new HeaderComponent();
+});
+
+// Export for use in other scripts
+window.HeaderComponent = HeaderComponent;
+</script>
