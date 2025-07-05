@@ -32,7 +32,7 @@ def insert_candidate_data(data_json, summary, user_id):
             skills=json.dumps(data_json.get('skills', [])),
             yearOfExperience=data_json.get('yearsOfExperience', '0'),
             user_id=user_id,
-            profile_picture=None  # Default to None
+            profile_picture=data_json.get('profilePic', '/static/client-dep/images/placeholder.svg'),
         )
         db.add(new_profile)
         db.commit()

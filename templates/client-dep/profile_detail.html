@@ -34,10 +34,15 @@
         <div class="profile-detail-content">
             <!-- Personal Information -->
             <div class="profile-section">
-                <div class="section-header">
+                <div class="section-header" style="text-align: left;">
                     <div class="profile-avatar-large">
-                        {{ profile.name[0].upper() if profile.name else 'C' }}
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture }}" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        {% else %}
+                            {{ profile.name[0].upper() if profile.name else 'A' }}
+                        {% endif %}
                     </div>
+
                     <div class="profile-info">
                         <h2 class="profile-name">{{ profile.name or 'Candidat' }}</h2>
                         <p class="profile-title">{{ profile.title or 'Professionnel' }}</p>

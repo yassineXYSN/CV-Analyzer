@@ -319,6 +319,7 @@ def profile_detail(request: Request, candidate_id: int, db: Session = Depends(ge
             languages=parsed_languages,
             certificates=parsed_certificates,
             years_of_experience=profile.yearOfExperience,
+            profile_picture=profile.profile_picture,
             experience=getattr(profile, 'experience', None),
             projects=getattr(profile, 'projects', None),
             hobbies=getattr(profile, 'hobbies', None),
@@ -601,7 +602,8 @@ async def signup_step2(
             "Java: 60%"
         ],
         "title": "COMPUTER SCIENCE STUDENT",
-        "yearsOfExperience": "0"
+        "yearsOfExperience": "0",
+        "profilePic": "/static/client-dep/images/placeholder.svg"
     }
     skills_titles = [skill.split(":")[0] for skill in data_json["skills"]]
     skills_titles_str = ", ".join(skills_titles)
