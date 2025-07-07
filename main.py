@@ -30,8 +30,13 @@ models.Base.metadata.create_all(bind=engine)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(static_dir, exist_ok=True)
 
+# Créer le dossier uploads s'il n'existe pas
+uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+
 # Monter les fichiers statiques
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # Templates
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
@@ -152,6 +157,21 @@ def parse_skills(skills_data):
             })
     return parsed_skills
 
+def is_candidate_already_employee(candidate_email, company_id):
+    """Vérifier si un candidat est déjà employé dans l'entreprise"""
+    db = SessionLocal()
+    try:
+        existing_employee = db.query(models.Employee).filter(
+            models.Employee.email == candidate_email,
+            models.Employee.company_id == company_id,
+            models.Employee.status == 'active'
+        ).first()
+        return existing_employee is not None
+    except:
+        return False
+    finally:
+        db.close()
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("client-dep/index.html", {"request": request})
@@ -215,81 +235,34 @@ async def scan_file(
         "candidate_id": candidate_id
     })
 
-@app.get("/profile/{candidate_id}", response_class=HTMLResponse)
-def profile_detail(request: Request, candidate_id: int):
+@app.get("/api/candidate/{candidate_id}")
+async def get_candidate(candidate_id: int):
     db = SessionLocal()
     try:
-        profile = db.query(models.ProfileCandidat).filter(models.ProfileCandidat.id == candidate_id).first()
-        if not profile:
-            return templates.TemplateResponse("client-dep/profile_detail.html", {
-                "request": request,
-                "profile": None,
-                "contact": None,
-                "analyse": None,
-                "parsed_skills": []
-            })
-        
-        contact = db.query(models.Contact).filter(models.Contact.id == profile.contact_id).first()
-        analyse = db.query(models.AnalyseCandidat).filter(models.AnalyseCandidat.id == profile.analyse_id).first()
-        parsed_skills = parse_skills(profile.skills)
-        
-        # Parse JSON fields
-        education_value = getattr(profile, 'education', None)
-        languages_value = getattr(profile, 'languages', None)
-        certificates_value = getattr(profile, 'certificates', None)
-        
-        parsed_education = []
-        if education_value:
-            try:
-                parsed_education = json.loads(education_value) if isinstance(education_value, str) else education_value
-            except:
-                parsed_education = []
-        
-        parsed_languages = []
-        if languages_value:
-            try:
-                parsed_languages = json.loads(languages_value) if isinstance(languages_value, str) else languages_value
-            except:
-                parsed_languages = []
-        
-        parsed_certificates = []
-        if certificates_value:
-            try:
-                parsed_certificates = json.loads(certificates_value) if isinstance(certificates_value, str) else certificates_value
-            except:
-                parsed_certificates = []
-        
-        class ProfileData:
-            def __init__(self, **kwargs):
-                for key, value in kwargs.items():
-                    setattr(self, key, value)
+        candidate = db.query(models.ProfileCandidat).filter(models.ProfileCandidat.id == candidate_id).first()
+        if not candidate:
+            return {"success": False, "message": "Candidat introuvable"}
 
-        profile_data = ProfileData(
-            id=profile.id,
-            name=profile.name,
-            title=profile.title,
-            profile=profile.profile,
-            education=parsed_education,
-            languages=parsed_languages,
-            certificates=parsed_certificates
-        )
+        contact = candidate.contact
+        analyse = candidate.analyse
 
-        return templates.TemplateResponse("client-dep/profile_detail.html", {
-            "request": request,
-            "profile": profile_data,
-            "contact": contact,
-            "analyse": analyse,
-            "parsed_skills": parsed_skills
-        })
+        return {
+            "success": True,
+            "candidate": {
+                "id": candidate.id,
+                "first_name": candidate.name.split(" ")[0] if candidate.name else "",
+                "last_name": " ".join(candidate.name.split(" ")[1:]) if candidate.name else "",
+                "title": candidate.title,
+                "profile": candidate.profile,
+                "skills": candidate.skills,
+                "email": contact.email if contact else None,
+                "phone": contact.phone if contact else None,
+                "analyse": analyse.analyse if analyse else None
+            }
+        }
     except Exception as e:
-        print(f"Erreur dans profile_detail: {e}")
-        return templates.TemplateResponse("client-dep/profile_detail.html", {
-            "request": request,
-            "profile": None,
-            "contact": None,
-            "analyse": None,
-            "parsed_skills": []
-        })
+        print(f"Erreur récupération candidat: {str(e)}")
+        return {"success": False, "message": "Erreur serveur"}
     finally:
         db.close()
 
@@ -648,70 +621,51 @@ async def get_departments():
 
 @app.post("/api/create-employee")
 async def create_employee(employee_data: EmployeeRequest):
-    """API pour créer un nouvel employé"""
     try:
-        print(f"👤 EMP API: Début création employé")
-        print(f"📋 EMP API: Données reçues: {employee_data.dict()}")
+        print(f"👤 EMPLOYEE API: Création employé: {employee_data.email}")
         
         # Vérifier la session utilisateur
         user_id = current_user_session.get('user_id')
         if not user_id:
-            print(f"❌ EMP API: Utilisateur non connecté")
             return {"success": False, "message": "Utilisateur non connecté"}
         
-        # Récupérer l'entreprise de l'utilisateur
+        # Récupérer l'entreprise
         company = get_user_company(user_id)
         if not company:
-            print(f"❌ EMP API: Aucune entreprise trouvée")
             return {"success": False, "message": "Aucune entreprise associée"}
         
-        print(f"✅ EMP API: Entreprise trouvée - ID: {company.id}")
-        
-        # Créer l'employé en base
         db = SessionLocal()
         try:
-            # Vérifier si un employé avec le même email existe déjà
-            existing_employee = db.query(models.Employee).filter(
-                models.Employee.company_id == company.id,
-                models.Employee.email == employee_data.email
-            ).first()
-            
-            if existing_employee:
-                print(f"❌ EMP API: Employé avec email '{employee_data.email}' existe déjà")
-                return {"success": False, "message": f"Un employé avec l'email '{employee_data.email}' existe déjà"}
-            
-            # Vérifier que le département existe
+            # Vérifier le département
             department = db.query(models.Department).filter(
                 models.Department.id == employee_data.department_id,
-                models.Department.company_id == company.id,
-                models.Department.is_active == True
+                models.Department.company_id == company.id
             ).first()
             
             if not department:
-                print(f"❌ EMP API: Département {employee_data.department_id} non trouvé")
-                return {"success": False, "message": "Département non trouvé"}
+                return {"success": False, "message": "Département invalide"}
             
-            # Traiter la date d'embauche
-            hire_date_obj = None
+            # Convertir la date
+            hire_date = None
             if employee_data.hire_date:
-                try:
-                    hire_date_obj = datetime.strptime(employee_data.hire_date, "%Y-%m-%d").date()
-                except ValueError:
-                    print(f"⚠️ EMP API: Format de date invalide: {employee_data.hire_date}")
+                hire_date = datetime.strptime(employee_data.hire_date, "%Y-%m-%d").date()
             
-            # Générer un ID employé si non fourni
-            employee_id = employee_data.employee_id if employee_data.employee_id else f"EMP{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            # Générer un employee_id unique si non fourni
+            if not employee_data.employee_id:
+                employee_id = f"EMP{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            else:
+                employee_id = employee_data.employee_id
             
             new_employee = models.Employee(
                 company_id=company.id,
                 department_id=employee_data.department_id,
-                employee_id=employee_id,
+                employee_id=employee_id,  # S'assurer que l'employee_id est défini
                 first_name=employee_data.first_name,
                 last_name=employee_data.last_name,
                 email=employee_data.email,
-                phone=employee_data.phone if employee_data.phone else None,
                 position=employee_data.position,
-                hire_date=hire_date_obj,
+                phone=employee_data.phone,
+                hire_date=hire_date,
                 salary=employee_data.salary,
                 employment_type=employee_data.employment_type,
                 status='active'
@@ -721,46 +675,25 @@ async def create_employee(employee_data: EmployeeRequest):
             db.commit()
             db.refresh(new_employee)
             
-            print(f"✅ EMP API: Employé créé avec ID: {new_employee.id}")
-            
-            # Retourner les données de l'employé créé
-            employee_info = {
-                "id": new_employee.id,
-                "employee_id": new_employee.employee_id,
-                "first_name": new_employee.first_name,
-                "last_name": new_employee.last_name,
-                "email": new_employee.email,
-                "phone": new_employee.phone,
-                "position": new_employee.position,
-                "department_id": new_employee.department_id,
-                "department_name": department.name,
-                "hire_date": new_employee.hire_date.isoformat() if new_employee.hire_date else None,
-                "salary": float(new_employee.salary) if new_employee.salary else None,
-                "employment_type": new_employee.employment_type,
-                "status": new_employee.status,
-                "created_at": new_employee.created_at.isoformat() if new_employee.created_at else None
-            }
+            print(f"✅ EMPLOYEE API: Employé créé avec ID: {new_employee.id}, employee_id: {new_employee.employee_id}")
             
             return {
                 "success": True,
-                "message": f"Employé '{employee_data.first_name} {employee_data.last_name}' créé avec succès",
-                "employee": employee_info
+                "message": "Employé créé avec succès",
+                "employee_id": new_employee.id,
+                "employee_code": new_employee.employee_id
             }
             
         except Exception as e:
             db.rollback()
-            print(f"❌ EMP API: Erreur création employé: {e}")
-            import traceback
-            traceback.print_exc()
-            return {"success": False, "message": f"Erreur lors de la création de l'employé: {str(e)}"}
+            print(f"❌ Erreur création employé: {e}")
+            return {"success": False, "message": f"Erreur création: {str(e)}"}
         finally:
             db.close()
-        
+            
     except Exception as e:
-        print(f"❌ EMP API: Erreur critique: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+        print(f"❌ Erreur critique: {e}")
+        return {"success": False, "message": "Erreur interne"}
 
 @app.post("/api/create-job")
 async def create_job(job_data: JobRequest):
@@ -855,9 +788,9 @@ async def create_job(job_data: JobRequest):
                 "currency": new_job.currency,
                 "priority": new_job.priority,
                 "status": new_job.status,
-                "department_id": new_job.department_id,
+                "department_id": job_data.department_id,
                 "department_name": department.name,
-                "assigned_employee_id": new_job.assigned_employee_id,
+                "assigned_employee_id": job_data.assigned_employee_id,
                 "assigned_employee_name": f"{assigned_employee.first_name} {assigned_employee.last_name}" if assigned_employee else None,
                 "deadline": new_job.deadline.isoformat() if new_job.deadline else None,
                 "applications_count": new_job.applications_count,
@@ -949,6 +882,42 @@ async def get_employees():
     except Exception as e:
         print(f"❌ EMP LIST API: Erreur critique: {e}")
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+
+@app.get("/api/candidate/{candidate_id}")
+async def get_candidate(candidate_id: int):
+    db = SessionLocal()
+    try:
+        candidate = db.query(models.ProfileCandidat).filter(models.ProfileCandidat.id == candidate_id).first()
+        if not candidate:
+            return {"success": False, "message": "Candidat introuvable"}
+
+        contact = candidate.contact  # via relationship
+        analyse = candidate.analyse  # via relationship
+
+        return {
+            "success": True,
+            "candidate": {
+                "id": candidate.id,
+                "name": candidate.name,
+                "first_name": candidate.name.split(" ")[0],
+                "last_name": " ".join(candidate.name.split(" ")[1:]),
+                "title": candidate.title,
+                "profile": candidate.profile,
+                "skills": candidate.skills,
+                "education": candidate.education,
+                "languages": candidate.languages,
+                "certificates": candidate.certificates,
+                "email": contact.email if contact else None,
+                "phone": contact.phone if contact else None,
+                "linkedin": contact.linkedin if contact else None,
+                "address": contact.address if contact else None,
+                "analyse": analyse.analyse if analyse else None
+            }
+        }
+    finally:
+        db.close()
+
+
 
 @app.get("/api/jobs")
 async def get_jobs():
@@ -1086,7 +1055,8 @@ async def get_job_details(job_id: int):
                         "status": app.status,
                         "application_date": app.application_date.isoformat() if app.application_date else None,
                         "hr_rating": float(app.hr_rating) if app.hr_rating else None,
-                        "hr_notes": app.hr_notes
+                        "hr_notes": app.hr_notes,
+                        "candidate_id": candidate.id # Inclure l'ID du candidat
                     })
             
             # Calculer les jours restants
@@ -1140,6 +1110,401 @@ async def get_job_details(job_id: int):
         traceback.print_exc()
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
+@app.get("/api/applications")
+async def get_applications(status: Optional[str] = None):
+    """API pour récupérer les candidatures de l'entreprise"""
+    try:
+        print(f"📋 APPLICATIONS API: Récupération candidatures (status: {status})")
+        
+        # Vérifier la session utilisateur
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        # Récupérer l'entreprise de l'utilisateur
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
+        
+        db = SessionLocal()
+        try:
+            # Construire la requête de base
+            query = db.query(models.Application).join(
+                models.Job, models.Application.job_id == models.Job.id
+            ).filter(
+                models.Job.company_id == company.id
+            )
+            
+            # Filtrer par statut si spécifié
+            if status and status != "all":
+                query = query.filter(models.Application.status == status)
+            
+            # Ordonner par date de candidature (plus récent en premier)
+            applications = query.order_by(models.Application.application_date.desc()).all()
+            
+            applications_list = []
+            for app in applications:
+                # Récupérer le poste
+                job = db.query(models.Job).filter(models.Job.id == app.job_id).first()
+                
+                # Récupérer le département
+                department = None
+                if job:
+                    department = db.query(models.Department).filter(
+                        models.Department.id == job.department_id
+                    ).first()
+                
+                # Récupérer le profil candidat
+                candidate = db.query(models.ProfileCandidat).filter(
+                    models.ProfileCandidat.id == app.candidate_profile_id
+                ).first()
+                
+                # Récupérer les informations de contact
+                contact = None
+                if candidate and candidate.contact_id:
+                    contact = db.query(models.Contact).filter(
+                        models.Contact.id == candidate.contact_id
+                    ).first()
+                
+                if candidate and job:
+                    # Calculer les jours depuis la candidature
+                    days_since_application = 0
+                    if app.application_date:
+                        days_since_application = (datetime.now() - app.application_date).days
+                    
+                    applications_list.append({
+                        "id": app.id,
+                        "job_id": job.id,
+                        "job_title": job.title,
+                        "department_name": department.name if department else "N/A",
+                        "candidate_id": candidate.id,
+                        "candidate_name": candidate.name,
+                        "candidate_title": candidate.title,
+                        "candidate_email": contact.email if contact else "N/A",
+                        "status": app.status,
+                        "application_date": app.application_date.isoformat() if app.application_date else None,
+                        "days_since_application": days_since_application,
+                        "hr_rating": float(app.hr_rating) if app.hr_rating else None,
+                        "hr_notes": app.hr_notes,
+                        "priority": job.priority,
+                        "reviewed_by": app.reviewed_by,
+                        "reviewed_at": app.reviewed_at.isoformat() if app.reviewed_at else None
+                    })
+            
+            print(f"✅ APPLICATIONS API: {len(applications_list)} candidatures trouvées")
+            
+            return {
+                "success": True,
+                "applications": applications_list,
+                "total": len(applications_list)
+            }
+            
+        except Exception as e:
+            print(f"❌ APPLICATIONS API: Erreur récupération candidatures: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "message": f"Erreur lors de la récupération des candidatures: {str(e)}"}
+        finally:
+            db.close()
+        
+    except Exception as e:
+        print(f"❌ APPLICATIONS API: Erreur critique: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+
+@app.post("/api/applications/{application_id}/update-status")
+async def update_application_status(application_id: int, status_data: dict):
+    """API pour mettre à jour le statut d'une candidature avec logique d'acceptation automatique - CORRIGÉE"""
+    try:
+        print(f"📝 UPDATE APP API: Mise à jour candidature {application_id}")
+        
+        # Vérifier la session utilisateur
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        # Récupérer l'entreprise de l'utilisateur
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
+        
+        db = SessionLocal()
+        try:
+            # Récupérer la candidature avec toutes les informations nécessaires
+            application = db.query(models.Application).join(
+                models.Job, models.Application.job_id == models.Job.id
+            ).filter(
+                models.Application.id == application_id,
+                models.Job.company_id == company.id
+            ).first()
+            
+            if not application:
+                return {"success": False, "message": "Candidature non trouvée"}
+            
+            # Récupérer le poste et le candidat
+            job = db.query(models.Job).filter(models.Job.id == application.job_id).first()
+            candidate = db.query(models.ProfileCandidat).filter(
+                models.ProfileCandidat.id == application.candidate_profile_id
+            ).first()
+            contact = None
+            if candidate and candidate.contact_id:
+                contact = db.query(models.Contact).filter(
+                    models.Contact.id == candidate.contact_id
+                ).first()
+            
+            new_status = status_data.get('status')
+            if not new_status:
+                return {"success": False, "message": "Statut manquant"}
+            
+            # LOGIQUE SPÉCIALE POUR L'ACCEPTATION
+            if new_status == 'accepted' and job and candidate and contact:
+                print(f"🎉 ACCEPTATION: Traitement automatique pour {candidate.name}")
+                
+                try:
+                    # 1. Créer automatiquement l'employé
+                    # Générer un ID employé unique
+                    employee_id = f"EMP{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                    
+                    # Calculer le salaire (moyenne entre min et max du poste)
+                    salary = None
+                    if job.salary_min and job.salary_max:
+                        salary = (job.salary_min + job.salary_max) / 2
+                    elif job.salary_min:
+                        salary = job.salary_min
+                    elif job.salary_max:
+                        salary = job.salary_max
+                    
+                    new_employee = models.Employee(
+                        company_id=company.id,
+                        department_id=job.department_id,
+                        employee_id=employee_id,  # CORRECTION: S'assurer que l'employee_id est défini
+                        first_name=candidate.name.split()[0] if candidate.name else "Prénom",
+                        last_name=" ".join(candidate.name.split()[1:]) if len(candidate.name.split()) > 1 else "Nom",
+                        email=contact.email,
+                        phone=contact.phone if contact.phone else None,
+                        position=job.title,  # Le poste devient sa position
+                        hire_date=datetime.now().date(),  # Date d'embauche = aujourd'hui
+                        salary=salary,
+                        employment_type=job.employment_type,
+                        status='active'
+                    )
+                    
+                    db.add(new_employee)
+                    db.flush()  # Pour obtenir l'ID de l'employé
+                    
+                    print(f"✅ EMPLOYÉ CRÉÉ: {new_employee.first_name} {new_employee.last_name} (ID: {new_employee.id}, employee_id: {new_employee.employee_id}) - Département: {new_employee.department_id}")
+                    
+                    # 2. Marquer le poste comme pourvu
+                    job.status = 'filled'  # Nouveau statut pour les postes pourvus
+                    job.assigned_employee_id = new_employee.id  # Assigner l'employé au poste
+                    
+                    print(f"✅ POSTE POURVU: {job.title} assigné à {new_employee.first_name} {new_employee.last_name}")
+                    
+                    # 3. Mettre à jour le statut de la candidature AVANT de rejeter les autres
+                    application.status = new_status  # CORRECTION: Mettre à jour le statut
+                    application.reviewed_by = user_id
+                    application.reviewed_at = datetime.now()
+                    application.decision_date = datetime.now()
+                    application.decision_reason = f"Candidature acceptée - Embauché comme {job.title}"
+                    
+                    # Ajouter des notes HR si fournies
+                    if status_data.get('hr_notes'):
+                        application.hr_notes = status_data['hr_notes']
+                    
+                    # Ajouter une note HR si fournie
+                    if status_data.get('hr_rating'):
+                        application.hr_rating = float(status_data['hr_rating'])
+                    
+                    print(f"✅ CANDIDATURE MISE À JOUR: Statut changé vers {new_status}")
+                    
+                    # 4. Rejeter automatiquement les autres candidatures pour ce poste
+                    other_applications = db.query(models.Application).filter(
+                        models.Application.job_id == job.id,
+                        models.Application.id != application_id,
+                        models.Application.status.in_(['pending', 'reviewed', 'interview_scheduled'])
+                    ).all()
+                    
+                    for other_app in other_applications:
+                        other_app.status = 'rejected'
+                        other_app.decision_reason = f"Poste pourvu par {candidate.name}"
+                        other_app.decision_date = datetime.now()
+                        other_app.reviewed_by = user_id
+                        other_app.reviewed_at = datetime.now()
+                    
+                    print(f"✅ AUTRES CANDIDATURES: {len(other_applications)} candidatures rejetées automatiquement")
+                    
+                    db.commit()
+                    
+                    return {
+                        "success": True,
+                        "message": f"Candidature acceptée ! {candidate.name} a été automatiquement ajouté comme employé au département. Le poste '{job.title}' est maintenant pourvu.",
+                        "application": {
+                            "id": application.id,
+                            "status": application.status,
+                            "reviewed_at": application.reviewed_at.isoformat() if application.reviewed_at else None
+                        },
+                        "employee_created": {
+                            "id": new_employee.id,
+                            "employee_id": new_employee.employee_id,
+                            "name": f"{new_employee.first_name} {new_employee.last_name}",
+                            "position": new_employee.position,
+                            "department_id": new_employee.department_id
+                        },
+                        "job_filled": {
+                            "id": job.id,
+                            "title": job.title,
+                            "status": job.status
+                        },
+                        "other_applications_rejected": len(other_applications)
+                    }
+                    
+                except Exception as e:
+                    print(f"❌ ERREUR ACCEPTATION: {e}")
+                    db.rollback()
+                    # En cas d'erreur, juste mettre à jour le statut sans les actions automatiques
+                    application.status = new_status
+                    application.reviewed_by = user_id
+                    application.reviewed_at = datetime.now()
+                    db.commit()
+                    return {
+                        "success": True,
+                        "message": f"Candidature mise à jour vers '{new_status}' (création employé échouée: {str(e)})",
+                        "application": {
+                            "id": application.id,
+                            "status": application.status,
+                            "reviewed_at": application.reviewed_at.isoformat() if application.reviewed_at else None
+                        }
+                    }
+            else:
+                # Pour les autres statuts, juste mettre à jour normalement
+                application.status = new_status
+                application.reviewed_by = user_id
+                application.reviewed_at = datetime.now()
+                
+                # Ajouter des notes HR si fournies
+                if status_data.get('hr_notes'):
+                    application.hr_notes = status_data['hr_notes']
+                
+                # Ajouter une note HR si fournie
+                if status_data.get('hr_rating'):
+                    application.hr_rating = float(status_data['hr_rating'])
+                
+                db.commit()
+                
+                print(f"✅ UPDATE APP API: Candidature {application_id} mise à jour vers {new_status}")
+                
+                return {
+                    "success": True,
+                    "message": f"Candidature mise à jour vers '{new_status}'",
+                    "application": {
+                        "id": application.id,
+                        "status": application.status,
+                        "reviewed_at": application.reviewed_at.isoformat() if application.reviewed_at else None
+                    }
+                }
+                
+        except Exception as e:
+            db.rollback()
+            print(f"❌ UPDATE APP API: Erreur mise à jour candidature: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "message": f"Erreur lors de la mise à jour: {str(e)}"}
+        finally:
+            db.close()
+        
+    except Exception as e:
+        print(f"❌ UPDATE APP API: Erreur critique: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+
+@app.post("/api/applications/create-demo")
+async def create_demo_applications():
+    """API pour créer des candidatures de démonstration"""
+    try:
+        print(f"🎭 DEMO API: Création candidatures de démonstration")
+        
+        # Vérifier la session utilisateur
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        # Récupérer l'entreprise de l'utilisateur
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
+        
+        db = SessionLocal()
+        try:
+            # Récupérer les postes de l'entreprise
+            jobs = db.query(models.Job).filter(
+                models.Job.company_id == company.id,
+                models.Job.status.in_(['active', 'draft'])
+            ).limit(3).all()
+            
+            if not jobs:
+                return {"success": False, "message": "Aucun poste disponible pour créer des candidatures"}
+            
+            # Récupérer quelques profils candidats existants
+            candidates = db.query(models.ProfileCandidat).limit(5).all()
+            
+            if not candidates:
+                return {"success": False, "message": "Aucun profil candidat disponible"}
+            
+            demo_applications = []
+            statuses = ['pending', 'reviewed', 'interview_scheduled', 'pending', 'reviewed']
+            
+            for i, job in enumerate(jobs):
+                for j in range(min(2, len(candidates))):  # 2 candidatures par poste
+                    candidate = candidates[j + i]
+                    status = statuses[(i + j) % len(statuses)]
+                    
+                    # Vérifier si une candidature existe déjà
+                    existing = db.query(models.Application).filter(
+                        models.Application.job_id == job.id,
+                        models.Application.candidate_profile_id == candidate.id
+                    ).first()
+                    
+                    if not existing:
+                        new_application = models.Application(
+                            job_id=job.id,
+                            candidate_profile_id=candidate.id,
+                            status=status,
+                            application_date=datetime.now(),
+                            hr_rating=4.2 if status == 'reviewed' else None,
+                            hr_notes=f"Candidature intéressante pour le poste de {job.title}" if status == 'reviewed' else None,
+                            source="Site web"
+                        )
+                        
+                        db.add(new_application)
+                        demo_applications.append({
+                            "job_title": job.title,
+                            "candidate_name": candidate.name,
+                            "status": status
+                        })
+            
+            db.commit()
+            
+            print(f"✅ DEMO API: {len(demo_applications)} candidatures de démonstration créées")
+            
+            return {
+                "success": True,
+                "message": f"{len(demo_applications)} candidatures de démonstration créées",
+                "applications": demo_applications
+            }
+            
+        except Exception as e:
+            db.rollback()
+            print(f"❌ DEMO API: Erreur création candidatures démo: {e}")
+            return {"success": False, "message": f"Erreur lors de la création: {str(e)}"}
+        finally:
+            db.close()
+        
+    except Exception as e:
+        print(f"❌ DEMO API: Erreur critique: {e}")
+        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+
 @app.post("/api/create-user")
 async def create_user(user_data: CreateUserRequest):
     """API pour créer un nouvel utilisateur"""
@@ -1167,8 +1532,6 @@ async def create_user(user_data: CreateUserRequest):
             success, message = add_user_to_company(
                 company_id=user_data.company_id,
                 admin_id=new_user_id,
-                access_level=user_data.access_level,
-                granted_by=current_user_id
             )
             
             if not success:
@@ -1310,7 +1673,7 @@ async def get_dashboard_stats():
                 models.Employee.status == 'active'
             ).count()
             
-            # Compter les postes ouverts
+            # Compter les postes ouverts (exclure les postes pourvus)
             total_jobs = db.query(models.Job).filter(
                 models.Job.company_id == company.id,
                 models.Job.status.in_(['draft', 'active'])
@@ -1323,7 +1686,7 @@ async def get_dashboard_stats():
                 models.Job.priority == 'urgent'
             ).count()
             
-            # Compter les candidatures (si la table existe)
+            # Compter les candidatures en attente
             total_applications = 0
             try:
                 total_applications = db.query(models.Application).join(
@@ -1409,3 +1772,78 @@ async def create_detailed_analysis(request: Request):
     except Exception as e:
         print(f"Error in create_detailed_analysis: {str(e)}")
         return {"success": False, "error": str(e)}
+
+@app.post("/api/accept-application/{application_id}")
+def accept_application(application_id: int):
+    db = SessionLocal()
+    try:
+        print(f"🎯 Acceptation de la candidature {application_id}")
+        
+        # Vérifier la session
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        # Récupérer l'application
+        application = db.query(models.Application).filter(models.Application.id == application_id).first()
+        if not application:
+            return {"success": False, "message": "Candidature non trouvée"}
+        
+        # Marquer la candidature comme acceptée
+        application.status = "accepted"
+        application.decision_date = datetime.now()
+        db.commit()
+
+        # Récupérer les infos du candidat
+        profile = db.query(models.ProfileCandidat).filter(models.ProfileCandidat.id == application.candidate_profile_id).first()
+        job = db.query(models.Job).filter(models.Job.id == application.job_id).first()
+        company = db.query(models.Company).filter(models.Company.id == job.company_id).first()
+        
+        if not profile or not job or not company:
+            return {"success": False, "message": "Impossible de récupérer les informations nécessaires"}
+
+        # Vérifier si déjà employé
+        existing_emp = db.query(models.Employee).filter(models.Employee.email == profile.contact.email).first()
+        if existing_emp:
+            print("👤 Le candidat est déjà employé")
+            return {"success": True, "message": "Candidat déjà employé"}
+
+        # Créer un nouvel employé
+        new_emp = models.Employee(
+            company_id=company.id,
+            department_id=job.department_id,
+            employee_id=f"EMP{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            first_name=profile.name.split(" ")[0],
+            last_name=" ".join(profile.name.split(" ")[1:]),
+            email=profile.contact.email,
+            position=profile.title or job.title,
+            hire_date=datetime.today().date(),
+            employment_type=job.employment_type,
+            status="active"
+        )
+
+        db.add(new_emp)
+
+        # Associer l'employé au job
+        job.status = "filled"
+        job.assigned_employee_id = new_emp.id
+
+        # Rejeter les autres candidatures
+        other_apps = db.query(models.Application).filter(
+            models.Application.job_id == job.id,
+            models.Application.id != application.id
+        ).all()
+        for app in other_apps:
+            app.status = "rejected"
+
+        db.commit()
+        print("✅ Candidat accepté et ajouté comme employé")
+        return {"success": True, "message": "Candidat accepté et employé créé"}
+    
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Erreur acceptation candidature: {e}")
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+    
+    finally:
+        db.close()

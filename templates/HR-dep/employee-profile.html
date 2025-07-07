@@ -154,122 +154,35 @@
             <section class="profile-section">
                 <div class="section-header">
                     <h3><i class="fas fa-cogs"></i> Compétences</h3>
-                    <button class="add-skill-btn" onclick="addSkill()">
-                        <i class="fas fa-plus"></i> Ajouter
-                    </button>
                 </div>
-                <div class="skills-list" id="skillsList">
-                    <div class="skill-item">
-                        <span class="skill-name">JavaScript</span>
-                        <div class="skill-bar">
-                            <div class="skill-progress" style="width: 90%"></div>
-                        </div>
-                        <span class="skill-level">90%</span>
-                    </div>
-                    <div class="skill-item">
-                        <span class="skill-name">React</span>
-                        <div class="skill-bar">
-                            <div class="skill-progress" style="width: 85%"></div>
-                        </div>
-                        <span class="skill-level">85%</span>
-                    </div>
-                    <div class="skill-item">
-                        <span class="skill-name">Node.js</span>
-                        <div class="skill-bar">
-                            <div class="skill-progress" style="width: 80%"></div>
-                        </div>
-                        <span class="skill-level">80%</span>
-                    </div>
-                </div>
+                <div class="skills-list" id="employeeSkillsList"></div>
             </section>
-
-            <!-- Activity Timeline -->
             <section class="profile-section">
                 <div class="section-header">
-                    <h3><i class="fas fa-clock"></i> Activité Récente</h3>
+                    <h3><i class="fas fa-user-edit"></i> Présentation du Profil</h3>
                 </div>
-                <div class="activity-timeline" id="activityTimeline">
-                    <div class="timeline-item">
-                        <div class="timeline-icon"><i class="fas fa-briefcase"></i></div>
-                        <div class="timeline-content">
-                            <h4>Assigné au projet Alpha</h4>
-                            <p>Nouveau projet de développement web</p>
-                            <span class="timeline-date">Il y a 2 jours</span>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-icon"><i class="fas fa-star"></i></div>
-                        <div class="timeline-content">
-                            <h4>Évaluation de performance</h4>
-                            <p>Note: 4.5/5 - Excellent travail</p>
-                            <span class="timeline-date">Il y a 1 semaine</span>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-icon"><i class="fas fa-graduation-cap"></i></div>
-                        <div class="timeline-content">
-                            <h4>Formation terminée</h4>
-                            <p>Certification React Advanced</p>
-                            <span class="timeline-date">Il y a 2 semaines</span>
-                        </div>
-                    </div>
-                </div>
+                <p id="employeeProfileText" class="profile-paragraph"></p>
             </section>
+            <section class="profile-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-brain"></i> Analyse IA</h3>
+                </div>
+                <p id="employeeAnalysis" class="profile-paragraph"></p>
+            </section>
+
+            
 
             <!-- Documents -->
             <section class="profile-section">
                 <div class="section-header">
                     <h3><i class="fas fa-file-alt"></i> Documents</h3>
-                    <button class="upload-btn" onclick="uploadDocument()">
                         <i class="fas fa-upload"></i> Ajouter
                     </button>
                 </div>
                 <div class="documents-list">
-                    <div class="document-item">
-                        <div class="doc-icon"><i class="fas fa-file-pdf"></i></div>
-                        <div class="doc-info">
-                            <h4>CV_John_Doe.pdf</h4>
-                            <p>Curriculum Vitae • 2.3 MB</p>
-                        </div>
-                        <div class="doc-actions">
-                            <button class="doc-btn" onclick="viewDocument('cv')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="doc-btn" onclick="downloadDocument('cv')">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="document-item">
-                        <div class="doc-icon"><i class="fas fa-file-contract"></i></div>
-                        <div class="doc-info">
-                            <h4>Contrat_Travail.pdf</h4>
-                            <p>Contrat de travail • 1.8 MB</p>
-                        </div>
-                        <div class="doc-actions">
-                            <button class="doc-btn" onclick="viewDocument('contract')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="doc-btn" onclick="downloadDocument('contract')">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="document-item">
-                        <div class="doc-icon"><i class="fas fa-certificate"></i></div>
-                        <div class="doc-info">
-                            <h4>Certification_React.pdf</h4>
-                            <p>Certificat • 1.2 MB</p>
-                        </div>
-                        <div class="doc-actions">
-                            <button class="doc-btn" onclick="viewDocument('cert')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="doc-btn" onclick="downloadDocument('cert')">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </div>
-                    </div>
+                   <div class="notes-list" id="notesList"></div>
+
+                    
                 </div>
             </section>
 

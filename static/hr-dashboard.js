@@ -1,412 +1,122 @@
+console.log("🎯 FRONTEND: Dashboard chargé avec succès")
+
 // Variables globales
 let departments = []
-let jobs = []
 let employees = []
-let activityLog = []
-let applications = []
-
-// Nouvelles variables
-let expandedDept = null
-const activeTab = {}
+let jobs = []
+let applications = [] // Variable pour les candidatures
+let currentUser = null
+const expandedDepartments = new Set()
 let filteredDepartments = []
+let isSearchActive = false
 
-// Vérifier si la configuration est terminée
+// Initialisation du dashboard
 document.addEventListener("DOMContentLoaded", () => {
-  const setupCompleted = localStorage.getItem("setupCompleted")
-  if (!setupCompleted) {
-    window.location.href = "company-setup.html"
-    return
-  }
-
-  console.log("DOM loaded, initializing...")
-  updateStats()
-  updateDepartmentSelects()
-  updateEmployeeSelects()
-  renderDepartments()
-  renderActivity()
-  addSampleApplications()
-  renderApplications()
-
-  // Vérifier que les boutons existent
-  const quickActionBtn = document.querySelector('.quick-action-card[onclick*="openDepartmentModal"]')
-  const addBtn = document.querySelector('.add-btn[onclick*="openDepartmentModal"]')
-
-  console.log("Quick action button found:", !!quickActionBtn)
-  console.log("Add button found:", !!addBtn)
-
-  // Charger les données du profil d'entreprise
-  loadCompanyProfile()
+  console.log("🚀 FRONTEND: Initialisation du dashboard")
+  initializeDashboard()
 })
 
-// Charger le profil d'entreprise
-function loadCompanyProfile() {
-  const companyProfile = localStorage.getItem("companyProfile")
-  if (companyProfile) {
-    const profile = JSON.parse(companyProfile)
-    // Mettre à jour l'interface avec les données de l'entreprise
-    const logoSection = document.querySelector(".logo span")
-    if (logoSection) {
-      logoSection.textContent = `${profile.companyName} - Tableau de Bord RH`
+// Fonction d'initialisation
+async function initializeDashboard() {
+  try {
+    console.log("🔄 FRONTEND: Début initialisation")
+
+    // Charger l'utilisateur actuel
+    await loadCurrentUser()
+
+    // Charger les données de base
+    await Promise.all([
+      loadDepartments(),
+      loadEmployees(),
+      loadJobs(),
+      loadApplications(), // NOUVEAU: Charger les candidatures
+      loadDashboardStats(),
+    ])
+
+    console.log("✅ FRONTEND: Initialisation terminée")
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur lors de l'initialisation:", error)
+  }
+}
+
+// NOUVELLE FONCTION: Charger les candidatures depuis l'API
+async function loadApplications() {
+  console.log("📋 FRONTEND: Chargement des candidatures")
+
+  try {
+    const response = await fetch("/api/applications")
+    const result = await response.json()
+
+    if (result.success) {
+      applications = result.applications || []
+      console.log(`✅ FRONTEND: ${applications.length} candidatures chargées`)
+      renderApplications()
+    } else {
+      console.error("❌ FRONTEND: Erreur chargement candidatures:", result.message)
+      // En cas d'erreur, afficher un état vide
+      applications = []
+      renderApplications()
     }
-  }
-}
-
-// Fonctions de gestion des départements
-function openDepartmentModal() {
-  console.log("Opening department modal...")
-  const modal = document.getElementById("departmentModal")
-  if (modal) {
-    modal.classList.add("show")
-    document.body.style.overflow = "hidden"
-    console.log("Modal opened successfully")
-  } else {
-    console.error("Modal element not found!")
-  }
-}
-
-function closeDepartmentModal() {
-  console.log("Closing department modal...")
-  const modal = document.getElementById("departmentModal")
-  if (modal) {
-    modal.classList.remove("show")
-    document.body.style.overflow = "auto"
-    document.getElementById("departmentForm").reset()
-    console.log("Modal closed successfully")
-  }
-}
-
-function createDepartment() {
-  const name = document.getElementById("departmentName").value.trim()
-  const description = document.getElementById("departmentDescription").value.trim()
-  const manager = document.getElementById("departmentManager").value.trim()
-  const color = document.getElementById("departmentColor").value
-
-  if (!name) {
-    showNotification("Le nom du département est requis", "error")
-    return
-  }
-
-  const department = {
-    id: Date.now(),
-    name: name,
-    description: description,
-    manager: manager,
-    color: color,
-    jobs: [],
-    employees: [],
-    createdAt: new Date(),
-  }
-
-  departments.push(department)
-
-  // Ajouter à l'activité
-  addActivity(`Nouveau département "${name}" créé`, "department")
-
-  updateStats()
-  updateDepartmentSelects()
-  renderDepartments()
-  closeDepartmentModal()
-  showNotification(`Département "${name}" créé avec succès !`, "success")
-}
-
-function deleteDepartment(id) {
-  if (confirm("Êtes-vous sûr de vouloir supprimer ce département ?")) {
-    const dept = departments.find((d) => d.id === id)
-    departments = departments.filter((d) => d.id !== id)
-
-    // Supprimer les jobs associés
-    jobs = jobs.filter((j) => j.departmentId !== id)
-
-    // Mettre à jour les employés
-    employees = employees.filter((e) => e.departmentId !== id)
-
-    addActivity(`Département "${dept.name}" supprimé`, "delete")
-
-    updateStats()
-    updateDepartmentSelects()
-    updateEmployeeSelects()
-    renderDepartments()
-    showNotification(`Département "${dept.name}" supprimé`, "warning")
-  }
-}
-
-// Fonctions de gestion des jobs
-function openJobModal() {
-  if (departments.length === 0) {
-    showNotification("Veuillez d'abord créer un département", "warning")
-    return
-  }
-  document.getElementById("jobModal").classList.add("show")
-  document.body.style.overflow = "hidden"
-}
-
-function closeJobModal() {
-  document.getElementById("jobModal").classList.remove("show")
-  document.body.style.overflow = "auto"
-  document.getElementById("jobForm").reset()
-}
-
-function createJob() {
-  const title = document.getElementById("jobTitle").value.trim()
-  const departmentId = Number.parseInt(document.getElementById("jobDepartment").value)
-  const type = document.getElementById("jobType").value
-  const salary = document.getElementById("jobSalary").value.trim()
-  const description = document.getElementById("jobDescription").value.trim()
-  const employeeId = document.getElementById("jobEmployee").value
-  const priority = document.getElementById("jobPriority").value
-  const deadline = document.getElementById("jobDeadline").value
-
-  if (!title || !departmentId || !type || !description) {
-    showNotification("Veuillez remplir tous les champs requis", "error")
-    return
-  }
-
-  const job = {
-    id: Date.now(),
-    title: title,
-    departmentId: departmentId,
-    type: type,
-    salary: salary,
-    description: description,
-    employeeId: employeeId || null,
-    priority: priority,
-    deadline: deadline,
-    createdAt: new Date(),
-  }
-
-  jobs.push(job)
-
-  const department = departments.find((d) => d.id === departmentId)
-  if (department) {
-    department.jobs.push(job.id)
-  }
-
-  addActivity(`Nouveau poste "${title}" créé dans ${department.name}`, "job")
-
-  updateStats()
-  renderDepartments()
-  closeJobModal()
-  showNotification(`Poste "${title}" créé avec succès !`, "success")
-}
-
-function deleteJob(id) {
-  if (confirm("Êtes-vous sûr de vouloir supprimer ce poste ?")) {
-    const job = jobs.find((j) => j.id === id)
-    const department = departments.find((d) => d.id === job.departmentId)
-
-    jobs = jobs.filter((j) => j.id !== id)
-
-    // Retirer du département
-    if (department) {
-      department.jobs = department.jobs.filter((jId) => jId !== id)
-    }
-
-    addActivity(`Poste "${job.title}" supprimé`, "delete")
-
-    updateStats()
-    renderDepartments()
-    showNotification(`Poste "${job.title}" supprimé`, "warning")
-  }
-}
-
-function assignEmployee(jobId, employeeId) {
-  const job = jobs.find((j) => j.id === jobId)
-  const employee = employees.find((e) => e.id === Number.parseInt(employeeId))
-
-  if (job && employee) {
-    job.employeeId = Number.parseInt(employeeId)
-    addActivity(`${employee.firstName} ${employee.lastName} assigné(e) au poste "${job.title}"`, "assign")
-    renderDepartments()
-    showNotification(`${employee.firstName} ${employee.lastName} assigné(e) au poste "${job.title}"`, "success")
-  }
-}
-
-function unassignEmployee(jobId) {
-  const job = jobs.find((j) => j.id === jobId)
-  if (job) {
-    const employee = employees.find((e) => e.id === job.employeeId)
-    job.employeeId = null
-    if (employee) {
-      addActivity(`${employee.firstName} ${employee.lastName} retiré(e) du poste "${job.title}"`, "unassign")
-      showNotification(`${employee.firstName} ${employee.lastName} retiré(e) du poste`, "info")
-    }
-    renderDepartments()
-  }
-}
-
-// Fonctions de gestion des employés
-function openEmployeeModal() {
-  if (departments.length === 0) {
-    showNotification("Veuillez d'abord créer un département", "warning")
-    return
-  }
-  document.getElementById("employeeModal").classList.add("show")
-  document.body.style.overflow = "hidden"
-}
-
-function closeEmployeeModal() {
-  document.getElementById("employeeModal").classList.remove("show")
-  document.body.style.overflow = "auto"
-  document.getElementById("employeeForm").reset()
-}
-
-function createEmployee() {
-  const firstName = document.getElementById("employeeFirstName").value.trim()
-  const lastName = document.getElementById("employeeLastName").value.trim()
-  const email = document.getElementById("employeeEmail").value.trim()
-  const departmentId = Number.parseInt(document.getElementById("employeeDepartment").value)
-  const position = document.getElementById("employeePosition").value.trim()
-  const phone = document.getElementById("employeePhone").value.trim()
-  const hireDate = document.getElementById("employeeHireDate").value
-
-  if (!firstName || !lastName || !email || !departmentId || !position) {
-    showNotification("Veuillez remplir tous les champs requis", "error")
-    return
-  }
-
-  const employee = {
-    id: Date.now(),
-    firstName: firstName,
-    lastName: lastName,
-    email: email,
-    departmentId: departmentId,
-    position: position,
-    phone: phone,
-    hireDate: hireDate,
-    createdAt: new Date(),
-  }
-
-  employees.push(employee)
-
-  // Ajouter l'employé au département
-  const department = departments.find((d) => d.id === departmentId)
-  if (department) {
-    department.employees.push(employee.id)
-  }
-
-  addActivity(`Nouvel employé ${firstName} ${lastName} ajouté`, "employee")
-
-  updateStats()
-  updateEmployeeSelects()
-  renderDepartments()
-  closeEmployeeModal()
-  showNotification(`Employé ${firstName} ${lastName} ajouté avec succès !`, "success")
-}
-
-// Fonctions de navigation vers les profils
-function openEmployeeProfile(employeeId) {
-  const employee = employees.find((e) => e.id === employeeId)
-  if (employee) {
-    // Sauvegarder les données de l'employé pour la page de profil
-    localStorage.setItem("selectedEmployee", JSON.stringify(employee))
-    // Ouvrir la page de profil dans un nouvel onglet
-    window.open("/employee-profile", "_blank")
-  }
-}
-
-function openJobDetails(jobId) {
-  const job = jobs.find((j) => j.id === jobId)
-  if (job) {
-    // Sauvegarder les données du job pour la page de détails
-    localStorage.setItem("selectedJob", JSON.stringify(job))
-    // Ouvrir la page de détails dans un nouvel onglet
-    window.open("/job-details", "_blank")
-  }
-}
-
-// Fonctions d'ajout rapide depuis les départements
-function quickAddEmployee(deptId) {
-  setEmployeeDepartment(deptId)
-  openEmployeeModal()
-}
-
-function quickAddJob(deptId) {
-  setJobDepartment(deptId)
-  openJobModal()
-}
-
-// Fonction pour ouvrir le profil d'entreprise
-function openCompanyProfile() {
-  window.open("company-profile.html", "_blank")
-}
-
-// Fonctions de gestion des candidatures
-function addSampleApplications() {
-  // Ajouter quelques candidatures d'exemple
-  const sampleApplications = [
-    {
-      id: 1,
-      applicantName: "Marie Dubois",
-      applicantEmail: "marie.dubois@email.com",
-      jobId: null,
-      jobTitle: "Développeur Frontend",
-      department: "IT",
-      status: "pending",
-      appliedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      cv: "marie_dubois_cv.pdf",
-    },
-    {
-      id: 2,
-      applicantName: "Pierre Martin",
-      applicantEmail: "pierre.martin@email.com",
-      jobId: null,
-      jobTitle: "Chef de Projet",
-      department: "Management",
-      status: "pending",
-      appliedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      cv: "pierre_martin_cv.pdf",
-    },
-  ]
-
-  applications.push(...sampleApplications)
-  updateStats()
-}
-
-function acceptApplication(applicationId) {
-  const application = applications.find((app) => app.id === applicationId)
-  if (application) {
-    application.status = "accepted"
-    addActivity(`Candidature de ${application.applicantName} acceptée`, "accept")
-    updateStats()
-    renderApplications()
-    showNotification(`Candidature de ${application.applicantName} acceptée`, "success")
-  }
-}
-
-function rejectApplication(applicationId) {
-  const application = applications.find((app) => app.id === applicationId)
-  if (application) {
-    application.status = "rejected"
-    addActivity(`Candidature de ${application.applicantName} rejetée`, "reject")
-    updateStats()
-    renderApplications()
-    showNotification(`Candidature de ${application.applicantName} rejetée`, "warning")
-  }
-}
-
-function viewApplicationCV(applicationId) {
-  const application = applications.find((app) => app.id === applicationId)
-  if (application) {
-    showNotification(`Ouverture du CV de ${application.applicantName}`, "info")
-    // Ici vous pourriez ouvrir un modal avec le CV ou télécharger le fichier
-  }
-}
-
-function filterApplications(status) {
-  renderApplications(status)
-}
-
-function clearApplications() {
-  if (confirm("Effacer toutes les candidatures ?")) {
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau chargement candidatures:", error)
+    // En cas d'erreur réseau, afficher un état vide
     applications = []
-    updateStats()
     renderApplications()
-    showNotification("Toutes les candidatures ont été effacées", "info")
   }
 }
+function renderApplicationCardHTML(app) {
+  return `
+    <div class="application-card ${app.status}">
+      <div class="application-header">
+        <div class="applicant-info">
+          <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
+          <div class="applicant-details">
+            <h4>${app.candidate_name}</h4>
+            <p>${app.candidate_email}</p>
+            <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
+          </div>
+        </div>
+        <div class="application-status ${app.status}">
+          ${getStatusText(app.status)}
+        </div>
+      </div>
 
+      <div class="application-job">
+        <div class="job-info">
+          <div class="job-title">${app.job_title}</div>
+          <div class="job-department">${app.department_name}</div>
+          <div class="job-priority priority-${app.priority || "normal"}">
+            ${(app.priority || "normal").toUpperCase()}
+          </div>
+        </div>
+        <div class="application-date">
+          Candidature envoyée le ${formatDate(app.application_date)}
+          <br><small>Il y a ${app.days_since_application} jour(s)</small>
+        </div>
+      </div>
+
+      <div class="application-actions">
+        <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
+          <i class="fas fa-user"></i> Voir Profil
+        </button>
+        <button class="app-btn review" onclick="viewJobDetails(${app.job_id})">
+          <i class="fas fa-circle-info"></i> Détails
+        </button>
+      </div>
+    </div>
+  `
+}
+
+
+// FONCTION MISE À JOUR: Rendu des candidatures
 function renderApplications(filter = "all") {
+  console.log("📋 FRONTEND: Rendu des candidatures, filtre:", filter)
+
   const container = document.getElementById("applicationsContainer")
+  if (!container) {
+    console.error("❌ FRONTEND: Container candidatures non trouvé")
+    return
+  }
 
   let filteredApps = applications
   if (filter !== "all") {
@@ -415,68 +125,947 @@ function renderApplications(filter = "all") {
 
   if (filteredApps.length === 0) {
     container.innerHTML = `
-      <div class="empty-applications">
-        <i class="fas fa-file-alt"></i>
-        <p>Aucune candidature ${filter === "all" ? "" : filter === "pending" ? "en attente" : "examinée"}</p>
-      </div>
-    `
+            <div class="empty-applications">
+                <i class="fas fa-file-alt"></i>
+                <h4>Aucune candidature</h4>
+                <p>Aucune candidature ${getFilterText(filter)}</p>
+            </div>
+        `
     return
   }
 
   container.innerHTML = filteredApps
     .map(
       (app) => `
-    <div class="application-card ${app.status}">
-      <div class="application-header">
-        <div class="applicant-info">
-          <div class="applicant-avatar">${app.applicantName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")}</div>
-          <div class="applicant-details">
-            <h4>${app.applicantName}</h4>
-            <p>${app.applicantEmail}</p>
-          </div>
-        </div>
-        <div class="application-status ${app.status}">
-          ${app.status === "pending" ? "En attente" : app.status === "accepted" ? "Acceptée" : "Rejetée"}
-        </div>
-      </div>
-      
-      <div class="application-job">
-        <div class="job-info">
-          <div class="job-title">${app.jobTitle}</div>
-          <div class="job-department">${app.department}</div>
-        </div>
-        <div class="application-date">
-          Candidature envoyée le ${app.appliedAt.toLocaleDateString("fr-FR")}
-        </div>
-      </div>
-      
-      <div class="application-actions">
-        <button class="app-btn view" onclick="viewApplicationCV(${app.id})">
-          <i class="fas fa-file-pdf"></i> Voir CV
-        </button>
-        ${
-          app.status === "pending"
-            ? `
-          <button class="app-btn accept" onclick="acceptApplication(${app.id})">
-            <i class="fas fa-check"></i> Accepter
-          </button>
-          <button class="app-btn reject" onclick="rejectApplication(${app.id})">
-            <i class="fas fa-times"></i> Rejeter
-          </button>
-        `
-            : ""
-        }
-      </div>
-    </div>
-  `,
+            <div class="application-card ${app.status}">
+                <div class="application-header">
+                    <div class="applicant-info">
+                        <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
+                        <div class="applicant-details">
+                            <h4>${app.candidate_name}</h4>
+                            <p>${app.candidate_email}</p>
+                            <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
+                        </div>
+                    </div>
+                    <div class="application-status ${app.status}">
+                        ${getStatusText(app.status)}
+                    </div>
+                </div>
+                
+                <div class="application-job">
+                    <div class="job-info">
+                        <div class="job-title">${app.job_title}</div>
+                        <div class="job-department">${app.department_name}</div>
+                        <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
+                    </div>
+                    <div class="application-date">
+                        Candidature envoyée le ${formatDate(app.application_date)}
+                        <br><small>Il y a ${app.days_since_application} jour(s)</small>
+                    </div>
+                </div>
+                
+                <div class="application-actions">
+                    <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
+                        <i class="fas fa-user"></i> Voir Profil
+                    </button>
+                    ${renderActionButtons(app)}
+                    <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
+                            <i class="fas fa-info-circle"></i> Détails
+                        </button>
+                </div>
+            </div>
+        `,
     )
     .join("")
 }
 
-// Système de notifications moderne
+// Fonctions utilitaires pour les candidatures
+function getInitials(name) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+}
+
+function getFilterText(filter) {
+  const filterTexts = {
+    all: "",
+    pending: "en attente",
+    reviewed: "examinées",
+    interview_scheduled: "avec entretien programmé",
+    accepted: "acceptées",
+    rejected: "rejetées",
+  }
+  return filterTexts[filter] || ""
+}
+
+function getStatusText(status) {
+  const statusTexts = {
+    pending: "En attente",
+    reviewed: "Examinée",
+    interview_scheduled: "Entretien programmé",
+    accepted: "Acceptée",
+    rejected: "Rejetée",
+  }
+  return statusTexts[status] || status
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "Date inconnue"
+  const date = new Date(dateString)
+  return date.toLocaleDateString("fr-FR")
+}
+
+function renderActionButtons(app) {
+  if (app.status === "pending") {
+    return `
+            <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
+                <i class="fas fa-check"></i> Accepter
+            </button>
+            <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
+                <i class="fas fa-times"></i> Rejeter
+            </button>
+        `
+  } else if (app.status === "reviewed") {
+    return `
+            <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
+                <i class="fas fa-check-circle"></i> Accepter
+            </button>
+            <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
+                <i class="fas fa-times"></i> Rejeter
+            </button>
+        `
+  } else if (app.status === "interview_scheduled") {
+    return `
+            <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
+                <i class="fas fa-user-check"></i> Accepter
+            </button>
+            <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
+                <i class="fas fa-user-times"></i> Rejeter
+            </button>
+        `
+  } else {
+    return ``
+  }
+}
+
+// NOUVELLE FONCTION: Mettre à jour le statut d'une candidature
+async function updateApplicationStatus(applicationId, newStatus) {
+  console.log("📝 FRONTEND: Mise à jour statut candidature:", applicationId, "vers", newStatus)
+
+  // Afficher une confirmation pour l'acceptation
+  if (newStatus === "accepted") {
+    const application = applications.find((app) => app.id === applicationId)
+    if (
+      application &&
+      !confirm(
+        `Êtes-vous sûr de vouloir accepter la candidature de ${application.candidate_name} ?\n\nCela va automatiquement :\n• Créer un employé dans le département\n• Marquer le poste comme pourvu\n• Rejeter les autres candidatures pour ce poste`,
+      )
+    ) {
+      return
+    }
+  }
+
+  try {
+    const response = await fetch(`/api/applications/${applicationId}/update-status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status: newStatus }),
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      console.log("✅ FRONTEND: Statut mis à jour avec succès")
+
+      // Message spécial pour l'acceptation
+      if (newStatus === "accepted" && result.employee_created) {
+        showNotification(
+          `🎉 Candidature acceptée ! ${result.employee_created.name} a été ajouté comme employé. Le poste "${result.job_filled.title}" est maintenant pourvu.`,
+          "success",
+        )
+      } else {
+        showNotification(`Candidature mise à jour vers "${getStatusText(newStatus)}"`, "success")
+      }
+
+      // Recharger les candidatures et les stats
+      await loadApplications()
+      await loadDashboardStats()
+      await loadEmployees() // Recharger les employés pour voir le nouveau
+      await loadJobs() // Recharger les jobs pour voir les statuts mis à jour
+    } else {
+      console.error("❌ FRONTEND: Erreur mise à jour statut:", result.message)
+      showNotification("Erreur: " + result.message, "error")
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau mise à jour statut:", error)
+    showNotification("Erreur de connexion au serveur. Veuillez réessayer.", "error")
+  }
+}
+
+// NOUVELLE FONCTION: Créer des candidatures de démonstration
+
+
+// Fonctions d'interaction avec les candidatures
+function viewCandidateProfile(candidateId) {
+  console.log("👤 FRONTEND: Ouverture profil candidat:", candidateId)
+  window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
+}
+
+function viewApplicationDetails(applicationId) {
+  console.log("📋 FRONTEND: Détails candidature:", applicationId)
+  const application = applications.find((app) => app.id === applicationId)
+  if (application) {
+    showNotification(`Affichage des détails de ${application.candidate_name}`, "info")
+  }
+}
+
+function filterApplications(status) {
+  console.log("🔍 FRONTEND: Filtrage candidatures:", status)
+  renderApplications(status)
+}
+
+
+
+// Fonction pour charger l'utilisateur actuel
+async function loadCurrentUser() {
+  console.log("👤 FRONTEND: Chargement utilisateur actuel")
+
+  try {
+    const response = await fetch("/api/current-user")
+    const result = await response.json()
+
+    if (result.success) {
+      currentUser = result.user
+      console.log("✅ FRONTEND: Utilisateur chargé:", currentUser)
+      updateUserDisplay()
+    } else {
+      console.error("❌ FRONTEND: Erreur chargement utilisateur:", result.message)
+      if (result.message === "Utilisateur non connecté") {
+        window.location.href = "/hr-login"
+      }
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau chargement utilisateur:", error)
+  }
+}
+
+// Fonction pour mettre à jour l'affichage utilisateur
+function updateUserDisplay() {
+  if (currentUser) {
+    const userName = `${currentUser.first_name} ${currentUser.last_name}`
+    const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
+
+    const userNameSpan = document.querySelector(".user-info span")
+    if (userNameSpan) {
+      userNameSpan.textContent = `Bienvenue, ${userName}`
+    }
+
+    const avatar = document.querySelector(".avatar")
+    if (avatar) {
+      avatar.textContent = userInitials
+    }
+
+    console.log("✅ FRONTEND: Affichage utilisateur mis à jour")
+  }
+}
+
+// Fonction pour charger les statistiques du dashboard
+async function loadDashboardStats() {
+  console.log("📊 FRONTEND: Chargement statistiques dashboard")
+
+  try {
+    const response = await fetch("/api/dashboard-stats")
+    const result = await response.json()
+
+    if (result.success) {
+      const stats = result.stats
+      console.log("✅ FRONTEND: Statistiques chargées:", stats)
+      updateStatsDisplay(stats)
+    } else {
+      console.error("❌ FRONTEND: Erreur chargement statistiques:", result.message)
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau chargement statistiques:", error)
+  }
+}
+
+// Fonction pour mettre à jour l'affichage des statistiques
+function updateStatsDisplay(stats) {
+  document.getElementById("totalDepartments").textContent = stats.total_departments || 0
+  document.getElementById("totalEmployees").textContent = stats.total_employees || 0
+  document.getElementById("totalJobs").textContent = stats.total_jobs || 0
+  document.getElementById("urgentJobs").textContent = stats.urgent_jobs || 0
+  document.getElementById("totalApplications").textContent = stats.total_applications || 0
+
+  // Mettre à jour les pourcentages de changement
+  const deptChange = document.querySelector("#totalDepartments").parentElement.querySelector(".stat-change")
+  const jobChange = document.querySelector("#totalJobs").parentElement.querySelector(".stat-change")
+  const empChange = document.querySelector("#totalEmployees").parentElement.querySelector(".stat-change")
+
+  if (deptChange) deptChange.textContent = stats.dept_change || "+0%"
+  if (jobChange) jobChange.textContent = stats.job_change || "+0%"
+  if (empChange) empChange.textContent = stats.emp_change || "+0%"
+
+  // Mettre à jour les classes de couleur
+  updateStatChangeClass(deptChange, stats.dept_change || "+0%")
+  updateStatChangeClass(jobChange, stats.job_change || "+0%")
+  updateStatChangeClass(empChange, stats.emp_change || "+0%")
+
+  console.log("✅ FRONTEND: Statistiques affichées")
+}
+
+// Fonction pour mettre à jour les classes de couleur des changements
+function updateStatChangeClass(element, change) {
+  if (!element) return
+
+  element.classList.remove("positive", "negative", "warning")
+
+  if (change.startsWith("+")) {
+    element.classList.add("positive")
+  } else if (change.startsWith("-")) {
+    element.classList.add("negative")
+  } else {
+    element.classList.add("warning")
+  }
+}
+
+// Fonctions de navigation
+function openCompanyProfile() {
+  console.log("🏢 FRONTEND: Ouverture profil entreprise")
+  window.location.href = "/company-profile"
+}
+
+function logout() {
+  console.log("🚪 FRONTEND: Déconnexion")
+  window.location.href = "/hr-login"
+}
+
+// Gestion des modals
+function closeAllModals() {
+  document.getElementById("departmentModal").style.display = "none"
+  document.getElementById("jobModal").style.display = "none"
+  document.getElementById("employeeModal").style.display = "none"
+}
+
+// Fonctions modales
+function openDepartmentModal() {
+  console.log("🏢 FRONTEND: Ouverture modal département")
+  closeAllModals()
+  document.getElementById("departmentModal").style.display = "flex"
+}
+
+function closeDepartmentModal() {
+  console.log("🏢 FRONTEND: Fermeture modal département")
+  document.getElementById("departmentModal").style.display = "none"
+  document.getElementById("departmentForm").reset()
+}
+
+function openJobModal(preselectedDeptId = null) {
+  console.log("💼 FRONTEND: Ouverture modal poste")
+  closeAllModals()
+  loadDepartmentsInSelect("jobDepartment")
+  loadEmployeesInSelect("jobEmployee")
+  document.getElementById("jobModal").style.display = "flex"
+
+  if (preselectedDeptId) {
+    setTimeout(() => {
+      document.getElementById("jobDepartment").value = preselectedDeptId
+    }, 100)
+  }
+}
+
+function closeJobModal() {
+  console.log("💼 FRONTEND: Fermeture modal poste")
+  document.getElementById("jobModal").style.display = "none"
+  document.getElementById("jobForm").reset()
+}
+
+
+
+function closeEmployeeModal() {
+  console.log("👤 FRONTEND: Fermeture modal employé")
+  document.getElementById("employeeModal").style.display = "none"
+  document.getElementById("employeeForm").reset()
+}
+
+// Fonction pour basculer l'expansion d'un département
+function toggleDepartmentExpansion(departmentId) {
+  if (expandedDepartments.has(departmentId)) {
+    expandedDepartments.delete(departmentId)
+  } else {
+    expandedDepartments.add(departmentId)
+  }
+
+  // Réafficher les départements (filtrés ou non)
+  if (isSearchActive) {
+    displayFilteredDepartments(filteredDepartments)
+  } else {
+    displayDepartments()
+  }
+}
+
+// Fonction pour créer un département
+async function createDepartment() {
+  console.log("🏢 FRONTEND: Début création département")
+
+  const name = document.getElementById("departmentName").value.trim()
+  const description = document.getElementById("departmentDescription").value.trim()
+  const manager = document.getElementById("departmentManager").value.trim()
+  const color = document.getElementById("departmentColor").value
+
+  if (!name) {
+    showNotification("Le nom du département est requis", "warning")
+    return
+  }
+
+  const departmentData = {
+    name: name,
+    description: description || "",
+    manager_name: manager || "",
+    color: color,
+    budget: 0.0,
+  }
+
+  console.log("📤 FRONTEND: Envoi données département:", departmentData)
+
+  try {
+    const response = await fetch("/api/create-department", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(departmentData),
+    })
+
+    const result = await response.json()
+    console.log("📥 FRONTEND: Réponse reçue:", result)
+
+    if (result.success) {
+      console.log("✅ FRONTEND: Département créé avec succès")
+      showNotification(`Département "${name}" créé avec succès !`, "success")
+      closeDepartmentModal()
+      await refreshDashboard()
+    } else {
+      console.error("❌ FRONTEND: Erreur création département:", result.message)
+      showNotification("Erreur: " + result.message, "error")
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau:", error)
+    showNotification("Erreur de connexion au serveur. Veuillez réessayer.", "error")
+  }
+}
+
+// Fonction pour créer un employé
+async function createEmployee() {
+  console.log("👤 FRONTEND: Début création employé")
+
+  const firstName = document.getElementById("employeeFirstName").value.trim()
+  const lastName = document.getElementById("employeeLastName").value.trim()
+  const email = document.getElementById("employeeEmail").value.trim()
+  const departmentId = document.getElementById("employeeDepartment").value
+  const position = document.getElementById("employeePosition").value.trim()
+  const phone = document.getElementById("employeePhone").value.trim()
+  const hireDate = document.getElementById("employeeHireDate").value
+  const salary = document.getElementById("employeeSalary").value
+  const employmentType = document.getElementById("employeeType").value
+
+  if (!firstName || !lastName || !email || !departmentId || !position) {
+    showNotification("Veuillez remplir tous les champs obligatoires", "warning")
+    return
+  }
+
+  const employeeData = {
+    first_name: firstName,
+    last_name: lastName,
+    email: email,
+    department_id: Number.parseInt(departmentId),
+    position: position,
+    phone: phone || "",
+    hire_date: hireDate || null,
+    salary: salary ? Number.parseFloat(salary) : null,
+    employment_type: employmentType,
+    employee_id: "",
+  }
+
+  console.log("📤 FRONTEND: Envoi données employé:", employeeData)
+
+  try {
+    const response = await fetch("/api/create-employee", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(employeeData),
+    })
+
+    const result = await response.json()
+    console.log("📥 FRONTEND: Réponse reçue:", result)
+
+    if (result.success) {
+      console.log("✅ FRONTEND: Employé créé avec succès")
+      showNotification(`Employé "${firstName} ${lastName}" créé avec succès !`, "success")
+      closeEmployeeModal()
+      await refreshDashboard()
+    } else {
+      console.error("❌ FRONTEND: Erreur création employé:", result.message)
+      showNotification("Erreur: " + result.message, "error")
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau:", error)
+    showNotification("Erreur de connexion au serveur. Veuillez réessayer.", "error")
+  }
+}
+
+// Fonction pour créer un poste
+async function createJob() {
+  console.log("💼 FRONTEND: Début création poste")
+
+  const title = document.getElementById("jobTitle").value.trim()
+  const departmentId = document.getElementById("jobDepartment").value
+  const priority = document.getElementById("jobPriority").value
+  const deadline = document.getElementById("jobDeadline").value
+  const employmentType = document.getElementById("jobType").value
+  const salaryMin = document.getElementById("jobSalaryMin").value
+  const salaryMax = document.getElementById("jobSalaryMax").value
+  const description = document.getElementById("jobDescription").value.trim()
+  const requirements = document.getElementById("jobRequirements").value.trim()
+  const responsibilities = document.getElementById("jobResponsibilities").value.trim()
+  const assignedEmployeeId = document.getElementById("jobEmployee").value
+
+  if (!title || !departmentId || !employmentType || !description) {
+    showNotification("Veuillez remplir tous les champs obligatoires", "warning")
+    return
+  }
+
+  const jobData = {
+    title: title,
+    department_id: Number.parseInt(departmentId),
+    description: description,
+    employment_type: employmentType,
+    priority: priority,
+    deadline: deadline || null,
+    salary_min: salaryMin ? Number.parseFloat(salaryMin) : null,
+    salary_max: salaryMax ? Number.parseFloat(salaryMax) : null,
+    requirements: requirements || "",
+    responsibilities: responsibilities || "",
+    assigned_employee_id: assignedEmployeeId ? Number.parseInt(assignedEmployeeId) : null,
+  }
+
+  console.log("📤 FRONTEND: Envoi données poste:", jobData)
+
+  try {
+    const response = await fetch("/api/create-job", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(jobData),
+    })
+
+    const result = await response.json()
+    console.log("📥 FRONTEND: Réponse reçue:", result)
+
+    if (result.success) {
+      console.log("✅ FRONTEND: Poste créé avec succès")
+      showNotification(`Poste "${title}" créé avec succès !`, "success")
+      closeJobModal()
+      await refreshDashboard()
+    } else {
+      console.error("❌ FRONTEND: Erreur création poste:", result.message)
+      showNotification("Erreur: " + result.message, "error")
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau:", error)
+    showNotification("Erreur de connexion au serveur. Veuillez réessayer.", "error")
+  }
+}
+
+// Fonction pour rafraîchir tout le dashboard
+async function refreshDashboard() {
+  console.log("🔄 FRONTEND: Rafraîchissement complet du dashboard")
+  await loadDepartments()
+  await loadEmployees()
+  await loadJobs()
+  await loadApplications() // NOUVEAU: Recharger les candidatures
+  await loadDashboardStats()
+}
+
+// Fonction pour charger les départements
+async function loadDepartments() {
+  console.log("🔄 FRONTEND: Chargement des départements")
+
+  try {
+    const response = await fetch("/api/departments")
+    const result = await response.json()
+
+    if (result.success) {
+      departments = result.departments || []
+      console.log(`✅ FRONTEND: ${departments.length} départements chargés`)
+
+      // Si une recherche est active, refiltrer les résultats
+      if (isSearchActive) {
+        const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim()
+        if (searchTerm) {
+          filterDepartments()
+        } else {
+          displayDepartments()
+        }
+      } else {
+        displayDepartments()
+      }
+    } else {
+      console.error("❌ FRONTEND: Erreur chargement départements:", result.message)
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau chargement départements:", error)
+  }
+}
+
+// Fonction pour charger les employés
+async function loadEmployees() {
+  console.log("🔄 FRONTEND: Chargement des employés")
+
+  try {
+    const response = await fetch("/api/employees")
+    const result = await response.json()
+
+    if (result.success) {
+      employees = result.employees || []
+      console.log(`✅ FRONTEND: ${employees.length} employés chargés`)
+    } else {
+      console.error("❌ FRONTEND: Erreur chargement employés:", result.message)
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau chargement employés:", error)
+  }
+}
+
+// Fonction pour charger les postes
+async function loadJobs() {
+  console.log("🔄 FRONTEND: Chargement des postes")
+
+  try {
+    const response = await fetch("/api/jobs")
+    const result = await response.json()
+
+    if (result.success) {
+      jobs = result.jobs || []
+      console.log(`✅ FRONTEND: ${jobs.length} postes chargés`)
+    } else {
+      console.error("❌ FRONTEND: Erreur chargement postes:", result.message)
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau chargement postes:", error)
+  }
+}
+
+// Fonction pour afficher les départements
+function displayDepartments() {
+  const departmentsList = document.getElementById("departmentsList")
+
+  if (!departmentsList) {
+    console.error("❌ FRONTEND: Element departmentsList non trouvé")
+    return
+  }
+
+  if (departments.length === 0) {
+    departmentsList.innerHTML = `
+            <div class="empty-departments">
+                <div class="empty-icon"><i class="fas fa-building"></i></div>
+                <h4>Aucun département</h4>
+                <p>Commencez par créer votre premier département</p>
+                <button class="empty-btn" onclick="openDepartmentModal()">
+                    <i class="fas fa-plus"></i> Créer Département
+                </button>
+            </div>
+        `
+    return
+  }
+
+  renderDepartmentsList(departments)
+}
+
+// Fonction pour afficher les départements filtrés
+function displayFilteredDepartments(filteredDepts) {
+  const departmentsList = document.getElementById("departmentsList")
+
+  if (!departmentsList) {
+    console.error("❌ FRONTEND: Element departmentsList non trouvé")
+    return
+  }
+
+  if (filteredDepts.length === 0) {
+    departmentsList.innerHTML = `
+            <div class="empty-departments">
+                <div class="empty-icon"><i class="fas fa-search"></i></div>
+                <h4>Aucun résultat trouvé</h4>
+                <p>Aucun département ne correspond à votre recherche</p>
+                <button class="empty-btn" onclick="clearSearch()">
+                    <i class="fas fa-times"></i> Effacer la recherche
+                </button>
+            </div>
+        `
+    return
+  }
+
+  renderDepartmentsList(filteredDepts)
+}
+
+// Fonction pour générer le HTML des départements
+function renderDepartmentsList(deptList) {
+  const departmentsList = document.getElementById("departmentsList")
+  let html = ""
+
+  deptList.forEach((dept) => {
+    const isExpanded = expandedDepartments.has(dept.id)
+    const departmentEmployees = employees.filter((emp) => emp.department_id === dept.id)
+    const departmentJobs = jobs.filter((job) => job.department_id === dept.id)
+
+    html += `
+            <div class="department-card-enhanced" style="border-left: 4px solid ${dept.color || "#e74c3c"}">
+                <div class="department-header">
+                    <div class="department-info">
+                        <h4>${dept.name || "Département sans nom"}</h4>
+                        <p>${dept.description || "Aucune description"}</p>
+                        ${dept.manager_name ? `<span class="manager">👤 ${dept.manager_name}</span>` : ""}
+                    </div>
+                    <div class="department-stats">
+                        <span class="stat-badge employees">
+                            <i class="fas fa-users"></i> ${dept.employee_count || 0}
+                        </span>
+                        <span class="stat-badge jobs">
+                            <i class="fas fa-briefcase"></i> ${dept.job_count || 0}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="department-actions">
+                    <button class="btn-expand ${isExpanded ? "expanded" : ""}" 
+                            onclick="toggleDepartmentExpansion(${dept.id})" 
+                            title="${isExpanded ? "Réduire" : "Voir les détails"}">
+                        <i class="fas fa-chevron-${isExpanded ? "up" : "down"}"></i>
+                        ${isExpanded ? "Réduire" : "Voir Détails"}
+                    </button>
+
+                    <button class="btn-add-job" onclick="openJobModal(${dept.id})" title="Ajouter un poste">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                
+                ${
+                  isExpanded
+                    ? `
+                    <div class="department-details">
+                        <div class="details-tabs">
+                            <div class="tab-section">
+                                <h5><i class="fas fa-users"></i> Employés (${departmentEmployees.length})</h5>
+                                <div class="items-list">
+                                    ${
+                                      departmentEmployees.length === 0
+                                        ? '<p class="empty-message">Aucun employé dans ce département</p>'
+                                        : departmentEmployees
+                                            .map(
+                                              (emp) => `
+                                            <div class="item-card employee-card">
+                                                <div class="item-avatar">
+                                                    ${emp.first_name.charAt(0)}${emp.last_name.charAt(0)}
+                                                </div>
+                                                <div class="item-info">
+                                                    <strong>${emp.first_name} ${emp.last_name}</strong>
+                                                    <span>${emp.position}</span>
+                                                    <small>${emp.email}</small>
+                                                </div>
+                                                <div class="item-actions">
+                                                    <button class="btn-icon-small" onclick="viewEmployeeProfile(${emp.id})" title="Voir le profil">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `,
+                                            )
+                                            .join("")
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="tab-section">
+                                <h5><i class="fas fa-briefcase"></i> Postes (${departmentJobs.length})</h5>
+                                <div class="items-list">
+                                    ${
+                                      departmentJobs.length === 0
+                                        ? '<p class="empty-message">Aucun poste dans ce département</p>'
+                                        : departmentJobs
+                                            .map(
+                                              (job) => `
+                                            <div class="item-card job-card">
+                                                <div class="item-info">
+                                                    <strong>${job.title}</strong>
+                                                    <span>${job.employment_type}</span>
+                                                    <small class="priority-${job.priority}">${job.priority.toUpperCase()}</small>
+                                                    ${job.status === "filled" ? '<small class="status-filled">✅ POURVU</small>' : ""}
+                                                </div>
+                                                <div class="item-actions">
+                                                    <button class="btn-icon-small" onclick="viewJobDetails(${job.id})" title="Voir les détails">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `,
+                                            )
+                                            .join("")
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+                    : ""
+                }
+            </div>
+        `
+  })
+
+  departmentsList.innerHTML = html
+}
+
+// Fonction pour charger les départements dans un select
+function loadDepartmentsInSelect(selectId) {
+  const select = document.getElementById(selectId)
+  if (!select) return
+
+  select.innerHTML = '<option value="">Sélectionner un département</option>'
+
+  departments.forEach((dept) => {
+    const option = document.createElement("option")
+    option.value = dept.id
+    option.textContent = dept.name
+    select.appendChild(option)
+  })
+}
+
+// Fonction pour charger les employés dans un select
+function loadEmployeesInSelect(selectId) {
+  const select = document.getElementById(selectId)
+  if (!select) return
+
+  select.innerHTML = '<option value="">Aucun employé assigné</option>'
+
+  employees.forEach((emp) => {
+    const option = document.createElement("option")
+    option.value = emp.id
+    option.textContent = `${emp.first_name} ${emp.last_name} (${emp.position})`
+    select.appendChild(option)
+  })
+}
+
+function viewEmployeeProfile(employeeId) {
+  console.log("👤 FRONTEND: Ouverture profil employé:", employeeId)
+  window.open(`/employee-profile?id=${employeeId}`, "_blank")
+}
+
+function viewJobDetails(jobId) {
+  console.log("💼 FRONTEND: Navigation vers job-details pour le poste:", jobId)
+  window.location.href = `/job-details?id=${jobId}`
+}
+
+// Fonctions placeholder
+function exportData() {
+  console.log("📊 FRONTEND: Export données")
+  showNotification("Fonctionnalité en cours de développement", "info")
+}
+
+function generateReport() {
+  console.log("📈 FRONTEND: Génération rapport")
+  window.location.href = "/hr-reports"
+}
+
+// ==================== FONCTION DE RECHERCHE CORRIGÉE ====================
+function filterDepartments() {
+  console.log("🔍 FRONTEND: Filtrage départements")
+
+  const searchInput = document.getElementById("searchInput")
+  if (!searchInput) {
+    console.error("❌ FRONTEND: Input de recherche non trouvé")
+    return
+  }
+
+  const searchTerm = searchInput.value.toLowerCase().trim()
+  console.log(`🔍 FRONTEND: Terme de recherche: "${searchTerm}"`)
+
+  // Si le terme de recherche est vide, afficher tous les départements
+  if (!searchTerm) {
+    console.log("🔍 FRONTEND: Recherche vide, affichage de tous les départements")
+    isSearchActive = false
+    filteredDepartments = []
+    displayDepartments()
+    return
+  }
+
+  // Marquer qu'une recherche est active
+  isSearchActive = true
+
+  // Filtrer les départements selon le terme de recherche
+  filteredDepartments = departments.filter((dept) => {
+    const name = (dept.name || "").toLowerCase()
+    const description = (dept.description || "").toLowerCase()
+    const manager = (dept.manager_name || "").toLowerCase()
+
+    const matches = name.includes(searchTerm) || description.includes(searchTerm) || manager.includes(searchTerm)
+
+    if (matches) {
+      console.log(`✅ FRONTEND: Département "${dept.name}" correspond à la recherche`)
+    }
+
+    return matches
+  })
+
+  console.log(`🔍 FRONTEND: ${filteredDepartments.length} départements trouvés pour "${searchTerm}"`)
+
+  // Afficher les départements filtrés
+  displayFilteredDepartments(filteredDepartments)
+}
+
+// Fonction pour effacer la recherche
+function clearSearch() {
+  console.log("🔍 FRONTEND: Effacement de la recherche")
+
+  const searchInput = document.getElementById("searchInput")
+  if (searchInput) {
+    searchInput.value = ""
+  }
+
+  isSearchActive = false
+  filteredDepartments = []
+  displayDepartments()
+}
+
+// Fermer les modales en cliquant à l'extérieur
+document.addEventListener("click", (e) => {
+  if (e.target.classList.contains("modal-overlay")) {
+    e.target.style.display = "none"
+  }
+})
+
+// Mise à jour de la couleur preview
+document.addEventListener("DOMContentLoaded", () => {
+  const colorInput = document.getElementById("departmentColor")
+  const colorPreview = document.querySelector(".color-preview")
+
+  if (colorInput && colorPreview) {
+    colorInput.addEventListener("change", function () {
+      colorPreview.style.backgroundColor = this.value
+    })
+
+    // Initialiser la couleur preview
+    colorPreview.style.backgroundColor = colorInput.value
+  }
+})
+
+// Fonction de notification améliorée
 function showNotification(message, type = "info") {
   const notification = document.createElement("div")
   notification.className = `notification ${type}`
@@ -489,543 +1078,86 @@ function showNotification(message, type = "info") {
   }
 
   const colors = {
-    success: "rgba(39, 174, 96, 0.9)",
-    error: "rgba(231, 76, 60, 0.9)",
-    warning: "rgba(243, 156, 18, 0.9)",
-    info: "rgba(52, 152, 219, 0.9)",
+    success: "linear-gradient(135deg, #27ae60, #2ecc71)",
+    error: "linear-gradient(135deg, #e74c3c, #c0392b)",
+    warning: "linear-gradient(135deg, #f39c12, #e67e22)",
+    info: "linear-gradient(135deg, #3498db, #2980b9)",
   }
 
   notification.innerHTML = `
-    <i class="fas ${icons[type]}"></i>
-    <span>${message}</span>
-    <button class="notification-close" onclick="this.parentElement.remove()">
-      <i class="fas fa-times"></i>
-    </button>
-  `
+        <div class="notification-icon">
+            <i class="fas ${icons[type]}"></i>
+        </div>
+        <div class="notification-content">
+            <span>${message}</span>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `
 
-  // Styles pour la notification
   notification.style.cssText = `
-    position: fixed;
-    top: 2rem;
-    right: 2rem;
-    background: ${colors[type]};
-    color: white;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    z-index: 10000;
-    backdrop-filter: blur(10px);
-    animation: slideInRight 0.3s ease;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    min-width: 300px;
-    max-width: 400px;
-  `
+        position: fixed;
+        top: 2rem;
+        right: 2rem;
+        background: ${colors[type]};
+        color: white;
+        padding: 1rem;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 20000;
+        backdrop-filter: blur(10px);
+        animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        min-width: 320px;
+        max-width: 450px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    `
 
   document.body.appendChild(notification)
 
-  // Supprimer la notification après 4 secondes
   setTimeout(() => {
-    notification.style.animation = "slideOutRight 0.3s ease"
+    notification.style.animation = "slideOutRight 0.3s ease-in"
     setTimeout(() => {
       if (notification.parentElement) {
         document.body.removeChild(notification)
       }
     }, 300)
-  }, 4000)
+  }, 5000)
 }
+function filterApplicationByName() {
+  const input = document.getElementById("applicationSearchInput")
+  const searchTerm = input.value.toLowerCase().trim()
 
-// Ajouter les animations CSS pour les notifications
-const notificationStyle = document.createElement("style")
-notificationStyle.textContent = `
-  @keyframes slideInRight {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes slideOutRight {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-  }
-  
-  .notification-close {
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-    margin-left: auto;
-  }
-  
-  .notification-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-`
-document.head.appendChild(notificationStyle)
-
-// Reste des fonctions existantes...
-function filterDepartments() {
-  const searchTerm = document.getElementById("searchInput").value.toLowerCase()
-  filteredDepartments = departments.filter(
-    (dept) =>
-      dept.name.toLowerCase().includes(searchTerm) ||
-      dept.description.toLowerCase().includes(searchTerm) ||
-      (dept.manager && dept.manager.toLowerCase().includes(searchTerm)),
-  )
-  renderDepartments()
-}
-
-function toggleDepartment(deptId) {
-  expandedDept = expandedDept === deptId ? null : deptId
-  if (!activeTab[deptId]) {
-    activeTab[deptId] = "workers"
-  }
-  renderDepartments()
-}
-
-function switchTab(deptId, tab) {
-  activeTab[deptId] = tab
-  renderDepartments()
-}
-
-function exportData() {
-  const data = {
-    departments: departments,
-    jobs: jobs,
-    employees: employees,
-    applications: applications,
-    exportDate: new Date().toISOString(),
-  }
-
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `hr-data-${new Date().toISOString().split("T")[0]}.json`
-  a.click()
-  URL.revokeObjectURL(url)
-
-  addActivity("Données exportées", "export")
-  showNotification("Données exportées avec succès !", "success")
-}
-
-function generateReport() {
-  const report = {
-    totalDepartments: departments.length,
-    totalJobs: jobs.length,
-    totalEmployees: employees.length,
-    urgentJobs: jobs.filter((j) => j.priority === "urgent").length,
-    pendingApplications: applications.filter((app) => app.status === "pending").length,
-    departmentBreakdown: departments.map((dept) => ({
-      name: dept.name,
-      employees: employees.filter((e) => e.departmentId === dept.id).length,
-      jobs: jobs.filter((j) => j.departmentId === dept.id).length,
-    })),
-  }
-
-  console.log("Rapport RH:", report)
-  showNotification("Rapport généré ! Consultez la console pour les détails.", "success")
-  addActivity("Rapport RH généré", "report")
-}
-
-function clearActivity() {
-  if (confirm("Effacer tout l'historique d'activité ?")) {
-    activityLog = []
-    renderActivity()
-    showNotification("Historique d'activité effacé", "info")
-  }
-}
-
-function updateStats() {
-  document.getElementById("totalDepartments").textContent = departments.length
-  document.getElementById("totalJobs").textContent = jobs.length
-  document.getElementById("totalEmployees").textContent = employees.length
-  document.getElementById("urgentJobs").textContent = jobs.filter((j) => j.priority === "urgent").length
-  document.getElementById("totalApplications").textContent = applications.filter(
-    (app) => app.status === "pending",
-  ).length
-}
-
-function updateDepartmentSelects() {
-  const selects = ["jobDepartment", "employeeDepartment"]
-
-  selects.forEach((selectId) => {
-    const select = document.getElementById(selectId)
-    // Garder la première option
-    const firstOption = select.querySelector('option[value=""]')
-    select.innerHTML = ""
-    if (firstOption) {
-      select.appendChild(firstOption)
-    }
-
-    departments.forEach((dept) => {
-      const option = document.createElement("option")
-      option.value = dept.id
-      option.textContent = dept.name
-      select.appendChild(option)
-    })
+  const filtered = applications.filter((app) => {
+    return (
+      app.candidate_name.toLowerCase().includes(searchTerm) ||
+      app.candidate_email.toLowerCase().includes(searchTerm)
+    )
   })
+
+  renderApplicationsList(filtered)
 }
 
-function updateEmployeeSelects() {
-  const selects = document.querySelectorAll(".employee-select")
+function renderApplicationsList(list) {
+  const container = document.getElementById("applicationsContainer")
 
-  selects.forEach((select) => {
-    const currentValue = select.value
-    const firstOption = select.querySelector('option[value=""]')
-    select.innerHTML = ""
-    if (firstOption) {
-      select.appendChild(firstOption.cloneNode(true))
-    }
+  if (!container) return
 
-    employees.forEach((emp) => {
-      const option = document.createElement("option")
-      option.value = emp.id
-      option.textContent = `${emp.firstName} ${emp.lastName}`
-      select.appendChild(option)
-    })
-
-    select.value = currentValue
-  })
-}
-
-function renderDepartments() {
-  const container = document.getElementById("departmentsList")
-  const depsToShow =
-    filteredDepartments.length > 0 || document.getElementById("searchInput").value ? filteredDepartments : departments
-
-  if (depsToShow.length === 0) {
+  if (list.length === 0) {
     container.innerHTML = `
-      <div class="empty-departments">
-        <div class="empty-icon"><i class="fas fa-building"></i></div>
-        <h4>Aucun département</h4>
-        <p>Commencez par créer votre premier département</p>
-        <button class="empty-btn" onclick="openDepartmentModal()">
-          <i class="fas fa-plus"></i> Créer Département
-        </button>
+      <div class="empty-applications">
+        <i class="fas fa-search"></i>
+        <h4>Aucun résultat</h4>
+        <p>Aucune candidature ne correspond à votre recherche</p>
       </div>
     `
     return
   }
 
-  container.innerHTML = depsToShow
-    .map((dept) => {
-      const deptJobs = jobs.filter((j) => j.departmentId === dept.id)
-      const deptEmployees = employees.filter((e) => e.departmentId === dept.id)
-      const isExpanded = expandedDept === dept.id
-
-      return `
-      <div class="department-dropdown ${isExpanded ? "expanded" : ""}">
-        <div class="department-header" onclick="toggleDepartment(${dept.id})">
-          <div class="department-info">
-            <div class="dept-color" style="background-color: ${dept.color}"></div>
-            <div class="dept-details">
-              <h4>${dept.name}</h4>
-              <div class="dept-stats">${deptEmployees.length} employés • ${deptJobs.length} postes</div>
-            </div>
-          </div>
-          <div class="department-actions">
-            <button class="dept-action-btn delete" onclick="event.stopPropagation(); deleteDepartment(${dept.id})" title="Supprimer">
-              <i class="fas fa-trash"></i>
-            </button>
-            <div class="dropdown-arrow">
-              <i class="fas fa-chevron-down"></i>
-            </div>
-          </div>
-        </div>
-
-        <div class="department-content ${isExpanded ? "expanded" : ""}">
-          <div class="department-tabs">
-            <button class="tab-btn ${activeTab[dept.id] === "workers" ? "active" : ""}" 
-                    onclick="switchTab(${dept.id}, 'workers')">
-              <i class="fas fa-users"></i> Employés (${deptEmployees.length})
-            </button>
-            <button class="tab-btn ${activeTab[dept.id] === "jobs" ? "active" : ""}" 
-                    onclick="switchTab(${dept.id}, 'jobs')">
-              <i class="fas fa-briefcase"></i> Postes (${deptJobs.length})
-            </button>
-          </div>
-
-          <div class="tab-content">
-            ${activeTab[dept.id] === "workers" ? renderWorkersTab(dept, deptEmployees) : renderJobsTab(dept, deptJobs)}
-          </div>
-        </div>
-        <div class="dept-quick-actions">
-          <button class="quick-add-btn" onclick="quickAddEmployee(${dept.id})">
-            <i class="fas fa-user-plus"></i>
-            <span>Ajouter Employé</span>
-          </button>
-          <button class="quick-add-btn" onclick="quickAddJob(${dept.id})">
-            <i class="fas fa-briefcase"></i>
-            <span>Ajouter Poste</span>
-          </button>
-        </div>
-      </div>
-    `
-    })
-    .join("")
-
-  updateEmployeeSelects()
-}
-
-function renderWorkersTab(dept, deptEmployees) {
-  if (deptEmployees.length === 0) {
-    return `
-      <div class="empty-tab">
-        <p>Aucun employé dans ce département</p>
-        <button onclick="setEmployeeDepartment(${dept.id}); openEmployeeModal()">
-          <i class="fas fa-user-plus"></i> Ajouter
-        </button>
-      </div>
-    `
-  }
-
-  return `
-    <div class="workers-list">
-      ${deptEmployees
-        .map(
-          (employee) => `
-        <div class="worker-item" onclick="openEmployeeProfile(${employee.id})">
-          <div class="worker-avatar">${employee.firstName[0]}${employee.lastName[0]}</div>
-          <div class="worker-info">
-            <div class="worker-name">${employee.firstName} ${employee.lastName}</div>
-            <div class="worker-role">${employee.position}</div>
-          </div>
-          <div class="worker-status"></div>
-          <div class="worker-actions">
-            <button class="worker-btn" onclick="event.stopPropagation(); deleteEmployee(${employee.id}, ${dept.id})" title="Supprimer">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
-      `,
-        )
-        .join("")}
-    </div>
-  `
-}
-
-function renderJobsTab(dept, deptJobs) {
-  if (deptJobs.length === 0) {
-    return `
-      <div class="empty-tab">
-        <p>Aucun poste dans ce département</p>
-        <button onclick="setJobDepartment(${dept.id}); openJobModal()">
-          <i class="fas fa-briefcase"></i> Créer
-        </button>
-      </div>
-    `
-  }
-
-  return `
-    <div class="jobs-list">
-      ${deptJobs
-        .map((job) => {
-          const assignedEmployee = job.employeeId ? employees.find((e) => e.id === job.employeeId) : null
-          const deptEmployees = employees.filter((e) => e.departmentId === dept.id)
-
-          return `
-          <div class="job-item" onclick="openJobDetails(${job.id})">
-            <div class="job-header">
-              <div class="job-title">${job.title}</div>
-              <div class="job-priority ${job.priority}">${job.priority}</div>
-            </div>
-            <div class="job-details">
-              <span>${job.type.toUpperCase()}</span>
-              ${job.salary ? `<span>${job.salary}€</span>` : ""}
-            </div>
-            <div class="job-assignment ${assignedEmployee ? "assigned" : ""}">
-              ${
-                assignedEmployee
-                  ? `<i class="fas fa-user"></i> ${assignedEmployee.firstName} ${assignedEmployee.lastName}`
-                  : '<i class="fas fa-user-slash"></i> Non assigné'
-              }
-            </div>
-            <div class="job-actions" onclick="event.stopPropagation()">
-              <select class="assign-select" onchange="assignEmployee(${job.id}, this.value)">
-                <option value="">Assigner à...</option>
-                ${deptEmployees
-                  .map(
-                    (emp) =>
-                      `<option value="${emp.id}" ${job.employeeId === emp.id ? "selected" : ""}>
-                    ${emp.firstName} ${emp.lastName}
-                  </option>`,
-                  )
-                  .join("")}
-              </select>
-              ${
-                assignedEmployee
-                  ? `<button class="job-btn" onclick="unassignEmployee(${job.id})">
-                  <i class="fas fa-user-minus"></i> Retirer
-                </button>`
-                  : ""
-              }
-              <button class="job-btn" onclick="deleteJob(${job.id})" title="Supprimer">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          </div>
-        `
-        })
-        .join("")}
-    </div>
-  `
-}
-
-function setEmployeeDepartment(deptId) {
-  document.getElementById("employeeDepartment").value = deptId
-}
-
-function setJobDepartment(deptId) {
-  document.getElementById("jobDepartment").value = deptId
-}
-
-function addActivity(message, type) {
-  const activity = {
-    id: Date.now(),
-    message: message,
-    type: type,
-    timestamp: new Date(),
-  }
-
-  activityLog.unshift(activity)
-
-  // Garder seulement les 10 dernières activités
-  if (activityLog.length > 10) {
-    activityLog = activityLog.slice(0, 10)
-  }
-
-  renderActivity()
-}
-
-function renderActivity() {
-  const container = document.getElementById("activityTimeline")
-
-  if (activityLog.length === 0) {
-    container.innerHTML = `
-      <div class="empty-activity">
-        <i class="fas fa-info-circle"></i>
-        <p>Aucune activité récente</p>
-      </div>
-    `
-    return
-  }
-
-  container.innerHTML = activityLog
-    .map((activity) => {
-      const timeAgo = getTimeAgo(activity.timestamp)
-      const initials = getInitials(activity.message)
-
-      return `
-      <div class="activity-item ${activity.type}">
-        <div class="activity-avatar">${initials}</div>
-        <div class="activity-info">
-          <p>${activity.message}</p>
-          <span>${timeAgo}</span>
-        </div>
-      </div>
-    `
-    })
+  container.innerHTML = list
+    .map((app) => renderApplicationCardHTML(app))
     .join("")
 }
-
-function getInitials(message) {
-  const words = message.split(" ")
-  return words
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-}
-
-function getTimeAgo(date) {
-  const now = new Date()
-  const diff = now - date
-  const minutes = Math.floor(diff / 60000)
-
-  if (minutes < 1) return "À l'instant"
-  if (minutes < 60) return `Il y a ${minutes} min`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `Il y a ${hours}h`
-
-  const days = Math.floor(hours / 24)
-  return `Il y a ${days}j`
-}
-
-function logout() {
-  if (confirm("Êtes-vous sûr de vouloir vous déconnecter ?")) {
-    localStorage.removeItem("setupCompleted")
-    localStorage.removeItem("companyProfile")
-    window.location.href = "hr-login.html"
-  }
-}
-
-// Fermer les modals en cliquant à l'extérieur
-document.addEventListener("click", (e) => {
-  if (e.target.classList.contains("modal-overlay")) {
-    e.target.classList.remove("show")
-    document.body.style.overflow = "auto"
-  }
-})
-
-// Fermer les modals avec Escape
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    const openModal = document.querySelector(".modal-overlay.show")
-    if (openModal) {
-      openModal.classList.remove("show")
-      document.body.style.overflow = "auto"
-    }
-  }
-})
-
-// Mettre à jour la prévisualisation de couleur
-document.getElementById("departmentColor").addEventListener("input", (e) => {
-  const preview = document.querySelector(".color-preview")
-  if (preview) {
-    preview.style.backgroundColor = e.target.value
-  }
-})
-
-// Raccourcis clavier pour améliorer l'UX
-document.addEventListener("keydown", (e) => {
-  // Ctrl/Cmd + N pour nouveau département
-  if ((e.ctrlKey || e.metaKey) && e.key === "n") {
-    e.preventDefault()
-    openDepartmentModal()
-  }
-
-  // Ctrl/Cmd + J pour nouveau job
-  if ((e.ctrlKey || e.metaKey) && e.key === "j") {
-    e.preventDefault()
-    openJobModal()
-  }
-
-  // Ctrl/Cmd + E pour nouvel employé
-  if ((e.ctrlKey || e.metaKey) && e.key === "e") {
-    e.preventDefault()
-    openEmployeeModal()
-  }
-
-  // Ctrl/Cmd + P pour profil d'entreprise
-  if ((e.ctrlKey || e.metaKey) && e.key === "p") {
-    e.preventDefault()
-    openCompanyProfile()
-  }
-})

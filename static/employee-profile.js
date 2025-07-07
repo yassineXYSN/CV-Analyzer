@@ -2,97 +2,111 @@
 let currentEmployee = null
 let notes = []
 
-// Charger les données de l'employé au chargement de la page
+// Charger les données du candidat au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
-  loadEmployeeData()
-  initializeCircleProgress()
-  loadNotes()
-})
+  loadCandidateData();
+  initializeCircleProgress();
+  loadNotes();
+});
 
-// Charger les données de l'employé depuis localStorage ou URL
-function loadEmployeeData() {
-  // Essayer de récupérer l'ID depuis l'URL
-  const urlParams = new URLSearchParams(window.location.search)
-  const employeeId = urlParams.get("id")
+// Charger les données du candidat depuis l'URL
+function loadCandidateData() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const candidateId = urlParams.get("candidate_id");
 
-  if (employeeId) {
-    // Charger depuis l'API
-    loadEmployeeFromAPI(employeeId)
+  if (candidateId) {
+    loadCandidateFromAPI(candidateId);
   } else {
-    // Essayer localStorage
-    const employeeData = localStorage.getItem("selectedEmployee")
-    if (employeeData) {
-      currentEmployee = JSON.parse(employeeData)
-      displayEmployeeInfo()
-    } else {
-      // Données par défaut si aucune donnée n'est trouvée
-      currentEmployee = {
-        id: 1,
-        first_name: "John",
-        last_name: "Doe",
-        email: "john.doe@company.com",
-        position: "Développeur Full-Stack",
-        department_id: 1,
-        phone: "+33 1 23 45 67 89",
-        hire_date: "2022-01-15",
-        created_at: new Date(),
-      }
-      displayEmployeeInfo()
-    }
+    showNotification("Aucun candidat sélectionné", "error");
   }
 }
 
-// Charger l'employé depuis l'API
-async function loadEmployeeFromAPI(employeeId) {
+// Charger le candidat depuis l'API
+async function loadCandidateFromAPI(candidateId) {
   try {
-    const response = await fetch(`/api/employee/${employeeId}`)
-    if (response.ok) {
-      const result = await response.json()
-      if (result.success) {
-        currentEmployee = result.employee
-        displayEmployeeInfo()
-      }
+    const response = await fetch(`/api/candidate/${candidateId}`);
+    if (!response.ok) throw new Error("Erreur API");
+    
+    const result = await response.json();
+    if (result.success) {
+      const c = result.candidate;
+      displayCandidateInfo(c);
     }
   } catch (error) {
-    console.error("Erreur chargement employé:", error)
-    // Utiliser des données par défaut en cas d'erreur
-    loadEmployeeData()
+    console.error("Erreur chargement candidat:", error);
+    showNotification("Erreur lors du chargement du profil", "error");
   }
 }
 
-// Afficher les informations de l'employé
-function displayEmployeeInfo() {
-  if (!currentEmployee) return
-
+// Afficher les informations du candidat
+function displayCandidateInfo(candidate) {
   // Informations principales
-  document.getElementById("employeeName").textContent = `${currentEmployee.first_name} ${currentEmployee.last_name}`
-  document.getElementById("employeePosition").textContent = currentEmployee.position
-  document.getElementById("employeeEmail").textContent = currentEmployee.email
-  document.getElementById("employeePhone").textContent = currentEmployee.phone || "Non renseigné"
-  document.getElementById("employeeId").textContent =
-    currentEmployee.employee_id || `EMP${String(currentEmployee.id).padStart(3, "0")}`
+  document.getElementById("employeeName").textContent = `${candidate.first_name} ${candidate.last_name}`;
+  document.getElementById("employeePosition").textContent = candidate.title || "Candidat";
+  document.getElementById("employeeEmail").textContent = candidate.email;
+  document.getElementById("employeePhone").textContent = candidate.phone || "Non renseigné";
+  document.getElementById("employeeId").textContent = `CAND${candidate.id}`;
 
   // Avatar avec initiales
-  const avatar = document.getElementById("employeeAvatar")
-  avatar.textContent = `${currentEmployee.first_name[0]}${currentEmployee.last_name[0]}`
+  const avatar = document.getElementById("employeeAvatar");
+const firstInitial = candidate.first_name ? candidate.first_name[0].toUpperCase() : "?"
+const lastInitial  = candidate.last_name ? candidate.last_name[0].toUpperCase() : "?"
+avatar.textContent = `${firstInitial}${lastInitial}`
 
-  // Département
-  document.getElementById("employeeDepartment").textContent =
-    currentEmployee.department_name || getDepartmentName(currentEmployee.department_id)
+  // Département (spécifique aux candidats)
+  document.getElementById("employeeDepartment").textContent = "Candidat externe";
+  document.getElementById("employeeHireDate").textContent = "Non embauché";
 
-  // Date d'embauche
-  if (currentEmployee.hire_date) {
-    const hireDate = new Date(currentEmployee.hire_date)
-    document.getElementById("employeeHireDate").textContent = `Embauché le ${hireDate.toLocaleDateString("fr-FR")}`
-
-    // Calculer les années de service
-    const yearsOfService = Math.floor((new Date() - hireDate) / (365.25 * 24 * 60 * 60 * 1000))
-    document.getElementById("yearsOfService").textContent = yearsOfService
+  // Profil et analyse IA
+  document.getElementById("employeeProfileText").textContent = candidate.profile || "Aucune présentation disponible";
+  
+  if (candidate.analyse) {
+    document.getElementById("employeeAnalysis").textContent = candidate.analyse;
+  } else {
+    document.getElementById("employeeAnalysis").textContent = "Aucune analyse IA disponible";
   }
 
-  // Statistiques simulées
-  document.getElementById("completedProjects").textContent = Math.floor(Math.random() * 20) + 5
-  document.getElementById("performanceRating").textContent = (4 + Math.random()).toFixed(1)
+  // Compétences
+  const skillsList = document.getElementById("employeeSkillsList");
+  skillsList.innerHTML = ""; // Clear existing skills
+
+  let parsedSkills = []
+
+try {
+  parsedSkills = typeof candidate.skills === "string"
+    ? JSON.parse(candidate.skills)
+    : candidate.skills
+} catch (e) {
+  console.warn("Erreur parsing skills", e)
+}
+
+if (parsedSkills.length > 0) {
+  parsedSkills.forEach(skill => {
+    const skillItem = document.createElement("div")
+    skillItem.className = "skill-item"
+
+    if (typeof skill === "string") {
+      const parts = skill.split(":")
+      const name = parts[0].trim()
+      const percent = parts[1] ? parseInt(parts[1]) : 75
+
+      skillItem.innerHTML = `
+        <span class="skill-name">${name}</span>
+        <div class="skill-bar"><div class="skill-progress" style="width: ${percent}%"></div></div>
+        <span class="skill-level">${percent}%</span>
+      `
+    }
+
+    // Ajoute au DOM
+    document.getElementById("employeeSkillsList").appendChild(skillItem)
+  })
+}
+
+
+  // Statistiques simulées pour l'affichage
+  document.getElementById("yearsOfService").textContent = "0";
+  document.getElementById("completedProjects").textContent = "0";
+  document.getElementById("performanceRating").textContent = "N/A";
 }
 
 // Obtenir le nom du département (simulé)
@@ -372,3 +386,94 @@ style.textContent = `
     }
 `
 document.head.appendChild(style)
+
+async function loadCandidateFromAPI(candidateId) {
+  try {
+    const res = await fetch(`/api/candidate/${candidateId}`)
+    const data = await res.json()
+
+    if (!data.success) throw new Error(data.message)
+    const c = data.candidate
+
+    currentEmployee = {
+      id: c.id,
+      first_name: c.first_name,
+      last_name: c.last_name,
+      email: c.email,
+      phone: c.phone,
+      position: c.title || "Candidat",
+      department_name: "Candidat externe",
+      hire_date: null,
+      employee_id: `CAND${c.id}`,
+      profile: c.profile || "",
+      linkedin: c.linkedin,
+      address: c.address
+    }
+
+displayEmployeeInfo(currentEmployee)
+
+function displayEmployeeInfo(employee) {
+  if (!employee) return;
+
+  const name = `${employee.first_name || "?"} ${employee.last_name || ""}`
+  document.getElementById("employeeName").textContent = name
+  document.getElementById("employeePosition").textContent = employee.position || "Candidat"
+  document.getElementById("employeeEmail").textContent = employee.email || "Non renseigné"
+  document.getElementById("employeePhone").textContent = employee.phone || "Non renseigné"
+  document.getElementById("employeeId").textContent = employee.employee_id || "CAND?"
+
+  // Initiales dans l’avatar
+  const avatar = document.getElementById("employeeAvatar")
+  const fi = employee.first_name ? employee.first_name[0].toUpperCase() : "?"
+  const li = employee.last_name ? employee.last_name[0].toUpperCase() : "?"
+  avatar.textContent = `${fi}${li}`
+
+  document.getElementById("employeeDepartment").textContent = employee.department_name || "Candidat externe"
+  document.getElementById("employeeHireDate").textContent = employee.hire_date || "Non embauché"
+}
+
+
+    // Compétences
+    clearSkills()
+    if (Array.isArray(c.skills)) {
+      c.skills.forEach(s => addSkillToUI(s))
+    } else {
+      try {
+        JSON.parse(c.skills).forEach(s => addSkillToUI(s))
+      } catch {}
+    }
+
+    // Facultatif : afficher l’analyse
+    if (c.analyse) {
+      const analyseEl = document.getElementById("employeeAnalysis")
+      if (analyseEl) analyseEl.textContent = c.analyse
+    }
+
+    // Facultatif : afficher le CV résumé ou profil texte
+    const profileEl = document.getElementById("employeeProfileText")
+    if (profileEl && c.profile) {
+      profileEl.textContent = c.profile
+    }
+
+  } catch (err) {
+    console.error("Erreur chargement candidat:", err)
+    showNotification("Erreur lors du chargement du profil candidat", "error")
+  }
+}
+function clearSkills() {
+  const list = document.getElementById("employeeSkillsList")
+  if (list) list.innerHTML = ""
+}
+function addSkillToUI(skill) {
+  const list = document.getElementById("employeeSkillsList")
+  if (!list || !skill) return
+
+  const div = document.createElement("div")
+  div.className = "skill-item"
+  div.innerHTML = `
+    <span class="skill-name">${skill}</span>
+    <div class="skill-bar"><div class="skill-progress" style="width: 75%"></div></div>
+    <span class="skill-level">75%</span>
+  `
+  list.appendChild(div)
+}

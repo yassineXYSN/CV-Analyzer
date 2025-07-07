@@ -12,7 +12,12 @@ body {
   color: #f8fafc;
   overflow-x: hidden;
 }
-
+  .no-skills {
+    padding: 1rem;
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+  }
 /* Background Effects */
 .background-effects {
   position: fixed;
@@ -491,63 +496,7 @@ body {
   color: #2563eb;
 }
 
-/* Timeline */
-.activity-timeline {
-  display: grid;
-  gap: 1.5rem;
-}
 
-.timeline-item {
-  display: flex;
-  gap: 1rem;
-  position: relative;
-}
-
-.timeline-item:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  left: 20px;
-  top: 50px;
-  width: 2px;
-  height: calc(100% + 1.5rem);
-  background: rgba(37, 99, 235, 0.1);
-}
-
-.timeline-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #64748b, #475569);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-.timeline-content {
-  flex: 1;
-  padding-top: 0.25rem;
-}
-
-.timeline-content h4 {
-  color: #f8fafc;
-  margin-bottom: 0.5rem;
-  font-size: 1rem;
-}
-
-.timeline-content p {
-  color: #cbd5e1;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.timeline-date {
-  font-size: 0.8rem;
-  color: #64748b;
-  font-style: italic;
-}
 
 /* Documents */
 .documents-list {

@@ -122,10 +122,10 @@
                 </div>
             </div>
 
-            <!-- Applications -->
+            <!-- Applications et Candidats disponibles -->
             <div class="job-section applications-section">
                 <div class="section-header">
-                    <h3><i class="fas fa-file-alt"></i> Candidatures</h3>
+                    <h3><i class="fas fa-users"></i> Gestion des Candidatures</h3>
                     <div class="filter-buttons">
                         <button class="filter-btn active" onclick="filterApplications('all')">Toutes</button>
                         <button class="filter-btn" onclick="filterApplications('pending')">En attente</button>
@@ -133,8 +133,23 @@
                         <button class="filter-btn" onclick="filterApplications('accepted')">Acceptées</button>
                     </div>
                 </div>
+                
+                <!-- Candidatures existantes -->
                 <div class="applications-list" id="applicationsList">
                     <!-- Applications will be loaded here -->
+                </div>
+                
+                <!-- Section pour ajouter des candidats -->
+                <div class="add-candidates-section">
+                    <div class="section-header">
+                        <h4><i class="fas fa-user-plus"></i> Ajouter des candidats</h4>
+                        <button class="btn-add-candidate" onclick="showAvailableCandidates()">
+                            <i class="fas fa-search"></i> Parcourir les candidats
+                        </button>
+                    </div>
+                    <div class="available-candidates" id="availableCandidates" style="display: none;">
+                        <!-- Available candidates will be loaded here -->
+                    </div>
                 </div>
             </div>
         </div>
