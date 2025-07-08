@@ -18,6 +18,19 @@ body {
     color: #94a3b8;
     font-style: italic;
   }
+  .info-list {
+  list-style: none;
+  padding-left: 0;
+  color: #f8fafc;
+}
+
+.info-list li {
+  margin-bottom: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+
 /* Background Effects */
 .background-effects {
   position: fixed;

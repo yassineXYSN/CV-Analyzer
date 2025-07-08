@@ -40,6 +40,17 @@ function loadPersonData() {
 
 // Afficher les informations du candidat
 function displayCandidateInfo(candidate) {
+
+const nameEl = document.getElementById("employeeName");
+  if (!nameEl) {
+    console.warn("⛔ DOM non prêt, employeeName introuvable");
+    return;
+  }
+
+  const educationList = document.getElementById("employeeEducationList");
+const langList = document.getElementById("employeeLanguagesList");
+const certList = document.getElementById("employeeCertificatesList");
+
   // Informations principales
   document.getElementById("employeeName").textContent = `${candidate.first_name} ${candidate.last_name}`;
   document.getElementById("employeePosition").textContent = candidate.title || "Candidat";
@@ -97,16 +108,57 @@ if (parsedSkills.length > 0) {
       `
     }
 
-    // Ajoute au DOM
     document.getElementById("employeeSkillsList").appendChild(skillItem)
   })
 }
 
+// ✅ Ce bloc est maintenant *en dehors* du if
+const educationData = parseJsonSafe(candidate.education);
+const langData = parseJsonSafe(candidate.languages);
+const certData = parseJsonSafe(candidate.certificates);
+
+console.log("🎓 Éducation :", educationData);
+console.log("🌍 Langues :", langData);
+console.log("📜 Certificats :", certData);
+
+// Éducation
+educationList.innerHTML = "";
+if (Array.isArray(educationData) && educationData.length > 0) {
+  educationData.forEach(item => {
+    const li = document.createElement("li");
+    li.textContent = `${item.degree} - ${item.institution} (${item.years})`;
+    educationList.appendChild(li);
+  });
+} else {
+  educationList.innerHTML = "<li>Aucune information</li>";
+}
+
+// Langues
+langList.innerHTML = "";
+if (Array.isArray(langData) && langData.length > 0) {
+  langData.forEach(lang => {
+    const li = document.createElement("li");
+    li.textContent = lang;
+    langList.appendChild(li);
+  });
+} else {
+  langList.innerHTML = "<li>Aucune langue renseignée</li>";
+}
+
+// Certificats
+certList.innerHTML = "";
+if (Array.isArray(certData) && certData.length > 0) {
+  certData.forEach(cert => {
+    const li = document.createElement("li");
+    li.textContent = cert;
+    certList.appendChild(li);
+  });
+} else {
+  certList.innerHTML = "<li>Aucun certificat disponible</li>";
+}
 
   // Statistiques simulées pour l'affichage
-  document.getElementById("yearsOfService").textContent = "0";
-  document.getElementById("completedProjects").textContent = "0";
-  document.getElementById("performanceRating").textContent = "N/A";
+
 }
 
 // Obtenir le nom du département (simulé)
@@ -133,29 +185,6 @@ function initializeCircleProgress() {
 // Fonction pour retourner au dashboard
 function goBackToDashboard() {
   window.location.href = "/dashboard"
-}
-
-// Fonctions pour les actions
-function editEmployee() {
-  showNotification("Fonction de modification en cours de développement", "info")
-}
-
-function exportProfile() {
-  const profileData = {
-    employee: currentEmployee,
-    exportDate: new Date().toISOString(),
-    notes: notes,
-  }
-
-  const blob = new Blob([JSON.stringify(profileData, null, 2)], { type: "application/json" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `profil_${currentEmployee.first_name}_${currentEmployee.last_name}.json`
-  a.click()
-  URL.revokeObjectURL(url)
-
-  showNotification("Profil exporté avec succès !", "success")
 }
 
 function addSkill() {
@@ -394,6 +423,7 @@ async function loadCandidateFromAPI(candidateId) {
 
     if (!data.success) throw new Error(data.message)
     const c = data.candidate
+    console.log("📦 Données reçues du candidat :", c);
 
     currentEmployee = {
       id: c.id,
@@ -436,6 +466,7 @@ displayEmployeeInfo(currentEmployee)
     if (profileEl && c.profile) {
       profileEl.textContent = c.profile
     }
+setTimeout(() => displayCandidateInfo(c), 0);
 
   } catch (err) {
     console.error("Erreur chargement candidat:", err)
@@ -530,5 +561,14 @@ async function loadEmployeeFromAPI(employeeId) {
   } catch (e) {
     console.error("Erreur chargement employé:", e)
     showNotification("Impossible de charger le profil employé", "error")
+  }
+}
+function parseJsonSafe(value) {
+  try {
+    const once = typeof value === "string" ? JSON.parse(value) : value;
+    return typeof once === "string" ? JSON.parse(once) : once;
+  } catch (e) {
+    console.warn("Erreur de parsing JSON :", e);
+    return [];
   }
 }

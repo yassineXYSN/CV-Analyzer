@@ -235,36 +235,6 @@ async def scan_file(
         "candidate_id": candidate_id
     })
 
-@app.get("/api/candidate/{candidate_id}")
-async def get_candidate(candidate_id: int):
-    db = SessionLocal()
-    try:
-        candidate = db.query(models.ProfileCandidat).filter(models.ProfileCandidat.id == candidate_id).first()
-        if not candidate:
-            return {"success": False, "message": "Candidat introuvable"}
-
-        contact = candidate.contact
-        analyse = candidate.analyse
-
-        return {
-            "success": True,
-            "candidate": {
-                "id": candidate.id,
-                "first_name": candidate.name.split(" ")[0] if candidate.name else "",
-                "last_name": " ".join(candidate.name.split(" ")[1:]) if candidate.name else "",
-                "title": candidate.title,
-                "profile": candidate.profile,
-                "skills": candidate.skills,
-                "email": contact.email if contact else None,
-                "phone": contact.phone if contact else None,
-                "analyse": analyse.analyse if analyse else None
-            }
-        }
-    except Exception as e:
-        print(f"Erreur récupération candidat: {str(e)}")
-        return {"success": False, "message": "Erreur serveur"}
-    finally:
-        db.close()
 
 # Routes pour les pages
 @app.get("/login", response_class=HTMLResponse)
@@ -891,6 +861,9 @@ def get_employee(employee_id: int):
         if not emp:
             return {"success": False, "message": "Employé non trouvé"}
 
+        contact = getattr(emp, "contact", None)
+        analyse = getattr(emp, "analyse", None)
+
         return {
             "success": True,
             "employee": {
@@ -901,14 +874,21 @@ def get_employee(employee_id: int):
                 "phone": emp.phone,
                 "position": emp.position,
                 "department_id": emp.department_id,
-                "hire_date": emp.hire_date.isoformat() if emp.hire_date else None,
                 "employee_id": emp.employee_id,
+                "hire_date": emp.hire_date.isoformat() if emp.hire_date else None,
                 "skills": emp.skills,
-                "address": emp.address,
+                "profile": emp.profile,
+                "education": emp.education,
+                "languages": emp.languages,
+                "certificates": emp.certificates,
+                "analyse": analyse.analyse if analyse else None,
+                "linkedin": contact.linkedin if contact else None,
+                "address": emp.address or (contact.address if contact else None)
             }
         }
     finally:
         db.close()
+
 
 
 @app.get("/api/candidate/{candidate_id}")
@@ -919,8 +899,8 @@ async def get_candidate(candidate_id: int):
         if not candidate:
             return {"success": False, "message": "Candidat introuvable"}
 
-        contact = candidate.contact  # via relationship
-        analyse = candidate.analyse  # via relationship
+        contact = candidate.contact
+        analyse = candidate.analyse
 
         return {
             "success": True,
@@ -944,6 +924,7 @@ async def get_candidate(candidate_id: int):
         }
     finally:
         db.close()
+
 
 
 

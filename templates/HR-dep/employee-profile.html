@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profil Employé - CV Analyzer Pro</title>
-    <link rel="stylesheet" href="/static/employee-profile.css">
+    <link rel="stylesheet" href="/static/employee-profile/employee-profile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -26,12 +26,7 @@
             </button>
             <h1><i class="fas fa-user"></i> Profil Employé</h1>
             <div class="header-actions">
-                <button class="action-btn" onclick="editEmployee()">
-                    <i class="fas fa-edit"></i> Modifier
-                </button>
-                <button class="action-btn" onclick="exportProfile()">
-                    <i class="fas fa-download"></i> Exporter
-                </button>
+
             </div>
         </div>
     </header>
@@ -58,31 +53,8 @@
                 </div>
             </div>
 
-            <!-- Quick Stats -->
-            <div class="quick-stats">
-                <div class="stat-item">
-                    <div class="stat-icon"><i class="fas fa-calendar"></i></div>
-                    <div class="stat-info">
-                        <h3 id="yearsOfService">0</h3>
-                        <p>Années de service</p>
-                    </div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-icon"><i class="fas fa-tasks"></i></div>
-                    <div class="stat-info">
-                        <h3 id="completedProjects">0</h3>
-                        <p>Projets terminés</p>
-                    </div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-icon"><i class="fas fa-star"></i></div>
-                    <div class="stat-info">
-                        <h3 id="performanceRating">4.5</h3>
-                        <p>Note performance</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+
+
 
         <!-- Main Grid -->
         <div class="profile-grid">
@@ -123,30 +95,17 @@
                 </div>
             </section>
 
-            <!-- Performance Metrics -->
+            <!-- Documents -->
             <section class="profile-section">
                 <div class="section-header">
-                    <h3><i class="fas fa-chart-line"></i> Métriques de Performance</h3>
+                    <h3><i class="fas fa-file-alt"></i> Documents</h3>
+                        <i class="fas fa-upload"></i> Ajouter
+                    </button>
                 </div>
-                <div class="performance-metrics">
-                    <div class="metric-circle">
-                        <div class="circle-progress" data-percentage="85">
-                            <span>85%</span>
-                        </div>
-                        <label>Productivité</label>
-                    </div>
-                    <div class="metric-circle">
-                        <div class="circle-progress" data-percentage="92">
-                            <span>92%</span>
-                        </div>
-                        <label>Qualité</label>
-                    </div>
-                    <div class="metric-circle">
-                        <div class="circle-progress" data-percentage="78">
-                            <span>78%</span>
-                        </div>
-                        <label>Collaboration</label>
-                    </div>
+                <div class="documents-list">
+                   <div class="notes-list" id="notesList"></div>
+
+                    
                 </div>
             </section>
 
@@ -169,48 +128,30 @@
                 </div>
                 <p id="employeeAnalysis" class="profile-paragraph"></p>
             </section>
+           <!-- Éducation -->
+<section class="profile-section">
+    <div class="section-header">
+        <h3><i class="fas fa-graduation-cap"></i> Éducation</h3>
+    </div>
+    <ul id="employeeEducationList" class="info-list"></ul>
+</section>
 
+<!-- Langues -->
+<section class="profile-section">
+    <div class="section-header">
+        <h3><i class="fas fa-language"></i> Langues</h3>
+    </div>
+    <ul id="employeeLanguagesList" class="info-list"></ul>
+</section>
+
+<!-- Certificats -->
+<section class="profile-section">
+    <div class="section-header">
+        <h3><i class="fas fa-certificate"></i> Certificats</h3>
+    </div>
+    <ul id="employeeCertificatesList" class="info-list"></ul>
+</section>
             
-
-            <!-- Documents -->
-            <section class="profile-section">
-                <div class="section-header">
-                    <h3><i class="fas fa-file-alt"></i> Documents</h3>
-                        <i class="fas fa-upload"></i> Ajouter
-                    </button>
-                </div>
-                <div class="documents-list">
-                   <div class="notes-list" id="notesList"></div>
-
-                    
-                </div>
-            </section>
-
-            <!-- HR Notes -->
-            <section class="profile-section">
-                <div class="section-header">
-                    <h3><i class="fas fa-sticky-note"></i> Notes RH</h3>
-                    <button class="add-note-btn" onclick="addNote()">
-                        <i class="fas fa-plus"></i> Ajouter Note
-                    </button>
-                </div>
-                <div class="notes-list" id="notesList">
-                    <div class="note-item">
-                        <div class="note-header">
-                            <span class="note-author">Sarah Johnson</span>
-                            <span class="note-date">15/03/2024</span>
-                        </div>
-                        <p class="note-content">Excellent travail sur le projet Alpha. Montre de bonnes capacités de leadership.</p>
-                    </div>
-                    <div class="note-item">
-                        <div class="note-header">
-                            <span class="note-author">Mike Wilson</span>
-                            <span class="note-date">10/03/2024</span>
-                        </div>
-                        <p class="note-content">Formation React terminée avec succès. Prêt pour des projets plus complexes.</p>
-                    </div>
-                </div>
-            </section>
         </div>
     </div>
 
@@ -238,6 +179,6 @@
         </div>
     </div>
 
-    <script src="/static/employee-profile.js"></script>
+    <script src="/static/employee-profile/employee-profile.js"></script>
 </body>
 </html>
