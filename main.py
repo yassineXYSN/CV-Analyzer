@@ -1080,7 +1080,8 @@ async def apply_to_job(job_id: int, application_data: ApplicationRequest, reques
             job_id=job_id,
             candidate_profile_id=candidate_profile.id,
             status='pending',
-            source='job_portal'
+            source='job_portal',
+            user_id=current_user.id
         )
         
         db.add(new_application)
