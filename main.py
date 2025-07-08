@@ -883,6 +883,34 @@ async def get_employees():
         print(f"❌ EMP LIST API: Erreur critique: {e}")
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
+@app.get("/api/employee/{employee_id}")
+def get_employee(employee_id: int):
+    db = SessionLocal()
+    try:
+        emp = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+        if not emp:
+            return {"success": False, "message": "Employé non trouvé"}
+
+        return {
+            "success": True,
+            "employee": {
+                "id": emp.id,
+                "first_name": emp.first_name,
+                "last_name": emp.last_name,
+                "email": emp.email,
+                "phone": emp.phone,
+                "position": emp.position,
+                "department_id": emp.department_id,
+                "hire_date": emp.hire_date.isoformat() if emp.hire_date else None,
+                "employee_id": emp.employee_id,
+                "skills": emp.skills,
+                "address": emp.address,
+            }
+        }
+    finally:
+        db.close()
+
+
 @app.get("/api/candidate/{candidate_id}")
 async def get_candidate(candidate_id: int):
     db = SessionLocal()

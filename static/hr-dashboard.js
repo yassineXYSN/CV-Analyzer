@@ -963,9 +963,24 @@ function loadEmployeesInSelect(selectId) {
 }
 
 function viewEmployeeProfile(employeeId) {
-  console.log("👤 FRONTEND: Ouverture profil employé:", employeeId)
-  window.open(`/employee-profile?id=${employeeId}`, "_blank")
+  const employee = employees.find(e => e.id === employeeId)
+
+  if (!employee) {
+    showNotification("Employé introuvable", "error")
+    return
+  }
+
+  // S'il a une propriété candidate_id, alors il vient d'un candidat
+  if (employee.candidate_id) {
+    console.log("➡️ Ouvrir comme candidat")
+    window.open(`/employee-profile?candidate_id=${employee.candidate_id}`, "_blank")
+  } else {
+    console.log("➡️ Ouvrir comme employé normal")
+    window.open(`/employee-profile?id=${employeeId}`, "_blank")
+  }
 }
+
+
 
 function viewJobDetails(jobId) {
   console.log("💼 FRONTEND: Navigation vers job-details pour le poste:", jobId)

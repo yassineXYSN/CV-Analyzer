@@ -4,10 +4,11 @@ let notes = []
 
 // Charger les données du candidat au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
-  loadCandidateData();
+  loadPersonData(); // 👈 gère candidat ou employé
   initializeCircleProgress();
   loadNotes();
 });
+
 
 // Charger les données du candidat depuis l'URL
 function loadCandidateData() {
@@ -20,23 +21,22 @@ function loadCandidateData() {
     showNotification("Aucun candidat sélectionné", "error");
   }
 }
+function loadPersonData() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const candidateId = urlParams.get("candidate_id");
+  const employeeId = urlParams.get("id");
 
-// Charger le candidat depuis l'API
-async function loadCandidateFromAPI(candidateId) {
-  try {
-    const response = await fetch(`/api/candidate/${candidateId}`);
-    if (!response.ok) throw new Error("Erreur API");
-    
-    const result = await response.json();
-    if (result.success) {
-      const c = result.candidate;
-      displayCandidateInfo(c);
-    }
-  } catch (error) {
-    console.error("Erreur chargement candidat:", error);
-    showNotification("Erreur lors du chargement du profil", "error");
+  if (candidateId) {
+    loadCandidateFromAPI(candidateId);
+  } else if (employeeId) {
+    loadEmployeeFromAPI(employeeId);
+  } else {
+    showNotification("Aucun profil à afficher", "error");
   }
 }
+
+// Charger le candidat depuis l'API
+
 
 // Afficher les informations du candidat
 function displayCandidateInfo(candidate) {
@@ -412,25 +412,7 @@ async function loadCandidateFromAPI(candidateId) {
 
 displayEmployeeInfo(currentEmployee)
 
-function displayEmployeeInfo(employee) {
-  if (!employee) return;
 
-  const name = `${employee.first_name || "?"} ${employee.last_name || ""}`
-  document.getElementById("employeeName").textContent = name
-  document.getElementById("employeePosition").textContent = employee.position || "Candidat"
-  document.getElementById("employeeEmail").textContent = employee.email || "Non renseigné"
-  document.getElementById("employeePhone").textContent = employee.phone || "Non renseigné"
-  document.getElementById("employeeId").textContent = employee.employee_id || "CAND?"
-
-  // Initiales dans l’avatar
-  const avatar = document.getElementById("employeeAvatar")
-  const fi = employee.first_name ? employee.first_name[0].toUpperCase() : "?"
-  const li = employee.last_name ? employee.last_name[0].toUpperCase() : "?"
-  avatar.textContent = `${fi}${li}`
-
-  document.getElementById("employeeDepartment").textContent = employee.department_name || "Candidat externe"
-  document.getElementById("employeeHireDate").textContent = employee.hire_date || "Non embauché"
-}
 
 
     // Compétences
@@ -476,4 +458,77 @@ function addSkillToUI(skill) {
     <span class="skill-level">75%</span>
   `
   list.appendChild(div)
+}
+function displayEmployeeInfo(employee) {
+  if (!employee) return;
+
+  const name = `${employee.first_name || "?"} ${employee.last_name || ""}`
+  document.getElementById("employeeName").textContent = name
+  document.getElementById("employeePosition").textContent = employee.position || "Candidat"
+  document.getElementById("employeeEmail").textContent = employee.email || "Non renseigné"
+  document.getElementById("employeePhone").textContent = employee.phone || "Non renseigné"
+  document.getElementById("employeeId").textContent = employee.employee_id || "CAND?"
+
+  // Initiales dans l’avatar
+  const avatar = document.getElementById("employeeAvatar")
+  const fi = employee.first_name ? employee.first_name[0].toUpperCase() : "?"
+  const li = employee.last_name ? employee.last_name[0].toUpperCase() : "?"
+  avatar.textContent = `${fi}${li}`
+
+  document.getElementById("employeeDepartment").textContent = employee.department_name || "Candidat externe"
+  document.getElementById("employeeHireDate").textContent = employee.hire_date || "Non embauché"
+}
+
+async function loadEmployeeFromAPI(employeeId) {
+  try {
+    const res = await fetch(`/api/employee/${employeeId}`)
+    const data = await res.json()
+
+    if (!data.success) throw new Error(data.message)
+    const e = data.employee
+
+    currentEmployee = {
+      id: e.id,
+      first_name: e.first_name,
+      last_name: e.last_name,
+      email: e.email,
+      phone: e.phone,
+      position: e.position || "Employé",
+      department_name: "Département inconnu",
+      hire_date: e.hire_date || "Non précisé",
+      employee_id: e.employee_id || `EMP${e.id}`,
+      skills: e.skills || [],
+      address: e.address || "",
+    }
+
+    displayEmployeeInfo(currentEmployee)
+
+    // Afficher les compétences (skills = ["Python: 80%", ...])
+    const container = document.getElementById("employeeSkillsList")
+    container.innerHTML = ""
+    if (Array.isArray(currentEmployee.skills)) {
+      currentEmployee.skills.forEach((skill) => {
+        const div = document.createElement("div")
+        div.className = "skill-item"
+
+        const [name, percentText] = skill.split(":")
+        const percent = percentText ? parseInt(percentText) : 75
+
+        div.innerHTML = `
+          <span class="skill-name">${name.trim()}</span>
+          <div class="skill-bar"><div class="skill-progress" style="width: ${percent}%"></div></div>
+          <span class="skill-level">${percent}%</span>
+        `
+        container.appendChild(div)
+      })
+    }
+
+    // Afficher un texte de présentation fictif
+    document.getElementById("employeeProfileText").textContent =
+      `Employé dans le poste de ${currentEmployee.position}. Adresse : ${currentEmployee.address}`
+
+  } catch (e) {
+    console.error("Erreur chargement employé:", e)
+    showNotification("Impossible de charger le profil employé", "error")
+  }
 }
