@@ -1,4 +1,3 @@
-console.log('Header component script loaded');
 // Header Component JavaScript
 class HeaderComponent {
     constructor() {
@@ -7,10 +6,7 @@ class HeaderComponent {
     }
 
     init() {
-        this.setupEventListeners();
-        console.log('HeaderComponent initialized');
         this.checkAuthStatus();
-        console.log('checkAuthStatus called');
         this.setActivePage();
     }
 
@@ -36,41 +32,60 @@ class HeaderComponent {
         // User menu dropdown - FIXED
         const userMenuTrigger = document.getElementById('userMenuTrigger');
         const userDropdown = document.getElementById('userDropdown');
-        
+        console.log('userMenuTrigger:', userMenuTrigger);
+        console.log('userDropdown:', userDropdown);
+
+        console.log('Setting up user menu dropdown');
+
         if (userMenuTrigger && userDropdown) {
+            const closeDropdown = () => {
+                userMenuTrigger.classList.remove('active');
+                userDropdown.classList.remove('show');
+                console.log('Setting up user menu dropdown');
+            };
+
             userMenuTrigger.addEventListener('click', (e) => {
+                console.log('User menu trigger clicked');
                 e.stopPropagation();
-                userMenuTrigger.classList.toggle('active');
-                userDropdown.classList.toggle('show');
+                const isOpen = userDropdown.classList.contains('show');
+
+                // Close others if needed
+                document.querySelectorAll('.user-dropdown.show').forEach(d => d.classList.remove('show'));
+                document.querySelectorAll('.user-menu-trigger.active').forEach(t => t.classList.remove('active'));
+
+                if (!isOpen) {
+                    userMenuTrigger.classList.add('active');
+                    userDropdown.classList.add('show');
+                }
             });
 
-            // Close dropdown when clicking outside - FIXED
+            // Close on outside click
             document.addEventListener('click', (e) => {
-                if (!userMenuTrigger.contains(e.target) && 
-                    !userDropdown.contains(e.target) &&
-                    userDropdown.classList.contains('show')) {
-                    userMenuTrigger.classList.remove('active');
-                    userDropdown.classList.remove('show');
+                if (!userMenuTrigger.contains(e.target) && !userDropdown.contains(e.target)) {
+                    closeDropdown();
                 }
+            });
+
+            // Close on Esc
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeDropdown();
             });
         }
-
-        // Close mobile menu when clicking on links
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                if (navMenu && navMenu.classList.contains('active')) {
-                    hamburger.classList.remove('active');
-                    navMenu.classList.remove('active');
-                    document.body.style.overflow = 'auto';
-                }
-            });
-        });
     }
 
     async checkAuthStatus() {
+        this.currentUser = {
+        id: 1,
+        email: 'johndoe@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        google_id: null,
+        profile_picture: '', // Or provide a real URL
+        is_active: 1,
+        is_verified: 1
+    };
+    this.setUser(this.currentUser);
         try {
-            console.log('Checking authentication status...');
             // First try to check via API
             const response = await fetch('/api/auth/status', {
                 credentials: 'include'
@@ -94,7 +109,6 @@ class HeaderComponent {
             this.setGuest();
             
         } catch (error) {
-            console.log('Auth check failed, checking for server-side user data');
             
             // Fallback: check if we have user data from server
             if (window.currentUser) {
@@ -107,21 +121,26 @@ class HeaderComponent {
 
     setUser(user) {
         this.currentUser = user;
-        
-        // Show user menu, hide guest menu
+
         const userMenuContainer = document.getElementById('userMenuContainer');
         const guestMenuContainers = document.querySelectorAll('.guest-menu-container');
-        
+
         if (userMenuContainer) {
             userMenuContainer.style.display = 'block';
         }
-        
+
         guestMenuContainers.forEach(container => {
             container.style.display = 'none';
         });
 
-        // Update user info in the menu
         this.updateUserInfo(user);
+        this.setupEventListeners();
+
+        // ✅ Set profile link dynamically
+        const profileLink = document.getElementById('profileLink');
+        if (profileLink && user.id) {
+            profileLink.href = `/profile/by_user/${user.id}`;
+        }
     }
 
     setGuest() {

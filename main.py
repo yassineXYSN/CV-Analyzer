@@ -62,6 +62,7 @@ def get_db():
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
     """Get current user from session"""
     session_token = request.cookies.get("session_token")
+    print(f"Session token: {session_token}")
     if not session_token:
         return None
     return get_user_from_session(db, session_token)
@@ -258,10 +259,7 @@ def profile_detail(request: Request, candidate_id: int, db: Session = Depends(ge
         
         contact = db.query(models.Contact).filter(models.Contact.id == profile.contact_id).first()
         analyse = db.query(models.AnalyseCandidat).filter(models.AnalyseCandidat.id == profile.analyse_id).first()
-        
-        # Debug: afficher le type et contenu de profile.skills
-        print(f"Profile skills type: {type(profile.skills)}")
-        print(f"Profile skills content: {profile.skills}")
+
         
         # Parse skills to extract percentages
         parsed_skills = parse_skills(profile.skills)
@@ -351,6 +349,86 @@ def profile_detail(request: Request, candidate_id: int, db: Session = Depends(ge
             "parsed_skills": [],
             "current_user": current_user
         })
+
+@app.get("/profile/by_user/{user_id}", response_class=HTMLResponse)
+def profile_by_user_id(request: Request, user_id: int, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+
+    try:
+        # Find the candidate profile by user_id
+        profile = db.query(models.ProfileCandidat).filter(models.ProfileCandidat.user_id == user_id).first()
+        if not profile:
+            print(f"Profile not found for user ID: {user_id}")
+            return templates.TemplateResponse("client-dep/profile_detail.html", {
+                "request": request,
+                "profile": None,
+                "contact": None,
+                "analyse": None,
+                "parsed_skills": [],
+                "current_user": current_user
+            })
+
+        contact = db.query(models.Contact).filter(models.Contact.id == profile.contact_id).first()
+        analyse = db.query(models.AnalyseCandidat).filter(models.AnalyseCandidat.id == profile.analyse_id).first()
+        parsed_skills = parse_skills(profile.skills)
+
+        # Parse fields
+        def parse_json_field(field):
+            try:
+                if isinstance(field, str):
+                    return json.loads(field)
+                return field
+            except:
+                return []
+
+        parsed_education = parse_json_field(profile.education)
+        parsed_languages = parse_json_field(profile.languages)
+        parsed_certificates = parse_json_field(profile.certificates)
+
+        class ProfileData:
+            def __init__(self, **kwargs):
+                for key, value in kwargs.items():
+                    setattr(self, key, value)
+
+        profile_data = ProfileData(
+            id=profile.id,
+            name=profile.name,
+            title=profile.title,
+            profile=profile.profile,
+            education=parsed_education,
+            languages=parsed_languages,
+            certificates=parsed_certificates,
+            years_of_experience=profile.yearOfExperience,
+            profile_picture=profile.profile_picture,
+            experience=getattr(profile, 'experience', None),
+            projects=getattr(profile, 'projects', None),
+            hobbies=getattr(profile, 'hobbies', None),
+            references=getattr(profile, 'references', None),
+            additional_info=getattr(profile, 'additional_info', None)
+        )
+
+        return templates.TemplateResponse("client-dep/profile_detail.html", {
+            "request": request,
+            "profile": profile_data,
+            "contact": contact,
+            "analyse": analyse,
+            "parsed_skills": parsed_skills,
+            "current_user": current_user
+        })
+
+    except Exception as e:
+        print(f"Erreur dans profile_by_user_id: {e}")
+        import traceback
+        traceback.print_exc()
+        return templates.TemplateResponse("client-dep/profile_detail.html", {
+            "request": request,
+            "profile": None,
+            "contact": None,
+            "analyse": None,
+            "parsed_skills": [],
+            "current_user": current_user
+        })
+
 
 class TopicRequest(BaseModel):
     topic: str
@@ -603,7 +681,6 @@ async def signup_step2(
         ],
         "title": "COMPUTER SCIENCE STUDENT",
         "yearsOfExperience": "0",
-        "profilePic": "/static/client-dep/images/placeholder.svg"
     }
     skills_titles = [skill.split(":")[0] for skill in data_json["skills"]]
     skills_titles_str = ", ".join(skills_titles)
@@ -992,7 +1069,7 @@ async def apply_to_job(job_id: int, application_data: ApplicationRequest, reques
         
         # Check if application already exists
         existing_application = db.query(Application).filter(
-            and_(Application.job_id == job_id, Application.user_id == current_user.id)
+            and_(Application.job_id == job_id, Application.candidate_profile_id == ProfileCandidat.id)
         ).first()
         
         if existing_application:
@@ -1002,7 +1079,6 @@ async def apply_to_job(job_id: int, application_data: ApplicationRequest, reques
         new_application = Application(
             job_id=job_id,
             candidate_profile_id=candidate_profile.id,
-            user_id=current_user.id,
             status='pending',
             source='job_portal'
         )

@@ -101,6 +101,7 @@ def create_user(db: Session, email: str, password: str, first_name: str, last_na
         first_name=first_name,
         last_name=last_name,
         is_active=1,
+        profile_picture=None,
         is_verified=0
     )
     db.add(user)

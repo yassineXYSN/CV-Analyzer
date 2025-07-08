@@ -29,7 +29,7 @@
                     <span class="user-name" id="userName">Utilisateur</span>
                     <i class="fas fa-chevron-down user-menu-arrow"></i>
                 </div>
-                
+
                 <div class="user-dropdown" id="userDropdown">
                     <div class="user-dropdown-header">
                         <div class="user-info">
@@ -42,32 +42,17 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="user-dropdown-menu">
-                        <a href="/dashboard" class="dropdown-item">
-                            <i class="fas fa-tachometer-alt"></i>
-                            <span>Tableau de bord</span>
-                        </a>
-                        <a href="/profile" class="dropdown-item">
-                            <i class="fas fa-user-circle"></i>
-                            <span>Mon profil</span>
-                        </a>
-                        <a href="/applications" class="dropdown-item">
-                            <i class="fas fa-briefcase"></i>
-                            <span>Mes candidatures</span>
-                        </a>
-                        <a href="/saved-jobs" class="dropdown-item">
-                            <i class="fas fa-heart"></i>
-                            <span>Offres sauvegardées</span>
-                        </a>
+                        <a href="/dashboard" class="dropdown-item"><i class="fas fa-tachometer-alt"></i><span>Tableau de bord</span></a>
+                        <a href="#" id="profileLink" class="dropdown-item">
+                            <i class="fas fa-user-circle"></i><span>Mon profil</span>
+                        </a>                      <a href="/applications" class="dropdown-item"><i class="fas fa-briefcase"></i><span>Mes candidatures</span></a>
+                        <a href="/saved-jobs" class="dropdown-item"><i class="fas fa-heart"></i><span>Offres sauvegardées</span></a>
                         <div class="dropdown-divider"></div>
-                        <a href="/settings" class="dropdown-item">
-                            <i class="fas fa-cog"></i>
-                            <span>Paramètres</span>
-                        </a>
+                        <a href="/settings" class="dropdown-item"><i class="fas fa-cog"></i><span>Paramètres</span></a>
                         <button class="dropdown-item logout-btn" onclick="HeaderComponent.logout()">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>Déconnexion</span>
+                            <i class="fas fa-sign-out-alt"></i><span>Déconnexion</span>
                         </button>
                     </div>
                 </div>
@@ -194,42 +179,37 @@
 .user-menu-trigger {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     padding: 0.5rem 1rem;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
 }
 
 .user-menu-trigger:hover {
     background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .user-avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+    background: linear-gradient(135deg, #00d4ff, #00ff88);
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     color: #000;
-    font-weight: 600;
-    font-size: 0.9rem;
+    font-weight: bold;
 }
 
 .user-name {
-    color: var(--text-primary, #ffffff);
-    font-weight: 500;
-    font-size: 0.95rem;
+    color: #fff;
 }
 
 .user-menu-arrow {
-    color: var(--text-secondary, #a0a0a0);
-    font-size: 0.8rem;
+    color: #aaa;
     transition: transform 0.3s ease;
 }
 
@@ -237,16 +217,15 @@
     transform: rotate(180deg);
 }
 
-/* User Dropdown */
 .user-dropdown {
     position: absolute;
     top: calc(100% + 0.5rem);
     right: 0;
-    min-width: 280px;
-    background: var(--card-bg, rgba(255, 255, 255, 0.05));
-    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    width: 280px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(20px);
     opacity: 0;
     visibility: hidden;
@@ -262,8 +241,10 @@
 }
 
 .user-dropdown-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(100%);
+  -webkit-backdrop-filter: blur(100%); /* for Safari */
 }
 
 .user-info {
@@ -276,13 +257,12 @@
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+    background: linear-gradient(135deg, #00d4ff, #00ff88);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-weight: bold;
     color: #000;
-    font-weight: 700;
-    font-size: 1.2rem;
 }
 
 .user-details {
@@ -290,19 +270,19 @@
 }
 
 .user-full-name {
-    color: var(--text-primary, #ffffff);
     font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 0.25rem;
+    color: #fff;
 }
 
 .user-email {
-    color: var(--text-secondary, #a0a0a0);
     font-size: 0.85rem;
+    color: #aaa;
 }
 
 .user-dropdown-menu {
     padding: 0.5rem;
+    backdrop-filter: blur(100%);
+  -webkit-backdrop-filter: blur(100%); /* for Safari */
 }
 
 .dropdown-item {
@@ -310,39 +290,23 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    border-radius: 8px;
-    color: var(--text-primary, #ffffff);
+    color: #fff;
     text-decoration: none;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    border: none;
-    background: none;
-    width: 100%;
-    font-size: 0.95rem;
+    border-radius: 8px;
+    transition: background 0.3s ease;
 }
 
 .dropdown-item:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary, #ffffff);
-}
-
-.dropdown-item i {
-    width: 16px;
-    color: var(--text-secondary, #a0a0a0);
-}
-
-.dropdown-divider {
-    height: 1px;
-    background: var(--border-color, rgba(255, 255, 255, 0.1));
-    margin: 0.5rem 0;
 }
 
 .logout-btn {
-    color: #ff4757 !important;
-}
-
-.logout-btn:hover {
-    background: rgba(255, 71, 87, 0.1) !important;
+    color: #ff4757;
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
 }
 
 /* Login/Signup buttons for guests */
@@ -436,7 +400,7 @@
     }
 }
 .user-dropdown {
-    z-index: 1002; /* Higher than navbar z-index */
+  z-index: 9999 !important;
 }
 
 /* Add this media query for mobile dropdown */
@@ -446,4 +410,3 @@
     }
 }
 </style>
-

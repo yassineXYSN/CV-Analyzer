@@ -1394,7 +1394,7 @@
                                 <a href="/jobs/{{ job.id }}" class="view-job-btn">
                                     Voir l'offre
                                 </a>
-                                <button class="apply-btn" onclick="quickApply({{ job.id }})">
+                                <button class="apply-btn" onclick="quickApply({{ job.id }}, {{ current_user.id }})">
                                     <i class="fas fa-paper-plane"></i>
                                     Postuler
                                 </button>
@@ -1861,29 +1861,71 @@
                 }, 300);
             }
 
-            // Quick apply functionality
             window.quickApply = (jobId) => {
-                console.log("Quick apply to job:", jobId)
+    console.log("Quick apply to job:", jobId);
 
-                // Show confirmation dialog
-                if (confirm("Voulez-vous postuler à cette offre ?")) {
-                    showLoadingSpinner()
+    // Show confirmation dialog
+    if (!confirm("Voulez-vous postuler à cette offre ?")) return;
 
-                    setTimeout(() => {
-                        hideLoadingSpinner();
-                        showToast("Candidature envoyée avec succès!", "success");
+    // Show loading spinner
+    showLoadingSpinner();
 
-                        // Update button state
-                        const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`)
-                        applyButtons.forEach((btn) => {
-                            btn.innerHTML = '<i class="fas fa-check"></i> Candidature envoyée'
-                            btn.disabled = true
-                            btn.style.background = "#10b981"
-                            btn.style.cursor = "not-allowed"
-                        })
-                    }, 1500);
-                }
+    // Send application to backend
+    fetch(`/api/jobs/${jobId}/apply`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: "Application submitted via job portal"
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoadingSpinner();
+
+        if (data.success) {
+            showToast(data.message || "Candidature envoyée avec succès!", "success");
+
+            // Update all matching apply buttons
+            const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`);
+            applyButtons.forEach((btn) => {
+                btn.innerHTML = '<i class="fas fa-check"></i> Candidature envoyée';
+                btn.disabled = true;
+                btn.classList.add('applied');
+                btn.style.background = "#10b981";
+                btn.style.cursor = "not-allowed";
+            });
+
+            // Update application count if present
+            const appCountElement = document.getElementById('applicationCount');
+            if (appCountElement) {
+                const currentCount = parseInt(appCountElement.textContent) || 0;
+                appCountElement.textContent = currentCount + 1;
             }
+        } else {
+            showToast(data.message || "Erreur lors de la candidature", "error");
+
+            // Re-enable buttons if something failed
+            const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`);
+            applyButtons.forEach((btn) => {
+                btn.disabled = false;
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        hideLoadingSpinner();
+        showToast("Erreur lors de l'envoi de la candidature", "error");
+
+        // Re-enable buttons on failure
+        const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`);
+        applyButtons.forEach((btn) => {
+            btn.disabled = false;
+        });
+    });
+};
+
 
             // Job card click handlers
             const jobCards = document.querySelectorAll(".job-card")
