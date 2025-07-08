@@ -662,9 +662,9 @@ async def logout(request: Request, response: Response, db: Session = Depends(get
 
 @app.get("/api/auth/status")
 async def auth_status(request: Request, db: Session = Depends(get_db)):
-    """Check current authentication status"""
     try:
         current_user = get_current_user(request, db)
+        print(f"Current user: {current_user}")
         if current_user:
             return {
                 "authenticated": True,
@@ -674,7 +674,8 @@ async def auth_status(request: Request, db: Session = Depends(get_db)):
                     "first_name": current_user.first_name,
                     "last_name": current_user.last_name,
                     "name": f"{current_user.first_name} {current_user.last_name}".strip(),
-                    "is_active": current_user.is_active
+                    "is_active": current_user.is_active,
+                    "profile_picture": current_user.profile_picture  # Add this line
                 }
             }
         else:

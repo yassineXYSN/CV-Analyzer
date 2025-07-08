@@ -1213,45 +1213,43 @@
             }
         });
         
-document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const response = await fetch('/components/header.html');
-                if (response.ok) {
-                    const headerHTML = await response.text();
-                    document.getElementById('header-component').innerHTML = headerHTML;
-                    
-                    // Trigger a custom event to let other scripts know header is loaded
-                    window.dispatchEvent(new CustomEvent('headerLoaded'));
-                } else {
-                    console.error('Failed to load header component:', response.status);
-                    // Fallback: show a basic header
-                    document.getElementById('header-component').innerHTML = `
-                        <nav class="navbar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 1rem 0;">
-                            <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center;">
-                                <div style="font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                                    <a href="/" style="text-decoration: none; color: inherit;">CV Analyzer Pro</a>
-                                </div>
-                                <div style="display: flex; gap: 2rem; align-items: center;">
-                                    <a href="/" style="color: #a0a0a0; text-decoration: none;">Accueil</a>
-                                    <a href="/analyze" style="color: #a0a0a0; text-decoration: none;">Analyser CV</a>
-                                    <a href="/jobs" style="color: #a0a0a0; text-decoration: none;">Emplois</a>
-                                    {% if current_user %}
-                                    <a href="/dashboard" style="color: #a0a0a0; text-decoration: none;">Dashboard</a>
-                                    <form method="post" action="/logout" style="display: inline;">
-                                        <button type="submit" style="background: none; border: none; color: #a0a0a0; cursor: pointer;">Déconnexion</button>
-                                    </form>
-                                    {% else %}
-                                    <a href="/login" style="color: #a0a0a0; text-decoration: none;">Connexion</a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </nav>
-                    `;
-                }
-            } catch (error) {
-                console.error('Failed to load header component:', error);
+        // Pass user data from server to client if available
+        {% if current_user %}
+        window.currentUser = {
+            id: {{ current_user.id }},
+            email: "{{ current_user.email }}",
+            first_name: "{{ current_user.first_name or '' }}",
+            last_name: "{{ current_user.last_name or '' }}",
+            name: "{{ (current_user.first_name + ' ' + current_user.last_name).strip() if current_user.first_name else current_user.email }}",
+            is_active: {{ 'true' if current_user.is_active else 'false' }}
+        };
+        {% else %}
+        window.currentUser = null;
+        {% endif %}
+
+        // Load header component
+        document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('/static/client-dep/components/header.html');
+            if (response.ok) {
+                const headerHTML = await response.text();
+                const container = document.getElementById('header-component');
+                container.innerHTML = headerHTML;
+                
+                // Execute scripts from the loaded HTML
+                const scripts = container.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = oldScript.textContent;
+                    oldScript.parentNode.removeChild(oldScript);
+                    document.body.appendChild(newScript);
+                });
             }
-        });
+        } catch (error) {
+            console.error('Failed to load header component:', error);
+        }
+    });
     </script>
+    <script src="/static/client-dep/js/header.js"></script>
 </body>
 </html>
