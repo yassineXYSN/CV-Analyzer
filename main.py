@@ -1296,20 +1296,21 @@ async def update_application_status(application_id: int, status_data: dict):
                     elif job.salary_max:
                         salary = job.salary_max
                     
+                    # Exemple dans main.py lors de l'acceptation
                     new_employee = models.Employee(
-                        company_id=company.id,
+                        first_name=candidate.first_name,
+                        last_name=candidate.last_name,
+                        email=candidate.email,
                         department_id=job.department_id,
-                        employee_id=employee_id,  # CORRECTION: S'assurer que l'employee_id est défini
-                        first_name=candidate.name.split()[0] if candidate.name else "Prénom",
-                        last_name=" ".join(candidate.name.split()[1:]) if len(candidate.name.split()) > 1 else "Nom",
-                        email=contact.email,
-                        phone=contact.phone if contact.phone else None,
-                        position=job.title,  # Le poste devient sa position
-                        hire_date=datetime.now().date(),  # Date d'embauche = aujourd'hui
-                        salary=salary,
+                        company_id=job.company_id,
+                        position=job.title,
                         employment_type=job.employment_type,
-                        status='active'
+                        hire_date=datetime.utcnow().date(),
+                        status="active",
+                        candidate_profile_id=candidate.id  # ⚠️ Assure-toi que ce champ est bien disponible
+                        
                     )
+                    print("✅ Profil du candidat ID associé :", candidate.id)
                     
                     db.add(new_employee)
                     db.flush()  # Pour obtenir l'ID de l'employé
@@ -1840,8 +1841,10 @@ def accept_application(application_id: int):
             position=profile.title or job.title,
             hire_date=datetime.today().date(),
             employment_type=job.employment_type,
-            status="active"
+            status="active",
+            candidate_profile_id=profile.id  # ✅ AJOUT CRUCIAL
         )
+
 
         db.add(new_emp)
 
