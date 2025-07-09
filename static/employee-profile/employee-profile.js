@@ -525,14 +525,21 @@ async function loadEmployeeFromAPI(employeeId) {
       email: e.email,
       phone: e.phone,
       position: e.position || "Employé",
-      department_name: "Département inconnu",
+      department_name: e.department_name || "Département inconnu",
       hire_date: e.hire_date || "Non précisé",
       employee_id: e.employee_id || `EMP${e.id}`,
       skills: e.skills || [],
-      address: e.address || "",
+      // Ajout des données manquantes
+      education: e.education || [],
+      languages: e.languages || [],
+      certificates: e.certificates || [],
+      profile: e.profile || "",
+      analyse: e.analyse || ""
     }
 
+    // Afficher TOUTES les données
     displayEmployeeInfo(currentEmployee)
+    displayEmployeeDetails(currentEmployee) // Nouvelle fonction
 
     // Afficher les compétences (skills = ["Python: 80%", ...])
     const container = document.getElementById("employeeSkillsList")
@@ -563,6 +570,52 @@ async function loadEmployeeFromAPI(employeeId) {
     showNotification("Impossible de charger le profil employé", "error")
   }
 }
+
+function displayEmployeeDetails(employee) {
+  // Éducation
+  const educationList = document.getElementById("employeeEducationList");
+  educationList.innerHTML = "";
+  if (Array.isArray(employee.education) && employee.education.length > 0) {
+    employee.education.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = `${item.degree} - ${item.institution} (${item.years})`;
+      educationList.appendChild(li);
+    });
+  } else {
+    educationList.innerHTML = "<li>Aucune information</li>";
+  }
+
+  // Langues
+  const langList = document.getElementById("employeeLanguagesList");
+  langList.innerHTML = "";
+  if (Array.isArray(employee.languages) && employee.languages.length > 0) {
+    employee.languages.forEach(lang => {
+      const li = document.createElement("li");
+      li.textContent = lang;
+      langList.appendChild(li);
+    });
+  } else {
+    langList.innerHTML = "<li>Aucune langue renseignée</li>";
+  }
+
+  // Certificats
+  const certList = document.getElementById("employeeCertificatesList");
+  certList.innerHTML = "";
+  if (Array.isArray(employee.certificates) && employee.certificates.length > 0) {
+    employee.certificates.forEach(cert => {
+      const li = document.createElement("li");
+      li.textContent = cert;
+      certList.appendChild(li);
+    });
+  } else {
+    certList.innerHTML = "<li>Aucun certificat disponible</li>";
+  }
+
+  // Profil et analyse
+  document.getElementById("employeeProfileText").textContent = employee.profile || "Aucune présentation disponible";
+  document.getElementById("employeeAnalysis").textContent = employee.analyse || "Aucune analyse IA disponible";
+}
+
 function parseJsonSafe(value) {
   try {
     const once = typeof value === "string" ? JSON.parse(value) : value;

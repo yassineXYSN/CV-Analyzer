@@ -130,6 +130,9 @@ class Employee(Base):
     # Métadonnées
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    candidate_profile_id = Column(Integer, ForeignKey("profile_candidat.id"))
+    profile = relationship("ProfileCandidat")
 
 class Job(Base):
     __tablename__ = "jobs"

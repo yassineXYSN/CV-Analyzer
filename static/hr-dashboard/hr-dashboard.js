@@ -725,24 +725,6 @@ async function loadDepartments() {
   }
 }
 
-// Fonction pour charger les employés
-async function loadEmployees() {
-  console.log("🔄 FRONTEND: Chargement des employés")
-
-  try {
-    const response = await fetch("/api/employees")
-    const result = await response.json()
-
-    if (result.success) {
-      employees = result.employees || []
-      console.log(`✅ FRONTEND: ${employees.length} employés chargés`)
-    } else {
-      console.error("❌ FRONTEND: Erreur chargement employés:", result.message)
-    }
-  } catch (error) {
-    console.error("❌ FRONTEND: Erreur réseau chargement employés:", error)
-  }
-}
 
 // Fonction pour charger les postes
 async function loadJobs() {
@@ -1175,4 +1157,50 @@ function renderApplicationsList(list) {
   container.innerHTML = list
     .map((app) => renderApplicationCardHTML(app))
     .join("")
+}
+
+// Charger les employés depuis l’API
+async function loadEmployees() {
+  console.log("👥 FRONTEND: Chargement des employés")
+
+  try {
+    const response = await fetch("/api/employees")
+    const result = await response.json()
+
+    if (result.success) {
+      employees = result.employees
+      console.log(`✅ FRONTEND: ${employees.length} employés chargés`)
+      renderEmployees()
+    } else {
+      console.error("❌ FRONTEND: Erreur chargement employés:", result.message)
+      employees = []
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau chargement employés:", error)
+    employees = []
+  }
+}
+
+// Affichage simple des employés
+function renderEmployees() {
+  const container = document.getElementById("employeesContainer")
+  if (!container) {
+    console.warn("📦 FRONTEND: Container employés introuvable")
+    return
+  }
+
+  if (employees.length === 0) {
+    container.innerHTML = "<p>Aucun employé trouvé.</p>"
+    return
+  }
+
+  container.innerHTML = employees.map(emp => `
+    <div class="employee-card">
+      <h4>${emp.first_name} ${emp.last_name}</h4>
+      <p><strong>Poste:</strong> ${emp.position}</p>
+      <p><strong>Email:</strong> ${emp.email}</p>
+      <p><strong>Département:</strong> ${emp.department_name}</p>
+      <p><strong>Compétences:</strong> ${(emp.skills || []).map(s => s.name).join(", ") || "Non spécifiées"}</p>
+    </div>
+  `).join("")
 }

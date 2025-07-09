@@ -788,8 +788,7 @@ async def create_job(job_data: JobRequest):
         traceback.print_exc()
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
-@app.get("/api/employees")
-async def get_employees():
+
     """API pour récupérer les employés de l'entreprise"""
     try:
         print(f"🔍 EMP LIST API: Récupération employés")
@@ -814,27 +813,32 @@ async def get_employees():
             
             employees_list = []
             for emp in employees:
-                # Récupérer le département
-                department = db.query(models.Department).filter(
-                    models.Department.id == emp.department_id
-                ).first()
-                
-                employees_list.append({
-                    "id": emp.id,
-                    "employee_id": emp.employee_id,
-                    "first_name": emp.first_name,
-                    "last_name": emp.last_name,
-                    "email": emp.email,
-                    "phone": emp.phone,
-                    "position": emp.position,
-                    "department_id": emp.department_id,
-                    "department_name": department.name if department else "N/A",
-                    "hire_date": emp.hire_date.isoformat() if emp.hire_date else None,
-                    "salary": float(emp.salary) if emp.salary else None,
-                    "employment_type": emp.employment_type,
-                    "status": emp.status,
-                    "created_at": emp.created_at.isoformat() if emp.created_at else None
-                })
+                try:
+                    department = db.query(models.Department).filter(models.Department.id == emp.department_id).first()
+                    profile = emp.profile  # ← ça peut être None
+
+                    employees_list.append({
+                        "id": emp.id,
+                        "employee_id": emp.employee_id,
+                        "first_name": emp.first_name,
+                        "last_name": emp.last_name,
+                        "email": emp.email,
+                        "phone": emp.phone,
+                        "position": emp.position,
+                        "department_id": emp.department_id,
+                        "department_name": department.name if department else "N/A",
+                        "hire_date": emp.hire_date.isoformat() if emp.hire_date else None,
+                        "employment_type": emp.employment_type,
+                        "status": emp.status,
+                        # Nouvelle section
+                        "profile_description": profile.profile if profile else None,
+                        "skills": profile.skills if profile else [],
+                        "languages": profile.languages if profile else [],
+                        "education": profile.education if profile else [],
+                        "certificates": profile.certificates if profile else []
+                    })
+                except Exception as e:
+                    print(f"⚠️ EMPLOYEE API: Erreur sur employé {emp.id}:", e)
             
             print(f"✅ EMP LIST API: {len(employees_list)} employés trouvés")
             
@@ -861,9 +865,9 @@ def get_employee(employee_id: int):
         if not emp:
             return {"success": False, "message": "Employé non trouvé"}
 
-        contact = getattr(emp, "contact", None)
-        analyse = getattr(emp, "analyse", None)
-
+        # Récupérer le profil candidat associé
+        profile = emp.profile
+        
         return {
             "success": True,
             "employee": {
@@ -874,23 +878,31 @@ def get_employee(employee_id: int):
                 "phone": emp.phone,
                 "position": emp.position,
                 "department_id": emp.department_id,
+                "department_name": get_department_name(emp.department_id),  # Fonction à implémenter
                 "employee_id": emp.employee_id,
                 "hire_date": emp.hire_date.isoformat() if emp.hire_date else None,
-                "skills": emp.skills,
-                "profile": emp.profile,
-                "education": emp.education,
-                "languages": emp.languages,
-                "certificates": emp.certificates,
-                "analyse": analyse.analyse if analyse else None,
-                "linkedin": contact.linkedin if contact else None,
-                "address": emp.address or (contact.address if contact else None)
+                "skills": profile.skills if profile else [],
+                "education": profile.education if profile else [],
+                "languages": profile.languages if profile else [],
+                "certificates": profile.certificates if profile else [],
+                "profile": profile.profile if profile else None,
+                "analyse": profile.analyse.analyse if profile and profile.analyse else None,
+                "address": emp.address
             }
         }
     finally:
         db.close()
 
-
-
+def get_department_name(department_id: int):
+    db = SessionLocal()
+    try:
+        department = db.query(models.Department).filter(
+            models.Department.id == department_id
+        ).first()
+        return department.name if department else "Département inconnu"
+    finally:
+        db.close()
+        
 @app.get("/api/candidate/{candidate_id}")
 async def get_candidate(candidate_id: int):
     db = SessionLocal()
@@ -1856,3 +1868,60 @@ def accept_application(application_id: int):
     
     finally:
         db.close()
+
+@app.get("/api/employees")
+def get_employees():
+    db = SessionLocal()
+    try:
+        user_id = current_user_session.get("user_id")
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise trouvée"}
+
+        employees = db.query(models.Employee).filter(
+            models.Employee.company_id == company.id
+        ).all()
+
+        employees_list = []
+        for emp in employees:
+            try:
+                profile = emp.profile
+                department = db.query(models.Department).filter(
+                    models.Department.id == emp.department_id
+                ).first()
+
+                employees_list.append({
+                    "id": emp.id,
+                    "employee_id": emp.employee_id,
+                    "first_name": emp.first_name,
+                    "last_name": emp.last_name,
+                    "email": emp.email,
+                    "phone": emp.phone,
+                    "position": emp.position,
+                    "status": emp.status,
+                    "hire_date": emp.hire_date.isoformat() if emp.hire_date else None,
+                    "employment_type": emp.employment_type,
+                    "department_id": emp.department_id,
+                    "department_name": department.name if department else "N/A",
+                    "skills": profile.skills if profile and profile.skills else [],
+                    "languages": profile.languages if profile and profile.languages else [],
+                    "education": profile.education if profile and profile.education else [],
+                    "certificates": profile.certificates if profile and profile.certificates else [],
+                    "profile_description": profile.profile if profile else None
+                })
+            except Exception as e:
+                print(f"⚠️ Erreur profil employé ID {emp.id} :", e)
+
+        return {"success": True, "employees": employees_list}
+
+    except Exception as e:
+        print("❌ EMPLOYEES API: Erreur critique :", e)
+        return {"success": False, "message": "Erreur interne serveur"}
+    finally:
+        db.close()
+
+
+     
