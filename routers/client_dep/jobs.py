@@ -1,0 +1,646 @@
+from fastapi import APIRouter, Request, Query, Depends, HTTPException
+from fastapi.responses import HTMLResponse
+from database import SessionLocal
+from models import Job, Company, Department, Application, ProfileCandidat, SavedJob
+from routers.client_dep.dependencies import get_db, get_current_user
+import math
+from pydantic import BaseModel
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import desc, or_, and_
+from fastapi.templating import Jinja2Templates
+from typing import Optional
+import os
+
+router = APIRouter()
+# Templates
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+# Chemin vers le dossier templates
+templates_dir = os.path.join(BASE_DIR, "templates")
+
+templates = Jinja2Templates(directory=templates_dir)
+
+
+# Pagination helper class
+class Pagination:
+    def __init__(self, page: int, per_page: int, total: int):
+        self.current_page = page
+        self.per_page = per_page
+        self.total_jobs = total
+        self.total_pages = math.ceil(total / per_page) if per_page > 0 else 0
+        self.has_prev = page > 1
+        self.has_next = page < self.total_pages
+        self.prev_page = page - 1 if self.has_prev else None
+        self.next_page = page + 1 if self.has_next else None
+
+# Search parameters helper class
+class SearchParams:
+    def __init__(self, search: str = "", location: str = "", category: str = "", 
+                 employment_type: str = "", salary_min: Optional[int] = None, 
+                 salary_max: Optional[int] = None):
+        self.search = search
+        self.location = location
+        self.category = category
+        self.employment_type = employment_type
+        self.salary_min = salary_min
+        self.salary_max = salary_max
+
+
+@router.get("/jobs", response_class=HTMLResponse)
+async def jobs_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    search: str = Query(""),
+    location: str = Query(""),
+    category: str = Query(""),
+    employment_type: str = Query(""),
+    salary_min: Optional[str] = Query(None),
+    salary_max: Optional[str] = Query(None),
+    sort: str = Query("newest")
+):
+    current_user = get_current_user(request, db)
+    
+    # Convert salary strings to integers, handling empty strings
+    salary_min_int = None
+    salary_max_int = None
+
+    if salary_min and salary_min.strip():
+        try:
+            salary_min_int = int(salary_min)
+        except ValueError:
+            salary_min_int = None
+
+    if salary_max and salary_max.strip():
+        try:
+            salary_max_int = int(salary_max)
+        except ValueError:
+            salary_max_int = None
+
+    print(f"Salary filters - Min: {salary_min_int}, Max: {salary_max_int}")
+    
+    per_page = 12
+    
+    # Build base query with eager loading
+    query = db.query(Job).options(
+        joinedload(Job.company),
+        joinedload(Job.department)
+    )
+    
+    # Always join Company and Department for flexible searching
+    query = query.join(Company, Job.company_id == Company.id, isouter=True)
+    query = query.join(Department, Job.department_id == Department.id, isouter=True)
+    
+    # Apply filters - only add filters that have values
+    filters = [Job.status == 'active']
+    
+    # Search filter - search across multiple fields with flexible matching
+    if search and search.strip():
+        search_term = f"%{search.strip()}%"
+        search_filter = or_(
+            Job.title.ilike(search_term),
+            Job.description.ilike(search_term),
+            Job.requirements.ilike(search_term),
+            Company.company_name.ilike(search_term),
+            Department.name.ilike(search_term),
+            # Also search in job tags if they exist
+            Job.tags.ilike(search_term) if hasattr(Job, 'tags') else False
+        )
+        filters.append(search_filter)
+    
+    # Location filter - flexible location matching
+    if location and location.strip():
+        location_term = f"%{location.strip()}%"
+        location_filter = or_(
+            Company.address.ilike(location_term),
+            Job.location.ilike(location_term) if hasattr(Job, 'location') else False
+        )
+        filters.append(location_filter)
+    
+    # Category filter - flexible category matching
+    if category and category.strip():
+        category_term = f"%{category.strip()}%"
+        category_filter = or_(
+            Department.name.ilike(category_term),
+            Job.title.ilike(category_term),
+            Job.description.ilike(category_term),
+            Job.tags.ilike(category_term) if hasattr(Job, 'tags') else False
+        )
+        filters.append(category_filter)
+    
+    # Employment type filter - flexible matching
+    if employment_type and employment_type.strip():
+        if employment_type.lower() != 'all':
+            employment_filter = or_(
+                Job.employment_type.ilike(f"%{employment_type}%"),
+                Job.employment_type == employment_type
+            )
+            filters.append(employment_filter)
+    
+    # Improved salary filters
+    if salary_min_int and salary_min_int > 0:
+        # User wants jobs that pay at least salary_min_int
+        # Include jobs where the maximum salary meets the minimum requirement
+        # OR where minimum salary meets the requirement (if max is null)
+        salary_min_filter = or_(
+            and_(Job.salary_max.isnot(None), Job.salary_max >= salary_min_int),
+            and_(Job.salary_max.is_(None), Job.salary_min >= salary_min_int),
+            # Also include jobs where salary_min >= user's minimum (they definitely meet the requirement)
+            Job.salary_min >= salary_min_int
+        )
+        filters.append(salary_min_filter)
+        print(f"Applied minimum salary filter: >= {salary_min_int}")
+
+    if salary_max_int and salary_max_int > 0:
+        # User wants jobs within their budget (salary_max_int)
+        # Include jobs where the minimum salary is within budget
+        # OR where maximum salary is within budget (if min is null)
+        salary_max_filter = or_(
+            and_(Job.salary_min.isnot(None), Job.salary_min <= salary_max_int),
+            and_(Job.salary_min.is_(None), Job.salary_max <= salary_max_int),
+            # Also include jobs where salary_max <= user's maximum (they're definitely within budget)
+            Job.salary_max <= salary_max_int
+        )
+        filters.append(salary_max_filter)
+        print(f"Applied maximum salary filter: <= {salary_max_int}")
+    
+    # Apply all filters
+    if filters:
+        query = query.filter(and_(*filters))
+    
+    # Apply sorting
+    if sort == "newest":
+        query = query.order_by(Job.created_at.desc())
+    elif sort == "oldest":
+        query = query.order_by(Job.created_at.asc())
+    elif sort == "salary_high":
+        query = query.order_by(Job.salary_max.desc().nullslast())
+    elif sort == "salary_low":
+        query = query.order_by(Job.salary_min.asc().nullslast())
+    elif sort == "relevance" and search:
+        # For relevance, prioritize title matches, then company, then description
+        query = query.order_by(
+            Job.title.ilike(f"%{search}%").desc(),
+            Company.company_name.ilike(f"%{search}%").desc(),
+            Job.created_at.desc()
+        )
+    else:
+        # Default to newest
+        query = query.order_by(Job.created_at.desc())
+    
+    # Get total count
+    total_jobs = query.count()
+    print(f"Total jobs found: {total_jobs}")
+    
+    # Apply pagination
+    offset = (page - 1) * per_page
+    jobs = query.offset(offset).limit(per_page).all()
+    
+    # Debug: print some job salary info
+    for job in jobs[:3]:  # Just first 3 jobs
+        print(f"Job: {job.title}, Salary: {job.salary_min}-{job.salary_max}")
+    
+    # Check application status and saved status for each job if user is logged in
+    jobs_with_status = []
+    if current_user:
+        # Get the candidate profile for the current user
+        candidate_profile = db.query(ProfileCandidat).filter(
+            ProfileCandidat.user_id == current_user.id
+        ).first()
+
+        # Get all applications for this user
+        user_applications = set()
+        if candidate_profile:
+            user_applications = db.query(Application.job_id).filter(
+                Application.candidate_profile_id == candidate_profile.id
+            ).all()
+            user_applications = {app.job_id for app in user_applications}
+        
+        # Get all saved jobs for this user
+        saved_jobs = db.query(SavedJob.job_id).filter(
+            SavedJob.user_id == current_user.id
+        ).all()
+        saved_job_ids = {saved.job_id for saved in saved_jobs}
+        
+        for job in jobs:
+            job_dict = {
+                'job': job,
+                'has_applied': job.id in user_applications,
+                'is_saved': job.id in saved_job_ids
+            }
+            jobs_with_status.append(job_dict)
+    else:
+        # User not logged in
+        for job in jobs:
+            job_dict = {
+                'job': job,
+                'has_applied': False,
+                'is_saved': False
+            }
+            jobs_with_status.append(job_dict)
+    
+    # Create pagination object
+    pagination = Pagination(page, per_page, total_jobs)
+    
+    # Create search params object
+    search_params = SearchParams(search, location, category, employment_type, salary_min_int, salary_max_int)
+    
+    # Get all departments for category dropdown - make it more flexible
+    try:
+        departments = db.query(Department.name).filter(Department.name.isnot(None)).distinct().all()
+        categories = [dept[0] for dept in departments if dept[0]]
+        
+        # Add some common categories if none exist
+        if not categories:
+            categories = [
+                "Développement", "Marketing", "Design", "Finance", 
+                "Ressources Humaines", "Ventes", "Support Client"
+            ]
+    except:
+        categories = [
+            "Développement", "Marketing", "Design", "Finance", 
+            "Ressources Humaines", "Ventes", "Support Client"
+        ]
+    
+    return templates.TemplateResponse("client-dep/jobs.html", {
+        "request": request,
+        "jobs_with_status": jobs_with_status,
+        "pagination": pagination,
+        "search_params": search_params,
+        "sort": sort,
+        "categories": categories,
+        "total_jobs": total_jobs,
+        "current_user": current_user
+    })
+
+@router.get("/jobs/{job_id}", response_class=HTMLResponse)
+async def job_detail(request: Request, job_id: int, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    
+    job = db.query(Job).options(
+        joinedload(Job.company),
+        joinedload(Job.department)
+    ).filter(Job.id == job_id).first()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Increment view count
+    job.views_count = (job.views_count or 0) + 1
+    db.commit()
+    
+    # Check if user has applied and saved
+    has_applied = False
+    is_saved = False
+    if current_user:
+        # Get the candidate profile for the current user
+        candidate_profile = db.query(ProfileCandidat).filter(
+            ProfileCandidat.user_id == current_user.id
+        ).first()
+
+        if candidate_profile:
+            application = db.query(Application).filter(
+                and_(
+                    Application.job_id == job_id,
+                    Application.candidate_profile_id == candidate_profile.id
+                )
+            ).first()
+            has_applied = application is not None
+        
+        # Check if job is saved
+        saved_job = db.query(SavedJob).filter(
+            and_(
+                SavedJob.user_id == current_user.id,
+                SavedJob.job_id == job_id
+            )
+        ).first()
+        is_saved = saved_job is not None
+
+    return templates.TemplateResponse("client-dep/job_detail.html", {
+        "request": request,
+        "job": job,
+        "current_user": current_user,
+        "has_applied": has_applied,
+        "is_saved": is_saved
+    })
+
+@router.get("/my-applications", response_class=HTMLResponse)
+async def my_applications_page(request: Request, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    
+    # Require authentication
+    if not current_user:
+        # Redirect to login page or show error
+        return templates.TemplateResponse("client-dep/login.html", {
+            "request": request,
+            "error": "Vous devez être connecté pour voir vos candidatures"
+        })
+    
+    # Get user's candidate profile
+    candidate_profile = db.query(ProfileCandidat).filter(
+        ProfileCandidat.user_id == current_user.id
+    ).first()
+    
+    applications = []
+    if candidate_profile:
+        # Get all applications for this user with job and company details
+        applications_query = db.query(Application).filter(
+            Application.candidate_profile_id == candidate_profile.id
+        ).order_by(Application.application_date.desc())
+        
+        applications = applications_query.all()
+        
+        # Manually load job and company data for each application
+        for app in applications:
+            app.job = db.query(Job).options(
+                joinedload(Job.company),
+                joinedload(Job.department)
+            ).filter(Job.id == app.job_id).first()
+    
+    # Group applications by status for summary
+    status_counts = {
+        'pending': 0,
+        'reviewed': 0,
+        'interview_scheduled': 0,
+        'interview_completed': 0,
+        'accepted': 0,
+        'rejected': 0,
+        'withdrawn': 0
+    }
+    
+    for app in applications:
+        if app.status in status_counts:
+            status_counts[app.status] += 1
+    
+    return templates.TemplateResponse("client-dep/my-applications.html", {
+        "request": request,
+        "applications": applications,
+        "status_counts": status_counts,
+        "total_applications": len(applications),
+        "current_user": current_user
+    })
+
+# NEW: Saved jobs page
+@router.get("/saved-jobs", response_class=HTMLResponse)
+async def saved_jobs_page(
+    request: Request, 
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    sort: str = Query("newest")
+):
+    current_user = get_current_user(request, db)
+    
+    # Require authentication
+    if not current_user:
+        return templates.TemplateResponse("client-dep/login.html", {
+            "request": request,
+            "error": "Vous devez être connecté pour voir vos offres sauvegardées"
+        })
+    
+    per_page = 12
+    
+    # Get saved jobs for the current user
+    query = db.query(SavedJob).options(
+        joinedload(SavedJob.job).joinedload(Job.company),
+        joinedload(SavedJob.job).joinedload(Job.department)
+    ).filter(SavedJob.user_id == current_user.id)
+    
+    # Apply sorting
+    if sort == "newest":
+        query = query.order_by(SavedJob.saved_at.desc())
+    elif sort == "oldest":
+        query = query.order_by(SavedJob.saved_at.asc())
+    elif sort == "job_newest":
+        query = query.join(Job).order_by(Job.created_at.desc())
+    elif sort == "salary_high":
+        query = query.join(Job).order_by(Job.salary_max.desc().nullslast())
+    elif sort == "salary_low":
+        query = query.join(Job).order_by(Job.salary_min.asc().nullslast())
+    else:
+        query = query.order_by(SavedJob.saved_at.desc())
+    
+    # Get total count
+    total_saved = query.count()
+    
+    # Apply pagination
+    offset = (page - 1) * per_page
+    saved_jobs = query.offset(offset).limit(per_page).all()
+    
+    # Check application status for each saved job
+    saved_jobs_with_status = []
+    if current_user:
+        # Get the candidate profile for the current user
+        candidate_profile = db.query(ProfileCandidat).filter(
+            ProfileCandidat.user_id == current_user.id
+        ).first()
+
+        # Get all applications for this user
+        user_applications = set()
+        if candidate_profile:
+            user_applications = db.query(Application.job_id).filter(
+                Application.candidate_profile_id == candidate_profile.id
+            ).all()
+            user_applications = {app.job_id for app in user_applications}
+        
+        for saved_job in saved_jobs:
+            saved_job_dict = {
+                'saved_job': saved_job,
+                'job': saved_job.job,
+                'has_applied': saved_job.job.id in user_applications,
+                'is_saved': True  # Obviously true since we're on saved jobs page
+            }
+            saved_jobs_with_status.append(saved_job_dict)
+    
+    # Create pagination object
+    pagination = Pagination(page, per_page, total_saved)
+    
+    return templates.TemplateResponse("client-dep/saved-jobs.html", {
+        "request": request,
+        "saved_jobs_with_status": saved_jobs_with_status,
+        "pagination": pagination,
+        "sort": sort,
+        "total_saved": total_saved,
+        "current_user": current_user
+    })
+
+# API endpoints for job interactions
+@router.post("/api/jobs/{job_id}/save")
+async def save_job(job_id: int, request: Request, db: Session = Depends(get_db)):
+    """Save job to user's favorites"""
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return {"success": False, "message": "Vous devez être connecté pour sauvegarder une offre"}
+    
+    try:
+        # Check if job exists
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            return {"success": False, "message": "Offre d'emploi non trouvée"}
+        
+        # Check if already saved
+        existing_saved = db.query(SavedJob).filter(
+            and_(SavedJob.user_id == current_user.id, SavedJob.job_id == job_id)
+        ).first()
+        
+        if existing_saved:
+            return {"success": False, "message": "Cette offre est déjà dans vos favoris"}
+        
+        # Create new saved job
+        saved_job = SavedJob(
+            user_id=current_user.id,
+            job_id=job_id
+        )
+        
+        db.add(saved_job)
+        db.commit()
+        
+        return {"success": True, "message": "Offre ajoutée aux favoris"}
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error saving job: {str(e)}")
+        return {"success": False, "message": "Erreur lors de la sauvegarde"}
+
+@router.delete("/api/jobs/{job_id}/save")
+async def unsave_job(job_id: int, request: Request, db: Session = Depends(get_db)):
+    """Remove job from user's favorites"""
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return {"success": False, "message": "Vous devez être connecté"}
+    
+    try:
+        # Find and delete saved job
+        saved_job = db.query(SavedJob).filter(
+            and_(SavedJob.user_id == current_user.id, SavedJob.job_id == job_id)
+        ).first()
+        
+        if not saved_job:
+            return {"success": False, "message": "Cette offre n'est pas dans vos favoris"}
+        
+        db.delete(saved_job)
+        db.commit()
+        
+        return {"success": True, "message": "Offre retirée des favoris"}
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error unsaving job: {str(e)}")
+        return {"success": False, "message": "Erreur lors de la suppression"}
+
+class ApplicationRequest(BaseModel):
+    message: Optional[str] = None
+
+@router.post("/api/jobs/{job_id}/apply")
+async def apply_to_job(job_id: int, application_data: ApplicationRequest, request: Request, db: Session = Depends(get_db)):
+    """Submit job application - requires authentication"""
+    try:
+        # Require authentication
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"success": False, "message": "Vous devez être connecté pour postuler à une offre"}
+        
+        # Check if job exists
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Get user's candidate profile
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == current_user.id).first()
+        if not candidate_profile:
+            return {"success": False, "message": "Vous devez d'abord analyser votre CV pour créer votre profil candidat"}
+        
+        # Check if application already exists
+        existing_application = db.query(Application).filter(
+            and_(Application.job_id == job_id, Application.candidate_profile_id == candidate_profile.id)
+        ).first()
+        
+        if existing_application:
+            return {"success": False, "message": "Vous avez déjà postulé à cette offre"}
+        
+        # Create new application
+        new_application = Application(
+            job_id=job_id,
+            candidate_profile_id=candidate_profile.id,
+            status='pending',
+            source='job_portal',
+            user_id=current_user.id
+        )
+        
+        db.add(new_application)
+        
+        # Increment application count for the job
+        job.applications_count = (job.applications_count or 0) + 1
+        
+        db.commit()
+        
+        print(f"Application created: Job {job_id}, User {current_user.id}, Candidate {candidate_profile.id}")
+        
+        return {
+            "success": True, 
+            "message": f"Candidature envoyée avec succès pour le poste '{job.title}'!",
+            "application_id": new_application.id
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error applying to job: {str(e)}")
+        return {"success": False, "message": "Erreur lors de l'envoi de la candidature"}
+
+@router.get("/api/jobs/{job_id}/application-status")
+async def check_application_status(job_id: int, request: Request, db: Session = Depends(get_db)):
+    """Check if user has already applied to this job"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"has_applied": False}
+        
+        application = db.query(Application).filter(
+            and_(Application.job_id == job_id, Application.user_id == current_user.id)
+        ).first()
+        
+        if application:
+            return {
+                "has_applied": True,
+                "application_date": application.application_date.isoformat(),
+                "status": application.status
+            }
+        else:
+            return {"has_applied": False}
+            
+    except Exception as e:
+        print(f"Error checking application status: {str(e)}")
+        return {"has_applied": False}
+
+@router.post("/api/applications/{application_id}/withdraw")
+async def withdraw_application(application_id: int, request: Request, db: Session = Depends(get_db)):
+    """Withdraw a job application"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"success": False, "message": "Vous devez être connecté"}
+        
+        # Get the application
+        application = db.query(Application).filter(
+            and_(
+                Application.id == application_id,
+                Application.user_id == current_user.id
+            )
+        ).first()
+        
+        if not application:
+            return {"success": False, "message": "Candidature non trouvée"}
+        
+        # Check if application can be withdrawn
+        if application.status in ['accepted', 'rejected', 'withdrawn']:
+            return {"success": False, "message": "Cette candidature ne peut plus être retirée"}
+        
+        # Update application status
+        application.status = 'withdrawn'
+        db.commit()
+        
+        return {"success": True, "message": "Candidature retirée avec succès"}
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error withdrawing application: {str(e)}")
+        return {"success": False, "message": "Erreur lors du retrait de la candidature"}

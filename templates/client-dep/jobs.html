@@ -9,17 +9,18 @@
     <style>
         /* Base styles */
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --accent-gradient: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            --danger-gradient: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
-            --warning-gradient: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
-            --dark-bg: #0a0a0a;
-            --card-bg: rgba(255, 255, 255, 0.05);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #707070;
-            --error-color: #ff4757;
+            --primary_gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --accent_gradient: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            --danger_gradient: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+            --warning_gradient: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
+            --success_color: #10b981;
+            --dark_bg: #0a0a0a;
+            --card_bg: rgba(255, 255, 255, 0.05);
+            --border_color: rgba(255, 255, 255, 0.1);
+            --text_primary: #ffffff;
+            --text_secondary: #a0a0a0;
+            --text_muted: #707070;
+            --error_color: #ff4757;
         }
 
         * {
@@ -32,7 +33,7 @@
             font-family: "Inter", sans-serif !important;
             background: radial-gradient(ellipse at top, #1a1a2e 0%, #16213e 50%, #0f0f23 100%) !important;
             min-height: 100vh !important;
-            color: var(--text-primary) !important;
+            color: var(--text_primary) !important;
             overflow-x: hidden;
             line-height: 1.6;
         }
@@ -128,7 +129,7 @@
             z-index: 1000 !important;
             background: rgba(10, 10, 10, 0.9) !important;
             backdrop-filter: blur(20px) !important;
-            border-bottom: 1px solid var(--border-color) !important;
+            border-bottom: 1px solid var(--border_color) !important;
             padding: 1rem 0 !important;
             transition: all 0.3s ease;
         }
@@ -145,9 +146,9 @@
         .nav-logo {
             font-size: 1.5rem !important;
             font-weight: 700 !important;
-            background: var(--accent-gradient) !important;
+            background: var(--accent_gradient) !important;
             -webkit-background-clip: text !important;
-            -webkit-text-fill-color: transparent !important;
+            -webkit-text_fill_color: transparent !important;
             background-clip: text !important;
             display: flex;
             align-items: center;
@@ -166,7 +167,7 @@
         }
 
         .nav-link {
-            color: var(--text-secondary) !important;
+            color: var(--text_secondary) !important;
             text-decoration: none !important;
             font-weight: 500;
             transition: color 0.3s ease;
@@ -175,7 +176,7 @@
         }
 
         .nav-link:hover {
-            color: var(--text-primary) !important;
+            color: var(--text_primary) !important;
         }
 
         .nav-link::after {
@@ -185,7 +186,7 @@
             left: 0;
             width: 0;
             height: 2px;
-            background: var(--accent-gradient);
+            background: var(--accent_gradient);
             transition: width 0.3s ease;
         }
 
@@ -194,7 +195,7 @@
         }
 
         .nav-link.active {
-            color: var(--text-primary) !important;
+            color: var(--text_primary) !important;
         }
 
         .nav-link.active::after {
@@ -211,7 +212,7 @@
         .bar {
             width: 25px;
             height: 3px;
-            background: var(--text-primary);
+            background: var(--text_primary);
             transition: 0.3s;
         }
 
@@ -228,25 +229,25 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
         }
 
         .breadcrumb a {
-            color: var(--text-secondary);
+            color: var(--text_secondary);
             text-decoration: none;
             transition: color 0.3s ease;
         }
 
         .breadcrumb a:hover {
-            color: var(--text-primary);
+            color: var(--text_primary);
         }
 
         .separator {
-            color: var(--text-muted);
+            color: var(--text_muted);
         }
 
         .current {
-            color: var(--text-primary);
+            color: var(--text_primary);
             font-weight: 500;
         }
 
@@ -272,27 +273,27 @@
         .page-header h1 {
             font-size: 2.5rem;
             font-weight: 700;
-            background: var(--accent-gradient);
+            background: var(--accent_gradient);
             -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-text_fill_color: transparent;
             background-clip: text;
             margin-bottom: 0.5rem;
         }
 
         .page-header p {
             font-size: 1.1rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
             max-width: 600px;
             margin: 0 auto;
         }
 
         .search-section {
-            background: var(--card-bg);
+            background: var(--card_bg);
             border-radius: 16px;
             padding: 2rem;
             margin-bottom: 2rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border_color);
             backdrop-filter: blur(10px);
         }
 
@@ -318,7 +319,7 @@
         .search-field i {
             position: absolute;
             left: 1rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
             z-index: 2;
             font-size: 1rem;
         }
@@ -326,12 +327,12 @@
         .search-input {
             width: 100%;
             padding: 1rem 1rem 1rem 2.5rem;
-            border: 2px solid var(--border-color);
+            border: 2px solid var(--border_color);
             border-radius: 12px;
             font-size: 1rem;
             transition: all 0.3s ease;
             background: rgba(0, 0, 0, 0.2);
-            color: var(--text-primary);
+            color: var(--text_primary);
         }
 
         .search-input:focus {
@@ -341,17 +342,17 @@
         }
 
         .search-input::placeholder {
-            color: var(--text-muted);
+            color: var(--text_muted);
         }
 
         .search-input.error {
-            border-color: var(--error-color);
+            border-color: var(--error_color);
             box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
         }
 
         .search-btn {
             padding: 1rem 2rem;
-            background: var(--accent-gradient);
+            background: var(--accent_gradient);
             color: #000;
             border: none;
             border-radius: 12px;
@@ -385,13 +386,13 @@
 
         .filter-select {
             padding: 0.875rem 1rem;
-            border: 2px solid var(--border-color);
+            border: 2px solid var(--border_color);
             border-radius: 12px;
             font-size: 0.95rem;
             background: rgba(0, 0, 0, 0.2);
             cursor: pointer;
             transition: all 0.3s ease;
-            color: var(--text-primary);
+            color: var(--text_primary);
         }
 
         .filter-select:focus {
@@ -401,7 +402,7 @@
         }
 
         .filter-select.error {
-            border-color: var(--error-color);
+            border-color: var(--error_color);
             box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
         }
 
@@ -414,12 +415,12 @@
         .salary-input {
             flex: 1;
             padding: 0.875rem 1rem;
-            border: 2px solid var(--border-color);
+            border: 2px solid var(--border_color);
             border-radius: 12px;
             font-size: 0.95rem;
             text-align: center;
             background: rgba(0, 0, 0, 0.2);
-            color: var(--text-primary);
+            color: var(--text_primary);
             transition: all 0.3s ease;
             position: relative;
         }
@@ -431,11 +432,11 @@
         }
 
         .salary-input::placeholder {
-            color: var(--text-muted);
+            color: var(--text_muted);
         }
 
         .salary-input.error {
-            border-color: var(--error-color);
+            border-color: var(--error_color);
             box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
         }
 
@@ -459,7 +460,7 @@
             height: 15px;
             background: rgba(255, 255, 255, 0.1);
             border: none;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
             cursor: pointer;
             font-size: 10px;
             display: flex;
@@ -470,14 +471,14 @@
 
         .salary-increment-btn:hover {
             background: rgba(255, 255, 255, 0.2);
-            color: var(--text-primary);
+            color: var(--text_primary);
         }
 
         .clear-filters-btn {
             padding: 0.875rem 1.5rem;
             background: rgba(0, 0, 0, 0.2);
-            color: var(--text-secondary);
-            border: 2px solid var(--border-color);
+            color: var(--text_secondary);
+            border: 2px solid var(--border_color);
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -490,12 +491,12 @@
 
         .clear-filters-btn:hover {
             background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
+            color: var(--text_primary);
             transform: translateY(-1px);
         }
 
         .error-message {
-            color: var(--error-color);
+            color: var(--error_color);
             font-size: 0.85rem;
             margin-top: 0.5rem;
             display: none;
@@ -503,7 +504,7 @@
 
         .form-validation-summary {
             background: rgba(255, 71, 87, 0.1);
-            border: 1px solid var(--error-color);
+            border: 1px solid var(--error_color);
             border-radius: 8px;
             padding: 1rem;
             margin-bottom: 1rem;
@@ -511,12 +512,12 @@
         }
 
         .form-validation-summary h4 {
-            color: var(--error-color);
+            color: var(--error_color);
             margin-bottom: 0.5rem;
         }
 
         .form-validation-summary ul {
-            color: var(--error-color);
+            color: var(--error_color);
             margin-left: 1.5rem;
         }
 
@@ -530,7 +531,7 @@
 
         .results-count {
             font-size: 1.1rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
         }
 
         .results-count .count {
@@ -546,11 +547,11 @@
 
         .sort-select {
             padding: 0.5rem 1rem;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border_color);
             border-radius: 8px;
             background: rgba(0, 0, 0, 0.2);
             cursor: pointer;
-            color: var(--text-primary);
+            color: var(--text_primary);
         }
 
         .sort-select:focus {
@@ -564,7 +565,7 @@
             align-items: center;
             justify-content: center;
             padding: 4rem 2rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
         }
 
         .spinner {
@@ -594,12 +595,12 @@
         }
 
         .job-card {
-            background: var(--card-bg);
+            background: var(--card_bg);
             border-radius: 16px;
             padding: 2rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             transition: all 0.3s ease;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border_color);
             position: relative;
             cursor: pointer;
             backdrop-filter: blur(10px);
@@ -647,13 +648,13 @@
         .job-title {
             font-size: 1.3rem;
             font-weight: 700;
-            color: var(--text-primary);
+            color: var(--text_primary);
             margin: 0 0 0.5rem 0;
             line-height: 1.3;
         }
 
         .company-name {
-            color: var(--text-secondary);
+            color: var(--text_secondary);
             font-weight: 500;
             margin: 0 0 0.75rem 0;
             font-size: 1rem;
@@ -663,7 +664,7 @@
             display: flex;
             gap: 1.5rem;
             font-size: 0.9rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
         }
 
         .job-meta span {
@@ -673,7 +674,7 @@
         }
 
         .job-meta i {
-            color: var(--text-muted);
+            color: var(--text_muted);
         }
 
         .save-job-btn {
@@ -683,7 +684,7 @@
             background: none;
             border: none;
             font-size: 1.4rem;
-            color: var(--text-muted);
+            color: var(--text_muted);
             cursor: pointer;
             transition: all 0.3s ease;
             padding: 0.5rem;
@@ -706,7 +707,7 @@
 
         .job-description {
             margin-bottom: 1.5rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
             line-height: 1.6;
             font-size: 0.95rem;
         }
@@ -720,12 +721,12 @@
 
         .tag {
             background: rgba(255, 255, 255, 0.1);
-            color: var(--text-secondary);
+            color: var(--text_secondary);
             padding: 0.3rem 0.8rem;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 500;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border_color);
         }
 
         .job-footer {
@@ -741,7 +742,7 @@
             flex-direction: column;
             gap: 0.4rem;
             font-size: 0.9rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
         }
 
         .job-stats span {
@@ -763,24 +764,24 @@
         .view-job-btn {
             padding: 0.6rem 1.2rem;
             background: rgba(0, 0, 0, 0.2);
-            color: var(--text-primary);
+            color: var(--text_primary);
             text-decoration: none;
             border-radius: 8px;
             font-size: 0.9rem;
             font-weight: 500;
             transition: all 0.3s ease;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border_color);
         }
 
         .view-job-btn:hover {
             background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
+            color: var(--text_primary);
             transform: translateY(-1px);
         }
 
         .apply-btn {
             padding: 0.6rem 1.2rem;
-            background: var(--accent-gradient);
+            background: var(--accent_gradient);
             color: #000;
             border: none;
             border-radius: 8px;
@@ -793,7 +794,7 @@
             gap: 0.4rem;
         }
 
-        .apply-btn:hover {
+        .apply-btn:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3);
         }
@@ -804,11 +805,16 @@
             transform: none;
         }
 
+        .apply-btn.applied {
+            background: var(--success_color);
+            color: white;
+        }
+
         .job-date {
             font-size: 0.8rem;
-            color: var(--text-muted);
+            color: var(--text_muted);
             text-align: right;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid var(--border_color);
             padding-top: 1rem;
             margin-top: 1rem;
         }
@@ -817,18 +823,18 @@
             grid-column: 1 / -1;
             text-align: center;
             padding: 4rem 2rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
         }
 
         .no-jobs-icon {
             font-size: 4rem;
-            color: var(--text-muted);
+            color: var(--text_muted);
             margin-bottom: 1.5rem;
         }
 
         .no-jobs h3 {
             font-size: 1.5rem;
-            color: var(--text-primary);
+            color: var(--text_primary);
             margin-bottom: 0.5rem;
         }
 
@@ -848,7 +854,7 @@
         }
 
         .pagination-info {
-            color: var(--text-secondary);
+            color: var(--text_secondary);
             font-size: 0.95rem;
             text-align: center;
         }
@@ -857,19 +863,19 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            background: var(--card-bg);
+            background: var(--card_bg);
             border-radius: 12px;
             padding: 1rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border_color);
         }
 
         .pagination-btn {
             padding: 0.75rem 1rem;
             background: rgba(0, 0, 0, 0.2);
-            color: var(--text-primary);
+            color: var(--text_primary);
             text-decoration: none;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border_color);
             border-radius: 8px;
             font-weight: 500;
             transition: all 0.3s ease;
@@ -894,9 +900,9 @@
         .page-number {
             padding: 0.6rem 0.8rem;
             background: rgba(0, 0, 0, 0.2);
-            color: var(--text-primary);
+            color: var(--text_primary);
             text-decoration: none;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border_color);
             border-radius: 8px;
             font-weight: 500;
             transition: all 0.3s ease;
@@ -919,14 +925,14 @@
 
         .page-ellipsis {
             padding: 0.6rem 0.8rem;
-            color: var(--text-muted);
+            color: var(--text_muted);
         }
 
         .toast {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: var(--card-bg);
+            background: var(--card_bg);
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
             padding: 1rem 1.5rem;
@@ -978,14 +984,14 @@
         }
 
         .toast-message {
-            color: var(--text-primary);
+            color: var(--text_primary);
             font-weight: 500;
         }
 
         .toast-close {
             background: none;
             border: none;
-            color: var(--text-muted);
+            color: var(--text_muted);
             cursor: pointer;
             padding: 0.25rem;
             border-radius: 4px;
@@ -995,13 +1001,13 @@
 
         .toast-close:hover {
             background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
+            color: var(--text_primary);
         }
 
         .footer {
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid var(--border_color);
             padding: 3rem 0 2rem;
             margin-top: 4rem;
         }
@@ -1017,13 +1023,13 @@
 
         .footer-section h3 {
             font-size: 1.3rem;
-            color: var(--text-primary);
+            color: var(--text_primary);
             margin-bottom: 1rem;
         }
 
         .footer-section p, .footer-section li {
             margin-bottom: 0.5rem;
-            color: var(--text-secondary);
+            color: var(--text_secondary);
         }
 
         .footer-section ul {
@@ -1031,21 +1037,21 @@
         }
 
         .footer-section a {
-            color: var(--text-secondary);
+            color: var(--text_secondary);
             text-decoration: none;
             transition: color 0.3s ease;
         }
 
         .footer-section a:hover {
-            color: var(--text-primary);
+            color: var(--text_primary);
         }
 
         .footer-bottom {
             text-align: center;
             padding-top: 2rem;
             margin-top: 2rem;
-            border-top: 1px solid var(--border-color);
-            color: var(--text-secondary);
+            border-top: 1px solid var(--border_color);
+            color: var(--text_secondary);
             font-size: 0.9rem;
         }
 
@@ -1075,7 +1081,7 @@
                 top: 70px;
                 gap: 0;
                 flex-direction: column;
-                background-color: var(--card-bg);
+                background-color: var(--card_bg);
                 width: 100%;
                 text-align: center;
                 transition: 0.3s;
@@ -1324,8 +1330,10 @@
 
             <!-- Jobs Grid -->
             <div class="jobs-grid" id="jobsGrid">
-                {% if jobs %}
-                    {% for job in jobs %}
+                {% if jobs_with_status %}
+                    {% for job_data in jobs_with_status %}
+                    {% set job = job_data.job %}
+                    {% set has_applied = job_data.has_applied %}
                     <div class="job-card" data-job-id="{{ job.id }}">
                         <div class="job-header">
                             <div class="company-logo">
@@ -1353,8 +1361,8 @@
                                     </span>
                                 </div>
                             </div>
-                            <button class="save-job-btn" onclick="toggleSaveJob({{ job.id }}, this)">
-                                <i class="far fa-heart"></i>
+                            <button class="save-job-btn {% if job_data.is_saved %}saved{% endif %}" onclick="toggleSaveJob({{ job.id }}, this)">
+                                <i class="{% if job_data.is_saved %}fas{% else %}far{% endif %} fa-heart"></i>
                             </button>
                         </div>
                         
@@ -1369,6 +1377,11 @@
                             {% endif %}
                             {% if job.priority == 'urgent' %}
                                 <span class="tag">Urgent</span>
+                            {% endif %}
+                            {% if has_applied %}
+                                <span class="tag" style="background: rgba(16, 185, 129, 0.2); color: var(--success_color); border-color: var(--success_color);">
+                                    <i class="fas fa-check"></i> Candidature envoyée
+                                </span>
                             {% endif %}
                         </div>
                         
@@ -1394,10 +1407,17 @@
                                 <a href="/jobs/{{ job.id }}" class="view-job-btn">
                                     Voir l'offre
                                 </a>
-                                <button class="apply-btn" onclick="quickApply({{ job.id }}, {{ current_user.id }})">
-                                    <i class="fas fa-paper-plane"></i>
-                                    Postuler
-                                </button>
+                                {% if has_applied %}
+                                    <button class="apply-btn applied" disabled>
+                                        <i class="fas fa-check"></i>
+                                        Candidature envoyée
+                                    </button>
+                                {% else %}
+                                    <button class="apply-btn" onclick="quickApply({{ job.id }})">
+                                        <i class="fas fa-paper-plane"></i>
+                                        Postuler
+                                    </button>
+                                {% endif %}
                             </div>
                         </div>
                         
@@ -1835,97 +1855,137 @@
             window.toggleSaveJob = (jobId, button) => {
                 console.log("Toggle save job:", jobId)
 
+                // Check if user is logged in
+                if (!window.currentUser) {
+                    showToast("Vous devez être connecté pour sauvegarder une offre", "error");
+                    return;
+                }
+
                 const icon = button.querySelector("i")
                 const isSaved = button.classList.contains("saved")
 
-                // Optimistic UI update
-                if (isSaved) {
-                    button.classList.remove("saved")
-                    if (icon) {
-                        icon.className = "far fa-heart"
-                    }
-                } else {
-                    button.classList.add("saved")
-                    if (icon) {
-                        icon.className = "fas fa-heart"
-                    }
-                }
-
                 // Make API call
                 const method = isSaved ? "DELETE" : "POST"
-                setTimeout(() => {
-                    showToast(
-                        isSaved ? "Offre retirée des favoris" : "Offre ajoutée aux favoris", 
-                        "success"
-                    );
-                }, 300);
-            }
+                const url = `/api/jobs/${jobId}/save`
 
-            window.quickApply = (jobId) => {
-    console.log("Quick apply to job:", jobId);
-
-    // Show confirmation dialog
-    if (!confirm("Voulez-vous postuler à cette offre ?")) return;
-
-    // Show loading spinner
-    showLoadingSpinner();
-
-    // Send application to backend
-    fetch(`/api/jobs/${jobId}/apply`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            message: "Application submitted via job portal"
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        hideLoadingSpinner();
-
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
         if (data.success) {
-            showToast(data.message || "Candidature envoyée avec succès!", "success");
-
-            // Update all matching apply buttons
-            const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`);
-            applyButtons.forEach((btn) => {
-                btn.innerHTML = '<i class="fas fa-check"></i> Candidature envoyée';
-                btn.disabled = true;
-                btn.classList.add('applied');
-                btn.style.background = "#10b981";
-                btn.style.cursor = "not-allowed";
-            });
-
-            // Update application count if present
-            const appCountElement = document.getElementById('applicationCount');
-            if (appCountElement) {
-                const currentCount = parseInt(appCountElement.textContent) || 0;
-                appCountElement.textContent = currentCount + 1;
+            // Update UI
+            if (isSaved) {
+                button.classList.remove("saved")
+                if (icon) {
+                    icon.className = "far fa-heart"
+                }
+            } else {
+                button.classList.add("saved")
+                if (icon) {
+                    icon.className = "fas fa-heart"
+                }
             }
+            
+            showToast(data.message, "success");
         } else {
-            showToast(data.message || "Erreur lors de la candidature", "error");
-
-            // Re-enable buttons if something failed
-            const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`);
-            applyButtons.forEach((btn) => {
-                btn.disabled = false;
-            });
+            showToast(data.message || "Erreur lors de la sauvegarde", "error");
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        hideLoadingSpinner();
-        showToast("Erreur lors de l'envoi de la candidature", "error");
-
-        // Re-enable buttons on failure
-        const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`);
-        applyButtons.forEach((btn) => {
-            btn.disabled = false;
-        });
+        showToast("Erreur lors de la sauvegarde", "error");
     });
-};
+}
 
+            window.quickApply = (jobId) => {
+                console.log("Quick apply to job:", jobId);
+
+                // Check if user is logged in
+                if (!window.currentUser) {
+                    showToast("Vous devez être connecté pour postuler", "error");
+                    return;
+                }
+
+                // Show confirmation dialog
+                if (!confirm("Voulez-vous postuler à cette offre ?")) return;
+
+                // Show loading spinner
+                showLoadingSpinner();
+
+                // Send application to backend
+                fetch(`/api/jobs/${jobId}/apply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: "Application submitted via job portal"
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoadingSpinner();
+
+                    if (data.success) {
+                        showToast(data.message || "Candidature envoyée avec succès!", "success");
+
+                        // Update all matching apply buttons
+                        const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`);
+                        applyButtons.forEach((btn) => {
+                            btn.innerHTML = '<i class="fas fa-check"></i> Candidature envoyée';
+                            btn.disabled = true;
+                            btn.classList.add('applied');
+                            btn.style.background = "#10b981";
+                            btn.style.cursor = "not-allowed";
+                        });
+
+                        // Add applied tag to job card
+                        const jobCard = document.querySelector(`[data-job-id="${jobId}"]`);
+                        if (jobCard) {
+                            const tagsContainer = jobCard.querySelector('.job-tags');
+                            if (tagsContainer) {
+                                const appliedTag = document.createElement('span');
+                                appliedTag.className = 'tag';
+                                appliedTag.style.background = 'rgba(16, 185, 129, 0.2)';
+                                appliedTag.style.color = 'var(--success_color)';
+                                appliedTag.style.borderColor = 'var(--success_color)';
+                                appliedTag.innerHTML = '<i class="fas fa-check"></i> Candidature envoyée';
+                                tagsContainer.appendChild(appliedTag);
+                            }
+                        }
+
+                        // Update application count if present
+                        const appCountElement = document.getElementById('applicationCount');
+                        if (appCountElement) {
+                            const currentCount = parseInt(appCountElement.textContent) || 0;
+                            appCountElement.textContent = currentCount + 1;
+                        }
+                    } else {
+                        showToast(data.message || "Erreur lors de la candidature", "error");
+
+                        // Re-enable buttons if something failed
+                        const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`);
+                        applyButtons.forEach((btn) => {
+                            btn.disabled = false;
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    hideLoadingSpinner();
+                    showToast("Erreur lors de l'envoi de la candidature", "error");
+
+                    // Re-enable buttons on failure
+                    const applyButtons = document.querySelectorAll(`[onclick="quickApply(${jobId})"]`);
+                    applyButtons.forEach((btn) => {
+                        btn.disabled = false;
+                    });
+                });
+            };
 
             // Job card click handlers
             const jobCards = document.querySelectorAll(".job-card")
@@ -1939,7 +1999,7 @@
                     const jobId = this.dataset.jobId
                     if (jobId) {
                         console.log(`Navigating to job ${jobId}`);
-                        // In a real app: window.location.href = `/jobs/${jobId}`
+                        window.location.href = `/jobs/${jobId}`;
                     }
                 })
             })
@@ -2154,57 +2214,18 @@
             hideLoadingSpinner()
         })
 
-// Global error handler to prevent stuck loading states
-window.addEventListener('error', (e) => {
-    console.error('Global error caught:', e.error);
-    hideLoadingSpinner();
-});
+        // Global error handler to prevent stuck loading states
+        window.addEventListener('error', (e) => {
+            console.error('Global error caught:', e.error);
+            hideLoadingSpinner();
+        });
 
-// Handle unhandled promise rejections
-window.addEventListener('unhandledrejection', (e) => {
-    console.error('Unhandled promise rejection:', e.reason);
-    hideLoadingSpinner();
-});
+        // Handle unhandled promise rejections
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('Unhandled promise rejection:', e.reason);
+            hideLoadingSpinner();
+        });
 
-// Add a timeout to hide loading spinner if it's been showing too long
-let loadingTimeout;
-function showLoadingSpinner() {
-    console.log("Showing loading spinner...")
-    document.getElementById("loadingSpinner").style.display = "flex"
-    document.querySelector(".jobs-grid").style.opacity = "0.6"
-    document.querySelector(".jobs-grid").style.pointerEvents = "none"
-    
-    // Disable search button
-    const searchBtn = document.getElementById("searchBtn");
-    if (searchBtn) {
-        searchBtn.disabled = true;
-        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recherche...';
-    }
-    
-    // Set a timeout to hide loading spinner if it takes too long
-    clearTimeout(loadingTimeout);
-    loadingTimeout = setTimeout(() => {
-        console.warn("Loading timeout reached, hiding spinner");
-        hideLoadingSpinner();
-        showToast("La recherche prend plus de temps que prévu", "warning");
-    }, 10000); // 10 second timeout
-}
-
-function hideLoadingSpinner() {
-    console.log("Hiding loading spinner...")
-    clearTimeout(loadingTimeout);
-    
-    document.getElementById("loadingSpinner").style.display = "none"
-    document.querySelector(".jobs-grid").style.opacity = "1"
-    document.querySelector(".jobs-grid").style.pointerEvents = "auto"
-    
-    // Re-enable search button
-    const searchBtn = document.getElementById("searchBtn");
-    if (searchBtn) {
-        searchBtn.disabled = false;
-        searchBtn.innerHTML = '<i class="fas fa-search"></i> Rechercher';
-    }
-}
         // Pass user data from server to client if available
         {% if current_user %}
         window.currentUser = {

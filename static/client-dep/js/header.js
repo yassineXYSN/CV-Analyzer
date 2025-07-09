@@ -32,20 +32,15 @@ class HeaderComponent {
         // User menu dropdown - FIXED
         const userMenuTrigger = document.getElementById('userMenuTrigger');
         const userDropdown = document.getElementById('userDropdown');
-        console.log('userMenuTrigger:', userMenuTrigger);
-        console.log('userDropdown:', userDropdown);
 
-        console.log('Setting up user menu dropdown');
 
         if (userMenuTrigger && userDropdown) {
             const closeDropdown = () => {
                 userMenuTrigger.classList.remove('active');
                 userDropdown.classList.remove('show');
-                console.log('Setting up user menu dropdown');
             };
 
             userMenuTrigger.addEventListener('click', (e) => {
-                console.log('User menu trigger clicked');
                 e.stopPropagation();
                 const isOpen = userDropdown.classList.contains('show');
 
@@ -82,7 +77,8 @@ class HeaderComponent {
         google_id: null,
         profile_picture: '', // Or provide a real URL
         is_active: 1,
-        is_verified: 1
+        is_verified: 1,
+        profile: null
     };
     this.setUser(this.currentUser);
         try {
@@ -95,6 +91,14 @@ class HeaderComponent {
                 const userData = await response.json();
                 if (userData.authenticated && userData.user) {
                     this.setUser(userData.user);
+                    console.log('User authenticated via API:', userData.user);
+                    if (userData.user.profile === null) {
+                        console.log('entering step2');
+                        const step2Item = document.getElementById("setupstep2");
+                        if (step2Item) {
+                            step2Item.style.display = "block";
+                        }
+                    }
                     return;
                 }
             }
@@ -121,6 +125,7 @@ class HeaderComponent {
 
     setUser(user) {
         this.currentUser = user;
+        
 
         const userMenuContainer = document.getElementById('userMenuContainer');
         const guestMenuContainers = document.querySelectorAll('.guest-menu-container');
@@ -216,7 +221,8 @@ class HeaderComponent {
             if (
                 (page === 'home' && currentPath === '/') ||
                 (page === 'analyze' && currentPath.includes('/analyze')) ||
-                (page === 'jobs' && currentPath.includes('/jobs'))
+                (page === 'jobs' && currentPath.includes('/jobs')) ||
+                (page === 'step2' && currentPath.includes('/signup/step2'))
             ) {
                 link.classList.add('active');
             }

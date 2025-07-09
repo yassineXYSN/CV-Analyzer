@@ -17,7 +17,6 @@ class JobStatus(enum.Enum):
     INACTIVE = "INACTIVE"
     CLOSED = "CLOSED"
 
-
 class Contact(Base):
     __tablename__ = "contact"
     id = Column(Integer, primary_key=True, index=True)
@@ -30,6 +29,21 @@ class AnalyseCandidat(Base):
     __tablename__ = "analyse_candidat"
     id = Column(Integer, primary_key=True, index=True)
     analyse = Column(Text)
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), nullable=False, unique=True)
+    password_hash = Column(String(255))
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    google_id = Column(String(255), unique=True)
+    profile_picture = Column(String(500))
+    is_active = Column(Integer, default=1)
+    is_verified = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    profile = relationship("ProfileCandidat", back_populates="user", uselist=False)
 
 class ProfileCandidat(Base):
     __tablename__ = "profile_candidat"
@@ -44,11 +58,11 @@ class ProfileCandidat(Base):
     languages = Column(JSON)
     certificates = Column(JSON)
     skills = Column(JSON)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    user = relationship("User", back_populates="profile")
     profile_picture = Column(String(500))
     contact = relationship("Contact")
     analyse = relationship("AnalyseCandidat")
-    user = relationship("User")
 
 class HrAdmin(Base):
     __tablename__ = "hr_admins"
@@ -183,20 +197,20 @@ class Application(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User")
+    job = relationship("Job")
+    candidate_profile = relationship("ProfileCandidat")
 
-class User(Base):
-    __tablename__ = "users"
+# NEW: SavedJob model for liked/saved jobs
+class SavedJob(Base):
+    __tablename__ = "saved_jobs"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), nullable=False, unique=True)
-    password_hash = Column(String(255))
-    first_name = Column(String(100), nullable=False)
-    last_name = Column(String(100), nullable=False)
-    google_id = Column(String(255), unique=True)
-    profile_picture = Column(String(500))
-    is_active = Column(Integer, default=1)
-    is_verified = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    saved_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User")
+    job = relationship("Job")
 
 # Session model for remember me functionality
 class UserSession(Base):
@@ -379,4 +393,3 @@ def get_job_by_id(job_id):
         return None
     finally:
         db.close()
-

@@ -37,7 +37,7 @@
             <div class="profile-section">
                 <div class="section-header" style="text-align: left;">
                     <div class="profile-avatar-large">
-                        {% if profile.profile_picture %}
+                        {% if current_user.profile_picture %}
                             <img src="{{ current_user.profile_picture }}" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                         {% else %}
                             <img src="/static/client-dep/images/placeholder.svg" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
