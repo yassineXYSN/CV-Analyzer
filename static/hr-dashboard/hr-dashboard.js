@@ -64,49 +64,6 @@ async function loadApplications() {
     renderApplications()
   }
 }
-function renderApplicationCardHTML(app) {
-  return `
-    <div class="application-card ${app.status}">
-      <div class="application-header">
-        <div class="applicant-info">
-          <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
-          <div class="applicant-details">
-            <h4>${app.candidate_name}</h4>
-            <p>${app.candidate_email}</p>
-            <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
-          </div>
-        </div>
-        <div class="application-status ${app.status}">
-          ${getStatusText(app.status)}
-        </div>
-      </div>
-
-      <div class="application-job">
-        <div class="job-info">
-          <div class="job-title">${app.job_title}</div>
-          <div class="job-department">${app.department_name}</div>
-          <div class="job-priority priority-${app.priority || "normal"}">
-            ${(app.priority || "normal").toUpperCase()}
-          </div>
-        </div>
-        <div class="application-date">
-          Candidature envoyée le ${formatDate(app.application_date)}
-          <br><small>Il y a ${app.days_since_application} jour(s)</small>
-        </div>
-      </div>
-
-      <div class="application-actions">
-        <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
-          <i class="fas fa-user"></i> Voir Profil
-        </button>
-        <button class="app-btn review" onclick="viewJobDetails(${app.job_id})">
-          <i class="fas fa-circle-info"></i> Détails
-        </button>
-      </div>
-    </div>
-  `
-}
-
 
 // FONCTION MISE À JOUR: Rendu des candidatures
 function renderApplications(filter = "all") {
@@ -168,10 +125,9 @@ function renderApplications(filter = "all") {
                     <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
                         <i class="fas fa-user"></i> Voir Profil
                     </button>
-                    ${renderActionButtons(app)}
                     <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
-                            <i class="fas fa-info-circle"></i> Détails
-                        </button>
+                        <i class="fas fa-info-circle"></i> Détails sur le job
+                    </button>
                 </div>
             </div>
         `,
@@ -217,118 +173,21 @@ function formatDate(dateString) {
   return date.toLocaleDateString("fr-FR")
 }
 
-function renderActionButtons(app) {
-  if (app.status === "pending") {
-    return `
-            <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
-                <i class="fas fa-check"></i> Accepter
-            </button>
-            <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
-                <i class="fas fa-times"></i> Rejeter
-            </button>
-        `
-  } else if (app.status === "reviewed") {
-    return `
-            <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
-                <i class="fas fa-check-circle"></i> Accepter
-            </button>
-            <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
-                <i class="fas fa-times"></i> Rejeter
-            </button>
-        `
-  } else if (app.status === "interview_scheduled") {
-    return `
-            <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
-                <i class="fas fa-user-check"></i> Accepter
-            </button>
-            <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
-                <i class="fas fa-user-times"></i> Rejeter
-            </button>
-        `
-  } else {
-    return ``
-  }
-}
-
-// NOUVELLE FONCTION: Mettre à jour le statut d'une candidature
-async function updateApplicationStatus(applicationId, newStatus) {
-  console.log("📝 FRONTEND: Mise à jour statut candidature:", applicationId, "vers", newStatus)
-
-  // Afficher une confirmation pour l'acceptation
-  if (newStatus === "accepted") {
-    const application = applications.find((app) => app.id === applicationId)
-    if (
-      application &&
-      !confirm(
-        `Êtes-vous sûr de vouloir accepter la candidature de ${application.candidate_name} ?\n\nCela va automatiquement :\n• Créer un employé dans le département\n• Marquer le poste comme pourvu\n• Rejeter les autres candidatures pour ce poste`,
-      )
-    ) {
-      return
-    }
-  }
-
-  try {
-    const response = await fetch(`/api/applications/${applicationId}/update-status`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ status: newStatus }),
-    })
-
-    const result = await response.json()
-
-    if (result.success) {
-      console.log("✅ FRONTEND: Statut mis à jour avec succès")
-
-      // Message spécial pour l'acceptation
-      if (newStatus === "accepted" && result.employee_created) {
-        showNotification(
-          `🎉 Candidature acceptée ! ${result.employee_created.name} a été ajouté comme employé. Le poste "${result.job_filled.title}" est maintenant pourvu.`,
-          "success",
-        )
-      } else {
-        showNotification(`Candidature mise à jour vers "${getStatusText(newStatus)}"`, "success")
-      }
-
-      // Recharger les candidatures et les stats
-      await loadApplications()
-      await loadDashboardStats()
-      await loadEmployees() // Recharger les employés pour voir le nouveau
-      await loadJobs() // Recharger les jobs pour voir les statuts mis à jour
-    } else {
-      console.error("❌ FRONTEND: Erreur mise à jour statut:", result.message)
-      showNotification("Erreur: " + result.message, "error")
-    }
-  } catch (error) {
-    console.error("❌ FRONTEND: Erreur réseau mise à jour statut:", error)
-    showNotification("Erreur de connexion au serveur. Veuillez réessayer.", "error")
-  }
-}
-
-// NOUVELLE FONCTION: Créer des candidatures de démonstration
-
-
 // Fonctions d'interaction avec les candidatures
 function viewCandidateProfile(candidateId) {
   console.log("👤 FRONTEND: Ouverture profil candidat:", candidateId)
   window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
 }
 
-function viewApplicationDetails(applicationId) {
-  console.log("📋 FRONTEND: Détails candidature:", applicationId)
-  const application = applications.find((app) => app.id === applicationId)
-  if (application) {
-    showNotification(`Affichage des détails de ${application.candidate_name}`, "info")
-  }
+function viewJobDetails(jobId) {
+  console.log("💼 FRONTEND: Détails du poste:", jobId)
+  window.location.href = `/job-details?id=${jobId}`
 }
 
 function filterApplications(status) {
   console.log("🔍 FRONTEND: Filtrage candidatures:", status)
   renderApplications(status)
 }
-
-
 
 // Fonction pour charger l'utilisateur actuel
 async function loadCurrentUser() {
@@ -483,8 +342,6 @@ function closeJobModal() {
   document.getElementById("jobModal").style.display = "none"
   document.getElementById("jobForm").reset()
 }
-
-
 
 function closeEmployeeModal() {
   console.log("👤 FRONTEND: Fermeture modal employé")
@@ -725,7 +582,6 @@ async function loadDepartments() {
   }
 }
 
-
 // Fonction pour charger les postes
 async function loadJobs() {
   console.log("🔄 FRONTEND: Chargement des postes")
@@ -962,8 +818,7 @@ function viewEmployeeProfile(employeeId) {
   }
 }
 
-
-
+// Fonction pour voir les détails d'un poste
 function viewJobDetails(jobId) {
   console.log("💼 FRONTEND: Navigation vers job-details pour le poste:", jobId)
   window.location.href = `/job-details?id=${jobId}`
@@ -1124,6 +979,7 @@ function showNotification(message, type = "info") {
     }, 300)
   }, 5000)
 }
+
 function filterApplicationByName() {
   const input = document.getElementById("applicationSearchInput")
   const searchTerm = input.value.toLowerCase().trim()
@@ -1155,7 +1011,44 @@ function renderApplicationsList(list) {
   }
 
   container.innerHTML = list
-    .map((app) => renderApplicationCardHTML(app))
+    .map((app) => `
+      <div class="application-card ${app.status}">
+        <div class="application-header">
+          <div class="applicant-info">
+            <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
+            <div class="applicant-details">
+              <h4>${app.candidate_name}</h4>
+              <p>${app.candidate_email}</p>
+              <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
+            </div>
+          </div>
+          <div class="application-status ${app.status}">
+            ${getStatusText(app.status)}
+          </div>
+        </div>
+        
+        <div class="application-job">
+          <div class="job-info">
+            <div class="job-title">${app.job_title}</div>
+            <div class="job-department">${app.department_name}</div>
+            <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
+          </div>
+          <div class="application-date">
+            Candidature envoyée le ${formatDate(app.application_date)}
+            <br><small>Il y a ${app.days_since_application} jour(s)</small>
+          </div>
+        </div>
+        
+        <div class="application-actions">
+          <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
+            <i class="fas fa-user"></i> Voir Profil
+          </button>
+          <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
+            <i class="fas fa-info-circle"></i> Détails
+          </button>
+        </div>
+      </div>
+    `)
     .join("")
 }
 
