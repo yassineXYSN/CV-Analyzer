@@ -350,10 +350,10 @@ function renderCandidateActions(app) {
       </button>
     `
   } else {
-    return `
-      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-info-circle"></i> Voir profil
-      </button>
+      return `
+        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+          <i class="fas fa-info-circle"></i> Voir profil
+        </button>
     `
   }
 }
@@ -812,7 +812,7 @@ function closeJob() {
 
 function viewCandidateProfile(candidateId) {
   console.log(`👤 Voir profil candidat ${candidateId}`)
-  window.open(`/profile/${candidateId}`, "_blank")
+  window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
 }
 
 // Fonctions utilitaires

@@ -71,11 +71,7 @@ avatar.textContent = `${firstInitial}${lastInitial}`
   // Profil et analyse IA
   document.getElementById("employeeProfileText").textContent = candidate.profile || "Aucune présentation disponible";
   
-  if (candidate.analyse) {
-    document.getElementById("employeeAnalysis").textContent = candidate.analyse;
-  } else {
-    document.getElementById("employeeAnalysis").textContent = "Aucune analyse IA disponible";
-  }
+
 
   // Compétences
   const skillsList = document.getElementById("employeeSkillsList");
@@ -534,7 +530,6 @@ async function loadEmployeeFromAPI(employeeId) {
       languages: e.languages || [],
       certificates: e.certificates || [],
       profile: e.profile || "",
-      analyse: e.analyse || ""
     }
 
     // Afficher TOUTES les données
@@ -613,7 +608,6 @@ function displayEmployeeDetails(employee) {
 
   // Profil et analyse
   document.getElementById("employeeProfileText").textContent = employee.profile || "Aucune présentation disponible";
-  document.getElementById("employeeAnalysis").textContent = employee.analyse || "Aucune analyse IA disponible";
 }
 
 function parseJsonSafe(value) {
