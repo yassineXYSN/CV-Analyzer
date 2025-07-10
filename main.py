@@ -1,6 +1,8 @@
-import os
+import json
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+import os
 from dotenv import load_dotenv
 from databasehr.database import engine, SessionLocal
 import databasehr.models as models
@@ -9,11 +11,22 @@ from routers.hr import (
     employee, job, application, candidate, 
     dashboard, analysis
 )
+from database import engine
+import databaseclient.models as models
+from routers.client_dep import auth, jobs, profiles, scan, general
+
 
 load_dotenv()
 app = FastAPI()
 
 # Create database tables
+app.include_router(auth.router)
+app.include_router(jobs.router)
+app.include_router(profiles.router)
+app.include_router(scan.router)
+app.include_router(general.router)
+
+# Création des tables
 models.Base.metadata.create_all(bind=engine)
 
 # Create static directory
@@ -42,3 +55,4 @@ app.include_router(analysis.router)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

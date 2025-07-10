@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription Client - CV Analyzer Pro</title>
-    <link rel="stylesheet" href="/static/client-auth.css">
+    <link rel="stylesheet" href="/static/client-dep/css/auth.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -38,7 +38,7 @@
             
             <div class="message success-message" id="successMessage" style="display: none;">
                 <i class="fas fa-check-circle"></i>
-                <span>Compte créé avec succès ! Vérifiez votre email pour l'activation.</span>
+                <span>Compte créé avec succès ! Vous pouvez maintenant vous connecter.</span>
             </div>
 
             <!-- Name Fields -->
@@ -52,7 +52,7 @@
                         <input 
                             type="text" 
                             id="firstName" 
-                            name="firstName" 
+                            name="first_name" 
                             class="form-input" 
                             placeholder="Votre prénom"
                             required
@@ -69,7 +69,7 @@
                         <input 
                             type="text" 
                             id="lastName" 
-                            name="lastName" 
+                            name="last_name" 
                             class="form-input" 
                             placeholder="Votre nom"
                             required
@@ -136,7 +136,7 @@
                     <input 
                         type="password" 
                         id="confirmPassword" 
-                        name="confirmPassword" 
+                        name="confirm_password" 
                         class="form-input" 
                         placeholder="Confirmez votre mot de passe"
                         required
@@ -188,7 +188,7 @@
         <div class="logo-section">
             <div class="logo">
                 <i class="fas fa-brain"></i>
-                CV Analyzer Pro
+                <a href="/" style="text-decoration: none; color: inherit;">CV Analyzer Pro</a>
             </div>
             <div class="logo-subtitle">Rejoignez des milliers d'utilisateurs</div>
             <div class="logo-description">
@@ -216,123 +216,237 @@
     </div>
 
     <script>
-        // Password toggle functionality
-        function setupPasswordToggle(inputId, toggleId) {
-            const passwordInput = document.getElementById(inputId);
-            const passwordToggle = document.getElementById(toggleId);
+        document.addEventListener("DOMContentLoaded", () => {
+            initializeAuthPage()
+            initializePasswordToggles()
+            initializePasswordStrength()
+            initializeFormValidation()
+        })
 
-            passwordToggle.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                
-                const icon = passwordToggle.querySelector('i');
-                icon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
-            });
+        function initializeAuthPage() {
+            console.log("Signup page initialized")
+
+            // Add focus effects to inputs
+            const inputs = document.querySelectorAll(".form-input")
+            inputs.forEach((input) => {
+                const container = input.closest(".input-container")
+
+                input.addEventListener("focus", () => {
+                    if (container) container.classList.add("focused")
+                })
+
+                input.addEventListener("blur", () => {
+                    if (container) container.classList.remove("focused")
+                })
+            })
         }
 
-        setupPasswordToggle('password', 'passwordToggle');
-        setupPasswordToggle('confirmPassword', 'confirmPasswordToggle');
+        function initializePasswordToggles() {
+            const passwordToggles = document.querySelectorAll(".password-toggle")
 
-        // Password strength checker
-        const passwordInput = document.getElementById('password');
-        const strengthFill = document.getElementById('strengthFill');
-        const strengthText = document.getElementById('strengthText');
+            passwordToggles.forEach((toggle) => {
+                toggle.addEventListener("click", () => {
+                    const input = toggle.previousElementSibling
+                    const icon = toggle.querySelector("i")
 
-        passwordInput.addEventListener('input', function() {
-            const password = this.value;
-            const strength = calculatePasswordStrength(password);
-            
-            strengthFill.style.width = strength.percentage + '%';
-            strengthFill.className = 'strength-fill ' + strength.class;
-            strengthText.textContent = strength.text;
-        });
+                    if (input.type === "password") {
+                        input.type = "text"
+                        icon.className = "fas fa-eye-slash"
+                    } else {
+                        input.type = "password"
+                        icon.className = "fas fa-eye"
+                    }
+                })
+            })
+        }
+
+        function initializePasswordStrength() {
+            const passwordInput = document.getElementById("password")
+            const strengthFill = document.getElementById("strengthFill")
+            const strengthText = document.getElementById("strengthText")
+
+            if (!passwordInput || !strengthFill || !strengthText) return
+
+            passwordInput.addEventListener("input", () => {
+                const password = passwordInput.value
+                const strength = calculatePasswordStrength(password)
+
+                updatePasswordStrengthUI(strength, strengthFill, strengthText)
+            })
+        }
 
         function calculatePasswordStrength(password) {
-            let score = 0;
-            let feedback = [];
+            let score = 0
 
-            if (password.length >= 8) score += 25;
-            else feedback.push('8 caractères min');
+            if (password.length === 0) {
+                return { score: 0, level: "none", feedback: "Entrez un mot de passe" }
+            }
 
-            if (/[a-z]/.test(password)) score += 25;
-            else feedback.push('minuscule');
+            // Length check
+            if (password.length >= 8) score += 25
+            if (password.length >= 12) score += 10
 
-            if (/[A-Z]/.test(password)) score += 25;
-            else feedback.push('majuscule');
+            // Character variety checks
+            if (/[a-z]/.test(password)) score += 15
+            if (/[A-Z]/.test(password)) score += 15
+            if (/[0-9]/.test(password)) score += 15
+            if (/[^A-Za-z0-9]/.test(password)) score += 20
 
-            if (/[0-9]/.test(password)) score += 25;
-            else feedback.push('chiffre');
-
-            if (score < 50) {
-                return { percentage: score, class: 'weak', text: 'Faible - ' + feedback.join(', ') };
-            } else if (score < 75) {
-                return { percentage: score, class: 'medium', text: 'Moyen - ' + feedback.join(', ') };
-            } else if (score < 100) {
-                return { percentage: score, class: 'good', text: 'Bon - ' + feedback.join(', ') };
+            // Determine level and feedback
+            if (score < 30) {
+                return { score, level: "weak", feedback: "Mot de passe faible" }
+            } else if (score < 60) {
+                return { score, level: "medium", feedback: "Mot de passe moyen" }
+            } else if (score < 80) {
+                return { score, level: "good", feedback: "Bon mot de passe" }
             } else {
-                return { percentage: 100, class: 'strong', text: 'Excellent' };
+                return { score, level: "strong", feedback: "Mot de passe fort" }
             }
         }
 
-        // Form submission
-        const signupForm = document.getElementById('signupForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnContent = document.getElementById('btnContent');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const errorMessage = document.getElementById('errorMessage');
-        const errorText = document.getElementById('errorText');
-        const successMessage = document.getElementById('successMessage');
+        function updatePasswordStrengthUI(strength, fillElement, textElement) {
+            fillElement.style.width = strength.score + "%"
+            fillElement.className = `strength-fill ${strength.level}`
+            textElement.textContent = strength.feedback
+        }
 
-        signupForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Hide previous messages
-            errorMessage.style.display = 'none';
-            successMessage.style.display = 'none';
-            
-            // Validation
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (password !== confirmPassword) {
-                errorText.textContent = 'Les mots de passe ne correspondent pas.';
-                errorMessage.style.display = 'flex';
-                return;
-            }
+        function initializeFormValidation() {
+            const form = document.getElementById("signupForm")
 
-            if (!document.getElementById('acceptTerms').checked) {
-                errorText.textContent = 'Vous devez accepter les conditions d\'utilisation.';
-                errorMessage.style.display = 'flex';
-                return;
-            }
-            
-            // Show loading state
-            btnContent.style.display = 'none';
-            loadingSpinner.style.display = 'flex';
-            submitBtn.disabled = true;
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault()
 
-            // Simulate signup process
-            setTimeout(() => {
-                successMessage.style.display = 'flex';
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 3000);
-            }, 2000);
-        });
+                const formData = new FormData(form)
+                const isValid = validateForm(form, formData)
 
-        // Input focus effects
-        const inputs = document.querySelectorAll('.form-input');
-        inputs.forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentElement.classList.add('focused');
-            });
-            
-            input.addEventListener('blur', function() {
-                if (!this.value) {
-                    this.parentElement.classList.remove('focused');
+                if (isValid) {
+                    await handleFormSubmission(form, formData)
                 }
-            });
-        });
+            })
+        }
+
+        function validateForm(form, formData) {
+            const errors = []
+
+            // Name validation
+            const firstName = formData.get("first_name")
+            const lastName = formData.get("last_name")
+            if (!firstName || firstName.trim().length < 2) {
+                errors.push("Le prénom doit contenir au moins 2 caractères")
+            }
+            if (!lastName || lastName.trim().length < 2) {
+                errors.push("Le nom doit contenir au moins 2 caractères")
+            }
+
+            // Email validation
+            const email = formData.get("email")
+            if (!email || !isValidEmail(email)) {
+                errors.push("Adresse email invalide")
+            }
+
+            // Password validation
+            const password = formData.get("password")
+            if (!password || password.length < 8) {
+                errors.push("Le mot de passe doit contenir au moins 8 caractères")
+            }
+
+            // Confirm password validation
+            const confirmPassword = formData.get("confirm_password")
+            if (password !== confirmPassword) {
+                errors.push("Les mots de passe ne correspondent pas")
+            }
+
+            // Terms acceptance
+            const acceptTerms = formData.get("acceptTerms")
+            if (!acceptTerms) {
+                errors.push("Vous devez accepter les conditions d'utilisation")
+            }
+
+            if (errors.length > 0) {
+                showFormError(errors[0])
+                return false
+            }
+
+            return true
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+            return emailRegex.test(email)
+        }
+
+        async function handleFormSubmission(form, formData) {
+            const submitBtn = form.querySelector(".submit-btn")
+            const btnContent = form.querySelector(".btn-content")
+            const loadingSpinner = form.querySelector(".loading-spinner")
+
+            // Show loading state
+            submitBtn.disabled = true
+            btnContent.style.display = "none"
+            loadingSpinner.style.display = "flex"
+            try {
+                const response = await fetch('/signup', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Redirect to step 2
+                    window.location.href = result.redirect_url;
+                } else {
+                    showFormError(result.message)
+                    // Reset button state
+                    submitBtn.disabled = false
+                    btnContent.style.display = "flex"
+                    loadingSpinner.style.display = "none"
+                }
+            } catch (error) {
+                console.error('Signup error:', error)
+                showFormError("Erreur lors de la création du compte. Veuillez réessayer.")
+                
+                // Reset button state
+                submitBtn.disabled = false
+                btnContent.style.display = "flex"
+                loadingSpinner.style.display = "none"
+            }
+        }
+
+        function showFormError(message) {
+            const errorElement = document.getElementById("errorMessage")
+            const errorText = document.getElementById("errorText")
+
+            if (errorElement) {
+                if (errorText) {
+                    errorText.textContent = message
+                } else {
+                    errorElement.querySelector("span").textContent = message
+                }
+                errorElement.style.display = "flex"
+
+                // Hide success message if visible
+                const successElement = document.getElementById("successMessage")
+                if (successElement) {
+                    successElement.style.display = "none"
+                }
+            }
+        }
+
+        function showFormSuccess(message) {
+            const successElement = document.getElementById("successMessage")
+
+            if (successElement) {
+                successElement.querySelector("span").textContent = message
+                successElement.style.display = "flex"
+
+                // Hide error message if visible
+                const errorElement = document.getElementById("errorMessage")
+                if (errorElement) {
+                    errorElement.style.display = "none"
+                }
+            }
+        }
     </script>
 </body>
 </html>

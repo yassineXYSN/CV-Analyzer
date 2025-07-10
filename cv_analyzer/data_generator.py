@@ -94,7 +94,7 @@ def generate_json(text):
 def generate_good_points(text):
     client = InferenceClient(
         provider="novita",
-        api_key=os.getenv("JSON_DATA_GENERATOR_TOKEN"),
+        api_key=os.getenv("GOOD_POINTS_GENERATOR_TOKEN"),
         timeout=300,
     )
     completion = client.chat.completions.create(
@@ -118,7 +118,7 @@ def generate_good_points(text):
 def generate_weak_points(text):
     client = InferenceClient(
         provider="novita",
-        api_key=os.getenv("JSON_DATA_GENERATOR_TOKEN"),
+        api_key=os.getenv("WEAK_POINTS_GENERATOR_TOKEN"),
         timeout=300,
     )
     completion = client.chat.completions.create(
@@ -144,7 +144,7 @@ def generate_weak_points(text):
 def generate_categorie_scores(text):
     client = InferenceClient(
         provider="novita",
-        api_key=os.getenv("JSON_DATA_GENERATOR_TOKEN"),
+        api_key=os.getenv("CATEGORIE_SCORES_GENERATOR_TOKEN"),
         timeout=300,
     )
     completion = client.chat.completions.create(
@@ -191,7 +191,7 @@ def generate_categorie_scores(text):
 def generate_improvements(text,strong,weak,scores):
     client = InferenceClient(
         provider="novita",
-        api_key=os.getenv("JSON_DATA_GENERATOR_TOKEN"),
+        api_key=os.getenv("IMPROVEMENTS_DATA_GENERATOR_TOKEN"),
         timeout=300,
     )
     completion = client.chat.completions.create(

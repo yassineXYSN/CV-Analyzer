@@ -4,305 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profil détaillé | CV Analyzer Pro</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/client-dep/css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <style>
-        /* CSS de secours au cas où le fichier externe ne charge pas */
-        body {
-            font-family: 'Inter', sans-serif;
-            background: radial-gradient(ellipse at top, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
-            min-height: 100vh;
-            color: #ffffff;
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
-        
-        .profile-detail-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-            padding-top: 6rem;
-        }
-        
-        .profile-detail-header {
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-        
-        .back-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        .profile-detail-title {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .profile-section {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .profile-section::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            opacity: 0.5;
-        }
-        
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-        
-        .profile-avatar-large {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #000;
-            flex-shrink: 0;
-        }
-        
-        .profile-name {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 0.5rem;
-        }
-        
-        .profile-title {
-            font-size: 1.3rem;
-            color: #a0a0a0;
-            margin-bottom: 1rem;
-        }
-        
-        .meta-item {
-            background: rgba(0, 212, 255, 0.2);
-            color: #00d4ff;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-        }
-        
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .contact-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .contact-card {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1.5rem;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .contact-card:hover {
-            transform: translateY(-2px);
-            border-color: rgba(0, 212, 255, 0.3);
-        }
-        
-        .contact-icon {
-            font-size: 1.5rem;
-            flex-shrink: 0;
-        }
-        
-        .contact-label {
-            font-size: 0.9rem;
-            color: #707070;
-            font-weight: 500;
-            display: block;
-        }
-        
-        .contact-value {
-            color: #ffffff;
-            font-weight: 500;
-            word-break: break-all;
-        }
-        
-        .about-content {
-            color: #a0a0a0;
-            line-height: 1.7;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .skills-detailed {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .skill-item {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 1rem;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .skill-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        .skill-name {
-            font-weight: 600;
-            color: #ffffff;
-        }
-        
-        .skill-level {
-            color: #a0a0a0;
-            font-weight: 500;
-        }
-        
-        .skill-bar {
-            width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        
-        .skill-progress {
-            height: 100%;
-            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            border-radius: 3px;
-            width: 0%;
-            transition: width 1s ease-in-out;
-        }
-        
-        .btn-primary, .btn-secondary {
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            color: #000;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(0, 212, 255, 0.4);
-        }
-        
-        .btn-secondary {
-            background: transparent;
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.05);
-            transform: translateY(-2px);
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        @media (max-width: 768px) {
-            .profile-detail-container {
-                padding: 1rem;
-            }
-            
-            .section-header {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .contact-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-            }
-        }
-    </style>
 </head>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const backBtn = document.querySelector(".back-btn");
+        if (document.referrer.endsWith("/signup/step2")) {
+            backBtn.style.display = "none";
+        }
+    });
+</script>
+<script src="/static/client-dep/js/header.js"></script>
 <body>
     <!-- Navigation -->
-    <nav style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 1rem 0;">
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">CV Analyzer Pro</div>
-            <ul style="display: flex; gap: 2rem; list-style: none; margin: 0; padding: 0;">
-                <li><a href="/" style="color: #a0a0a0; text-decoration: none; font-weight: 500;">Accueil</a></li>
-                <li><a href="/#features" style="color: #a0a0a0; text-decoration: none; font-weight: 500;">Fonctionnalités</a></li>
-                <li><a href="/analyze" style="color: #a0a0a0; text-decoration: none; font-weight: 500;">Nouvelle analyse</a></li>
-            </ul>
-        </div>
-    </nav>
+     <div id="header-component"></div>
 
     <div class="profile-detail-container">
         <!-- Header -->
@@ -310,127 +27,91 @@
             <button onclick="history.back()" class="back-btn">
                 ← Retour aux résultats
             </button>
-            <h1 class="profile-detail-title"> Profil détaillé</h1>
+            <h1 class="profile-detail-title">Profil détaillé</h1>
         </div>
 
+        {% if profile %}
         <!-- Profile Content -->
         <div class="profile-detail-content">
             <!-- Personal Information -->
             <div class="profile-section">
-                <div class="section-header">
+                <div class="section-header" style="text-align: left;">
                     <div class="profile-avatar-large">
-                        C
+                        {% if current_user.profile_picture %}
+                            <img src="{{ current_user.profile_picture }}" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        {% else %}
+                            <img src="/static/client-dep/images/placeholder.svg" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        {% endif %}
                     </div>
+
                     <div class="profile-info">
-                        <h2 class="profile-name">{{ profile.name or 'Nom non disponible' }}</h2>
-                        <p class="profile-title">{{ profile.title or 'Titre non disponible' }}</p>
+                        <h2 class="profile-name">{{ profile.name or 'Candidat' }}</h2>
+                        <p class="profile-title">{{ profile.title or 'Professionnel' }}</p>
                         <div class="profile-meta">
                             <span class="meta-item">📅 Profil créé récemment</span>
-                            <span style="background: rgba(0, 212, 255, 0.2); color: #00d4ff; padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 600; border: 1px solid rgba(0, 212, 255, 0.3);">{{ profile.years_of_experience or "Année d'experience non disponible" }}</span>
+                            <span style="background: rgba(0, 212, 255, 0.2); color: #00d4ff; padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 600; border: 1px solid rgba(0, 212, 255, 0.3);">{{ profile.years_of_experience }} années d'expérience</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Contact Information -->
+            {% if contact %}
             <div class="profile-section">
                 <h3 class="section-title">📞 Informations de contact</h3>
                 <div class="contact-grid">
+                    {% if contact.email %}
                     <div class="contact-card">
                         <div class="contact-icon">📧</div>
                         <div>
                             <span class="contact-label">Email</span>
-                            <div class="contact-value">{{ contact.email or 'Non disponible' }}</div>
+                            <div class="contact-value">{{ contact.email }}</div>
                         </div>
                     </div>
+                    {% endif %}
+                    {% if contact.phone %}
                     <div class="contact-card">
                         <div class="contact-icon">📱</div>
                         <div>
                             <span class="contact-label">Téléphone</span>
-                            <div class="contact-value">{{ contact.phone or 'Non disponible' }}</div>
+                            <div class="contact-value">{{ contact.phone }}</div>
                         </div>
                     </div>
+                    {% endif %}
+                    {% if contact.linkedin %}
                     <div class="contact-card">
                         <div class="contact-icon">💼</div>
                         <div>
                             <span class="contact-label">LinkedIn</span>
-                            <div class="contact-value">{{ contact.linkedin or 'Non disponible' }}</div>
+                            <div class="contact-value">{{ contact.linkedin }}</div>
                         </div>
                     </div>
+                    {% endif %}
+                    {% if contact.address %}
                     <div class="contact-card">
                         <div class="contact-icon">📍</div>
                         <div>
                             <span class="contact-label">Adresse</span>
-                            <div class="contact-value">{{ contact.address or 'Non disponible' }}</div>
+                            <div class="contact-value">{{ contact.address }}</div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- About Me -->
-            <div class="profile-section">
-                <h3 class="section-title">👤 À propos</h3>
-                <div class="about-content">
-                    {{ profile.profile or 'Aucune description disponible' }}
-                </div>
-            </div>
-
-            <!-- Education -->
-            <div class="profile-section">
-                <h3 class="section-title">🎓 Formation</h3>
-                <div class="education-list">
-                    {% if profile.education %}
-                        {% for edu in profile.education %}
-                        <div class="education-item">
-                            <div class="education-icon">🏫</div>
-                            <div class="education-details">
-                                <h4 class="education-degree">{{ edu.degree or 'Diplôme non spécifié' }}</h4>
-                                <p class="education-institution">{{ edu.institution or 'Institution non spécifiée' }}</p>
-                                <span class="education-years">{{ edu.years or 'Années non spécifiées' }}</span>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Aucune information de formation disponible</p>
                     {% endif %}
-                </div>
-            </div>
-
-            <!-- Experience Professionnelle -->
-            {% if profile.experience %}
-            <div class="profile-section">
-                <h3 class="section-title">💼 Expérience professionnelle</h3>
-                <div class="experience-list">
-                    {% for exp in profile.experience %}
-                    <div class="experience-item">
-                        <div class="experience-icon">🏢</div>
-                        <div class="experience-details">
-                            <h4 class="experience-position">{{ exp.position or 'Poste non spécifié' }}</h4>
-                            <p class="experience-company">{{ exp.company or 'Entreprise non spécifiée' }}</p>
-                            <span class="experience-duration">{{ exp.duration or 'Durée non spécifiée' }}</span>
-                            {% if exp.description %}
-                            <p class="experience-description">{{ exp.description }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
                 </div>
             </div>
             {% endif %}
 
-            <!-- Années d'expérience -->
-            {% if profile.years_of_experience %}
+            <!-- About Me -->
+            {% if profile.profile %}
             <div class="profile-section">
-                <h3 class="section-title">⏱️ Expérience totale</h3>
-                <div style="text-align: center; padding: 2rem;">
-                    <div style="display: inline-block; background: rgba(0, 212, 255, 0.2); color: #00d4ff; padding: 1rem 2rem; border-radius: 20px; font-size: 1.5rem; font-weight: 700; border: 2px solid rgba(0, 212, 255, 0.3);">
-                        {{ profile.years_of_experience }} années d'expérience
-                    </div>
+                <h3 class="section-title">👤 À propos</h3>
+                <div class="about-content">
+                    {{ profile.profile }}
                 </div>
             </div>
             {% endif %}
 
             <!-- Skills -->
+            {% if parsed_skills %}
             <div class="profile-section">
                 <h3 class="section-title">🎯 Compétences</h3>
                 <div class="skills-detailed">
@@ -438,125 +119,54 @@
                     <div class="skill-item">
                         <div class="skill-info">
                             <span class="skill-name">{{ skill.name }}</span>
-                            <span class="skill-level">{{ skill.level_str }}</span>
+                            <span class="skill-level">{{ skill.level_str or (skill.percentage ~ '%' if skill.percentage > 0 else 'Niveau non spécifié') }}</span>
                         </div>
                         <div class="skill-bar">
-                            <div class="skill-progress" data-width="{{ skill.percentage }}"></div>
+                            <div class="skill-progress" data-width="{{ skill.percentage or 50 }}"></div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
+            {% endif %}
+
+            <!-- Education -->
+            {% if profile.education %}
+            <div class="profile-section">
+                <h3 class="section-title">🎓 Formation</h3>
+                <div class="education-list">
+                    {% for edu in profile.education %}
+                    <div class="education-item">
+                        <h4>{{ edu.degree or edu.title or 'Formation' }}</h4>
+                        <p>{{ edu.institution or edu.school or 'Institution' }}</p>
+                        {% if edu.years or edu.year %}
+                        <span class="education-year">{{ edu.years or edu.year }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Languages -->
+            {% if profile.languages %}
             <div class="profile-section">
                 <h3 class="section-title">🌍 Langues</h3>
-                {% if profile.languages %}
-                    <div class="languages-list">
-                        {% for language in profile.languages %}
-                        <span class="language-tag">{{ language }}</span>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Aucune langue spécifiée</p>
-                {% endif %}
+                <div class="languages-list">
+                    {% for language in profile.languages %}
+                    <span class="language-tag">{{ language }}</span>
+                    {% endfor %}
+                </div>
             </div>
+            {% endif %}
 
             <!-- Certificates -->
+            {% if profile.certificates %}
             <div class="profile-section">
                 <h3 class="section-title">🏆 Certifications</h3>
-                {% if profile.certificates %}
-                    <div class="certificates-list">
-                        {% for cert in profile.certificates %}
-                        <div class="certificate-item">
-                            <div class="certificate-icon">📜</div>
-                            <span class="certificate-name">{{ cert }}</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Aucune certification disponible</p>
-                {% endif %}
-            </div>
-
-            <!-- Projets -->
-            {% if profile.projects %}
-            <div class="profile-section">
-                <h3 class="section-title">🚀 Projets</h3>
-                <div class="projects-list">
-                    {% for project in profile.projects %}
-                    <div class="project-item">
-                        <div class="project-icon">💡</div>
-                        <div class="project-details">
-                            <h4 class="project-name">{{ project.name or 'Projet sans nom' }}</h4>
-                            {% if project.description %}
-                            <p class="project-description">{{ project.description }}</p>
-                            {% endif %}
-                            {% if project.technologies %}
-                            <div class="project-technologies">
-                                <span style="color: var(--text-muted); font-size: 0.9rem; margin-right: 0.5rem;">Technologies:</span>
-                                {% for tech in project.technologies %}
-                                <span class="tech-tag">{{ tech }}</span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            {% if project.url %}
-                            <a href="{{ project.url }}" target="_blank" class="project-link">🔗 Voir le projet</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Loisirs/Hobbies -->
-            {% if profile.hobbies %}
-            <div class="profile-section">
-                <h3 class="section-title">🎨 Loisirs & Centres d'intérêt</h3>
-                <div class="hobbies-list">
-                    {% for hobby in profile.hobbies %}
-                    <span class="hobby-tag">{{ hobby }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Références -->
-            {% if profile.references %}
-            <div class="profile-section">
-                <h3 class="section-title">👥 Références</h3>
-                <div class="references-list">
-                    {% for ref in profile.references %}
-                    <div class="reference-item">
-                        <div class="reference-icon">👤</div>
-                        <div class="reference-details">
-                            <h4 class="reference-name">{{ ref.name or 'Nom non spécifié' }}</h4>
-                            <p class="reference-position">{{ ref.position or 'Poste non spécifié' }}</p>
-                            <p class="reference-company">{{ ref.company or 'Entreprise non spécifiée' }}</p>
-                            {% if ref.email %}
-                            <p class="reference-contact">📧 {{ ref.email }}</p>
-                            {% endif %}
-                            {% if ref.phone %}
-                            <p class="reference-contact">📱 {{ ref.phone }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Informations supplémentaires -->
-            {% if profile.additional_info %}
-            <div class="profile-section">
-                <h3 class="section-title">ℹ️ Informations supplémentaires</h3>
-                <div class="additional-info-content">
-                    {% for key, value in profile.additional_info.items() %}
-                    <div class="info-item">
-                        <span class="info-label">{{ key|title }}:</span>
-                        <span class="info-value">{{ value }}</span>
-                    </div>
+                <div class="certificates-list">
+                    {% for cert in profile.certificates %}
+                    <div class="certificate-item">{{ cert }}</div>
                     {% endfor %}
                 </div>
             </div>
@@ -577,37 +187,53 @@
                 </div>
             </div>
         </div>
+        {% else %}
+        <div class="profile-section">
+            <h3>Profil non trouvé</h3>
+            <p>Le profil demandé n'existe pas ou n'est plus disponible.</p>
+            <a href="/" class="btn-primary">Retour à l'accueil</a>
+        </div>
+        {% endif %}
     </div>
 
+    <script src="/static/client-dep/js/profile-detail.js"></script>
     <script>
-        // Animer les barres de compétences
-        document.addEventListener('DOMContentLoaded', function() {
-            const skillBars = document.querySelectorAll('.skill-progress');
-            skillBars.forEach(bar => {
-                const width = bar.getAttribute('data-width');
-                setTimeout(() => {
-                    bar.style.width = width + '%';
-                }, 500);
-            });
-        });
+        // Pass user data from server to client if available
+        {% if current_user %}
+        window.currentUser = {
+            id: {{ current_user.id }},
+            email: "{{ current_user.email }}",
+            first_name: "{{ current_user.first_name or '' }}",
+            last_name: "{{ current_user.last_name or '' }}",
+            name: "{{ (current_user.first_name + ' ' + current_user.last_name).strip() if current_user.first_name else current_user.email }}",
+            is_active: {{ 'true' if current_user.is_active else 'false' }}
+        };
+        {% else %}
+        window.currentUser = null;
+        {% endif %}
 
-        function downloadProfile() {
-            alert('Fonctionnalité de téléchargement PDF en cours de développement !');
-        }
-
-        function shareProfile() {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Profil candidat',
-                    text: 'Découvrez ce profil professionnel',
-                    url: window.location.href
-                });
-            } else {
-                navigator.clipboard.writeText(window.location.href).then(() => {
-                    alert('Lien copié dans le presse-papiers !');
+        // Load header component
+        document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('/static/client-dep/components/header.html');
+            if (response.ok) {
+                const headerHTML = await response.text();
+                const container = document.getElementById('header-component');
+                container.innerHTML = headerHTML;
+                
+                // Execute scripts from the loaded HTML
+                const scripts = container.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = oldScript.textContent;
+                    oldScript.parentNode.removeChild(oldScript);
+                    document.body.appendChild(newScript);
                 });
             }
+        } catch (error) {
+            console.error('Failed to load header component:', error);
         }
+    });
     </script>
 </body>
 </html>
