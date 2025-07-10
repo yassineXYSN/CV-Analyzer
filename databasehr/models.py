@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from database import Base
+from databasehr.database import Base
 
 # Modèles existants (Contact, AnalyseCandidat, ProfileCandidat)
 class Contact(Base):

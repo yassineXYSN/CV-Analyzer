@@ -5,8 +5,8 @@ Utilitaires d'authentification - Version finale corrigée
 import hashlib
 import secrets
 import hmac
-from database import SessionLocal
-import models
+from databasehr.database import SessionLocal
+import databasehr.models as models
 
 # Gestionnaire de mots de passe sécurisé sans bcrypt
 class PasswordManager:

@@ -1,5 +1,5 @@
-from database import SessionLocal
-import models
+from databasehr.database import SessionLocal
+import databasehr.models as models
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -216,8 +216,8 @@ def add_user_to_company(company_id: int, admin_id: int, access_level: str = 'adm
         db.close()
         
 # company_utils.py
-from database import SessionLocal
-from models import AdminCompanyAccess, Company
+from databasehr.database import SessionLocal
+from databasehr.models import AdminCompanyAccess, Company
 
 def get_user_company(user_id: int):
     db = SessionLocal()

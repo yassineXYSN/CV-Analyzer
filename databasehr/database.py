@@ -61,7 +61,7 @@ def test_connection():
 def init_database():
     """Initialise la base de données et crée les tables"""
     try:
-        import models
+        import databasehr.models as models
         print("🔧 Création des tables...")
         Base.metadata.create_all(bind=engine)
         print("✅ Tables créées avec succès")

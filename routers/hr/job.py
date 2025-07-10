@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from database import SessionLocal
+from databasehr.database import SessionLocal
 # Ajout de l'import de Company
-from models import Job, Department, Employee, Application, ProfileCandidat, Contact, Company
-from session_manager import current_user_session
+from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, Company
+from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
 from typing import Optional 

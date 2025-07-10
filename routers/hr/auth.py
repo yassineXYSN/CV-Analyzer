@@ -4,11 +4,11 @@ from fastapi.templating import Jinja2Templates  # Import ajouté
 from pydantic import BaseModel
 from typing import Optional
 import os  # Import ajouté pour la gestion des chemins
-from database import SessionLocal
-from models import HRAdmin
+from databasehr.database import SessionLocal
+from databasehr.models import HRAdmin
 from auth_utils import authenticate_user
 from company_utils import get_user_company
-from session_manager import current_user_session
+from databasehr.session_manager import current_user_session
 from datetime import datetime
 
 # Création de l'objet templates

@@ -115,7 +115,7 @@ def create_database():
 def setup_tables():
     """Configurer les tables"""
     try:
-        from database import init_database
+        from databasehr.database import init_database
         return init_database()
     except Exception as e:
         print(f"❌ Erreur lors de la création des tables: {e}")

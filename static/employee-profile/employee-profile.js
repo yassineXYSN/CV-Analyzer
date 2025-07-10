@@ -438,9 +438,6 @@ async function loadCandidateFromAPI(candidateId) {
 
 displayEmployeeInfo(currentEmployee)
 
-
-
-
     // Compétences
     clearSkills()
     if (Array.isArray(c.skills)) {

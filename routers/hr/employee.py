@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from database import SessionLocal
-from models import Employee, Department
-from session_manager import current_user_session
+from databasehr.database import SessionLocal
+from databasehr.models import Employee, Department
+from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime
 from typing import Optional 

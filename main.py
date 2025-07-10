@@ -2,10 +2,10 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
-from database import engine, SessionLocal
-import models
+from databasehr.database import engine, SessionLocal
+import databasehr.models as models
 from routers.hr import (
-    auth, client, company, department, 
+    auth, company, department, 
     employee, job, application, candidate, 
     dashboard, analysis
 )
@@ -30,7 +30,6 @@ app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # Include routers
 app.include_router(auth.router)
-app.include_router(client.router)
 app.include_router(company.router)
 app.include_router(department.router)
 app.include_router(employee.router)

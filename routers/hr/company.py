@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-from database import SessionLocal
+from databasehr.database import SessionLocal
 from company_utils import create_company, update_company, get_user_company, get_company_admins
-from session_manager import current_user_session
+from databasehr.session_manager import current_user_session
 from typing import Optional 
 import os 
 from fastapi.templating import Jinja2Templates  # Import ajouté

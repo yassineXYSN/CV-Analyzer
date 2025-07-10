@@ -1,5 +1,5 @@
-from database import SessionLocal
-import models
+from databasehr.database import SessionLocal
+import databasehr.models as models
 
 def insert_candidate_data(data_json, summary):
     db = SessionLocal()

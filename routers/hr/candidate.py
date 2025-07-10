@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
-from database import SessionLocal
+from databasehr.database import SessionLocal
 # AJOUT DE L'IMPORT DE COMPANY CORRECTEMENT
-from models import Employee, Company, Department, ProfileCandidat, Contact
-from session_manager import current_user_session
+from databasehr.models import Employee, Department, ProfileCandidat, Contact,AnalyseCandidat  
+from databasehr.session_manager import current_user_session
 from company_utils import get_user_company  # Ajout de cet import
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -15,9 +15,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-# candidate.py
-# ... (imports existants)
 
 @router.post("/candidates/{candidate_id}/accept")
 async def accept_candidate(
@@ -68,7 +65,7 @@ async def accept_candidate(
             salary=salary,
             hire_date=start_date,
             department_id=department.id,
-            company_id=company.id,  # Utiliser l'ID de l'entreprise trouvée
+            company_id=company.id, 
             status="active",
             candidate_profile_id=candidate.id
         )
@@ -88,3 +85,38 @@ async def accept_candidate(
             status_code=500,
             detail=f"Erreur lors de l'acceptation du candidat: {str(e)}"
         )
+        
+@router.get("/api/candidate/{candidate_id}")
+def get_candidate(candidate_id: int, db: Session = Depends(get_db)):
+    try:
+        # Récupérer le candidat avec ses relations
+        candidate = db.query(ProfileCandidat).filter(ProfileCandidat.id == candidate_id).first()
+        if not candidate:
+            raise HTTPException(status_code=404, detail="Candidat non trouvé")
+        
+        # Récupérer les données liées
+        contact = db.query(Contact).filter(Contact.id == candidate.contact_id).first() if candidate.contact_id else None
+        analyse = db.query(AnalyseCandidat).filter(AnalyseCandidat.id == candidate.analyse_id).first() if candidate.analyse_id else None
+        
+        # Formater la réponse
+        candidate_data = {
+            "id": candidate.id,
+            "name": candidate.name,
+            "first_name": candidate.name.split()[0] if candidate.name else "",
+            "last_name": " ".join(candidate.name.split()[1:]) if candidate.name else "",
+            "title": candidate.title,
+            "profile": candidate.profile,
+            "education": candidate.education,
+            "languages": candidate.languages,
+            "certificates": candidate.certificates,
+            "skills": candidate.skills,
+            "email": contact.email if contact else None,
+            "phone": contact.phone if contact else None,
+            "linkedin": contact.linkedin if contact else None,
+            "address": contact.address if contact else None,
+            "analyse": analyse.analyse if analyse else None
+        }
+        
+        return {"success": True, "candidate": candidate_data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération du candidat: {str(e)}")

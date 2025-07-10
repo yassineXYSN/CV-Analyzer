@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-from database import SessionLocal
-from models import Department, Employee, Job, Application, HRAdmin, ProfileCandidat, Contact
-from session_manager import current_user_session
+from databasehr.database import SessionLocal
+from databasehr.models import Department, Employee, Job, Application, HRAdmin, ProfileCandidat, Contact
+from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import date
 from fastapi.templating import Jinja2Templates

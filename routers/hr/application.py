@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from database import SessionLocal
-from models import Application, Job, ProfileCandidat, Contact, Employee,Department,Company
-from session_manager import current_user_session
+from databasehr.database import SessionLocal
+from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee,Department,Company
+from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
 from typing import Optional
