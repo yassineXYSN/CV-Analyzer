@@ -214,3 +214,27 @@ def add_user_to_company(company_id: int, admin_id: int, access_level: str = 'adm
         return False, f"Erreur: {str(e)}"
     finally:
         db.close()
+        
+# company_utils.py
+from database import SessionLocal
+from models import AdminCompanyAccess, Company
+
+def get_user_company(user_id: int):
+    db = SessionLocal()
+    try:
+        # Trouver l'accès de l'admin à une entreprise
+        access = db.query(AdminCompanyAccess).filter(
+            AdminCompanyAccess.admin_id == user_id
+        ).first()
+        
+        if not access:
+            return None
+        
+        # Récupérer l'entreprise associée
+        company = db.query(Company).filter(
+            Company.id == access.company_id
+        ).first()
+        
+        return company
+    finally:
+        db.close()
