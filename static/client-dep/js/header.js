@@ -6,8 +6,9 @@ class HeaderComponent {
     }
 
     init() {
-        this.checkAuthStatus();
         this.setActivePage();
+        this.setupEventListeners();
+        this.checkAuthStatus();
     }
 
     setupEventListeners() {
@@ -29,10 +30,9 @@ class HeaderComponent {
             });
         }
 
-        // User menu dropdown - FIXED
+        // User menu dropdown
         const userMenuTrigger = document.getElementById('userMenuTrigger');
         const userDropdown = document.getElementById('userDropdown');
-
 
         if (userMenuTrigger && userDropdown) {
             const closeDropdown = () => {
@@ -69,18 +69,6 @@ class HeaderComponent {
     }
 
     async checkAuthStatus() {
-        this.currentUser = {
-        id: 1,
-        email: 'johndoe@example.com',
-        first_name: 'John',
-        last_name: 'Doe',
-        google_id: null,
-        profile_picture: '', // Or provide a real URL
-        is_active: 1,
-        is_verified: 1,
-        profile: null
-    };
-    this.setUser(this.currentUser);
         try {
             // First try to check via API
             const response = await fetch('/api/auth/status', {
@@ -91,9 +79,7 @@ class HeaderComponent {
                 const userData = await response.json();
                 if (userData.authenticated && userData.user) {
                     this.setUser(userData.user);
-                    console.log('User authenticated via API:', userData.user);
                     if (userData.user.profile === null) {
-                        console.log('entering step2');
                         const step2Item = document.getElementById("setupstep2");
                         if (step2Item) {
                             step2Item.style.display = "block";
@@ -113,7 +99,7 @@ class HeaderComponent {
             this.setGuest();
             
         } catch (error) {
-            
+            console.error('Auth check error:', error);
             // Fallback: check if we have user data from server
             if (window.currentUser) {
                 this.setUser(window.currentUser);
@@ -126,7 +112,6 @@ class HeaderComponent {
     setUser(user) {
         this.currentUser = user;
         
-
         const userMenuContainer = document.getElementById('userMenuContainer');
         const guestMenuContainers = document.querySelectorAll('.guest-menu-container');
 
@@ -141,7 +126,7 @@ class HeaderComponent {
         this.updateUserInfo(user);
         this.setupEventListeners();
 
-        // ✅ Set profile link dynamically
+        // Set profile link dynamically
         const profileLink = document.getElementById('profileLink');
         if (profileLink && user.id) {
             profileLink.href = `/profile/by_user/${user.id}`;
@@ -183,31 +168,18 @@ class HeaderComponent {
             userEmail.textContent = user.email || '';
         }
 
-        // Set avatar initials
-        const initials = this.getInitials(user.first_name, user.last_name, user.name);
+        // Set avatar
+        const profilePic = user.profile_picture || "/static/client-dep/images/placeholder.svg";
         if (userAvatar) {
-            const profilePic = user.profile_picture || "/static/client-dep/images/placeholder.svg";
             userAvatar.innerHTML = `
                 <img src="${profilePic}" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
             `;
         }
         if (userAvatarLarge) {
-            userAvatarLarge.textContent = initials;
+            userAvatarLarge.innerHTML = `
+                <img src="${profilePic}" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            `;
         }
-    }
-
-    getInitials(firstName, lastName, fullName) {
-        if (firstName && lastName) {
-            return `${firstName[0]}${lastName[0]}`.toUpperCase();
-        } else if (fullName) {
-            const names = fullName.split(' ');
-            if (names.length >= 2) {
-                return `${names[0][0]}${names[1][0]}`.toUpperCase();
-            } else {
-                return names[0][0].toUpperCase();
-            }
-        }
-        return 'U';
     }
 
     setActivePage() {
@@ -267,21 +239,19 @@ class HeaderComponent {
         }
     }
 
-    // Method to manually set user (for when user logs in)
+    // Static methods for global access
     static setCurrentUser(user) {
         if (window.headerComponent) {
             window.headerComponent.setUser(user);
         }
     }
 
-    // Method to manually set guest (for when user logs out)
     static setGuest() {
         if (window.headerComponent) {
             window.headerComponent.setGuest();
         }
     }
 
-    // Static logout method for onclick handlers
     static logout() {
         if (window.headerComponent) {
             window.headerComponent.logout();
@@ -293,5 +263,3 @@ class HeaderComponent {
 document.addEventListener('DOMContentLoaded', () => {
     window.headerComponent = new HeaderComponent();
 });
-
-// Export for use in other scripts
