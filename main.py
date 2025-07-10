@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 from database import engine
-import models
+import databaseclient.models as models
 from routers.client_dep import auth, jobs, profiles, scan, general
 
 

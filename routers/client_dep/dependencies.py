@@ -1,7 +1,7 @@
 from fastapi import Request, Depends, HTTPException
 from database import SessionLocal
-from models import User
-from auth import get_user_from_session
+from databaseclient.models import User
+from databaseclient.auth import get_user_from_session
 from sqlalchemy.orm import Session
 from typing import Optional
 

@@ -6,7 +6,7 @@ import os
 # Add the parent directory to the path to import models
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models import Job, Company, Department, JobSkill
+from databaseclient.models import Job, Company, Department, JobSkill
 from database import DATABASE_URL
 from datetime import datetime, date
 

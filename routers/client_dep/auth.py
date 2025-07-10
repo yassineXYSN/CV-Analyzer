@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Request, Response, Form, Depends, UploadFile, File
 from fastapi.responses import RedirectResponse, HTMLResponse
 from database import SessionLocal
-from models import User
-from auth import authenticate_user, create_user_session, delete_user_session, create_user
+from databaseclient.models import User
+from databaseclient.auth import authenticate_user, create_user_session, delete_user_session, create_user
 from routers.client_dep.dependencies import get_db, get_current_user
 from sqlalchemy.orm import Session
 import os
 import extract_information_cv.text_extractor as text_extractor
 import extract_information_cv.textcleaner as textcleaner
 import cv_analyzer.data_generator as data_generator
-from insert_to_db import insert_candidate_data
+from databaseclient.insert_to_db import insert_candidate_data
 from fastapi.templating import Jinja2Templates
 
 

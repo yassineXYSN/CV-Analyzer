@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Query, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from database import SessionLocal
-from models import Job, Company, Department, Application, ProfileCandidat, SavedJob
+from databaseclient.models import Job, Company, Department, Application, ProfileCandidat, SavedJob
 from routers.client_dep.dependencies import get_db, get_current_user
 import math
 from pydantic import BaseModel

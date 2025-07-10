@@ -1,5 +1,5 @@
 from database import engine
-import models
+import databaseclient.models as models
 
 print("🛠️ Initialisation des tables...")
 models.Base.metadata.create_all(bind=engine)

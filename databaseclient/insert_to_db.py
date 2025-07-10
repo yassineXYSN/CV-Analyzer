@@ -1,5 +1,5 @@
 from database import SessionLocal
-from models import Contact, AnalyseCandidat, ProfileCandidat
+from databaseclient.models import Contact, AnalyseCandidat, ProfileCandidat
 import json
 
 def insert_candidate_data(data_json, summary, user_id):

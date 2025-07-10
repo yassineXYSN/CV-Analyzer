@@ -4,7 +4,7 @@ import jwt
 from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
-from models import User, UserSession
+from databaseclient.models import User, UserSession
 from passlib.context import CryptContext
 
 # Password hashing

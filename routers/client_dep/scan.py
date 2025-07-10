@@ -6,7 +6,7 @@ import extract_information_cv.text_extractor as text_extractor
 import extract_information_cv.textcleaner as textcleaner
 import cv_analyzer.data_generator as data_generator
 from cv_analyzer.information_analyzer import compute_similarity
-from insert_to_db import insert_candidate_data
+from databaseclient.insert_to_db import insert_candidate_data
 import os
 from pydantic import BaseModel
 import cv_analyzer.description_generator as generate_job_description

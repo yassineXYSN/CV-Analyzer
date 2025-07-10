@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Request, UploadFile, File, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from database import SessionLocal
-from models import ProfileCandidat, Contact, AnalyseCandidat
+from databaseclient.models import ProfileCandidat, Contact, AnalyseCandidat
 from routers.client_dep.dependencies import get_db, get_current_user, require_auth
 import json
 import re
 from sqlalchemy.orm import Session
-import models
+import databaseclient.models as models
 import os
 from fastapi.templating import Jinja2Templates
-from models import User
+from databaseclient.models import User
 
 router = APIRouter()
 # Templates
