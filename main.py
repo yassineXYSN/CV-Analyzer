@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from databasehr.database import engine, SessionLocal
 import databasehr.models as models
 from routers.hr import (
-    auth, company, department, 
+    authhr, company, department, 
     employee, job, application, candidate, 
     dashboard, analysis
 )
@@ -42,7 +42,7 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # Include routers
-app.include_router(auth.router)
+app.include_router(authhr.router)
 app.include_router(company.router)
 app.include_router(department.router)
 app.include_router(employee.router)
