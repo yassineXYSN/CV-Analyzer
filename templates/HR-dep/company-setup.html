@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Entreprise - CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/company-setup/company-setup.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="setup-container">
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div class="progress-steps">
+                <div class="step active">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Informations</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Coordonnées</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Finalisation</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setup Form -->
+        <div class="setup-form">
+            <div class="form-header">
+                <h1><i class="fas fa-building"></i> Configuration Entreprise</h1>
+                <p>Configurez les informations essentielles de votre entreprise</p>
+            </div>
+
+            <form id="companySetupForm">
+                <!-- Step 1: Basic Information -->
+                <div class="step-content active" data-step="1">
+                    <h2><i class="fas fa-info-circle"></i> Informations de base</h2>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="companyName">
+                                <i class="fas fa-building"></i>
+                                Nom de l'entreprise *
+                                <span class="required-indicator">*</span>
+                            </label>
+                            <input type="text" id="companyName" name="company_name" class="form-input" required placeholder="Ex: TechCorp Solutions">
+                            <div class="input-feedback"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="industry">
+                                <i class="fas fa-industry"></i>
+                                Secteur d'activité *
+                                <span class="required-indicator">*</span>
+                            </label>
+                            <select id="industry" name="industry" class="form-select" required>
+                                <option value="">-- Choisissez votre secteur --</option>
+                                <option value="tech">Technologie & Informatique</option>
+                                <option value="finance">Finance & Banque</option>
+                                <option value="healthcare">Santé & Médical</option>
+                                <option value="education">Éducation & Formation</option>
+                                <option value="retail">Commerce & Vente</option>
+                                <option value="manufacturing">Industrie & Manufacturing</option>
+                                <option value="consulting">Conseil & Services</option>
+                                <option value="media">Médias & Communication</option>
+                                <option value="construction">BTP & Construction</option>
+                                <option value="transport">Transport & Logistique</option>
+                                <option value="energy">Énergie & Environnement</option>
+                                <option value="food">Agroalimentaire</option>
+                                <option value="tourism">Tourisme & Hôtellerie</option>
+                                <option value="other">Autre secteur</option>
+                            </select>
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="companySize">
+                                <i class="fas fa-users"></i>
+                                Taille de l'entreprise *
+                                <span class="required-indicator">*</span>
+                            </label>
+                            <select id="companySize" name="company_size" class="form-select" required>
+                                <option value="">-- Sélectionnez la taille --</option>
+                                <option value="1-10">Très petite entreprise (1-10 employés)</option>
+                                <option value="11-50">Petite entreprise (11-50 employés)</option>
+                                <option value="51-200">Moyenne entreprise (51-200 employés)</option>
+                                <option value="201-1000">Grande entreprise (201-1000 employés)</option>
+                                <option value="1000+">Très grande entreprise (1000+ employés)</option>
+                            </select>
+                            <div class="input-feedback"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="foundedDate">
+                                <i class="fas fa-calendar"></i>
+                                Date de création
+                            </label>
+                            <input type="date" id="foundedDate" name="founded_date" class="form-input">
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label" for="description">
+                                <i class="fas fa-align-left"></i>
+                                Description de l'entreprise
+                            </label>
+                            <textarea id="description" name="description" class="form-textarea large" placeholder="Décrivez votre entreprise : activités principales, mission, valeurs, spécialités... Cette description aidera à mieux comprendre votre organisation."></textarea>
+                            <div class="char-counter">0 / 500</div>
+                            <div class="input-feedback"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Contact Information -->
+                <div class="step-content" data-step="2">
+                    <h2><i class="fas fa-map-marker-alt"></i> Coordonnées</h2>
+                    
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="address">
+                                <i class="fas fa-map-marker-alt"></i>
+                                Adresse complète
+                            </label>
+                            <textarea id="address" name="address" class="form-textarea" placeholder="123 Rue de la République&#10;75001 Paris, France"></textarea>
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="phone">
+                                <i class="fas fa-phone"></i>
+                                Téléphone principal
+                            </label>
+                            <input type="tel" id="phone" name="phone" class="form-input" placeholder="+33 1 23 45 67 89">
+                            <div class="input-feedback"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="email">
+                                <i class="fas fa-envelope"></i>
+                                Email de contact
+                            </label>
+                            <input type="email" id="email" name="email" class="form-input" placeholder="contact@votre-entreprise.com">
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label" for="website">
+                                <i class="fas fa-globe"></i>
+                                Site web
+                            </label>
+                            <input type="url" id="website" name="website" class="form-input" placeholder="https://www.votre-entreprise.com">
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="linkedinUrl">
+                                <i class="fab fa-linkedin"></i>
+                                LinkedIn (optionnel)
+                            </label>
+                            <input type="url" id="linkedinUrl" name="linkedin_url" class="form-input" placeholder="https://linkedin.com/company/votre-entreprise">
+                            <div class="input-feedback"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="twitterUrl">
+                                <i class="fab fa-twitter"></i>
+                                Twitter (optionnel)
+                            </label>
+                            <input type="url" id="twitterUrl" name="twitter_url" class="form-input" placeholder="https://twitter.com/votre-entreprise">
+                            <div class="input-feedback"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Enhanced Summary -->
+                <div class="step-content step-3-wide" data-step="3">
+                    <div class="final-step-header">
+                        <div class="success-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h2>Récapitulatif de votre entreprise</h2>
+                        <p>Vérifiez les informations avant de finaliser la configuration</p>
+                    </div>
+
+                    <!-- Company Preview Card -->
+                    <div class="company-preview-card">
+                        <div class="company-header">
+                            <div class="company-logo-placeholder">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="company-basic-info">
+                                <h3 id="previewCompanyName">Nom de l'entreprise</h3>
+                                <p id="previewIndustry">Secteur d'activité</p>
+                                <div class="company-meta">
+                                    <span id="previewSize">Taille</span>
+                                    <span class="separator">•</span>
+                                    <span id="previewDate">Date de création</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="company-description" id="previewDescription">
+                            Description de l'entreprise...
+                        </div>
+
+                        <div class="company-details-grid">
+                            <div class="company-contact-info">
+                                <div class="contact-item" id="previewEmail" style="display: none;">
+                                    <i class="fas fa-envelope"></i>
+                                    <span></span>
+                                </div>
+                                <div class="contact-item" id="previewPhone" style="display: none;">
+                                    <i class="fas fa-phone"></i>
+                                    <span></span>
+                                </div>
+                                <div class="contact-item" id="previewWebsite" style="display: none;">
+                                    <i class="fas fa-globe"></i>
+                                    <span></span>
+                                </div>
+                                <div class="contact-item" id="previewAddress" style="display: none;">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+
+                            <div class="social-links" id="socialLinks" style="display: none;">
+                                <div class="social-item" id="previewLinkedin" style="display: none;">
+                                    <i class="fab fa-linkedin"></i>
+                                    <span>LinkedIn</span>
+                                </div>
+                                <div class="social-item" id="previewTwitter" style="display: none;">
+                                    <i class="fab fa-twitter"></i>
+                                    <span>Twitter</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Status and Next Steps in same row -->
+                    <div class="bottom-sections-grid">
+                        <!-- Configuration Status -->
+                        <div class="configuration-status">
+                            <h3><i class="fas fa-clipboard-check"></i> État de la configuration</h3>
+                            <div class="status-grid">
+                                <div class="status-item" id="statusRequired">
+                                    <div class="status-icon">
+                                        <i class="fas fa-circle-check"></i>
+                                    </div>
+                                    <div class="status-content">
+                                        <h4>Informations obligatoires</h4>
+                                        <p>Tous les champs requis sont remplis</p>
+                                    </div>
+                                </div>
+                                <div class="status-item" id="statusContact">
+                                    <div class="status-icon">
+                                        <i class="fas fa-circle-check"></i>
+                                    </div>
+                                    <div class="status-content">
+                                        <h4>Coordonnées</h4>
+                                        <p>Informations de contact ajoutées</p>
+                                    </div>
+                                </div>
+                                <div class="status-item" id="statusReady">
+                                    <div class="status-icon">
+                                        <i class="fas fa-rocket"></i>
+                                    </div>
+                                    <div class="status-content">
+                                        <h4>Prêt à démarrer</h4>
+                                        <p>Configuration prête à être finalisée</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Next Steps Preview -->
+                        <div class="next-steps-preview">
+                            <h3><i class="fas fa-arrow-right"></i> Prochaines étapes</h3>
+                            <div class="steps-grid">
+                                <div class="next-step-item">
+                                    <div class="step-icon">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                    </div>
+                                    <h4>Tableau de bord</h4>
+                                    <p>Accédez à votre espace de gestion</p>
+                                </div>
+                                <div class="next-step-item">
+                                    <div class="step-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <h4>Équipe</h4>
+                                    <p>Invitez vos collaborateurs</p>
+                                </div>
+                                <div class="next-step-item">
+                                    <div class="step-icon">
+                                        <i class="fas fa-briefcase"></i>
+                                    </div>
+                                    <h4>Postes</h4>
+                                    <p>Créez vos premières offres</p>
+                                </div>
+                                <div class="next-step-item">
+                                    <div class="step-icon">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <h4>Candidatures</h4>
+                                    <p>Analysez les CV reçus</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div class="form-navigation">
+                    <button type="button" class="btn-secondary" id="prevBtn" onclick="previousStep()" style="display: none;">
+                        <i class="fas fa-arrow-left"></i>
+                        Précédent
+                    </button>
+                    
+                    <div style="flex: 1;"></div>
+                    
+                    <button type="button" class="btn-primary" id="nextBtn" onclick="nextStep()">
+                        Suivant
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    
+                    <button type="submit" class="btn-success" id="submitBtn" style="display: none;">
+                        <i class="fas fa-save"></i>
+                        Finaliser la configuration
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Configuration en cours...</h3>
+            <p>Veuillez patienter pendant que nous configurons votre entreprise</p>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 3;
+
+        console.log('🏢 FRONTEND: Page company-setup chargée');
+
+        // Character counter for description
+        document.getElementById('description').addEventListener('input', function() {
+            const counter = document.querySelector('.char-counter');
+            const length = this.value.length;
+            counter.textContent = `${length} / 500`;
+            
+            if (length > 500) {
+                counter.style.color = 'var(--error-color)';
+                this.value = this.value.substring(0, 500);
+            } else {
+                counter.style.color = 'var(--text-muted)';
+            }
+        });
+
+        function updateProgress() {
+            const progressFill = document.querySelector('.progress-fill');
+            const steps = document.querySelectorAll('.step');
+            
+            // Update progress bar
+            const progress = (currentStep / totalSteps) * 100;
+            progressFill.style.width = `${progress}%`;
+            
+            // Update step indicators
+            steps.forEach((step, index) => {
+                const stepNumber = index + 1;
+                step.classList.remove('active', 'completed');
+                
+                if (stepNumber < currentStep) {
+                    step.classList.add('completed');
+                } else if (stepNumber === currentStep) {
+                    step.classList.add('active');
+                }
+            });
+        }
+
+        function showStep(step) {
+            console.log(`📋 FRONTEND: Affichage étape ${step}`);
+            
+            // Hide all steps
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Show current step
+            document.querySelector(`[data-step="${step}"]`).classList.add('active');
+            
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            prevBtn.style.display = step > 1 ? 'flex' : 'none';
+            nextBtn.style.display = step < totalSteps ? 'flex' : 'none';
+            submitBtn.style.display = step === totalSteps ? 'flex' : 'none';
+            
+            // Update preview on last step
+            if (step === totalSteps) {
+                updateCompanyPreview();
+            }
+        }
+
+        function nextStep() {
+            console.log(`➡️ FRONTEND: Tentative passage à l'étape ${currentStep + 1}`);
+            
+            if (validateCurrentStep() && currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+                updateProgress();
+                console.log(`✅ FRONTEND: Passage à l'étape ${currentStep} réussi`);
+            }
+        }
+
+        function previousStep() {
+            console.log(`⬅️ FRONTEND: Retour à l'étape ${currentStep - 1}`);
+            
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+
+        function validateCurrentStep() {
+            const currentStepElement = document.querySelector(`[data-step="${currentStep}"]`);
+            const requiredFields = currentStepElement.querySelectorAll('[required]');
+            const allFields = currentStepElement.querySelectorAll('input, select, textarea');
+            let isValid = true;
+            
+            console.log(`🔍 FRONTEND: Validation étape ${currentStep} - ${requiredFields.length} champs requis`);
+            
+            // Validate required fields
+            requiredFields.forEach(field => {
+                const feedback = field.parentElement.querySelector('.input-feedback');
+                
+                if (!field.value.trim()) {
+                    feedback.textContent = 'Ce champ est obligatoire';
+                    feedback.className = 'input-feedback error';
+                    field.style.borderColor = 'var(--error-color)';
+                    field.style.boxShadow = '0 0 0 2px rgba(231, 76, 60, 0.2)';
+                    isValid = false;
+                    console.log(`❌ FRONTEND: Champ requis vide: ${field.name}`);
+                } else {
+                    feedback.textContent = '✓ Valide';
+                    feedback.className = 'input-feedback success';
+                    field.style.borderColor = 'var(--success-color)';
+                    field.style.boxShadow = '0 0 0 2px rgba(39, 174, 96, 0.2)';
+                }
+            });
+            
+            // Additional validation for specific fields
+            allFields.forEach(field => {
+                const feedback = field.parentElement.querySelector('.input-feedback');
+                
+                // Email validation
+                if (field.type === 'email' && field.value.trim()) {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(field.value)) {
+                        feedback.textContent = 'Format d\'email invalide';
+                        feedback.className = 'input-feedback error';
+                        field.style.borderColor = 'var(--error-color)';
+                        isValid = false;
+                    }
+                }
+                
+                // URL validation
+                if (field.type === 'url' && field.value.trim()) {
+                    try {
+                        new URL(field.value);
+                        if (!field.required && feedback.className !== 'input-feedback error') {
+                            feedback.textContent = '✓ URL valide';
+                            feedback.className = 'input-feedback success';
+                            field.style.borderColor = 'var(--success-color)';
+                        }
+                    } catch {
+                        feedback.textContent = 'URL invalide (doit commencer par http:// ou https://)';
+                        feedback.className = 'input-feedback error';
+                        field.style.borderColor = 'var(--error-color)';
+                        isValid = false;
+                    }
+                }
+                
+                // Phone validation
+                if (field.type === 'tel' && field.value.trim()) {
+                    const phoneRegex = /^[\+]?[0-9\s\-$$$$\.]{8,}$/;
+                    if (!phoneRegex.test(field.value)) {
+                        feedback.textContent = 'Format de téléphone invalide';
+                        feedback.className = 'input-feedback error';
+                        field.style.borderColor = 'var(--error-color)';
+                        isValid = false;
+                    } else if (!field.required && feedback.className !== 'input-feedback error') {
+                        feedback.textContent = '✓ Numéro valide';
+                        feedback.className = 'input-feedback success';
+                        field.style.borderColor = 'var(--success-color)';
+                    }
+                }
+            });
+            
+            console.log(`🔍 FRONTEND: Validation étape ${currentStep}: ${isValid ? 'VALIDE' : 'INVALIDE'}`);
+            return isValid;
+        }
+
+        function updateCompanyPreview() {
+            console.log('📋 FRONTEND: Mise à jour de l\'aperçu entreprise');
+            
+            // Basic information
+            const companyName = document.getElementById('companyName').value || 'Nom de l\'entreprise';
+            const industry = document.getElementById('industry').selectedOptions[0]?.text || 'Secteur d\'activité';
+            const companySize = document.getElementById('companySize').selectedOptions[0]?.text || 'Taille non spécifiée';
+            const foundedDate = document.getElementById('foundedDate').value;
+            const description = document.getElementById('description').value || 'Aucune description fournie.';
+            
+            // Update preview
+            document.getElementById('previewCompanyName').textContent = companyName;
+            document.getElementById('previewIndustry').textContent = industry;
+            document.getElementById('previewSize').textContent = companySize;
+            
+            if (foundedDate) {
+                const date = new Date(foundedDate);
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('previewDate').textContent = `Créée le ${date.toLocaleDateString('fr-FR', options)}`;
+            } else {
+                document.getElementById('previewDate').textContent = 'Date de création non spécifiée';
+            }
+            
+            document.getElementById('previewDescription').textContent = description;
+            
+            // Contact information
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const website = document.getElementById('website').value;
+            const address = document.getElementById('address').value;
+            const linkedin = document.getElementById('linkedinUrl').value;
+            const twitter = document.getElementById('twitterUrl').value;
+            
+            // Update contact items
+            updateContactItem('previewEmail', email);
+            updateContactItem('previewPhone', phone);
+            updateContactItem('previewWebsite', website);
+            updateContactItem('previewAddress', address);
+            
+            // Update social links
+            updateSocialItem('previewLinkedin', linkedin);
+            updateSocialItem('previewTwitter', twitter);
+            
+            // Show/hide social links container
+            const socialContainer = document.getElementById('socialLinks');
+            if (linkedin || twitter) {
+                socialContainer.style.display = 'flex';
+            } else {
+                socialContainer.style.display = 'none';
+            }
+            
+            // Update configuration status
+            updateConfigurationStatus();
+        }
+
+        function updateContactItem(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (value) {
+                element.style.display = 'flex';
+                element.querySelector('span').textContent = value;
+            } else {
+                element.style.display = 'none';
+            }
+        }
+
+        function updateSocialItem(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (value) {
+                element.style.display = 'flex';
+            } else {
+                element.style.display = 'none';
+            }
+        }
+
+        function updateConfigurationStatus() {
+            const requiredFields = document.querySelectorAll('[required]');
+            const allRequiredFilled = Array.from(requiredFields).every(field => field.value.trim());
+            
+            const statusRequired = document.getElementById('statusRequired');
+            const statusContact = document.getElementById('statusContact');
+            const statusReady = document.getElementById('statusReady');
+            
+            // Check required fields
+            if (allRequiredFilled) {
+                statusRequired.classList.add('completed');
+                statusRequired.querySelector('i').className = 'fas fa-circle-check';
+            } else {
+                statusRequired.classList.remove('completed');
+                statusRequired.querySelector('i').className = 'fas fa-circle-xmark';
+            }
+            
+            // Check contact info
+            const hasContact = document.getElementById('email').value || 
+                              document.getElementById('phone').value || 
+                              document.getElementById('website').value;
+            if (hasContact) {
+                statusContact.classList.add('completed');
+                statusContact.querySelector('i').className = 'fas fa-circle-check';
+            } else {
+                statusContact.classList.remove('completed');
+                statusContact.querySelector('i').className = 'fas fa-circle-xmark';
+            }
+            
+            // Check ready status
+            if (allRequiredFilled) {
+                statusReady.classList.add('completed');
+                statusReady.querySelector('i').className = 'fas fa-rocket';
+            } else {
+                statusReady.classList.remove('completed');
+                statusReady.querySelector('i').className = 'fas fa-hourglass-half';
+            }
+        }
+
+        // Form submission with detailed logging
+        document.getElementById('companySetupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            console.log('🏢 FRONTEND: Début soumission formulaire entreprise');
+            
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const companyData = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (value.trim()) {
+                    companyData[key] = value.trim();
+                }
+            }
+            
+            console.log('📤 FRONTEND: Données à envoyer:', companyData);
+            
+            try {
+                console.log('📤 FRONTEND: Envoi requête �� /api/company-setup');
+                
+                const response = await fetch('/api/company-setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(companyData)
+                });
+                
+                console.log('📥 FRONTEND: Réponse reçue, status:', response.status);
+                const result = await response.json();
+                console.log('📋 FRONTEND: Résultat:', result);
+                
+                if (result.success) {
+                    console.log('✅ FRONTEND: Configuration réussie');
+                    console.log('🎯 FRONTEND: Redirection vers:', result.redirect_url);
+                    
+                    // Afficher un message de succès temporaire
+                    const loadingContent = document.querySelector('.loading-content');
+                    loadingContent.innerHTML = `
+                        <div class="loading-spinner" style="border-top-color: #27ae60;"></div>
+                        <h3 style="color: #27ae60;">Configuration terminée !</h3>
+                        <p>Redirection vers le tableau de bord...</p>
+                    `;
+                    
+                    // Redirection après 1.5 secondes
+                    setTimeout(() => {
+                        console.log('🔄 FRONTEND: Redirection en cours...');
+                        window.location.href = result.redirect_url || '/dashboard';
+                    }, 1500);
+                } else {
+                    console.error('❌ FRONTEND: Erreur configuration:', result.message);
+                    loadingOverlay.style.display = 'none';
+                    alert('Erreur: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ FRONTEND: Erreur réseau:', error);
+                loadingOverlay.style.display = 'none';
+                alert('Erreur de connexion au serveur. Veuillez réessayer.');
+            }
+        });
+
+        // Initialize
+        console.log('🎯 FRONTEND: Initialisation page company-setup');
+        updateProgress();
+        showStep(currentStep);
+    </script>
+</body>
+</html>

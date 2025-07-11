@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détails du Poste - CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/job-details/job-details.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="job-header">
+        <div class="header-content">
+            <button class="back-btn" onclick="goBackToDashboard()">
+                <i class="fas fa-arrow-left"></i> Retour au Dashboard
+            </button>
+            <h1><i class="fas fa-briefcase"></i> Détails du Poste</h1>
+            <div class="header-actions">
+                <button class="action-btn" onclick="editJob()">
+                    <i class="fas fa-edit"></i> Modifier
+                </button>
+                <button class="action-btn" onclick="shareJob()">
+                    <i class="fas fa-share"></i> Partager
+                </button>
+                <button class="action-btn danger" onclick="closeJob()">
+                    <i class="fas fa-times-circle"></i> Fermer le poste
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="job-container">
+        <!-- Job Overview -->
+        <section class="job-overview">
+            <div class="job-section full-width-description">
+
+            <div class="job-card">
+                <div class="job-header-info">
+                    <div class="job-title-section">
+                        <h2 id="jobTitle">Chargement...</h2>
+                        <p class="job-department" id="jobDepartment">Département</p>
+                        <div class="job-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-briefcase"></i>
+                                <span id="jobType">Type</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-flag"></i>
+                                <span id="jobPriority">Priorité</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-calendar"></i>
+                                <span id="jobDeadline">Date limite</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="job-status">
+                        <div class="status-badge" id="jobStatus">Statut</div>
+                        <div class="salary-info">
+                            <div class="salary-amount" id="jobSalary">€ 0</div>
+                            <div class="salary-label">Salaire annuel</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-info">
+                        <h3 id="jobApplications">0</h3>
+                        <p>Candidatures</p>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-calendar"></i></div>
+                    <div class="stat-info">
+                        <h3 id="daysRemaining">--</h3>
+                        <p>Jours restants</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Grid -->
+        <div class="job-section full-width">
+  <div class="section-header">
+    <h3><i class="fas fa-info-circle"></i> Description du Poste</h3>
+  </div>
+  <div class="job-description" id="jobDescription">
+    <p>Chargement de la description...</p>
+  </div>
+  <div class="job-details-grid">
+    <div class="detail-item">
+      <label><i class="fas fa-file-contract"></i> Type de contrat</label>
+      <span id="contractType">CDI</span>
+    </div>
+    <div class="detail-item">
+      <label><i class="fas fa-calendar-plus"></i> Date de création</label>
+      <span id="jobCreated">Aujourd'hui</span>
+    </div>
+    <div class="detail-item">
+      <label><i class="fas fa-user-tie"></i> Employé assigné</label>
+      <span id="assignedEmployee">Non assigné</span>
+    </div>
+    <div class="detail-item">
+      <label><i class="fas fa-tasks"></i> Responsabilités</label>
+      <span id="jobResponsibilities">Chargement...</span>
+    </div>
+  </div>
+</div>
+
+
+            <!-- Applications et Candidats disponibles -->
+            <div class="job-section applications-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-users"></i> Gestion des Candidatures</h3>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" onclick="filterApplications('all')">Toutes</button>
+                        <button class="filter-btn" onclick="filterApplications('pending')">En attente</button>
+                        <button class="filter-btn" onclick="filterApplications('reviewed')">Examinées</button>
+                        <button class="filter-btn" onclick="filterApplications('accepted')">Acceptées</button>
+                    </div>
+                </div>
+                
+                <!-- Candidatures existantes -->
+                <div class="applications-list" id="applicationsList">
+                    <!-- Applications will be loaded here -->
+                </div>
+                
+                <!-- Section pour ajouter des candidats -->
+                <div class="add-candidates-section">
+                    <div class="section-header">
+                        <h4><i class="fas fa-user-plus"></i> Ajouter des candidats</h4>
+
+                    </div>
+                    <div class="available-candidates" id="availableCandidates" style="display: none;">
+                        <!-- Available candidates will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/job-details/job-details.js"></script>
+</body>
+</html>
