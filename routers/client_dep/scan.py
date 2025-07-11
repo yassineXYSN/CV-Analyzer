@@ -53,23 +53,32 @@ async def scan_file(
     with open(file_location, "wb") as f:
         f.write(await filetoscan.read())
     
+    
     # Process the file
+    print("Extracting text from the file...")
     pdf_text, images_text = text_extractor.process_file(file_location)
+    print("Text extraction completed.")
 
     # Clean up
+    print("Cleaning up the extracted text...")
     pdf_text = textcleaner.cleantext(pdf_text)
-
+    print("Cleaned up the extracted text.")
     # Generate summary
-    summary = data_generator.generate_summary(pdf_text)
+    print("Generating summary ...")
+    summary = data_generator.generate_summary(pdf_text, images_text)
+    print("Summary generation completed.")
+    print("Generating structured data ...")
+    data_json = data_generator.generate_json(pdf_text)
+    print(data_json)
+    
+    jobs_description = generate_job_description.generate_job_description(selectedProfiles)
 
     # Compute matching score
+    score = compute_similarity(summary, jobs_description)
+    
     skills_titles = [skill.split(":")[0] for skill in data_json["skills"]]
     skills_titles_str = ", ".join(skills_titles)
-    print(skills_titles_str)
 
-    score = compute_similarity(summary, skills_titles_str)
-
-    data_json = data_generator.generate_json(pdf_text)
 
     
 
@@ -89,11 +98,6 @@ async def scan_file(
         "candidate_id": candidate_id,
         "current_user": current_user
     })
-
-@router.post("/generate-description")
-async def generate_description(request: TopicRequest):
-    description = generate_job_description(request.topic)
-    return {"description": description}
 
 @router.post("/create-detailed-analysis")
 async def create_detailed_analysis(request: Request):

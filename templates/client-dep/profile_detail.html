@@ -4,197 +4,905 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profil détaillé | CV Analyzer Pro</title>
-    <link rel="stylesheet" href="/static/client-dep/css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-</head>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const backBtn = document.querySelector(".back-btn");
-        if (document.referrer.endsWith("/signup/step2")) {
-            backBtn.style.display = "none";
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    });
-</script>
-<script src="/static/client-dep/js/header.js"></script>
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            min-height: 100vh;
+            gap: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            color: #f1f5f9;
+            padding: 2rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+            border-right: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .profile-avatar-sidebar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            overflow: hidden;
+            border: 3px solid rgba(102, 126, 234, 0.6);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .profile-name-sidebar {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #f8fafc;
+        }
+
+        .profile-title-sidebar {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+
+        .experience-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-section h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #cbd5e1;
+        }
+
+        .quick-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .contact-item-sidebar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .contact-item-sidebar:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: translateX(5px);
+            border-color: rgba(102, 126, 234, 0.4);
+        }
+
+        .contact-icon-sidebar {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .languages-sidebar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .language-pill {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            background: rgba(15, 23, 42, 0.8);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #f8fafc;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .action-buttons-header {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-compact {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary-compact {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary-compact:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary-compact {
+            background: rgba(30, 41, 59, 0.8);
+            color: #e2e8f0;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-secondary-compact:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Grid Layout */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .main-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .side-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Card Styles */
+        .info-card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-card:hover {
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+            transform: translateY(-4px);
+            border-color: rgba(102, 126, 234, 0.4);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .card-icon {
+            font-size: 1.5rem;
+            background-clip: text;
+        }
+
+        /* About Section */
+        .about-text {
+            color: #cbd5e1;
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        /* Skills Grid */
+        .skills-compact {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .skill-tag {
+            background: rgba(51, 65, 85, 0.8);
+            color: #e2e8f0;
+            padding: 0.75rem 1.25rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .skill-tag:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            border-color: transparent;
+        }
+
+        /* Contact Grid */
+        .contact-grid-main {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .contact-card-main {
+            background: rgba(51, 65, 85, 0.6);
+            padding: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-left: 4px solid #10b981;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .contact-card-main:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            background: rgba(51, 65, 85, 0.8);
+        }
+
+        .contact-icon-main {
+            font-size: 1.5rem;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.2);
+            padding: 0.75rem;
+            border-radius: 12px;
+        }
+
+        .contact-info-main {
+            flex: 1;
+        }
+
+        .contact-label-main {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .contact-value-main {
+            font-size: 1rem;
+            color: #f1f5f9;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        /* Education Timeline */
+        .education-timeline {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .education-timeline::before {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .education-item-timeline {
+            position: relative;
+            margin-bottom: 1.5rem;
+            background: rgba(51, 65, 85, 0.6);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-left: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .education-item-timeline:hover {
+            transform: translateX(8px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            background: rgba(51, 65, 85, 0.8);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .education-item-timeline::before {
+            content: '';
+            position: absolute;
+            left: -2rem;
+            top: 1.5rem;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            border: 3px solid #1e293b;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .education-title {
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .education-institution {
+            color: #94a3b8;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .education-year-timeline {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #1e293b;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+        }
+
+        /* Certificates List */
+        .certificates-compact {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .certificate-item-compact {
+            background: rgba(51, 65, 85, 0.6);
+            padding: 1rem;
+            border-radius: 12px;
+            border-left: 4px solid #22c55e;
+            font-size: 0.95rem;
+            color: #e2e8f0;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .certificate-item-compact:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            background: rgba(51, 65, 85, 0.8);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 2rem 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+            border-color: rgba(102, 126, 234, 0.4);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.5rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                height: auto;
+                padding: 1.5rem;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .contact-grid-main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+
+            .content-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .action-buttons-header {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .back-btn, .action-buttons-header {
+                display: none;
+            }
+
+            .info-card {
+                box-shadow: none;
+                border: 1px solid #e2e8f0;
+                break-inside: avoid;
+            }
+        }
+
+        /* Loading Animation */
+        .info-card {
+            animation: slideInUp 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .info-card:nth-child(1) { animation-delay: 0.1s; }
+        .info-card:nth-child(2) { animation-delay: 0.2s; }
+        .info-card:nth-child(3) { animation-delay: 0.3s; }
+        .info-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes slideInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .expand-btn {
+            background: rgba(51, 65, 85, 0.8);
+            color: #e2e8f0;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .expand-btn:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            border-color: transparent;
+        }
+
+        .certificate-hidden, .education-hidden {
+            display: none;
+        }
+
+        .certificate-visible, .education-visible {
+            display: block;
+        }
+
+        /* Dark scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+    </style>
+</head>
 <body>
-    <!-- Navigation -->
-     <div id="header-component"></div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const backBtn = document.querySelector(".back-btn");
+            if (document.referrer.endsWith("/scan")) {
+                backBtn.style.display = "block";
+            }
+        });
+    </script>
+    <script src="/static/client-dep/js/header.js"></script>
 
-    <div class="profile-detail-container">
-        <!-- Header -->
-        <div class="profile-detail-header">
-            <button onclick="history.back()" class="back-btn">
-                ← Retour aux résultats
-            </button>
-            <h1 class="profile-detail-title">Profil détaillé</h1>
-        </div>
-
-        {% if profile %}
-        <!-- Profile Content -->
-        <div class="profile-detail-content">
-            <!-- Personal Information -->
-            <div class="profile-section">
-                <div class="section-header" style="text-align: left;">
-                    <div class="profile-avatar-large">
-                        {% if current_user.profile_picture %}
-                            <img src="{{ current_user.profile_picture }}" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                        {% else %}
-                            <img src="/static/client-dep/images/placeholder.svg" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                        {% endif %}
-                    </div>
-
-                    <div class="profile-info">
-                        <h2 class="profile-name">{{ profile.name or 'Candidat' }}</h2>
-                        <p class="profile-title">{{ profile.title or 'Professionnel' }}</p>
-                        <div class="profile-meta">
-                            <span class="meta-item">📅 Profil créé récemment</span>
-                            <span style="background: rgba(0, 212, 255, 0.2); color: #00d4ff; padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 600; border: 1px solid rgba(0, 212, 255, 0.3);">{{ profile.years_of_experience }} années d'expérience</span>
-                        </div>
-                    </div>
+    {% if profile %}
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <button onclick="history.back()" class="back-btn" style="display: none;">
+                    ← Retour aux résultats
+                </button>
+                
+                <div class="profile-avatar-sidebar">
+                    {% if current_user.profile_picture %}
+                        <img src="{{ current_user.profile_picture }}" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        <img src="/static/client-dep/images/placeholder.svg" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% endif %}
                 </div>
+                
+                <h2 class="profile-name-sidebar">{{ profile.name or 'Candidat' }}</h2>
+                <p class="profile-title-sidebar">{{ profile.title or 'Professionnel' }}</p>
+                <span class="experience-badge">{{ profile.years_of_experience }} ans d'expérience</span>
             </div>
 
-            <!-- Contact Information -->
             {% if contact %}
-            <div class="profile-section">
-                <h3 class="section-title">📞 Informations de contact</h3>
-                <div class="contact-grid">
+            <div class="sidebar-section">
+                <h4>Contact Rapide</h4>
+                <div class="quick-contact">
                     {% if contact.email %}
-                    <div class="contact-card">
-                        <div class="contact-icon">📧</div>
-                        <div>
-                            <span class="contact-label">Email</span>
-                            <div class="contact-value">{{ contact.email }}</div>
-                        </div>
+                    <div class="contact-item-sidebar">
+                        <span class="contact-icon-sidebar">📧</span>
+                        <span>{{ contact.email }}</span>
                     </div>
                     {% endif %}
                     {% if contact.phone %}
-                    <div class="contact-card">
-                        <div class="contact-icon">📱</div>
-                        <div>
-                            <span class="contact-label">Téléphone</span>
-                            <div class="contact-value">{{ contact.phone }}</div>
-                        </div>
+                    <div class="contact-item-sidebar">
+                        <span class="contact-icon-sidebar">📱</span>
+                        <span>{{ contact.phone }}</span>
                     </div>
                     {% endif %}
                     {% if contact.linkedin %}
-                    <div class="contact-card">
-                        <div class="contact-icon">💼</div>
-                        <div>
-                            <span class="contact-label">LinkedIn</span>
-                            <div class="contact-value">{{ contact.linkedin }}</div>
-                        </div>
+                    <div class="contact-item-sidebar">
+                        <span class="contact-icon-sidebar">💼</span>
+                        <span>LinkedIn</span>
                     </div>
                     {% endif %}
                     {% if contact.address %}
-                    <div class="contact-card">
-                        <div class="contact-icon">📍</div>
-                        <div>
-                            <span class="contact-label">Adresse</span>
-                            <div class="contact-value">{{ contact.address }}</div>
-                        </div>
+                    <div class="contact-item-sidebar">
+                        <span class="contact-icon-sidebar">📍</span>
+                        <span>{{ contact.address }}</span>
                     </div>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
 
-            <!-- About Me -->
-            {% if profile.profile %}
-            <div class="profile-section">
-                <h3 class="section-title">👤 À propos</h3>
-                <div class="about-content">
-                    {{ profile.profile }}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Skills -->
-            {% if parsed_skills %}
-            <div class="profile-section">
-                <h3 class="section-title">🎯 Compétences</h3>
-                <div class="skills-detailed">
-                    {% for skill in parsed_skills %}
-                    <div class="skill-item">
-                        <div class="skill-info">
-                            <span class="skill-name">{{ skill.name }}</span>
-                            <span class="skill-level">{{ skill.level_str or (skill.percentage ~ '%' if skill.percentage > 0 else 'Niveau non spécifié') }}</span>
-                        </div>
-                        <div class="skill-bar">
-                            <div class="skill-progress" data-width="{{ skill.percentage or 50 }}"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Education -->
-            {% if profile.education %}
-            <div class="profile-section">
-                <h3 class="section-title">🎓 Formation</h3>
-                <div class="education-list">
-                    {% for edu in profile.education %}
-                    <div class="education-item">
-                        <h4>{{ edu.degree or edu.title or 'Formation' }}</h4>
-                        <p>{{ edu.institution or edu.school or 'Institution' }}</p>
-                        {% if edu.years or edu.year %}
-                        <span class="education-year">{{ edu.years or edu.year }}</span>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Languages -->
             {% if profile.languages %}
-            <div class="profile-section">
-                <h3 class="section-title">🌍 Langues</h3>
-                <div class="languages-list">
+            <div class="sidebar-section">
+                <h4>Langues</h4>
+                <div class="languages-sidebar">
                     {% for language in profile.languages %}
-                    <span class="language-tag">{{ language }}</span>
+                    <span class="language-pill">{{ language }}</span>
                     {% endfor %}
                 </div>
             </div>
             {% endif %}
+        </div>
 
-            <!-- Certificates -->
-            {% if profile.certificates %}
-            <div class="profile-section">
-                <h3 class="section-title">🏆 Certifications</h3>
-                <div class="certificates-list">
-                    {% for cert in profile.certificates %}
-                    <div class="certificate-item">{{ cert }}</div>
-                    {% endfor %}
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content-header">
+                <h1 class="page-title">Profil Détaillé</h1>
+                <div class="action-buttons-header">
+                    <button onclick="window.print()" class="btn-compact btn-primary-compact">
+                        🖨️ Imprimer
+                    </button>
+                    <button onclick="downloadProfile()" class="btn-compact btn-secondary-compact">
+                        💾 PDF
+                    </button>
+                    <button onclick="shareProfile()" class="btn-compact btn-secondary-compact">
+                        🔗 Partager
+                    </button>
                 </div>
             </div>
-            {% endif %}
 
-            <!-- Actions -->
-            <div class="profile-section">
-                <div class="action-buttons">
-                    <button onclick="window.print()" class="btn-primary">
-                        🖨️ Imprimer le profil
-                    </button>
-                    <button onclick="downloadProfile()" class="btn-secondary">
-                        💾 Télécharger PDF
-                    </button>
-                    <button onclick="shareProfile()" class="btn-secondary">
-                        🔗 Partager le profil
-                    </button>
+            <!-- Stats Overview -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number">{{ profile.years_of_experience or 0 }}</span>
+                    <span class="stat-label">Années Exp.</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">{{ parsed_skills|length if parsed_skills else 0 }}</span>
+                    <span class="stat-label">Compétences</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">{{ profile.education|length if profile.education else 0 }}</span>
+                    <span class="stat-label">Formations</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">{{ profile.certificates|length if profile.certificates else 0 }}</span>
+                    <span class="stat-label">Certifications</span>
+                </div>
+            </div>
+
+            <div class="content-grid">
+                <!-- Main Column -->
+                <div class="main-column">
+                    <!-- About Section -->
+                    {% if profile.profile %}
+                    <div class="info-card">
+                        <div class="card-header">
+                            <span class="card-icon">👤</span>
+                            <h3 class="card-title">À propos</h3>
+                        </div>
+                        <p class="about-text">{{ profile.profile }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Skills Section -->
+                    {% if parsed_skills %}
+                    <div class="info-card">
+                        <div class="card-header">
+                            <span class="card-icon">🎯</span>
+                            <h3 class="card-title">Compétences Techniques</h3>
+                        </div>
+                        <div class="skills-compact">
+                            {% for skill in parsed_skills %}
+                            <span class="skill-tag">{{ skill.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Contact Information -->
+                    {% if contact %}
+                    <div class="info-card">
+                        <div class="card-header">
+                            <span class="card-icon">📞</span>
+                            <h3 class="card-title">Informations de Contact</h3>
+                        </div>
+                        <div class="contact-grid-main">
+                            {% if contact.email %}
+                            <div class="contact-card-main">
+                                <span class="contact-icon-main">📧</span>
+                                <div class="contact-info-main">
+                                    <div class="contact-label-main">Email</div>
+                                    <div class="contact-value-main">{{ contact.email }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if contact.phone %}
+                            <div class="contact-card-main">
+                                <span class="contact-icon-main">📱</span>
+                                <div class="contact-info-main">
+                                    <div class="contact-label-main">Téléphone</div>
+                                    <div class="contact-value-main">{{ contact.phone }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if contact.linkedin %}
+                            <div class="contact-card-main">
+                                <span class="contact-icon-main">💼</span>
+                                <div class="contact-info-main">
+                                    <div class="contact-label-main">LinkedIn</div>
+                                    <div class="contact-value-main">{{ contact.linkedin }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if contact.address %}
+                            <div class="contact-card-main">
+                                <span class="contact-icon-main">📍</span>
+                                <div class="contact-info-main">
+                                    <div class="contact-label-main">Adresse</div>
+                                    <div class="contact-value-main">{{ contact.address }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Side Column -->
+                <div class="side-column">
+                    <!-- Education Timeline -->
+                    {% if profile.education %}
+                    <div class="info-card">
+                        <div class="card-header">
+                            <span class="card-icon">🎓</span>
+                            <h3 class="card-title">Formation</h3>
+                        </div>
+                        <div class="education-timeline">
+                            {% for edu in profile.education %}
+                            <div class="education-item-timeline {% if loop.index > 3 %}education-hidden{% endif %}" data-index="{{ loop.index }}">
+                                <div class="education-title">{{ edu.degree or edu.title or 'Formation' }}</div>
+                                <div class="education-institution">{{ edu.institution or edu.school or 'Institution' }}</div>
+                                {% if edu.years or edu.year %}
+                                <span class="education-year-timeline">{{ edu.years or edu.year }}</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            {% if profile.education|length > 3 %}
+                            <button class="expand-btn" onclick="toggleEducation(this)">
+                                Voir plus ({{ profile.education|length - 3 }} autres)
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Certificates -->
+                    {% if profile.certificates %}
+                    <div class="info-card">
+                        <div class="card-header">
+                            <span class="card-icon">🏆</span>
+                            <h3 class="card-title">Certifications</h3>
+                        </div>
+                        <div class="certificates-compact">
+                            {% for cert in profile.certificates %}
+                            <div class="certificate-item-compact {% if loop.index > 3 %}certificate-hidden{% endif %}" data-index="{{ loop.index }}">{{ cert }}</div>
+                            {% endfor %}
+                            {% if profile.certificates|length > 3 %}
+                            <button class="expand-btn" onclick="toggleCertificates(this)">
+                                Voir plus ({{ profile.certificates|length - 3 }} autres)
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        {% else %}
-        <div class="profile-section">
+    </div>
+    {% else %}
+    <div class="main-content">
+        <div class="info-card">
             <h3>Profil non trouvé</h3>
             <p>Le profil demandé n'existe pas ou n'est plus disponible.</p>
-            <a href="/" class="btn-primary">Retour à l'accueil</a>
+            <a href="/" class="btn-compact btn-primary-compact">Retour à l'accueil</a>
         </div>
-        {% endif %}
     </div>
+    {% endif %}
 
     <script src="/static/client-dep/js/profile-detail.js"></script>
     <script>
@@ -214,26 +922,76 @@
 
         // Load header component
         document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const response = await fetch('/static/client-dep/components/header.html');
-            if (response.ok) {
-                const headerHTML = await response.text();
-                const container = document.getElementById('header-component');
-                container.innerHTML = headerHTML;
-                
-                // Execute scripts from the loaded HTML
-                const scripts = container.querySelectorAll('script');
-                scripts.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    newScript.textContent = oldScript.textContent;
-                    oldScript.parentNode.removeChild(oldScript);
-                    document.body.appendChild(newScript);
-                });
+            try {
+                const response = await fetch('/static/client-dep/components/header.html');
+                if (response.ok) {
+                    const headerHTML = await response.text();
+                    const container = document.getElementById('header-component');
+                    if (container) {
+                        container.innerHTML = headerHTML;
+                        
+                        // Execute scripts from the loaded HTML
+                        const scripts = container.querySelectorAll('script');
+                        scripts.forEach(oldScript => {
+                            const newScript = document.createElement('script');
+                            newScript.textContent = oldScript.textContent;
+                            oldScript.parentNode.removeChild(oldScript);
+                            document.body.appendChild(newScript);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load header component:', error);
             }
-        } catch (error) {
-            console.error('Failed to load header component:', error);
+        });
+
+        function toggleCertificates(button) {
+            const allCerts = document.querySelectorAll('.certificate-item-compact');
+            const isExpanded = button.textContent.includes('Voir moins');
+            
+            allCerts.forEach((cert, index) => {
+                if (index >= 3) { // Items after the first 3
+                    if (isExpanded) {
+                        cert.classList.add('certificate-hidden');
+                        cert.classList.remove('certificate-visible');
+                    } else {
+                        cert.classList.remove('certificate-hidden');
+                        cert.classList.add('certificate-visible');
+                    }
+                }
+            });
+            
+            const totalCerts = allCerts.length;
+            const hiddenCount = totalCerts - 3;
+            
+            button.textContent = isExpanded 
+                ? `Voir plus (${hiddenCount} autres)`
+                : 'Voir moins';
         }
-    });
+
+        function toggleEducation(button) {
+            const allEdu = document.querySelectorAll('.education-item-timeline');
+            const isExpanded = button.textContent.includes('Voir moins');
+            
+            allEdu.forEach((edu, index) => {
+                if (index >= 3) { // Items after the first 3
+                    if (isExpanded) {
+                        edu.classList.add('education-hidden');
+                        edu.classList.remove('education-visible');
+                    } else {
+                        edu.classList.remove('education-hidden');
+                        edu.classList.add('education-visible');
+                    }
+                }
+            });
+            
+            const totalEdu = allEdu.length;
+            const hiddenCount = totalEdu - 3;
+            
+            button.textContent = isExpanded 
+                ? `Voir plus (${hiddenCount} autres)`
+                : 'Voir moins';
+        }
     </script>
 </body>
 </html>

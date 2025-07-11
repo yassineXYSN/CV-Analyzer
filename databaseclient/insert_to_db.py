@@ -4,6 +4,7 @@ import json
 
 def insert_candidate_data(data_json, summary, user_id):
     """Insert candidate data into database and optionally link to user"""
+    print("Inserting candidate data into database...")
     db = SessionLocal()
     try:
         # Insert contact
@@ -14,14 +15,14 @@ def insert_candidate_data(data_json, summary, user_id):
             address=data_json["contact"]["address"]
         )
         db.add(contact)
-        db.flush()  # Get the ID without committing
-        
+        db.flush()  # This gives you contact.id
+
         # Insert analysis
         analyse = AnalyseCandidat(analyse=summary)
         db.add(analyse)
-        db.flush()  # Get the ID without committing
-        
-        # Insert profile with user link
+        db.flush()  # This gives you analyse.id
+
+        # Insert profile and link to user, contact, and analyse
         new_profile = ProfileCandidat(
             name=data_json.get('name', ''),
             title=data_json.get('title', ''),
@@ -32,12 +33,14 @@ def insert_candidate_data(data_json, summary, user_id):
             skills=json.dumps(data_json.get('skills', [])),
             yearOfExperience=data_json.get('yearsOfExperience', '0'),
             user_id=user_id,
+            contact_id=contact.id,    # ✅ link contact
+            analyse_id=analyse.id     # ✅ link analyse
         )
         db.add(new_profile)
         db.commit()
-        
+
         return new_profile.id
-        
+
     except Exception as e:
         db.rollback()
         print(f"Error inserting candidate data: {e}")
