@@ -5,7 +5,7 @@ from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
 from typing import Optional
-
+from routers.client_dep.notifications import send_application_status_notification
 
 
 router = APIRouter()
@@ -126,6 +126,9 @@ async def update_application_status(application_id: int, status_data: dict):
             if not new_status:
                 return {"success": False, "message": "Statut manquant"}
             
+            # Store old status for comparison
+            old_status = application.status
+            
             if new_status == 'accepted' and job and candidate and contact:
                 try:
                     employee_id = f"EMP{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -182,6 +185,12 @@ async def update_application_status(application_id: int, status_data: dict):
                     
                     db.commit()
                     
+                    # Send notification for status change
+                    if old_status != new_status:
+                        await send_application_status_notification(
+                            db, application_id, new_status, "Admin HR"
+                        )
+                    
                     return {
                         "success": True,
                         "message": f"Candidature acceptée ! {candidate.name} a été automatiquement ajouté comme employé.",
@@ -204,6 +213,13 @@ async def update_application_status(application_id: int, status_data: dict):
                     application.reviewed_by = user_id
                     application.reviewed_at = datetime.now()
                     db.commit()
+                    
+                    # Send notification even if employee creation failed
+                    if old_status != new_status:
+                        await send_application_status_notification(
+                            db, application_id, new_status, "Admin HR"
+                        )
+                    
                     return {
                         "success": True,
                         "message": f"Candidature mise à jour vers '{new_status}' (création employé échouée: {str(e)})",
@@ -224,6 +240,12 @@ async def update_application_status(application_id: int, status_data: dict):
                     application.hr_rating = float(status_data['hr_rating'])
                 
                 db.commit()
+                
+                # Send notification for status change
+                if old_status != new_status:
+                    await send_application_status_notification(
+                        db, application_id, new_status, "Admin HR"
+                    )
                 
                 return {
                     "success": True,

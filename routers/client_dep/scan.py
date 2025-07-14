@@ -63,7 +63,7 @@ async def scan_file(
     print("Cleaning up the extracted text...")
     pdf_text = textcleaner.cleantext(pdf_text)
     print("Cleaned up the extracted text.")
-    # Generate summary
+    # Generate summary.
     print("Generating summary ...")
     summary = data_generator.generate_summary(pdf_text, images_text)
     print("Summary generation completed.")

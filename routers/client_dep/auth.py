@@ -157,7 +157,9 @@ async def signup_step2(
         f.write(await filetoscan.read())
 
     # Process the file
+    print(f"Processing file: {file_location}")
     pdf_text, images_text = text_extractor.process_file(file_location)
+    print("File processed successfully")
 
     # Clean up
     pdf_text = textcleaner.cleantext(pdf_text)

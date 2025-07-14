@@ -4,538 +4,570 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications - CV Analyzer Pro</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/client-dep/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Base styles matching jobs page */
-        :root {
-            --primary_gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --accent_gradient: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-            --danger_gradient: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
-            --warning_gradient: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
-            --success_color: #10b981;
-            --dark_bg: #0a0a0a;
-            --card_bg: rgba(255, 255, 255, 0.05);
-            --border_color: rgba(255, 255, 255, 0.1);
-            --text_primary: #ffffff;
-            --text_secondary: #a0a0a0;
-            --text_muted: #707070;
-            --error_color: #ff4757;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: "Inter", sans-serif !important;
-            background: radial-gradient(ellipse at top, #1a1a2e 0%, #16213e 50%, #0f0f23 100%) !important;
-            min-height: 100vh !important;
-            color: var(--text_primary) !important;
-            overflow-x: hidden;
-            line-height: 1.6;
-        }
-
-        .background-effects {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .floating-shapes {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-
-        .shape {
-            position: absolute;
-            border-radius: 50%;
-            background: linear-gradient(45deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1));
-            animation: float 20s ease-in-out infinite;
-        }
-
-        .shape:nth-child(1) {
-            width: 300px;
-            height: 300px;
-            top: 10%;
-            left: 10%;
-            animation-delay: 0s;
-        }
-
-        .shape:nth-child(2) {
-            width: 200px;
-            height: 200px;
-            top: 60%;
-            right: 10%;
-            animation-delay: -7s;
-        }
-
-        .shape:nth-child(3) {
-            width: 150px;
-            height: 150px;
-            bottom: 20%;
-            left: 20%;
-            animation-delay: -14s;
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px) rotate(0deg);
-                opacity: 0.3;
-            }
-            33% {
-                transform: translateY(-30px) rotate(120deg);
-                opacity: 0.6;
-            }
-            66% {
-                transform: translateY(30px) rotate(240deg);
-                opacity: 0.4;
-            }
-        }
-
-        .grid-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
-            animation: gridMove 30s linear infinite;
-        }
-
-        @keyframes gridMove {
-            0% {
-                transform: translate(0, 0);
-            }
-            100% {
-                transform: translate(50px, 50px);
-            }
-        }
-
-        .main-container {
-            padding-top: 100px;
-            min-height: 100vh;
-            position: relative;
-            z-index: 10;
-        }
-
-        .notifications-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .page-header {
-            text-align: center;
-            margin-bottom: 3rem;
-            padding: 2rem 0;
-        }
-
-        .page-header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: var(--accent_gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-        }
-
-        .page-header p {
-            font-size: 1.1rem;
-            color: var(--text_secondary);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .notifications-header {
-            background: var(--card_bg);
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid var(--border_color);
-            backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .notifications-stats {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-number {
-            display: block;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text_primary);
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--text_secondary);
-        }
-
-        .mark-all-read-btn {
-            background: var(--accent_gradient);
-            color: #000;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .mark-all-read-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
-        }
-
-        .notifications-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .notification-item {
-            background: var(--card_bg);
-            border: 1px solid var(--border_color);
-            border-radius: 16px;
-            padding: 2rem;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-        }
-
-        .notification-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .notification-item.unread {
-            border-left: 4px solid var(--accent_gradient);
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, var(--card_bg) 100%);
-        }
-
-        .notification-item.unread::before {
-            content: '';
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            width: 10px;
-            height: 10px;
-            background: var(--accent_gradient);
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-        }
-
-        .notification-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-            gap: 1rem;
-        }
-
-        .notification-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--text_primary);
-            margin: 0;
-            flex: 1;
-        }
-
-        .notification-time {
-            font-size: 0.85rem;
-            color: var(--text_muted);
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .notification-message {
-            color: var(--text_secondary);
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-            font-size: 1rem;
-        }
-
-        .notification-details {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 1.5rem;
-        }
-
-        .notification-status {
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .status-pending {
-            background: rgba(255, 165, 2, 0.2);
-            color: #ffa502;
-            border: 1px solid rgba(255, 165, 2, 0.3);
-        }
-
-        .status-reviewed {
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-
-        .status-interview_scheduled {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success_color);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .status-accepted {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success_color);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .status-rejected {
-            background: rgba(255, 71, 87, 0.2);
-            color: var(--error_color);
-            border: 1px solid rgba(255, 71, 87, 0.3);
-        }
-
-        .notification-company {
-            color: var(--text_muted);
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .notification-actions {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .notification-btn {
-            padding: 0.6rem 1.2rem;
-            border: 1px solid var(--border_color);
-            border-radius: 8px;
-            background: rgba(0, 0, 0, 0.2);
-            color: var(--text_primary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .notification-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #3b82f6;
-            color: #3b82f6;
-            transform: translateY(-1px);
-        }
-
-        .notification-btn.primary {
-            background: var(--accent_gradient);
-            color: #000;
-            border-color: transparent;
-        }
-
-        .notification-btn.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3);
-            color: #000;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text_secondary);
-            background: var(--card_bg);
-            border-radius: 16px;
-            border: 1px solid var(--border_color);
-            backdrop-filter: blur(10px);
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            color: var(--text_muted);
-        }
-
-        .empty-state h3 {
-            font-size: 1.5rem;
-            color: var(--text_primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .empty-state p {
-            margin-bottom: 2rem;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .btn-primary {
-            background: var(--accent_gradient);
-            color: #000;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
-            color: #000;
-        }
-
-
-
-
-        .toast-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-        }
-
-        .toast-title {
-            font-weight: 600;
-            color: var(--text_primary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .toast-close {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            color: var(--text_secondary);
-            padding: 0.25rem;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-        }
-
-        .toast-close:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text_primary);
-        }
-
-        .toast-message {
-            color: var(--text_secondary);
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-
-        @media (max-width: 768px) {
-            .notifications-container {
-                padding: 1rem;
-            }
-
-            .page-header h1 {
-                font-size: 2rem;
-            }
-
-            .notifications-header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-
-            .notifications-stats {
-                justify-content: center;
-            }
-
-            .notification-item {
-                padding: 1.5rem;
-            }
-
-            .notification-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-
-            .notification-details {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.75rem;
-            }
-
-            .notification-actions {
-                flex-direction: column;
-            }
-
-        }
-
-        @media (max-width: 480px) {
-            .notifications-header {
-                padding: 1.5rem;
-            }
-
-            .notification-item {
-                padding: 1rem;
-            }
-
-            .notification-actions {
-                gap: 0.5rem;
-            }
-
-            .notification-btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.85rem;
-            }
-        }
+        /* Base styles */
+:root {
+    --primary_gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --accent_gradient: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+    --danger_gradient: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+    --warning_gradient: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
+    --success_color: #10b981;
+    --dark_bg: #0a0a0a;
+    --card_bg: rgba(255, 255, 255, 0.05);
+    --border_color: rgba(255, 255, 255, 0.1);
+    --text_primary: #ffffff;
+    --text_secondary: #a0a0a0;
+    --text_muted: #707070;
+    --error_color: #ff4757;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Inter", sans-serif !important;
+    background: radial-gradient(ellipse at top, #1a1a2e 0%, #16213e 50%, #0f0f23 100%) !important;
+    min-height: 100vh !important;
+    color: var(--text_primary) !important;
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+.background-effects {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.floating-shapes {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.shape {
+    position: absolute;
+    border-radius: 50%;
+    background: linear-gradient(45deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1));
+    animation: float 20s ease-in-out infinite;
+}
+
+.shape:nth-child(1) {
+    width: 300px;
+    height: 300px;
+    top: 10%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.shape:nth-child(2) {
+    width: 200px;
+    height: 200px;
+    top: 60%;
+    right: 10%;
+    animation-delay: -7s;
+}
+
+.shape:nth-child(3) {
+    width: 150px;
+    height: 150px;
+    bottom: 20%;
+    left: 20%;
+    animation-delay: -14s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+        opacity: 0.3;
+    }
+    33% {
+        transform: translateY(-30px) rotate(120deg);
+        opacity: 0.6;
+    }
+    66% {
+        transform: translateY(30px) rotate(240deg);
+        opacity: 0.4;
+    }
+}
+
+.grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridMove 30s linear infinite;
+}
+
+@keyframes gridMove {
+    0% {
+        transform: translate(0, 0);
+    }
+    100% {
+        transform: translate(50px, 50px);
+    }
+}
+
+.main-container {
+    background: transparent;
+    padding: 2rem 0;
+    min-height: calc(100vh - 200px);
+    position: relative;
+    z-index: 10;
+    margin-top: 70px;
+}
+
+.notifications-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+}
+
+.notifications-header {
+    background: var(--card_bg);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border_color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notifications-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--accent_gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.mark-all-read-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--accent_gradient);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.mark-all-read-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+}
+
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.notification-item {
+    background: var(--card_bg);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border_color);
+    backdrop-filter: blur(10px);
+}
+
+.notification-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.notification-item.unread {
+    border-left: 4px solid #00d4ff;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, var(--card_bg) 100%);
+}
+
+.notification-item.unread::after {
+    content: '';
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 12px;
+    height: 12px;
+    background: var(--accent_gradient);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 212, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 212, 255, 0);
+    }
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.notification-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text_primary);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.notification-time {
+    font-size: 0.85rem;
+    color: var(--text_secondary);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    white-space: nowrap;
+    border: 1px solid var(--border_color);
+}
+
+.notification-message {
+    color: var(--text_secondary);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.notification-details {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.notification-status {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid var(--border_color);
+}
+
+.status-pending {
+    background: rgba(255, 165, 2, 0.2);
+    color: #ffa502;
+    border-color: #ffa502;
+}
+
+.status-reviewed {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.status-interview_scheduled {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success_color);
+    border-color: var(--success_color);
+}
+
+.status-accepted {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success_color);
+    border-color: var(--success_color);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.status-rejected {
+    background: rgba(255, 71, 87, 0.2);
+    color: #ff4757;
+    border-color: #ff4757;
+}
+
+.notification-company {
+    background: var(--accent_gradient);
+    color: #000;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.notification-btn {
+    padding: 0.6rem 1.2rem;
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text_primary);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border_color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.notification-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text_primary);
+    transform: translateY(-1px);
+    border-color: #3b82f6;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--card_bg);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    border: 1px solid var(--border_color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--text_muted);
+}
+
+.empty-state h3 {
+    color: var(--text_primary);
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: var(--text_secondary);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.connection-status {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border_color);
+}
+
+.connection-status.connected {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success_color);
+    border-color: var(--success_color);
+}
+
+.connection-status.disconnected {
+    background: rgba(255, 71, 87, 0.2);
+    color: #ff4757;
+    border-color: #ff4757;
+}
+
+.notification-toast {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    background: var(--card_bg);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--border_color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    z-index: 1001;
+    max-width: 400px;
+    min-width: 300px;
+    width: auto;
+    transform: translateX(calc(100% + 2rem));
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    opacity: 0;
+    visibility: hidden;
+}
+
+.notification-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.toast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.toast-title {
+    font-weight: 700;
+    color: var(--text_primary);
+    font-size: 1.1rem;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text_muted);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.toast-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text_primary);
+}
+
+.toast-message {
+    color: var(--text_secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+.btn-primary {
+    background: var(--accent_gradient);
+    color: #000;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-block;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+}
+
+@media (max-width: 768px) {
+    .notifications-header {
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .notifications-title {
+        font-size: 2rem;
+    }
+
+    .notification-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .notification-actions {
+        flex-direction: column;
+    }
+
+    .notification-toast {
+        right: 1rem;
+        left: 1rem;
+        max-width: none;
+        min-width: auto;
+        width: calc(100% - 2rem);
+        transform: translateY(-100%);
+    }
+
+    .notification-toast.show {
+        transform: translateY(0);
+    }
+
+    .connection-status {
+        top: 1rem;
+        right: 1rem;
+    }
+
+    .notifications-container {
+        padding: 0 1rem;
+    }
+
+    .notification-item {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .notifications-title {
+        font-size: 1.8rem;
+    }
+
+    .notification-item {
+        padding: 1rem;
+    }
+
+    .notification-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+
+    .notification-time {
+        align-self: flex-end;
+        margin-top: -2rem;
+    }
+}
     </style>
 </head>
 <body>
@@ -552,94 +584,64 @@
     <!-- Header Component -->
     <div id="header-component"></div>
 
-    <!-- Connection Status -->
+    <!-- Breadcrumb -->
+<div class="breadcrumb" style="background: rgba(255, 255, 255, 0.05); padding: 1rem 0; margin-top: 70px;">
+    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text_secondary);">
+        <a href="/" style="color: var(--text_secondary); text-decoration: none; transition: color 0.3s ease;">Accueil</a>
+        <span class="separator" style="color: var(--text_muted);">/</span>
+        <span class="current" style="color: var(--text_primary); font-weight: 500;">Notifications</span>
+    </div>
+</div>
 
+    <!-- Connection Status -->
+    <div id="connection-status" class="connection-status disconnected">
+        🔴 Déconnecté
+    </div>
 
     <div class="main-container">
         <div class="notifications-container">
-            <!-- Page Header -->
-            <div class="page-header">
-                <h1><i class="fas fa-bell"></i> Mes Notifications</h1>
-                <p>Restez informé des mises à jour de vos candidatures en temps réel</p>
-            </div>
-
-            <!-- Notifications Header with Stats -->
             <div class="notifications-header">
-                <div class="notifications-stats">
-                    <div class="stat-item">
-                        <span class="stat-number" id="total-notifications">{{ notifications|length if notifications else 0 }}</span>
-                        <span class="stat-label">Total</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="unread-notifications">{{ notifications|length if notifications else 0 }}</span>
-                        <span class="stat-label">Non lues</span>
-                    </div>
-                </div>
+                <h1 class="notifications-title">📬 Mes Notifications</h1>
                 <button class="mark-all-read-btn" onclick="markAllAsRead()">
-                    <i class="fas fa-check-double"></i>
-                    Tout marquer comme lu
+                    ✓ Tout marquer comme lu
                 </button>
             </div>
 
-            <!-- Notifications List -->
             <div class="notifications-list" id="notifications-list">
                 {% if notifications %}
                     {% for notification in notifications %}
-                    <div class="notification-item unread" data-id="{{ notification.id }}">
+                    <div class="notification-item {% if not notification.is_read %}unread{% endif %}" data-id="{{ notification.id }}">
                         <div class="notification-header">
                             <h3 class="notification-title">{{ notification.title }}</h3>
-                            <span class="notification-time">
-                                <i class="fas fa-clock"></i>
-                                {{ notification.timestamp.strftime('%d/%m/%Y à %H:%M') }}
-                            </span>
+                            <span class="notification-time">{{ notification.timestamp.strftime('%d/%m/%Y à %H:%M') }}</span>
                         </div>
                         <p class="notification-message">{{ notification.message }}</p>
                         <div class="notification-details">
                             <span class="notification-status status-{{ notification.status }}">
-                                {% if notification.status == 'pending' %}
-                                    <i class="fas fa-hourglass-half"></i>
-                                {% elif notification.status == 'reviewed' %}
-                                    <i class="fas fa-eye"></i>
-                                {% elif notification.status == 'interview_scheduled' %}
-                                    <i class="fas fa-calendar-check"></i>
-                                {% elif notification.status == 'accepted' %}
-                                    <i class="fas fa-check-circle"></i>
-                                {% elif notification.status == 'rejected' %}
-                                    <i class="fas fa-times-circle"></i>
-                                {% endif %}
                                 {{ notification.status.replace('_', ' ').title() }}
                             </span>
-                            <span class="notification-company">
-                                <i class="fas fa-building"></i>
-                                {{ notification.company_name }}
-                            </span>
+                            <span class="notification-company">{{ notification.company_name }}</span>
                         </div>
                         <div class="notification-actions">
-                            <a href="/jobs/{{ notification.job_id }}" class="notification-btn primary">
-                                <i class="fas fa-eye"></i>
-                                Voir l'offre
+                            <a href="/jobs/{{ notification.job_id }}" class="notification-btn">
+                                👁️ Voir l'offre
                             </a>
                             <a href="/my-applications" class="notification-btn">
-                                <i class="fas fa-list"></i>
-                                Mes candidatures
+                                📋 Mes candidatures
                             </a>
                             <button class="notification-btn" onclick="markAsRead({{ notification.id }})">
-                                <i class="fas fa-check"></i>
-                                Marquer comme lu
+                                ✓ Marquer comme lu
                             </button>
                         </div>
                     </div>
                     {% endfor %}
                 {% else %}
                     <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-bell-slash"></i>
-                        </div>
+                        <div class="empty-state-icon">📭</div>
                         <h3>Aucune notification</h3>
-                        <p>Vous n'avez pas encore de notifications. Elles apparaîtront ici lorsque le statut de vos candidatures sera mis à jour par les recruteurs.</p>
-                        <a href="/jobs" class="btn-primary">
-                            <i class="fas fa-search"></i>
-                            Parcourir les offres
+                        <p>Vous n'avez pas encore de notifications. Elles apparaîtront ici lorsque le statut de vos candidatures sera mis à jour.</p>
+                        <a href="/jobs" class="btn-primary" style="margin-top: 1rem;">
+                            🔍 Parcourir les offres
                         </a>
                     </div>
                 {% endif %}
@@ -647,7 +649,14 @@
         </div>
     </div>
 
-
+    <!-- Notification Toast Template -->
+    <div id="notification-toast" class="notification-toast">
+        <div class="toast-header">
+            <span class="toast-title">Nouvelle notification</span>
+            <button class="toast-close" onclick="hideToast()">&times;</button>
+        </div>
+        <div class="toast-message" id="toast-message"></div>
+    </div>
 
     <script>
         // Pass user data from server to client
@@ -697,7 +706,6 @@
                     if (data.type === 'application_status_change') {
                         showNotificationToast(data);
                         addNotificationToList(data);
-                        updateNotificationStats();
                     }
                 };
                 
@@ -722,33 +730,54 @@
             }
         }
 
-
-
-        function updateNotificationStats() {
-            const totalElement = document.getElementById('total-notifications');
-            const unreadElement = document.getElementById('unread-notifications');
-            
-            const totalNotifications = document.querySelectorAll('.notification-item').length;
-            const unreadNotifications = document.querySelectorAll('.notification-item.unread').length;
-            
-            if (totalElement) totalElement.textContent = totalNotifications;
-            if (unreadElement) unreadElement.textContent = unreadNotifications;
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connection-status');
+            if (connected) {
+                statusElement.textContent = '🟢 Connecté';
+                statusElement.className = 'connection-status connected';
+            } else {
+                statusElement.textContent = '🔴 Déconnecté';
+                statusElement.className = 'connection-status disconnected';
+            }
         }
 
         function showNotificationToast(notification) {
+            const toast = document.getElementById('notification-toast');
             const messageElement = document.getElementById('toast-message');
             
+            if (!toast || !messageElement) {
+                console.error('Toast elements not found');
+                return;
+            }
+            
+            // Set the message content
             messageElement.textContent = notification.message;
+            
+            // Ensure the toast is properly positioned before showing
+            toast.style.display = 'block';
+            
+            // Force a reflow to ensure the element is rendered
+            toast.offsetHeight;
+            
+            // Show the toast
             toast.classList.add('show');
             
-            // Auto-hide after 5 seconds
+            // Auto-hide after 6 seconds (increased from 5)
             setTimeout(() => {
                 hideToast();
-            }, 5000);
+            }, 6000);
         }
 
         function hideToast() {
-            toast.classList.remove('show');
+            const toast = document.getElementById('notification-toast');
+            if (toast) {
+                toast.classList.remove('show');
+                
+                // Hide the element completely after animation
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 400);
+            }
         }
 
         function addNotificationToList(notification) {
@@ -763,52 +792,32 @@
             // Create new notification element
             const notificationElement = document.createElement('div');
             notificationElement.className = 'notification-item unread';
-            notificationElement.dataset.id = notification.application_id;
+            notificationElement.dataset.id = notification.notification_id;
             
             const statusClass = `status-${notification.status}`;
             const statusText = notification.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
             
-            // Get status icon
-            let statusIcon = 'fas fa-info-circle';
-            switch(notification.status) {
-                case 'pending': statusIcon = 'fas fa-hourglass-half'; break;
-                case 'reviewed': statusIcon = 'fas fa-eye'; break;
-                case 'interview_scheduled': statusIcon = 'fas fa-calendar-check'; break;
-                case 'accepted': statusIcon = 'fas fa-check-circle'; break;
-                case 'rejected': statusIcon = 'fas fa-times-circle'; break;
-            }
-            
             notificationElement.innerHTML = `
                 <div class="notification-header">
                     <h3 class="notification-title">${notification.title}</h3>
-                    <span class="notification-time">
-                        <i class="fas fa-clock"></i>
-                        À l'instant
-                    </span>
+                    <span class="notification-time">À l'instant</span>
                 </div>
                 <p class="notification-message">${notification.message}</p>
                 <div class="notification-details">
                     <span class="notification-status ${statusClass}">
-                        <i class="${statusIcon}"></i>
                         ${statusText}
                     </span>
-                    <span class="notification-company">
-                        <i class="fas fa-building"></i>
-                        ${notification.company_name}
-                    </span>
+                    <span class="notification-company">${notification.company_name}</span>
                 </div>
                 <div class="notification-actions">
-                    <a href="/jobs/${notification.job_id}" class="notification-btn primary">
-                        <i class="fas fa-eye"></i>
-                        Voir l'offre
+                    <a href="/jobs/${notification.job_id}" class="notification-btn">
+                        👁️ Voir l'offre
                     </a>
                     <a href="/my-applications" class="notification-btn">
-                        <i class="fas fa-list"></i>
-                        Mes candidatures
+                        📋 Mes candidatures
                     </a>
-                    <button class="notification-btn" onclick="markAsRead(${notification.application_id})">
-                        <i class="fas fa-check"></i>
-                        Marquer comme lu
+                    <button class="notification-btn" onclick="markAsRead(${notification.notification_id})">
+                        ✓ Marquer comme lu
                     </button>
                 </div>
             `;
@@ -830,7 +839,6 @@
                     const notificationElement = document.querySelector(`[data-id="${notificationId}"]`);
                     if (notificationElement) {
                         notificationElement.classList.remove('unread');
-                        updateNotificationStats();
                     }
                 }
             } catch (error) {
@@ -852,7 +860,6 @@
                     unreadNotifications.forEach(notification => {
                         notification.classList.remove('unread');
                     });
-                    updateNotificationStats();
                 }
             } catch (error) {
                 console.error('Error marking all notifications as read:', error);
@@ -883,9 +890,6 @@
 
             // Connect to WebSocket for real-time notifications
             connectWebSocket();
-            
-            // Initialize notification stats
-            updateNotificationStats();
         });
 
         // Clean up WebSocket connection when page is unloaded

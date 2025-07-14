@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Request, Depends, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, Request, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from database import SessionLocal
-from databaseclient.models import User, Application, Job, Company, ProfileCandidat
+from databaseclient.models import User, Application, Job, Company, ProfileCandidat, Notification
 from routers.client_dep.dependencies import get_db, get_current_user, require_auth
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import desc, and_
 from fastapi.templating import Jinja2Templates
 from typing import Dict, List
 import json
@@ -26,24 +25,27 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket, user_id: int):
         await websocket.accept()
         self.active_connections[user_id] = websocket
-        print(f"WebSocket connected for user {user_id}")
+        print(f"User {user_id} connected to notifications")
 
     def disconnect(self, user_id: int):
         if user_id in self.active_connections:
             del self.active_connections[user_id]
-            print(f"WebSocket disconnected for user {user_id}")
+            print(f"User {user_id} disconnected from notifications")
 
     async def send_personal_message(self, message: dict, user_id: int):
         if user_id in self.active_connections:
             try:
                 await self.active_connections[user_id].send_text(json.dumps(message))
-                print(f"Sent notification to user {user_id}: {message}")
                 return True
             except Exception as e:
                 print(f"Error sending message to user {user_id}: {e}")
                 self.disconnect(user_id)
                 return False
         return False
+
+    async def broadcast_to_users(self, message: dict, user_ids: List[int]):
+        for user_id in user_ids:
+            await self.send_personal_message(message, user_id)
 
 manager = ConnectionManager()
 
@@ -55,128 +57,235 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
             # Keep connection alive
             data = await websocket.receive_text()
             # Echo back for heartbeat
-            await websocket.send_text(f"Heartbeat: {data}")
+            await websocket.send_text(json.dumps({"type": "heartbeat", "timestamp": datetime.now().isoformat()}))
     except WebSocketDisconnect:
-        manager.disconnect(user_id)
-    except Exception as e:
-        print(f"WebSocket error for user {user_id}: {e}")
         manager.disconnect(user_id)
 
 @router.get("/notifications", response_class=HTMLResponse)
 async def notifications_page(request: Request, db: Session = Depends(get_db)):
     current_user = get_current_user(request, db)
     
-    # Require authentication
     if not current_user:
         return templates.TemplateResponse("client-dep/auth/login.html", {
             "request": request,
             "error": "Vous devez être connecté pour voir vos notifications"
         })
     
-    # Get user's candidate profile
-    candidate_profile = db.query(ProfileCandidat).filter(
-        ProfileCandidat.user_id == current_user.id
-    ).first()
+    # Get notifications from the notifications table
+    notifications = db.query(Notification).filter(
+        Notification.user_id == current_user.id
+    ).order_by(Notification.created_at.desc()).all()
     
-    notifications = []
-    if candidate_profile:
-        # Get all applications for this user with job and company details
-        applications = db.query(Application).options(
-            joinedload(Application.job).joinedload(Job.company)
-        ).filter(
-            Application.candidate_profile_id == candidate_profile.id
-        ).order_by(Application.updated_at.desc()).limit(50).all()
-        
-        # Convert applications to notification format
-        for app in applications:
-            if app.job and app.job.company:
-                # Create notification-like object
-                notification = type('Notification', (), {
-                    'id': app.id,
-                    'title': f"Mise à jour de candidature - {app.job.title}",
-                    'message': f"Le statut de votre candidature pour le poste '{app.job.title}' chez {app.job.company.company_name} a été mis à jour vers '{app.status}'.",
-                    'status': app.status,
-                    'company_name': app.job.company.company_name,
-                    'job_id': app.job.id,
-                    'timestamp': app.updated_at or app.created_at
-                })()
-                notifications.append(notification)
+    # Convert to the format expected by the template
+    notification_list = []
+    for notif in notifications:
+        notification_data = {
+            'id': notif.id,
+            'type': notif.type,
+            'title': notif.title,
+            'message': notif.message,
+            'status': notif.status,
+            'job_title': notif.job_title,
+            'company_name': notif.company_name,
+            'timestamp': notif.created_at,
+            'is_read': notif.is_read,
+            'job_id': notif.job_id,
+            'application_id': notif.application_id
+        }
+        notification_list.append(notification_data)
     
     return templates.TemplateResponse("client-dep/notifications.html", {
         "request": request,
-        "notifications": notifications,
+        "notifications": notification_list,
         "current_user": current_user
     })
 
 @router.post("/api/notifications/{notification_id}/mark-read")
 async def mark_notification_read(
-    notification_id: int, 
-    request: Request, 
+    notification_id: int,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     current_user = get_current_user(request, db)
     if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+        return {"success": False, "message": "Authentication required"}
     
-    # For now, just return success since we don't have a separate notifications table
-    # In a real implementation, you'd update a notifications table
+    # Find the notification and verify it belongs to the current user
+    notification = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == current_user.id
+    ).first()
+    
+    if not notification:
+        return {"success": False, "message": "Notification not found"}
+    
+    # Mark as read
+    notification.is_read = True
+    db.commit()
+    
     return {"success": True, "message": "Notification marked as read"}
 
 @router.post("/api/notifications/mark-all-read")
 async def mark_all_notifications_read(
-    request: Request, 
+    request: Request,
     db: Session = Depends(get_db)
 ):
     current_user = get_current_user(request, db)
     if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+        return {"success": False, "message": "Authentication required"}
     
-    # For now, just return success since we don't have a separate notifications table
-    # In a real implementation, you'd update all notifications for the user
+    # Mark all notifications as read for the current user
+    db.query(Notification).filter(
+        Notification.user_id == current_user.id,
+        Notification.is_read == False
+    ).update({"is_read": True})
+    
+    db.commit()
+    
     return {"success": True, "message": "All notifications marked as read"}
 
-# Function to send real-time notifications
+# Function to create and send notification when application status changes
 async def send_application_status_notification(
-    user_id: int, 
-    application_id: int, 
-    job_title: str, 
-    company_name: str, 
+    db: Session,
+    application_id: int,
     new_status: str,
-    job_id: int
+    admin_name: str = None
 ):
-    """Send real-time notification when application status changes"""
+    """Send real-time notification and store in database when application status changes"""
+    try:
+        # Get application with related data
+        application = db.query(Application).options(
+            joinedload(Application.job).joinedload(Job.company),
+            joinedload(Application.candidate_profile)
+        ).filter(Application.id == application_id).first()
+        
+        if not application or not application.candidate_profile:
+            return False
+        
+        # Get user ID from candidate profile
+        user_id = application.candidate_profile.user_id
+        if not user_id:
+            return False
+        
+        # Create notification message
+        status_messages = {
+            'pending': 'est en cours d\'examen',
+            'reviewed': 'a été examinée',
+            'interview_scheduled': 'a été sélectionnée pour un entretien',
+            'interview_completed': 'entretien terminé',
+            'accepted': 'a été acceptée ! Félicitations !',
+            'rejected': 'n\'a pas été retenue cette fois',
+            'withdrawn': 'a été retirée'
+        }
+        
+        status_message = status_messages.get(new_status, f'a été mise à jour vers "{new_status}"')
+        
+        title = 'Mise à jour de candidature'
+        message = f'Votre candidature pour le poste "{application.job.title}" chez {application.job.company.company_name} {status_message}'
+        
+        # Create notification in database
+        notification = Notification(
+            user_id=user_id,
+            type='application_status_change',
+            title=title,
+            message=message,
+            application_id=application.id,
+            job_id=application.job_id,
+            status=new_status,
+            job_title=application.job.title,
+            company_name=application.job.company.company_name,
+            admin_name=admin_name,
+            is_read=False
+        )
+        
+        db.add(notification)
+        db.commit()
+        db.refresh(notification)
+        
+        # Send WebSocket notification
+        websocket_notification = {
+            'type': 'application_status_change',
+            'title': title,
+            'message': message,
+            'status': new_status,
+            'job_title': application.job.title,
+            'company_name': application.job.company.company_name,
+            'timestamp': notification.created_at.isoformat(),
+            'job_id': application.job_id,
+            'application_id': application.id,
+            'notification_id': notification.id,
+            'admin_name': admin_name
+        }
+        
+        # Send WebSocket notification
+        success = await manager.send_personal_message(websocket_notification, user_id)
+        
+        if success:
+            print(f"Notification sent to user {user_id} for application {application_id}")
+        else:
+            print(f"Failed to send WebSocket notification to user {user_id} - user not connected")
+        
+        return True
+        
+    except Exception as e:
+        print(f"Error sending notification: {e}")
+        db.rollback()
+        return False
+
+@router.get("/api/notifications/count")
+async def get_notification_count(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return {"success": False, "message": "Authentication required"}
     
-    # Create status-specific messages
-    status_messages = {
-        'pending': f"Votre candidature pour '{job_title}' est en cours d'examen.",
-        'reviewed': f"Votre candidature pour '{job_title}' a été examinée par l'équipe RH.",
-        'interview_scheduled': f"Félicitations ! Un entretien a été programmé pour le poste '{job_title}'.",
-        'interview_completed': f"Votre entretien pour '{job_title}' a été complété.",
-        'accepted': f"🎉 Excellente nouvelle ! Votre candidature pour '{job_title}' a été acceptée !",
-        'rejected': f"Votre candidature pour '{job_title}' n'a pas été retenue cette fois.",
-        'withdrawn': f"Votre candidature pour '{job_title}' a été retirée."
+    # Count unread notifications for the current user
+    unread_count = db.query(Notification).filter(
+        Notification.user_id == current_user.id,
+        Notification.is_read == False
+    ).count()
+    
+    return {
+        "success": True,
+        "unread_count": unread_count
     }
+
+@router.get("/api/notifications/recent")
+async def get_recent_notifications(
+    request: Request,
+    limit: int = 3,
+    db: Session = Depends(get_db)
+):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return {"success": False, "message": "Authentication required"}
     
-    message = status_messages.get(new_status, f"Le statut de votre candidature pour '{job_title}' a été mis à jour.")
+    # Get recent notifications for the current user
+    notifications = db.query(Notification).filter(
+        Notification.user_id == current_user.id
+    ).order_by(Notification.created_at.desc()).limit(limit).all()
     
-    notification_data = {
-        'type': 'application_status_change',
-        'application_id': application_id,
-        'job_id': job_id,
-        'job_title': job_title,
-        'company_name': company_name,
-        'status': new_status,
-        'title': f"Mise à jour de candidature - {job_title}",
-        'message': message,
-        'timestamp': datetime.now().isoformat()
+    # Convert to the format expected by the frontend
+    notification_list = []
+    for notif in notifications:
+        notification_data = {
+            'id': notif.id,
+            'type': notif.type,
+            'title': notif.title,
+            'message': notif.message,
+            'status': notif.status,
+            'job_title': notif.job_title,
+            'company_name': notif.company_name,
+            'created_at': notif.created_at.isoformat(),
+            'is_read': notif.is_read,
+            'job_id': notif.job_id,
+            'application_id': notif.application_id
+        }
+        notification_list.append(notification_data)
+    
+    return {
+        "success": True,
+        "notifications": notification_list
     }
-    
-    # Send via WebSocket
-    success = await manager.send_personal_message(notification_data, user_id)
-    
-    if success:
-        print(f"Real-time notification sent to user {user_id} for application {application_id}")
-    else:
-        print(f"Failed to send real-time notification to user {user_id} - user may be offline")
-    
-    return success

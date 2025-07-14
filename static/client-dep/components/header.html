@@ -1,418 +1,741 @@
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-<!-- Navigation Header Component -->
-<nav class="navbar">
-    <div class="nav-container">
-        <div class="nav-logo">
-            <a href="/">
-                <i class="fas fa-chart-line"></i>
-                CV Analyzer Pro
-            </a>
-        </div>
-        
-        <ul class="nav-menu" id="navMenu">
-            <li class="nav-item">
-                <a href="/" class="nav-link" data-page="home">Accueil</a>
-            </li>
-            <li class="nav-item">
-                <a href="/analyze" class="nav-link" data-page="analyze">Analyser CV</a>
-            </li>
-            <li class="nav-item">
-                <a href="/jobs" class="nav-link" data-page="jobs">Emplois</a>
-            </li>
-            <li class="nav-item">
-                <a href="/signup/step2" class="nav-link active" data-page="step2" id="setupstep2" style="display: none;">
-                    <i class="fas fa-user-plus"></i>
-                    Continuer l'inscription
+<header>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="/">
+                    <i class="fas fa-chart-line"></i>
+                    CV Analyzer Pro
                 </a>
-            </li>
-            <!-- User Menu - Shown when authenticated -->
-            <li class="nav-item user-menu-container" id="userMenuContainer" style="display: none;">
-                <div class="user-menu-trigger" id="userMenuTrigger">
-                    <div class="user-avatar" id="userAvatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <span class="user-name" id="userName">Utilisateur</span>
-                    <i class="fas fa-chevron-down user-menu-arrow"></i>
-                </div>
-
-                <div class="user-dropdown" id="userDropdown">
-                    <div class="user-dropdown-header">
-                        <div class="user-info">
-                            <div class="user-avatar-large" id="userAvatarLarge">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div class="user-details">
-                                <div class="user-full-name" id="userFullName">Nom Utilisateur</div>
-                                <div class="user-email" id="userEmail">email@example.com</div>
-                            </div>
+            </div>
+            
+            <ul class="nav-menu" id="navMenu">
+                <li class="nav-item">
+                    <a href="/" class="nav-link" data-page="home">Accueil</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/analyze" class="nav-link" data-page="analyze">Analyser CV</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/jobs" class="nav-link" data-page="jobs">Emplois</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/signup/step2" class="nav-link active" data-page="step2" id="setupstep2" style="display: none;">
+                        <i class="fas fa-user-plus"></i>
+                        Continuer l'inscription
+                    </a>
+                </li>
+                
+                <!-- Notification Bell - Shown when authenticated -->
+                <li class="nav-item notification-bell-container" id="notificationBellContainer" style="display: none;">
+                    <div class="notification-bell-trigger" id="notificationBellTrigger">
+                        <div class="notification-bell">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-count" id="notificationCount" style="display: none;">0</span>
                         </div>
                     </div>
 
-                    <div class="user-dropdown-menu">
-                        <a href="/dashboard" class="dropdown-item"><i class="fas fa-tachometer-alt"></i><span>Tableau de bord</span></a>
-                        <a href="#" id="profileLink" class="dropdown-item">
-                            <i class="fas fa-user-circle"></i><span>Mon profil</span>
-                        </a>                      
-                        <a href="/my-applications" class="dropdown-item"><i class="fas fa-briefcase"></i><span>Mes candidatures</span></a>
-                        <a href="/saved-jobs" class="dropdown-item"><i class="fas fa-heart"></i><span>Offres sauvegardées</span></a>
-                        <div class="dropdown-divider"></div>
-                        <a href="/settings" class="dropdown-item"><i class="fas fa-cog"></i><span>Paramètres</span></a>
-                        <button class="dropdown-item logout-btn" onclick="HeaderComponent.logout()">
-                            <i class="fas fa-sign-out-alt"></i><span>Déconnexion</span>
-                        </button>
+                    <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="notification-dropdown-header">
+                            <h4>Notifications récentes</h4>
+                        </div>
+                        
+                        <div class="notification-dropdown-content" id="notificationDropdownContent">
+                            <div class="notification-loading" id="notificationLoading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Chargement...</span>
+                            </div>
+                        </div>
+                        
+                        <div class="notification-dropdown-footer">
+                            <a href="/notifications" class="view-all-notifications">
+                                <i class="fas fa-eye"></i>
+                                Voir toutes les notifications
+                            </a>
+                        </div>
                     </div>
-                </div>
-            </li>
+                </li>
+                
+                <!-- User Menu - Shown when authenticated -->
+                <li class="nav-item user-menu-container" id="userMenuContainer" style="display: none;">
+                    <div class="user-menu-trigger" id="userMenuTrigger">
+                        <div class="user-avatar" id="userAvatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span class="user-name" id="userName">Utilisateur</span>
+                        <i class="fas fa-chevron-down user-menu-arrow"></i>
+                    </div>
+
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="user-dropdown-header">
+                            <div class="user-info">
+                                <div class="user-avatar-large" id="userAvatarLarge">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="user-details">
+                                    <div class="user-full-name" id="userFullName">Nom Utilisateur</div>
+                                    <div class="user-email" id="userEmail">email@example.com</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="user-dropdown-menu">
+                            <a href="/dashboard" class="dropdown-item"><i class="fas fa-tachometer-alt"></i><span>Tableau de bord</span></a>
+                            <a href="#" id="profileLink" class="dropdown-item">
+                                <i class="fas fa-user-circle"></i><span>Mon profil</span>
+                            </a>                      
+                            <a href="/my-applications" class="dropdown-item"><i class="fas fa-briefcase"></i><span>Mes candidatures</span></a>
+                            <a href="/notifications" class="dropdown-item"><i class="fas fa-bell"></i><span>Notifications</span></a>
+                            <a href="/saved-jobs" class="dropdown-item"><i class="fas fa-heart"></i><span>Offres sauvegardées</span></a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/settings" class="dropdown-item"><i class="fas fa-cog"></i><span>Paramètres</span></a>
+                            <button class="dropdown-item logout-btn" onclick="HeaderComponent.logout()">
+                                <i class="fas fa-sign-out-alt"></i><span>Déconnexion</span>
+                            </button>
+                        </div>
+                    </div>
+                </li>
+                
+                <!-- Guest Menu - Shown when not authenticated -->
+                <li class="nav-item guest-menu-container" id="guestMenuContainer">
+                    <a href="/login" class="nav-link login-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Connexion
+                    </a>
+                </li>
+                <li class="nav-item guest-menu-container" id="guestMenuContainer2">
+                    <a href="/signup" class="nav-link signup-btn">
+                        <i class="fas fa-user-plus"></i>
+                        Inscription
+                    </a>
+                </li>
+            </ul>
             
-            <!-- Guest Menu - Shown when not authenticated -->
-            <li class="nav-item guest-menu-container" id="guestMenuContainer">
-                <a href="/login" class="nav-link login-btn">
-                    <i class="fas fa-sign-in-alt"></i>
-                    Connexion
-                </a>
-            </li>
-            <li class="nav-item guest-menu-container" id="guestMenuContainer2">
-                <a href="/signup" class="nav-link signup-btn">
-                    <i class="fas fa-user-plus"></i>
-                    Inscription
-                </a>
-            </li>
-        </ul>
-        
-        <!-- Mobile hamburger menu -->
-        <div class="hamburger" id="hamburger">
-            <span class="bar"></span>
-            <span class="bar"></span>
-            <span class="bar"></span>
+            <!-- Mobile hamburger menu -->
+            <div class="hamburger" id="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
+</header>
 
 <style>
-/* Header Component Styles */
-.navbar {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 1000 !important;
-    background: rgba(10, 10, 10, 0.9) !important;
-    backdrop-filter: blur(20px) !important;
-    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
-    padding: 1rem 0 !important;
-    transition: all 0.3s ease;
-}
+    /* Header Component Styles */
+    .navbar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 1000 !important;
+        background: rgba(10, 10, 10, 0.9) !important;
+        backdrop-filter: blur(20px) !important;
+        border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+        padding: 1rem 0 !important;
+        transition: all 0.3s ease;
+    }
 
-.nav-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.nav-logo {
-    font-size: 1.5rem !important;
-    font-weight: 700 !important;
-    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.nav-logo a {
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.nav-menu {
-    display: flex;
-    gap: 2rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    align-items: center;
-}
-
-.nav-link {
-    color: var(--text-secondary, #a0a0a0) !important;
-    text-decoration: none !important;
-    font-weight: 500;
-    transition: color 0.3s ease;
-    position: relative;
-    padding: 0.5rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.nav-link:hover {
-    color: var(--text-primary, #ffffff) !important;
-}
-
-.nav-link::after {
-    content: "";
-    position: absolute;
-    bottom: -5px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-    transition: width 0.3s ease;
-}
-
-.nav-link:hover::after,
-.nav-link.active::after {
-    width: 100%;
-}
-
-.nav-link.active {
-    color: var(--text-primary, #ffffff) !important;
-}
-
-/* User Menu Styles */
-.user-menu-container {
-    position: relative;
-}
-
-.user-menu-trigger {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 12px;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-}
-
-.user-menu-trigger:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #00d4ff, #00ff88);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #000;
-    font-weight: bold;
-}
-
-.user-name {
-    color: #fff;
-}
-
-.user-menu-arrow {
-    color: #aaa;
-    transition: transform 0.3s ease;
-}
-
-.user-menu-trigger.active .user-menu-arrow {
-    transform: rotate(180deg);
-}
-
-.user-dropdown {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    width: 280px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(20px);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-    z-index: 1001;
-}
-
-.user-dropdown.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.user-dropdown-header {
-    padding: 1rem;
-    background-color: rgba(110, 110, 110);
-    border-radius: 12px 12px 0 0 ;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.user-avatar-large {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #00d4ff, #00ff88);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: #000;
-}
-
-.user-details {
-    flex: 1;
-}
-
-.user-full-name {
-    font-weight: 600;
-    color: #fff;
-}
-
-.user-email {
-    font-size: 0.85rem;
-    color: #aaa;
-}
-
-.user-dropdown-menu {
-    padding: 0.5rem;
-    background-color: rgba(110, 110, 110);
-    border-radius: 0 0 12px 12px;
-}
-
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: background 0.3s ease;
-}
-
-.dropdown-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.logout-btn {
-    color: #ff4757;
-    width: 100%;
-    background: none;
-    border: none;
-    text-align: left;
-    cursor: pointer;
-}
-
-/* Login/Signup buttons for guests */
-.login-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    padding: 0.5rem 1rem !important;
-}
-
-.signup-btn {
-    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
-    color: #000 !important;
-    border-radius: 8px;
-    padding: 0.5rem 1rem !important;
-    font-weight: 600;
-}
-
-.signup-btn:hover {
-    color: #000 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
-}
-
-/* Hamburger Menu */
-.hamburger {
-    display: none;
-    cursor: pointer;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.bar {
-    width: 25px;
-    height: 3px;
-    background: var(--text-primary, #ffffff);
-    transition: 0.3s;
-    border-radius: 2px;
-}
-
-.hamburger.active .bar:nth-child(1) {
-    transform: rotate(-45deg) translate(-5px, 6px);
-}
-
-.hamburger.active .bar:nth-child(2) {
-    opacity: 0;
-}
-
-.hamburger.active .bar:nth-child(3) {
-    transform: rotate(45deg) translate(-5px, -6px);
-}
-
-/* Mobile Styles */
-@media (max-width: 768px) {
-    .nav-menu {
-        position: fixed;
-        left: -100%;
-        top: 70px;
-        gap: 0;
-        flex-direction: column;
-        background: var(--card-bg, rgba(255, 255, 255, 0.05));
-        width: 100%;
-        text-align: center;
-        transition: 0.3s;
-        box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
-        backdrop-filter: blur(20px);
-        border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-        padding: 2rem 0;
+    .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
     }
 
-    .nav-item {
-        margin: 1rem 0;
-    }
-
-    .nav-menu.active {
-        left: 0;
-    }
-
-    .hamburger {
+    .nav-logo {
+        font-size: 1.5rem !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
         display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .nav-logo a {
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .nav-menu {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        align-items: center;
+    }
+
+    .nav-link {
+        color: var(--text-secondary, #a0a0a0) !important;
+        text-decoration: none !important;
+        font-weight: 500;
+        transition: color 0.3s ease;
+        position: relative;
+        padding: 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .nav-link:hover {
+        color: var(--text-primary, #ffffff) !important;
+    }
+
+    .nav-link::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+        transition: width 0.3s ease;
+    }
+
+    .nav-link:hover::after,
+    .nav-link.active::after {
+        width: 100%;
+    }
+
+    .nav-link.active {
+        color: var(--text-primary, #ffffff) !important;
+    }
+
+    /* Notification Bell Styles */
+    .notification-bell-container {
+        position: relative;
+    }
+
+    .notification-bell-link {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        padding: 0.5rem;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .notification-bell-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .notification-bell {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        color: var(--text-secondary, #a0a0a0);
+        font-size: 1.2rem;
+        transition: color 0.3s ease;
+    }
+
+    .notification-bell-link:hover .notification-bell {
+        color: var(--text-primary, #ffffff);
+    }
+
+    .notification-count {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        min-width: 20px;
+        animation: pulse-notification 2s infinite;
+    }
+
+    @keyframes pulse-notification {
+        0% {
+            box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+        }
+    }
+
+    /* Notification Dropdown Styles */
+    .notification-bell-trigger {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .notification-bell-trigger:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .notification-bell-trigger.active {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .notification-dropdown {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        width: 380px;
+        max-height: 500px;
+        background: rgba(110, 110, 110);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(20px);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1002;
+        overflow: hidden;
+    }
+
+    .notification-dropdown.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .notification-dropdown-header {
+        padding: 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .notification-dropdown-header h4 {
+        margin: 0;
+        color: var(--text-primary, #ffffff);
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .notification-dropdown-content {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .notification-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 2rem;
+        color: var(--text-secondary, #a0a0a0);
+    }
+
+    .notification-item-mini {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: background 0.3s ease;
+        cursor: pointer;
+    }
+
+    .notification-item-mini:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .notification-item-mini:last-child {
+        border-bottom: none;
+    }
+
+    .notification-item-mini.unread {
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+        border-left: 3px solid #00d4ff;
+    }
+
+    .notification-mini-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-mini-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary, #ffffff);
+        line-height: 1.3;
+        flex: 1;
+        margin-right: 0.5rem;
+    }
+
+    .notification-mini-time {
+        font-size: 0.75rem;
+        color: var(--text-muted, #707070);
+        white-space: nowrap;
+    }
+
+    .notification-mini-message {
+        font-size: 0.85rem;
+        color: var(--text-secondary, #a0a0a0);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-mini-status {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .notification-dropdown-footer {
+        padding: 0.75rem 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .view-all-notifications {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        color: var(--text-primary, #ffffff);
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.1) 100%);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .view-all-notifications:hover {
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 255, 136, 0.2) 100%);
+        border-color: rgba(0, 212, 255, 0.4);
+        color: var(--text-primary, #ffffff);
+        text-decoration: none;
+    }
+
+    .notification-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        color: var(--text-secondary, #a0a0a0);
+        text-align: center;
+    }
+
+    .notification-empty i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        opacity: 0.5;
+    }
+
+    /* User Menu Styles */
+    .user-menu-container {
+        position: relative;
+    }
+
+    .user-menu-trigger {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .user-menu-trigger:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00d4ff, #00ff88);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #000;
+        font-weight: bold;
+    }
+
+    .user-name {
+        color: #fff;
+    }
+
+    .user-menu-arrow {
+        color: #aaa;
+        transition: transform 0.3s ease;
+    }
+
+    .user-menu-trigger.active .user-menu-arrow {
+        transform: rotate(180deg);
     }
 
     .user-dropdown {
-        position: fixed;
-        top: 70px;
-        right: 1rem;
-        left: 1rem;
-        width: auto;
-        min-width: auto;
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        width: 280px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(20px);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1001;
     }
-}
-.user-dropdown {
-  z-index: 9999 !important;
-}
 
-/* Add this media query for mobile dropdown */
-@media (max-width: 768px) {
     .user-dropdown.show {
-        display: block !important;
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
     }
-}
+
+    .user-dropdown-header {
+        padding: 1rem;
+        background-color: rgba(110, 110, 110);
+        border-radius: 12px 12px 0 0 ;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .user-avatar-large {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00d4ff, #00ff88);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        color: #000;
+    }
+
+    .user-details {
+        flex: 1;
+    }
+
+    .user-full-name {
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .user-email {
+        font-size: 0.85rem;
+        color: #aaa;
+    }
+
+    .user-dropdown-menu {
+        padding: 0.5rem;
+        background-color: rgba(110, 110, 110);
+        border-radius: 0 0 12px 12px;
+    }
+
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: background 0.3s ease;
+    }
+
+    .dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .logout-btn {
+        color: #ff4757;
+        width: 100%;
+        background: none;
+        border: none;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .dropdown-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0.5rem 0;
+    }
+
+    /* Login/Signup buttons for guests */
+    .login-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 0.5rem 1rem !important;
+    }
+
+    .signup-btn {
+        background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+        color: #000 !important;
+        border-radius: 8px;
+        padding: 0.5rem 1rem !important;
+        font-weight: 600;
+    }
+
+    .signup-btn:hover {
+        color: #000 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Hamburger Menu */
+    .hamburger {
+        display: none;
+        cursor: pointer;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .bar {
+        width: 25px;
+        height: 3px;
+        background: var(--text-primary, #ffffff);
+        transition: 0.3s;
+        border-radius: 2px;
+    }
+
+    .hamburger.active .bar:nth-child(1) {
+        transform: rotate(-45deg) translate(-5px, 6px);
+    }
+
+    .hamburger.active .bar:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger.active .bar:nth-child(3) {
+        transform: rotate(45deg) translate(-5px, -6px);
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+        .nav-menu {
+            position: fixed;
+            left: -100%;
+            top: 70px;
+            gap: 0;
+            flex-direction: column;
+            background: var(--card-bg, rgba(255, 255, 255, 0.05));
+            width: 100%;
+            text-align: center;
+            transition: 0.3s;
+            box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+            padding: 2rem 0;
+            align-items: center;
+        }
+
+        .nav-item {
+            margin: 1rem 0;
+        }
+
+        .nav-menu.active {
+            left: 0;
+        }
+
+        .hamburger {
+            display: flex;
+        }
+
+        .user-dropdown {
+            position: fixed;
+            top: 70px;
+            right: 1rem;
+            left: 1rem;
+            width: auto;
+            min-width: auto;
+        }
+
+        /* Mobile notification bell styles */
+        .notification-bell-container {
+            order: -1; /* Show before other items in mobile menu */
+        }
+
+        .notification-bell-link {
+            justify-content: center;
+            padding: 1rem;
+        }
+    }
+
+    .user-dropdown {
+        z-index: 9999 !important;
+    }
+
+    /* Add this media query for mobile dropdown */
+    @media (max-width: 768px) {
+        .user-dropdown.show {
+            display: block !important;
+        }
+    }
+
+    /* Mobile styles for notification dropdown */
+    @media (max-width: 768px) {
+        .notification-dropdown {
+            position: fixed;
+            top: 70px;
+            right: 1rem;
+            left: 1rem;
+            width: auto;
+            min-width: auto;
+        }
+    }
+
+    /* Custom scrollbar for notification dropdown */
+    .notification-dropdown-content::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .notification-dropdown-content::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 2px;
+    }
+
+    .notification-dropdown-content::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+    }
+
+    .notification-dropdown-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
 </style>
