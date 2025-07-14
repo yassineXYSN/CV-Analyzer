@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier des Créneaux</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.js"></script>
+    <style>
+        #calendar {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .fc-day-grid .fc-bg .fc-highlight-skeleton,
+        .fc-time-grid .fc-bg .fc-highlight-skeleton {
+            background-color: #e0e0e0; /* Gris clair pour les heures non couvertes */
+        }
+        .fc-time-grid .fc-slats td {
+            border-bottom: 1px solid #cccccc; /* Ligne de séparation entre les intervalles */
+            background-color: #e0e0e0; /* Gris clair pour les heures vides */
+        }
+        .fc-event {
+            color: white;
+            border-radius: 3px;
+            padding: 2px 5px;
+            margin-bottom: 2px; /* Espacement entre les créneaux */
+        }
+        /* Style pour le modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .modal-content button {
+            margin: 10px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .modal-content button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Réserver un créneau</h1>
+    <div id="calendar"></div>
+
+    <!-- Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <h2>Réserver un créneau</h2>
+            <p>Date de début : <span id="startDate"></span></p>
+            <p>Date de fin : <span id="endDate"></span></p>
+            <button id="bookButton">Book</button>
+            <button id="closeButton">Fermer</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                locale: 'fr',
+                weekends: false,
+                slotDuration: '00:30:00',
+                slotMinTime: '08:00:00',
+                slotMaxTime: '18:00:00',
+                events: '/api/slots',
+                eventClick: function(info) {
+                    if (info.event.title === 'Disponible') {
+                        var startDate = info.event.start.toLocaleString('fr-FR');
+                        var endDate = info.event.end.toLocaleString('fr-FR');
+                        document.getElementById('startDate').textContent = startDate;
+                        document.getElementById('endDate').textContent = endDate;
+                        document.getElementById('bookingModal').style.display = 'block';
+
+                        document.getElementById('bookButton').onclick = function() {
+                            var userId = '{{ user_id|default("0")|safe }}';
+                            fetch('/book_slot', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    slot_id: info.event.id,
+                                    user_id: userId
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert(data.message);
+                                    // Mettre à jour l'événement pour qu'il soit bleu et marqué comme réservé
+                                    info.event.setProp('title', 'Réservé');
+                                    info.event.setProp('backgroundColor', '#2196F3');
+                                    info.event.setProp('borderColor', '#2196F3');
+                                    document.getElementById('bookingModal').style.display = 'none';
+                                } else {
+                                    alert(data.message);
+                                }
+                            })
+                            .catch(error => {
+                                alert('Erreur lors de la réservation : ' + error);
+                            });
+                        };
+
+                        document.getElementById('closeButton').onclick = function() {
+                            document.getElementById('bookingModal').style.display = 'none';
+                        };
+                    } else {
+                        alert('Ce créneau est déjà réservé.');
+                    }
+                }
+            });
+            calendar.render();
+        });
+    </script>
+</body>
+</html>

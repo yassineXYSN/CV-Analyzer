@@ -1,0 +1,11 @@
+flask
+flask-sqlalchemy
+flask-mail
+python-dotenv
+apscheduler
+mysql-connector-python
+pymysql
+SpeechRecognition
+pyaudio
+openai-whisper==20250625
+Flask-SocketIO==5.3.6

@@ -1,0 +1,198 @@
+body {
+  background: linear-gradient(120deg, #e0e7ff 0%, #f8fafc 100%);
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+}
+
+#transcription-box {
+  max-width: 500px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(80, 112, 255, 0.08);
+  padding: 32px 28px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#transcription-box h2 {
+  color: #3b3b3b;
+  font-size: 1.7em;
+  margin-bottom: 18px;
+  letter-spacing: 1px;
+}
+
+button {
+  margin: 0 8px 18px 0;
+  padding: 10px 28px;
+  border: none;
+  border-radius: 25px;
+  background: linear-gradient(90deg, #6366f1 0%, #60a5fa 100%);
+  color: #fff;
+  font-size: 1.08em;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+  transition: background 0.2s, transform 0.2s;
+  outline: none;
+}
+button:hover {
+  background: linear-gradient(90deg, #60a5fa 0%, #6366f1 100%);
+  transform: translateY(-2px) scale(1.04);
+}
+button:disabled, button[style*='display:none'] {
+  display: none !important;
+}
+
+#transcription-container {
+  min-height: 90px;
+  width: 100%;
+  margin: 10px 0 0 0;
+  padding: 16px 14px;
+  background: #f3f6fd;
+  border-radius: 10px;
+  font-size: 1.13em;
+  color: #222;
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.04);
+}
+
+.transcription-line-container {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 8px;
+  border-left: 4px solid #6366f1;
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+.transcription-line-container.realtime {
+  border-left-color: #22d3ee;
+  animation: pulse 1s;
+}
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+.transcription-line {
+  font-size: 1em;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.emotions-display {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+.emotion-tag {
+  padding: 3px 12px;
+  border-radius: 15px;
+  color: #fff;
+  font-size: 0.98em;
+  font-weight: 600;
+  background: #6366f1;
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.08);
+  transition: all 0.2s;
+}
+.emotion-tag:hover {
+  transform: scale(1.08);
+  background: #60a5fa;
+}
+.emotion-joy { background: #22c55e !important; }
+.emotion-sadness { background: #3b82f6 !important; }
+.emotion-anger { background: #ef4444 !important; }
+.emotion-fear { background: #f59e42 !important; }
+.emotion-surprise { background: #a855f7 !important; }
+.emotion-neutral { background: #64748b !important; }
+
+.transcription-stop {
+  text-align: center;
+  padding: 10px;
+  background-color: #fef3c7;
+  border-radius: 7px;
+  color: #b45309;
+  font-weight: bold;
+  margin-top: 10px;
+}
+.transcription-error {
+  text-align: center;
+  padding: 10px;
+  background-color: #fee2e2;
+  border-radius: 7px;
+  color: #b91c1c;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.emotion-stats-container {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 18px 0 0 0;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  color: #222;
+}
+.emotion-stat {
+  text-align: center;
+  padding: 0 8px;
+}
+.emotion-stat-icon {
+  font-size: 1.7em;
+  margin-bottom: 2px;
+}
+.emotion-stat-count {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+.emotion-stat-label {
+  font-size: 0.95em;
+  opacity: 0.85;
+}
+
+.live-emotion-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 18px;
+  border-radius: 25px;
+  color: white;
+  font-weight: bold;
+  z-index: 1000;
+  background: linear-gradient(90deg, #6366f1 0%, #60a5fa 100%);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+  animation: fadeInOut 2s infinite;
+}
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+input[type="hidden"] {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  #transcription-box {
+    max-width: 98vw;
+    padding: 12px 2vw 12px 2vw;
+  }
+  button {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .emotion-stats-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .live-emotion-indicator {
+    position: static;
+    margin: 10px 0;
+  }
+}

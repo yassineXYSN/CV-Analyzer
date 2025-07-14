@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Transcription & Émotions</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(120deg, #e0e7ff 0%, #f8fafc 100%);
+    }
+    .split-main {
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+    #jitsi-container {
+      flex: 7;
+      min-width: 0;
+      height: 100vh;
+      background: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    #transcription-sidebar {
+      flex: 3;
+      min-width: 320px;
+      max-width: 480px;
+      height: 100vh;
+      background: #fff;
+      box-shadow: -2px 0 16px rgba(80,112,255,0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      padding: 0;
+      z-index: 2;
+    }
+    #transcription-box {
+      margin: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 32px 18px 18px 18px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+    #transcription-box h2 {
+      text-align: left;
+      margin-bottom: 18px;
+      font-size: 1.3em;
+    }
+    #transcription-container {
+      flex: 1;
+      min-height: 120px;
+      max-height: 45vh;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    #emotions-chart {
+      margin-top: 10px;
+    }
+    @media (max-width: 900px) {
+      .split-main { flex-direction: column; }
+      #jitsi-container, #transcription-sidebar, #transcription-box {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        min-width: 0 !important;
+        height: auto !important;
+      }
+      #jitsi-container { height: 220px !important; }
+      #transcription-sidebar, #transcription-box { height: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="split-main">
+    <div id="jitsi-container"></div>
+    <div id="transcription-sidebar">
+      <div id="transcription-box">
+        <h2>Transcription & Émotions</h2>
+        <!-- L'émotion audio détectée s'affichera ici -->
+        <button onclick="startTranscription()" id="start-btn">Démarrer</button>
+        <button onclick="stopTranscription()" id="stop-btn" style="display:none;">Arrêter</button>
+        <button onclick="downloadTranscriptionAndStats()" id="download-btn" style="display:none;">Télécharger</button>
+        <div id="transcription-container"></div>
+        <div id="emotions-chart"></div>
+        <input type="hidden" id="slot-id" value="{{ slot_id }}">
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="https://meet.jit.si/external_api.js"></script>
+  <script>
+    // Initialisation Jitsi Meet
+    const domain = "meet.jit.si";
+    const roomName = "Entretien_{{ slot_id }}_{{ meet_room_name|default('') }}";
+    const options = {
+      roomName,
+      width: "100%",
+      height: "100%",
+      parentNode: document.querySelector('#jitsi-container'),
+      userInfo: { displayName: "{{ user_name|default('Candidat') }}" }
+    };
+    const api = new JitsiMeetExternalAPI(domain, options);
+  </script>
+  <script src="{{ url_for('static', filename='js/transcription.js') }}"></script>
+</body>
+</html>

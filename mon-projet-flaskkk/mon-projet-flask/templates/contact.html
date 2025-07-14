@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Contact</title>
+</head>
+<body>
+    <h1>Page de contact</h1>
+    <form method="POST" action="/add_user">
+        <label for="name">Nom :</label><br>
+        <input type="text" id="name" name="name" required><br><br>
+        <label for="email">Email :</label><br>
+        <input type="email" id="email" name="email" required><br><br>
+        <input type="submit" value="Envoyer">
+    </form>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+</body>
+</html>
