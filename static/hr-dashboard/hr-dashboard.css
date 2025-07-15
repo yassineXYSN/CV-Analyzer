@@ -1745,3 +1745,10 @@ html {
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+
+
+
+.logo {
+    position: relative; /* Nécessaire pour le positionnement absolu du rôle */
+}
+

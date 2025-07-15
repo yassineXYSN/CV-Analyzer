@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum,TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from databasehr.database import Base
@@ -42,7 +42,7 @@ class HRAdmin(Base):
     password_hash = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    role = Column(Enum('super_admin', 'hr_admin', 'hr_manager'), default='hr_admin')
+    role = Column(Enum('super_admin', 'recruiter', 'department_head'), default='recruiter')
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
@@ -85,6 +85,8 @@ class AdminCompanyAccess(Base):
     access_level = Column(Enum('owner', 'admin', 'viewer'), default='admin')
     granted_at = Column(DateTime, default=func.now())
     granted_by = Column(Integer, ForeignKey("hr_admins.id"))
+    
+
 
 class Department(Base):
     __tablename__ = "departments"
@@ -220,3 +222,25 @@ class ActivityLog(Base):
     # Relations
     company = relationship("Company")
     admin = relationship("HRAdmin")
+
+class AdminPermissions(Base):
+    __tablename__ = "admin_permissions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    can_add_department = Column(Boolean, default=False)
+    can_manage_applications = Column(Boolean, default=False)
+    can_recommend_candidates = Column(Boolean, default=False)
+    # Relations
+    admin = relationship("HRAdmin")
+    
+class AdminDepartments(Base):
+    __tablename__ = "admin_departments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
+    # Relations
+    admin = relationship("HRAdmin")
+    department = relationship("Department")
+    

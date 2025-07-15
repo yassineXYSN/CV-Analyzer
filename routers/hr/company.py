@@ -2,11 +2,16 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from databasehr.database import SessionLocal
-from company_utils import create_company, update_company, get_user_company, get_company_admins
+from company_utils import create_company, update_company, get_user_company, get_company_admins,get_company_departments
+from utils import add_user_to_company
+
 from databasehr.session_manager import current_user_session
+from auth_utils import create_admin_user
 from typing import Optional 
 import os 
 from fastapi.templating import Jinja2Templates  # Import ajouté
+import databasehr.models as models
+
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -46,20 +51,28 @@ def company_setup_page(request: Request):
 @router.get("/company-profile", response_class=HTMLResponse)
 def company_profile_page(request: Request):
     try:
+        # Vérification de la session utilisateur
         user_id = current_user_session.get('user_id')
         if not user_id:
             return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
         
+        # Récupération des données de l'entreprise
         company = get_user_company(user_id)
         company_admins = []
+        departments = []  # Initialisation de la nouvelle variable
+        
         if company:
             company_admins = get_company_admins(company.id)
+            departments = get_company_departments(company.id)  # Nouveau: récupération des départements
         
+        # Rendu du template avec toutes les données
         return templates.TemplateResponse("HR-dep/company-profile.html", {
             "request": request,
             "company": company,
-            "company_admins": company_admins
+            "company_admins": company_admins,
+            "departments": departments  # Nouveau paramètre ajouté
         })
+        
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -100,40 +113,67 @@ async def setup_company(company_data: CompanySetupRequest):
         return {"success": False, "message": "Erreur interne du serveur"}
 
 @router.post("/api/create-user")
-async def create_user(user_data: CreateUserRequest):
+async def create_user(user_data: dict):
     try:
         current_user_id = current_user_session.get('user_id')
         if not current_user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
         
+        # Création de l'utilisateur
         new_user_id = create_admin_user(
-            email=user_data.email,
-            password=user_data.password,
-            first_name=user_data.first_name,
-            last_name=user_data.last_name,
-            role=user_data.role
+            email=user_data['email'],
+            password=user_data['password'],
+            first_name=user_data['first_name'],
+            last_name=user_data['last_name'],
+            role=user_data.get('role', 'super_admin')
         )
         
         if not new_user_id:
             return {"success": False, "message": "Erreur lors de la création de l'utilisateur"}
         
-        if user_data.company_id:
-            success, message = add_user_to_company(
-                company_id=user_data.company_id,
+        # Création des permissions
+        db = SessionLocal()
+        try:
+            permissions_data = user_data.get('permissions', {})
+            permissions = models.AdminPermissions(
                 admin_id=new_user_id,
+                can_add_department=permissions_data.get('can_add_department', False),
+                can_manage_applications=permissions_data.get('can_manage_applications', False),
+                can_recommend_candidates=permissions_data.get('can_recommend_candidates', False)
             )
-            if not success:
-                return {"success": False, "message": f"Utilisateur créé mais erreur d'ajout à l'entreprise: {message}"}
+            db.add(permissions)
+            
+            # Gestion des départements
+            for dept_id in user_data.get('departments', []):
+                assignment = models.AdminDepartments(
+                    admin_id=new_user_id,
+                    department_id=dept_id
+                )
+                db.add(assignment)
+            
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            return {"success": False, "message": f"Erreur création permissions: {str(e)}"}
+        finally:
+            db.close()
         
-        return {
-            "success": True,
-            "message": f"Utilisateur {user_data.email} créé avec succès",
-            "user_id": new_user_id
-        }
+        # FIX: Remove extra 'db' argument
+        company = get_user_company(current_user_id)
+        if company:
+            add_user_to_company(
+                db,
+                company.id,
+                new_user_id,
+                access_level='admin',
+                granted_by=current_user_id
+            )
+        
+        # FIX: Explicit success response
+        return {"success": True, "message": "Utilisateur créé avec succès"}
+        
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {"success": False, "message": "Erreur interne du serveur"}
+        return {"success": False, "message": f"Erreur: {str(e)}"}
 
 @router.get("/api/company-info")
 async def get_company_info():

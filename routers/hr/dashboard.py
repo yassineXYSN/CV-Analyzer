@@ -147,6 +147,7 @@ async def get_dashboard_stats():
         )
 
 
+# In the get_current_user function
 @router.get("/api/current-user")
 async def get_current_user():
     try:
@@ -166,13 +167,13 @@ async def get_current_user():
                     content={"success": False, "message": "Utilisateur non trouvé"}
                 )
             
-            # Conversion de l'objet ORM en dictionnaire
+            # Return only valid fields
             user_data = {
                 "id": user.id,
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "company_id": user.company_id,
+                "role": user.role,
                 "last_login": user.last_login.strftime("%d/%m/%Y %H:%M") if user.last_login else None
             }
             

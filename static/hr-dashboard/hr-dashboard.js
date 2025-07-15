@@ -190,12 +190,14 @@ function filterApplications(status) {
 }
 
 // Fonction pour charger l'utilisateur actuel
+// Fonction pour charger l'utilisateur actuel
 async function loadCurrentUser() {
   console.log("👤 FRONTEND: Chargement utilisateur actuel")
 
   try {
     const response = await fetch("/api/current-user")
     const result = await response.json()
+    console.log("API Response:", result)  // Debugging log
 
     if (result.success) {
       currentUser = result.user
@@ -213,23 +215,38 @@ async function loadCurrentUser() {
 }
 
 // Fonction pour mettre à jour l'affichage utilisateur
+// Fonction pour mettre à jour l'affichage utilisateur
 function updateUserDisplay() {
-  if (currentUser) {
-    const userName = `${currentUser.first_name} ${currentUser.last_name}`
-    const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
-
-    const userNameSpan = document.querySelector(".user-info span")
-    if (userNameSpan) {
-      userNameSpan.textContent = `Bienvenue, ${userName}`
+    if (currentUser) {
+        const userName = `${currentUser.first_name} ${currentUser.last_name}`;
+        const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`;
+        
+        const roleTranslations = {
+            'super_admin': 'Super Admin',
+            'recruiter': 'Recruteur',
+            'department_head': 'Chef de Département'
+        };
+        
+        const translatedRole = roleTranslations[currentUser.role] || currentUser.role;
+        
+        // Mettre à jour le rôle au-dessus du titre
+        const roleElement = document.getElementById("userRoleDisplay");
+        if (roleElement) {
+            roleElement.textContent = translatedRole;
+        }
+        
+        // Mettre à jour le message de bienvenue
+        const welcomeElement = document.getElementById("welcomeMessage");
+        if (welcomeElement) {
+            welcomeElement.textContent = `Bienvenue, ${userName}`;
+        }
+        
+        // Mettre à jour l'avatar
+        const avatar = document.getElementById("userAvatar");
+        if (avatar) {
+            avatar.textContent = userInitials;
+        }
     }
-
-    const avatar = document.querySelector(".avatar")
-    if (avatar) {
-      avatar.textContent = userInitials
-    }
-
-    console.log("✅ FRONTEND: Affichage utilisateur mis à jour")
-  }
 }
 
 // Fonction pour charger les statistiques du dashboard
