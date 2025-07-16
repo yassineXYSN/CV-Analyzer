@@ -131,9 +131,9 @@ async def create_user(user_data: dict):
         if not new_user_id:
             return {"success": False, "message": "Erreur lors de la création de l'utilisateur"}
         
-        # Création des permissions
         db = SessionLocal()
         try:
+            # Création des permissions
             permissions_data = user_data.get('permissions', {})
             permissions = models.AdminPermissions(
                 admin_id=new_user_id,
@@ -151,27 +151,28 @@ async def create_user(user_data: dict):
                 )
                 db.add(assignment)
             
+            # Récupérer l'entreprise de l'utilisateur actuel
+            current_user_company = get_user_company(current_user_id)
+            if current_user_company:
+                # Ajouter l'accès à l'entreprise
+                company_access = models.AdminCompanyAccess(
+                    admin_id=new_user_id,
+                    company_id=current_user_company.id,
+                    access_level='admin',  # ou user_data.get('access_level', 'admin')
+                    granted_by=current_user_id
+                )
+                db.add(company_access)
+            
             db.commit()
+            
+            return {"success": True, "message": "Utilisateur créé avec succès"}
+            
         except Exception as e:
             db.rollback()
             return {"success": False, "message": f"Erreur création permissions: {str(e)}"}
         finally:
             db.close()
-        
-        # FIX: Remove extra 'db' argument
-        company = get_user_company(current_user_id)
-        if company:
-            add_user_to_company(
-                db,
-                company.id,
-                new_user_id,
-                access_level='admin',
-                granted_by=current_user_id
-            )
-        
-        # FIX: Explicit success response
-        return {"success": True, "message": "Utilisateur créé avec succès"}
-        
+            
     except Exception as e:
         return {"success": False, "message": f"Erreur: {str(e)}"}
 
