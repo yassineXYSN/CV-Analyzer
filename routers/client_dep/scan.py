@@ -104,50 +104,110 @@ async def create_detailed_analysis(request: Request):
     try:
         data = await request.json()
         pdf_text = data.get('pdf_text')
-
         
-        # For testing, return sample data
+        print("Hello from create_detailed_analysis")
+        print("PDF text length:", len(pdf_text) if pdf_text else 0)
+        
+        print("Generating categorie scores...")
+        categorie_scores_raw = data_generator.generate_categorie_scores(pdf_text)
+        print("Categorie scores generated:", categorie_scores_raw[:200] + "..." if len(categorie_scores_raw) > 200 else categorie_scores_raw)
+        
+        print("Generating good points...")
+        good_points_raw = data_generator.generate_good_points(pdf_text)
+        print("Good points generated:", good_points_raw[:200] + "..." if len(good_points_raw) > 200 else good_points_raw)
+        
+        print("Generating weak points...")
+        weak_points_raw = data_generator.generate_weak_points(pdf_text)
+        print("Weak points generated:", weak_points_raw[:200] + "..." if len(weak_points_raw) > 200 else weak_points_raw)
+        
+        print("Generating improvements...")
+        improvements_raw = data_generator.generate_improvements(pdf_text, good_points_raw, weak_points_raw, categorie_scores_raw)
+        print("Improvements generated:", improvements_raw[:200] + "..." if len(improvements_raw) > 200 else improvements_raw)
+        
+        # Parse the results
+        categorie_scores = parse_category_scores(categorie_scores_raw)
+        good_points = parse_bullet_points(good_points_raw)
+        weak_points = parse_bullet_points(weak_points_raw)
+        improvements = parse_bullet_points(improvements_raw)
+
+        # Add this return statement
         return {
             "success": True,
-            "categorie_scores": {
-                "Expérience Professionnelle": 85,
-                "Compétences Techniques": 78,
-                "Formation & Éducation": 92,
-                "Certifications": 65,
-                "Compétences Relationnelles": 73,
-                "Présentation & Structure": 88
-            },
-            "good_points": [
-                "Solide expérience de 5+ années dans le développement web",
-                "Maîtrise excellente des technologies modernes (React, Node.js, Python)",
-                "Formation universitaire pertinente en informatique",
-                "Projets personnels démontrant la passion pour la technologie",
-                "Expérience en gestion d'équipe et leadership technique",
-                "Compétences en méthodologies agiles (Scrum, Kanban)",
-                "Excellente capacité d'adaptation et d'apprentissage continu",
-                "Portfolio bien documenté avec projets variés"
-            ],
-            "weak_points": [
-                "Manque de certifications professionnelles récentes",
-                "Peu d'expérience avec les technologies cloud (AWS, Azure)",
-                "Absence de projets open source contributifs",
-                "Compétences en DevOps limitées",
-                "Pas de mention d'expérience en sécurité informatique",
-                "Lacunes dans les compétences en analyse de données",
-                "Communication écrite pourrait être améliorée"
-            ],
-            "improvements": [
-                "Obtenir des certifications AWS ou Azure pour renforcer les compétences cloud",
-                "Contribuer à des projets open source pour démontrer l'engagement communautaire",
-                "Suivre une formation en cybersécurité pour élargir le profil technique",
-                "Développer des compétences en DevOps (Docker, Kubernetes, CI/CD)",
-                "Ajouter des métriques quantifiées aux réalisations professionnelles",
-                "Créer un blog technique pour démontrer les compétences en communication",
-                "Participer à des conférences ou meetups pour le networking professionnel",
-                "Apprendre des outils d'analyse de données (SQL avancé, Python data science)"
-            ]
+            "categorie_scores": categorie_scores,
+            "good_points": good_points,
+            "weak_points": weak_points,
+            "improvements": improvements
         }
         
     except Exception as e:
         print(f"Error in create_detailed_analysis: {str(e)}")
         return {"success": False, "error": str(e)}
+    
+
+
+
+import json
+
+def parse_category_scores(categorie_scores_raw: str) -> dict:
+    """
+    Parses category scores JSON string into a dictionary.
+    Handles common formatting issues like extra text or code blocks.
+    """
+    # Clean the string by removing common non-JSON elements
+    cleaned = categorie_scores_raw.strip()
+    
+    # Remove markdown code blocks if present
+    if cleaned.startswith("\`\`\`json") and cleaned.endswith("\`\`\`"):
+        cleaned = cleaned[7:-3].strip()
+    elif cleaned.startswith("\`\`\`") and cleaned.endswith("\`\`\`"):
+        cleaned = cleaned[3:-3].strip()
+    
+    # Extract JSON substring between curly braces
+    start_idx = cleaned.find('{')
+    end_idx = cleaned.rfind('}')
+    
+    if start_idx == -1 or end_idx == -1:
+        return {}
+    
+    json_str = cleaned[start_idx:end_idx+1]
+    
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        return {}
+
+
+def parse_bullet_points(text: str) -> list[str]:
+    """
+    Parses bullet point text into a clean list of strings.
+    Handles various bullet styles and cleans extra formatting.
+    """
+    lines = text.splitlines()
+    bullet_points = []
+    bullet_indicators = ('-', '*', '•', '→')
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        # Skip empty lines
+        if not stripped:
+            continue
+            
+        # Remove numeric prefixes (1., 2.) if present
+        if stripped[:2].replace('.', '').isdigit():
+            stripped = stripped[2:].lstrip()
+        
+        # Check for bullet indicators
+        if any(stripped.startswith(indicator) for indicator in bullet_indicators):
+            # Remove the bullet symbol and any following space
+            content = stripped[1:].lstrip()
+            bullet_points.append(content)
+        else:
+            # Capture lines without bullets if they're part of continuous text
+            if bullet_points and not bullet_points[-1].endswith(('.', '!', '?')):
+                bullet_points[-1] += " " + stripped
+            else:
+                bullet_points.append(stripped)
+    
+    # Remove any markdown formatting artifacts
+    return [point.replace("**", "").replace("__", "") for point in bullet_points]

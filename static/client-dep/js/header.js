@@ -3,6 +3,7 @@ class HeaderComponent {
     this.currentUser = null
     this.notificationCount = 0
     this.notificationWs = null
+    this.reconnectInterval = null // Added for managing reconnects
     this.init()
   }
 
@@ -48,6 +49,13 @@ class HeaderComponent {
         // Close others if needed
         document.querySelectorAll(".user-dropdown.show").forEach((d) => d.classList.remove("show"))
         document.querySelectorAll(".user-menu-trigger.active").forEach((t) => t.classList.remove("active"))
+        // Close notification dropdown if open
+        const notificationDropdown = document.getElementById("notificationDropdown")
+        const notificationBellTrigger = document.getElementById("notificationBellTrigger")
+        if (notificationDropdown && notificationBellTrigger && notificationDropdown.classList.contains("show")) {
+          notificationDropdown.classList.remove("show")
+          notificationBellTrigger.classList.remove("active")
+        }
 
         if (!isOpen) {
           userMenuTrigger.classList.add("active")
@@ -130,7 +138,7 @@ class HeaderComponent {
 
     this.updateUserInfo(user)
     this.setupEventListeners()
-    this.setupNotificationDropdown() // Add this line
+    this.setupNotificationDropdown()
 
     // Set profile link dynamically
     const profileLink = document.getElementById("profileLink")
@@ -168,6 +176,11 @@ class HeaderComponent {
       this.notificationWs.close()
       this.notificationWs = null
     }
+    if (this.reconnectInterval) {
+      clearInterval(this.reconnectInterval)
+      this.reconnectInterval = null
+    }
+    this.dispatchWebSocketStatus(false) // Dispatch status change
   }
 
   updateUserInfo(user) {
@@ -235,44 +248,93 @@ class HeaderComponent {
   }
 
   setupNotificationWebSocket() {
-    if (!this.currentUser) return
+    if (!this.currentUser || !this.currentUser.id) {
+      console.log("No current user ID available, skipping WebSocket connection setup.")
+      this.dispatchWebSocketStatus(false)
+      return
+    }
+
+    // Close existing connection if any
+    if (this.notificationWs) {
+      this.notificationWs.close()
+      this.notificationWs = null
+    }
+    // Clear any existing reconnect interval
+    if (this.reconnectInterval) {
+      clearInterval(this.reconnectInterval)
+      this.reconnectInterval = null
+    }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
     const wsUrl = `${protocol}//${window.location.host}/ws/notifications/${this.currentUser.id}`
+    console.log(`Attempting to connect WebSocket to: ${wsUrl}`)
 
     try {
       this.notificationWs = new WebSocket(wsUrl)
 
       this.notificationWs.onopen = () => {
-        console.log("Notification WebSocket connected")
+        console.log("Notification WebSocket connected (header)")
+        this.dispatchWebSocketStatus(true)
+        if (this.reconnectInterval) {
+          clearInterval(this.reconnectInterval)
+          this.reconnectInterval = null
+        }
       }
 
       this.notificationWs.onmessage = (event) => {
         const data = JSON.parse(event.data)
+        console.log("Received notification via WebSocket (header):", data)
         if (data.type === "application_status_change") {
           // Increment notification count
           this.updateNotificationCount(this.notificationCount + 1)
 
           // Show a brief visual indicator (optional)
           this.showNotificationIndicator()
+
+          // Dispatch custom event for other parts of the app (e.g., notifications page)
+          document.dispatchEvent(new CustomEvent("newNotificationReceived", { detail: data }))
+
+          // Update dropdown in real-time if it's open
+          const dropdown = document.getElementById("notificationDropdown")
+          if (dropdown && dropdown.classList.contains("show")) {
+            this.addNotificationToDropdown(data)
+          }
         }
       }
 
       this.notificationWs.onerror = (error) => {
-        console.error("Notification WebSocket error:", error)
+        console.error("Notification WebSocket error (header):", error)
+        this.dispatchWebSocketStatus(false)
       }
 
-      this.notificationWs.onclose = () => {
-        console.log("Notification WebSocket disconnected")
-        // Attempt to reconnect after 5 seconds
-        setTimeout(() => {
-          if (this.currentUser) {
+      this.notificationWs.onclose = (event) => {
+        console.log("Notification WebSocket disconnected (header):", event.code, event.reason)
+        this.dispatchWebSocketStatus(false)
+        // Attempt to reconnect after 5 seconds if user is still logged in
+        if (this.currentUser && !this.reconnectInterval) {
+          console.log("Attempting to reconnect WebSocket in 5 seconds...")
+          this.reconnectInterval = setInterval(() => {
             this.setupNotificationWebSocket()
-          }
-        }, 5000)
+          }, 5000)
+        }
       }
     } catch (error) {
-      console.error("Failed to setup notification WebSocket:", error)
+      console.error("Failed to create WebSocket connection (header):", error)
+      this.dispatchWebSocketStatus(false)
+    }
+  }
+
+  dispatchWebSocketStatus(connected) {
+    document.dispatchEvent(new CustomEvent("websocketStatusChange", { detail: { connected: connected } }))
+    const statusElement = document.getElementById("connection-status")
+    if (statusElement) {
+      if (connected) {
+        statusElement.textContent = "🟢 Connecté"
+        statusElement.className = "connection-status connected"
+      } else {
+        statusElement.textContent = "🔴 Déconnecté"
+        statusElement.className = "connection-status disconnected"
+      }
     }
   }
 
@@ -399,6 +461,7 @@ class HeaderComponent {
     if (loadingElement) {
       loadingElement.style.display = "flex"
     }
+    contentElement.innerHTML = "" // Clear previous content
 
     try {
       const response = await fetch("/api/notifications/recent?limit=3", {
@@ -437,27 +500,51 @@ class HeaderComponent {
     }
 
     const notificationsHTML = notifications
-      .map((notification) => {
-        const timeAgo = this.getTimeAgo(new Date(notification.created_at))
-        const statusClass = `status-${notification.status}`
-        const unreadClass = notification.is_read ? "" : "unread"
-
-        return `
-        <div class="notification-item-mini ${unreadClass}" onclick="window.location.href='/notifications'">
-          <div class="notification-mini-header">
-            <div class="notification-mini-title">${notification.title}</div>
-            <div class="notification-mini-time">${timeAgo}</div>
-          </div>
-          <div class="notification-mini-message">${notification.message}</div>
-          <span class="notification-mini-status ${statusClass}">
-            ${notification.status.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-          </span>
-        </div>
-      `
-      })
+      .map((notification) => this.createNotificationMiniHtml(notification))
       .join("")
 
     contentElement.innerHTML = notificationsHTML
+  }
+
+  addNotificationToDropdown(notification) {
+    const contentElement = document.getElementById("notificationDropdownContent")
+    if (!contentElement) return
+
+    // Remove empty state if present
+    const emptyState = contentElement.querySelector(".notification-empty")
+    if (emptyState) {
+      emptyState.remove()
+    }
+
+    const newNotificationHtml = this.createNotificationMiniHtml(notification)
+    contentElement.insertAdjacentHTML("afterbegin", newNotificationHtml)
+
+    // Keep only the latest 3 notifications in the dropdown
+    const notificationItems = contentElement.querySelectorAll(".notification-item-mini")
+    if (notificationItems.length > 3) {
+      for (let i = 3; i < notificationItems.length; i++) {
+        notificationItems[i].remove()
+      }
+    }
+  }
+
+  createNotificationMiniHtml(notification) {
+    const timeAgo = this.getTimeAgo(new Date(notification.created_at))
+    const statusClass = `status-${notification.status}`
+    const unreadClass = notification.is_read ? "" : "unread"
+
+    return `
+      <div class="notification-item-mini ${unreadClass}" onclick="window.location.href='/notifications'">
+        <div class="notification-mini-header">
+          <div class="notification-mini-title">${notification.title}</div>
+          <div class="notification-mini-time">${timeAgo}</div>
+        </div>
+        <div class="notification-mini-message">${notification.message}</div>
+        <span class="notification-mini-status ${statusClass}">
+          ${notification.status.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+        </span>
+      </div>
+    `
   }
 
   renderNotificationError() {
