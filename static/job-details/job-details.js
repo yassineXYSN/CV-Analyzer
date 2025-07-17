@@ -2,13 +2,36 @@
 let currentJob = null
 let applications = []
 let allCandidates = []
+let currentUser = null // Ajout pour stocker l'utilisateur actuel
 
 // Charger les données du job au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🚀 Page job-details chargée")
+  loadCurrentUser() // Charger l'utilisateur d'abord
   loadJobData()
   loadAllCandidates()
 })
+
+// NOUVELLE FONCTION: Charger l'utilisateur actuel
+async function loadCurrentUser() {
+  try {
+    console.log("👤 Chargement utilisateur actuel")
+    const response = await fetch("/api/current-user")
+    const result = await response.json()
+
+    if (result.success) {
+      currentUser = result.user
+      console.log("✅ Utilisateur chargé:", currentUser)
+    } else {
+      console.error("❌ Erreur chargement utilisateur:", result.message)
+      if (result.message === "Utilisateur non connecté") {
+        window.location.href = "/hr-login"
+      }
+    }
+  } catch (error) {
+    console.error("❌ Erreur réseau chargement utilisateur:", error)
+  }
+}
 
 // Charger tous les candidats disponibles
 async function loadAllCandidates() {
@@ -271,7 +294,6 @@ function renderApplications(filter = "all") {
         <i class="fas fa-inbox"></i>
         <h4>Aucune candidature ${filter === "all" ? "" : filter}</h4>
         <p>Les candidatures apparaîtront ici une fois soumises.</p>
-
       </div>
     `
     return
@@ -311,8 +333,32 @@ function renderApplications(filter = "all") {
     .join("")
 }
 
-// Rendre les actions pour chaque candidat
+// FONCTION MODIFIÉE: Rendre les actions pour chaque candidat selon le rôle
 function renderCandidateActions(app) {
+  // Vérifier si l'utilisateur est chef de département
+  if (currentUser && currentUser.role === "department_head") {
+    console.log("🏢 Mode chef de département - Bouton recommander uniquement")
+
+    // Pour les chefs de département : seulement le bouton recommander
+    if (app.status === "pending" || app.status === "reviewed") {
+      return `
+        <button class="btn-action recommend" onclick="showRecommendConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+          <i class="fas fa-thumbs-up"></i> Recommander
+        </button>
+        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+          <i class="fas fa-info-circle"></i> Voir profil
+        </button>
+      `
+    } else {
+      return `
+        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+          <i class="fas fa-info-circle"></i> Voir profil
+        </button>
+      `
+    }
+  }
+
+  // Pour les autres rôles (recruteur, super_admin) : boutons complets
   if (app.status === "pending") {
     return `
       <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
@@ -350,11 +396,141 @@ function renderCandidateActions(app) {
       </button>
     `
   } else {
-      return `
-        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-          <i class="fas fa-info-circle"></i> Voir profil
-        </button>
+    return `
+      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+        <i class="fas fa-info-circle"></i> Voir profil
+      </button>
     `
+  }
+}
+
+// NOUVELLE FONCTION: Afficher la modal de confirmation de recommandation
+function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
+  console.log(`👍 Affichage confirmation recommandation pour ${candidateName}`)
+
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay"
+
+  modal.innerHTML = `
+    <div class="confirmation-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="confirmation-icon recommend">
+            <i class="fas fa-thumbs-up"></i>
+          </div>
+          <h3>Recommander cette candidature</h3>
+          <p>Recommander <strong>${candidateName}</strong> pour le poste</p>
+        </div>
+        
+        <div class="candidate-modal-info">
+          <div class="candidate-modal-avatar">${candidateName
+            .split(" ")
+            .map((n) => n[0])
+            .join("")}</div>
+          <div class="candidate-modal-details">
+            <h4>${candidateName}</h4>
+            <p>Poste: ${jobTitle}</p>
+          </div>
+        </div>
+        
+        <div class="modal-body">
+          <p><strong>En tant que chef de département, vous pouvez recommander cette candidature :</strong></p>
+          <div class="confirmation-details">
+            <ul class="confirmation-list">
+              <li><i class="fas fa-star"></i> Marquer la candidature comme recommandée</li>
+              <li><i class="fas fa-bell"></i> Notifier les recruteurs et super admins</li>
+              <li><i class="fas fa-comment"></i> Ajouter vos commentaires de recommandation</li>
+              <li><i class="fas fa-priority-high"></i> Donner une priorité élevée à cette candidature</li>
+            </ul>
+          </div>
+          
+          <div class="recommendation-form">
+            <label for="recommendationComment">Commentaire de recommandation :</label>
+            <textarea id="recommendationComment" placeholder="Expliquez pourquoi vous recommandez ce candidat..." rows="3"></textarea>
+            
+            <label for="recommendationPriority">Niveau de recommandation :</label>
+            <select id="recommendationPriority">
+              <option value="normal">Recommandation normale</option>
+              <option value="high">Recommandation forte</option>
+              <option value="urgent">Recommandation urgente</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="btn-confirm recommend" onclick="confirmRecommendApplication(${applicationId})">
+            <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
+          </button>
+          <button class="btn-cancel" onclick="closeConfirmationModal()">
+            <i class="fas fa-times"></i> Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    modal.style.opacity = "1"
+  })
+
+  // Fermer la modal en cliquant à l'extérieur
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      closeConfirmationModal()
+    }
+  })
+
+  // Fermer avec Escape
+  document.addEventListener("keydown", handleEscapeKey)
+}
+
+// NOUVELLE FONCTION: Confirmer la recommandation
+async function confirmRecommendApplication(applicationId) {
+  console.log(`👍 Confirmation recommandation candidature ${applicationId}`)
+
+  try {
+    const comment = document.getElementById("recommendationComment").value.trim()
+    const priority = document.getElementById("recommendationPriority").value
+
+    closeConfirmationModal()
+    showLoading("Traitement de la recommandation...")
+
+    const response = await fetch(`/api/applications/${applicationId}/recommend`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        comment: comment,
+        priority: priority,
+        recommended_by: currentUser.id,
+      }),
+    })
+
+    const result = await response.json()
+    hideLoading()
+
+    if (result.success) {
+      console.log("👍 Candidature recommandée avec succès")
+      showNotification(result.message || "Candidature recommandée avec succès", "success")
+
+      // Recharger les données du poste
+      if (currentJob && currentJob.id) {
+        await loadJobFromAPI(currentJob.id)
+      }
+
+      console.log("✅ Données rechargées après recommandation")
+    } else {
+      console.error("❌ Erreur recommandation candidature:", result.message)
+      showNotification(result.message, "error")
+    }
+  } catch (error) {
+    hideLoading()
+    console.error("❌ Erreur réseau recommandation candidature:", error)
+    showNotification("Erreur de connexion lors de la recommandation", "error")
   }
 }
 
@@ -454,6 +630,7 @@ function getStatusText(status) {
     accepted: "Acceptée",
     rejected: "Rejetée",
     withdrawn: "Retirée",
+    recommended: "Recommandée", // Nouveau statut
   }
   return statusTexts[status] || status
 }
@@ -647,20 +824,18 @@ async function confirmAcceptApplication(applicationId) {
 
     if (response.ok && result.success) {
       showNotification(result.message || "Candidat accepté avec succès", "success")
-      loadJobData()  // Mise à jour de l'affichage
+      loadJobData() // Mise à jour de l'affichage
     } else {
       // ✅ Affichage du message d'erreur retourné
       console.warn("Erreur renvoyée:", result)
       showNotification(result.message || "Erreur lors de l'acceptation", "error")
     }
-
   } catch (error) {
     console.error("❌ Erreur réseau ou système:", error)
     hideLoading()
     showNotification("Erreur inattendue lors de la communication avec le serveur", "error")
   }
 }
-
 
 // Fonction pour confirmer le rejet
 async function confirmRejectApplication(applicationId) {
@@ -927,4 +1102,3 @@ document.addEventListener("click", (e) => {
 })
 
 console.log("✅ Script job-details.js chargé complètement")
-

@@ -15,6 +15,22 @@ templates = Jinja2Templates(directory=templates_dir)
 
 router = APIRouter()
 
+def check_super_admin_permission(user_id: int) -> bool:
+    """
+    Vérifie si l'utilisateur actuel est un super admin
+    """
+    db = SessionLocal()
+    try:
+        user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not user:
+            return False
+        return user.role == "super_admin"
+    except Exception as e:
+        print(f"Erreur lors de la vérification des permissions: {e}")
+        return False
+    finally:
+        db.close()
+
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard_page(request: Request):
     return templates.TemplateResponse("HR-dep/hr-dashboard.html", {"request": request})
@@ -85,17 +101,17 @@ async def get_dashboard_stats():
             # Récupération des dernières candidatures pour le tableau
             recent_applications = db.query(
                 Application.id,
-                ProfileCandidat.name.label("candidate_name"),  # Récupéré de ProfileCandidat
-                Contact.email.label("candidate_email"),       # Récupéré de Contact
+                ProfileCandidat.name.label("candidate_name"),
+                Contact.email.label("candidate_email"),
                 Application.status,
                 Job.title.label("job_title"),
                 Application.application_date
             ).join(
                 Job, Application.job_id == Job.id
             ).join(
-                ProfileCandidat, Application.candidate_profile_id == ProfileCandidat.id  # Jointure ajoutée
+                ProfileCandidat, Application.candidate_profile_id == ProfileCandidat.id
             ).join(
-                Contact, ProfileCandidat.contact_id == Contact.id  # Jointure ajoutée pour l'email
+                Contact, ProfileCandidat.contact_id == Contact.id
             ).filter(
                 Job.company_id == company.id
             ).order_by(
@@ -107,14 +123,12 @@ async def get_dashboard_stats():
             for app in recent_applications:
                 recent_applications_list.append({
                     "id": app.id,
-                    "name": app.candidate_name,  # Maintenant disponible
-                    "email": app.candidate_email,  # Maintenant disponible
+                    "name": app.candidate_name,
+                    "email": app.candidate_email,
                     "status": app.status,
                     "job": app.job_title,
                     "date": app.application_date.strftime("%d/%m/%Y") if app.application_date else None
                 })
-            
-            # ... (le reste du code inchangé) ...
             
             stats = {
                 "total_departments": total_departments,
@@ -122,9 +136,7 @@ async def get_dashboard_stats():
                 "total_jobs": total_jobs,
                 "urgent_jobs": urgent_jobs,
                 "total_applications": total_applications,
-                "recent_applications": recent_applications_list,  # Liste corrigée
-
-                
+                "recent_applications": recent_applications_list,
             }
             
             return JSONResponse(
@@ -146,8 +158,6 @@ async def get_dashboard_stats():
             content={"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
         )
 
-
-# In the get_current_user function
 @router.get("/api/current-user")
 async def get_current_user():
     try:
@@ -167,14 +177,21 @@ async def get_current_user():
                     content={"success": False, "message": "Utilisateur non trouvé"}
                 )
             
-            # Return only valid fields
+            # Vérifier les permissions
+            is_super_admin = check_super_admin_permission(user_id)
+            
+            # Return user data with permissions
             user_data = {
                 "id": user.id,
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "role": user.role,
-                "last_login": user.last_login.strftime("%d/%m/%Y %H:%M") if user.last_login else None
+                "last_login": user.last_login.strftime("%d/%m/%Y %H:%M") if user.last_login else None,
+                "permissions": {
+                    "is_super_admin": is_super_admin,
+                    "can_create_users": is_super_admin
+                }
             }
             
             return JSONResponse(

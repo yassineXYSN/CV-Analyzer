@@ -1,12 +1,10 @@
 from fastapi import APIRouter
 from databasehr.database import SessionLocal
-from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee,Department,Company
+from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
 from typing import Optional
-
-
 
 router = APIRouter()
 
@@ -23,11 +21,34 @@ async def get_applications(status: Optional[str] = None):
         
         db = SessionLocal()
         try:
+            # Récupérer l'utilisateur actuel pour vérifier son rôle
+            current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+            if not current_admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+            
+            # Construire la requête de base
             query = db.query(Application).join(
                 Job, Application.job_id == Job.id
+            ).join(
+                Department, Job.department_id == Department.id
             ).filter(
                 Job.company_id == company.id
             )
+            
+            # Si c'est un chef de département, filtrer par ses départements assignés
+            if current_admin.role == 'department_head':
+                print(f"🔒 Chef de département - Filtrage des candidatures pour: {current_admin.first_name} {current_admin.last_name}")
+                
+                # Récupérer les départements assignés à ce chef
+                assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                    AdminDepartments.admin_id == user_id
+                ).subquery()
+                
+                query = query.filter(Department.id.in_(assigned_dept_ids))
+                
+                print(f"📋 Filtrage appliqué pour les départements assignés")
+            else:
+                print(f"👑 Admin/Recruteur - Accès à toutes les candidatures: {current_admin.role}")
             
             if status and status != "all":
                 query = query.filter(Application.status == status)
@@ -77,16 +98,20 @@ async def get_applications(status: Optional[str] = None):
                         "reviewed_at": app.reviewed_at.isoformat() if app.reviewed_at else None
                     })
             
+            print(f"✅ {len(applications_list)} candidatures récupérées pour l'utilisateur {current_admin.role}")
+            
             return {
                 "success": True,
                 "applications": applications_list,
                 "total": len(applications_list)
             }
         except Exception as e:
+            print(f"❌ Erreur lors de la récupération des candidatures: {str(e)}")
             return {"success": False, "message": f"Erreur lors de la récupération des candidatures: {str(e)}"}
         finally:
             db.close()
     except Exception as e:
+        print(f"❌ Erreur interne: {str(e)}")
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
 @router.post("/api/applications/{application_id}/update-status")
@@ -102,15 +127,33 @@ async def update_application_status(application_id: int, status_data: dict):
         
         db = SessionLocal()
         try:
-            application = db.query(Application).join(
+            # Récupérer l'utilisateur actuel pour vérifier son rôle
+            current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+            if not current_admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+            
+            # Construire la requête avec vérification des permissions
+            query = db.query(Application).join(
                 Job, Application.job_id == Job.id
+            ).join(
+                Department, Job.department_id == Department.id
             ).filter(
                 Application.id == application_id,
                 Job.company_id == company.id
-            ).first()
+            )
+            
+            # Si c'est un chef de département, vérifier qu'il a accès à cette candidature
+            if current_admin.role == 'department_head':
+                assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                    AdminDepartments.admin_id == user_id
+                ).subquery()
+                
+                query = query.filter(Department.id.in_(assigned_dept_ids))
+            
+            application = query.first()
             
             if not application:
-                return {"success": False, "message": "Candidature non trouvée"}
+                return {"success": False, "message": "Candidature non trouvée ou accès non autorisé"}
             
             job = db.query(Job).filter(Job.id == application.job_id).first()
             candidate = db.query(ProfileCandidat).filter(
@@ -255,10 +298,28 @@ async def create_demo_applications():
         
         db = SessionLocal()
         try:
-            jobs = db.query(Job).filter(
+            # Récupérer l'utilisateur actuel pour vérifier son rôle
+            current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+            if not current_admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+            
+            # Construire la requête pour les jobs selon le rôle
+            jobs_query = db.query(Job).join(
+                Department, Job.department_id == Department.id
+            ).filter(
                 Job.company_id == company.id,
                 Job.status.in_(['active', 'draft'])
-            ).limit(3).all()
+            )
+            
+            # Si c'est un chef de département, filtrer par ses départements assignés
+            if current_admin.role == 'department_head':
+                assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                    AdminDepartments.admin_id == user_id
+                ).subquery()
+                
+                jobs_query = jobs_query.filter(Department.id.in_(assigned_dept_ids))
+            
+            jobs = jobs_query.limit(3).all()
             
             if not jobs:
                 return {"success": False, "message": "Aucun poste disponible"}
@@ -322,9 +383,29 @@ def accept_application(application_id: int):
         if not user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
         
-        application = db.query(Application).filter(Application.id == application_id).first()
+        # Récupérer l'utilisateur actuel pour vérifier son rôle
+        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not current_admin:
+            return {"success": False, "message": "Utilisateur non trouvé"}
+        
+        # Construire la requête avec vérification des permissions
+        application_query = db.query(Application).join(
+            Job, Application.job_id == Job.id
+        ).join(
+            Department, Job.department_id == Department.id
+        ).filter(Application.id == application_id)
+        
+        # Si c'est un chef de département, vérifier qu'il a accès à cette candidature
+        if current_admin.role == 'department_head':
+            assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                AdminDepartments.admin_id == user_id
+            ).subquery()
+            
+            application_query = application_query.filter(Department.id.in_(assigned_dept_ids))
+        
+        application = application_query.first()
         if not application:
-            return {"success": False, "message": "Candidature non trouvée"}
+            return {"success": False, "message": "Candidature non trouvée ou accès non autorisé"}
         
         application.status = "accepted"
         application.decision_date = datetime.now()

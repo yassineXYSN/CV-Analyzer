@@ -4,7 +4,7 @@ console.log("🎯 FRONTEND: Dashboard chargé avec succès")
 let departments = []
 let employees = []
 let jobs = []
-let applications = [] // Variable pour les candidatures
+let applications = []
 let currentUser = null
 const expandedDepartments = new Set()
 let filteredDepartments = []
@@ -25,13 +25,7 @@ async function initializeDashboard() {
     await loadCurrentUser()
 
     // Charger les données de base
-    await Promise.all([
-      loadDepartments(),
-      loadEmployees(),
-      loadJobs(),
-      loadApplications(), // NOUVEAU: Charger les candidatures
-      loadDashboardStats(),
-    ])
+    await Promise.all([loadDepartments(), loadEmployees(), loadJobs(), loadApplications(), loadDashboardStats()])
 
     console.log("✅ FRONTEND: Initialisation terminée")
   } catch (error) {
@@ -53,13 +47,11 @@ async function loadApplications() {
       renderApplications()
     } else {
       console.error("❌ FRONTEND: Erreur chargement candidatures:", result.message)
-      // En cas d'erreur, afficher un état vide
       applications = []
       renderApplications()
     }
   } catch (error) {
     console.error("❌ FRONTEND: Erreur réseau chargement candidatures:", error)
-    // En cas d'erreur réseau, afficher un état vide
     applications = []
     renderApplications()
   }
@@ -179,8 +171,9 @@ function viewCandidateProfile(candidateId) {
   window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
 }
 
+// FONCTION CORRIGÉE: Voir les détails d'un poste
 function viewJobDetails(jobId) {
-  console.log("💼 FRONTEND: Détails du poste:", jobId)
+  console.log("💼 FRONTEND: Navigation vers job-details pour le poste:", jobId)
   window.location.href = `/job-details?id=${jobId}`
 }
 
@@ -190,19 +183,21 @@ function filterApplications(status) {
 }
 
 // Fonction pour charger l'utilisateur actuel
-// Fonction pour charger l'utilisateur actuel
 async function loadCurrentUser() {
   console.log("👤 FRONTEND: Chargement utilisateur actuel")
 
   try {
     const response = await fetch("/api/current-user")
     const result = await response.json()
-    console.log("API Response:", result)  // Debugging log
+    console.log("API Response:", result)
 
     if (result.success) {
       currentUser = result.user
       console.log("✅ FRONTEND: Utilisateur chargé:", currentUser)
       updateUserDisplay()
+
+      // Adapter l'interface selon le rôle
+      adaptInterfaceForRole()
     } else {
       console.error("❌ FRONTEND: Erreur chargement utilisateur:", result.message)
       if (result.message === "Utilisateur non connecté") {
@@ -214,39 +209,129 @@ async function loadCurrentUser() {
   }
 }
 
-// Fonction pour mettre à jour l'affichage utilisateur
+// FONCTION MISE À JOUR: Adapter l'interface selon le rôle
+function adaptInterfaceForRole() {
+  if (!currentUser) return
+
+  console.log(`🔧 FRONTEND: Adaptation interface pour le rôle: ${currentUser.role}`)
+
+  // Restrictions pour CHEF DE DÉPARTEMENT
+  if (currentUser.role === "department_head") {
+    console.log("🔒 FRONTEND: Mode chef de département activé")
+
+    // Masquer tous les boutons de création de département
+    const createDeptButtons = document.querySelectorAll('[onclick="openDepartmentModal()"]')
+    createDeptButtons.forEach((btn) => {
+      btn.style.display = "none"
+      console.log("🚫 FRONTEND: Bouton création département masqué")
+    })
+
+    // Masquer le bouton "Nouveau Département" dans les actions rapides
+    const quickActionCards = document.querySelectorAll(".quick-action-card")
+    quickActionCards.forEach((card) => {
+      const actionInfo = card.querySelector(".action-info h3")
+      if (actionInfo && actionInfo.textContent.includes("Nouveau Département")) {
+        card.style.display = "none"
+        console.log("🚫 FRONTEND: Action rapide création département masquée")
+      }
+    })
+
+    // Masquer le bouton + dans la sidebar des départements
+    const addBtnInSidebar = document.querySelector(".sidebar-actions .add-btn")
+    if (addBtnInSidebar) {
+      addBtnInSidebar.style.display = "none"
+      console.log("🚫 FRONTEND: Bouton + sidebar départements masqué")
+    }
+
+    // MODIFICATION 2: Ajouter un indicateur visuel SANS icône
+    const roleElement = document.getElementById("userRoleDisplay")
+    if (roleElement) {
+      roleElement.style.color = "#f59e0b"
+    }
+  }
+
+  // Restrictions pour RECRUTEUR
+  else if (currentUser.role === "recruiter") {
+    console.log("🔍 FRONTEND: Mode recruteur activé")
+
+    // Masquer tous les boutons de création de département
+    const createDeptButtons = document.querySelectorAll('[onclick="openDepartmentModal()"]')
+    createDeptButtons.forEach((btn) => {
+      btn.style.display = "none"
+      console.log("🚫 FRONTEND: Bouton création département masqué pour recruteur")
+    })
+
+    // Masquer le bouton "Nouveau Département" dans les actions rapides
+    const quickActionCards = document.querySelectorAll(".quick-action-card")
+    quickActionCards.forEach((card) => {
+      const actionInfo = card.querySelector(".action-info h3")
+      if (
+        actionInfo &&
+        (actionInfo.textContent.includes("Nouveau Département") || actionInfo.textContent.includes("Nouveau Poste"))
+      ) {
+        card.style.display = "none"
+        console.log("🚫 FRONTEND: Action rapide masquée pour recruteur:", actionInfo.textContent)
+      }
+    })
+
+    // Masquer le bouton + dans la sidebar des départements
+    const addBtnInSidebar = document.querySelector(".sidebar-actions .add-btn")
+    if (addBtnInSidebar) {
+      addBtnInSidebar.style.display = "none"
+      console.log("🚫 FRONTEND: Bouton + sidebar départements masqué pour recruteur")
+    }
+
+    // MODIFICATION 2: Ajouter un indicateur visuel SANS icône
+    const roleElement = document.getElementById("userRoleDisplay")
+    if (roleElement) {
+      roleElement.style.color = "#10b981"
+    }
+  }
+
+  // Mode SUPER ADMIN (accès complet)
+  else if (currentUser.role === "super_admin") {
+    console.log("👑 FRONTEND: Mode Super Admin - Accès complet")
+
+    // MODIFICATION 2: Ajouter un indicateur visuel SANS icône
+    const roleElement = document.getElementById("userRoleDisplay")
+    if (roleElement) {
+      roleElement.style.color = "#dc2626"
+    }
+  }
+}
+
 // Fonction pour mettre à jour l'affichage utilisateur
 function updateUserDisplay() {
-    if (currentUser) {
-        const userName = `${currentUser.first_name} ${currentUser.last_name}`;
-        const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`;
-        
-        const roleTranslations = {
-            'super_admin': 'Super Admin',
-            'recruiter': 'Recruteur',
-            'department_head': 'Chef de Département'
-        };
-        
-        const translatedRole = roleTranslations[currentUser.role] || currentUser.role;
-        
-        // Mettre à jour le rôle au-dessus du titre
-        const roleElement = document.getElementById("userRoleDisplay");
-        if (roleElement) {
-            roleElement.textContent = translatedRole;
-        }
-        
-        // Mettre à jour le message de bienvenue
-        const welcomeElement = document.getElementById("welcomeMessage");
-        if (welcomeElement) {
-            welcomeElement.textContent = `Bienvenue, ${userName}`;
-        }
-        
-        // Mettre à jour l'avatar
-        const avatar = document.getElementById("userAvatar");
-        if (avatar) {
-            avatar.textContent = userInitials;
-        }
+  if (currentUser) {
+    const userName = `${currentUser.first_name} ${currentUser.last_name}`
+    const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
+
+    const roleTranslations = {
+      super_admin: "Super Admin",
+      recruiter: "Recruteur",
+      department_head: "Chef de Département",
     }
+
+    const translatedRole = roleTranslations[currentUser.role] || currentUser.role
+
+    // Mettre à jour le rôle au-dessus du titre
+    const roleElement = document.getElementById("userRoleDisplay")
+    if (roleElement) {
+      roleElement.textContent = translatedRole
+    }
+
+    // Mettre à jour le message de bienvenue
+    const welcomeElement = document.getElementById("welcomeMessage")
+    if (welcomeElement) {
+      welcomeElement.textContent = `Bienvenue, ${userName}`
+    }
+
+    // Mettre à jour l'avatar
+    const avatar = document.getElementById("userAvatar")
+    if (avatar) {
+      avatar.textContent = userInitials
+    }
+  }
 }
 
 // Fonction pour charger les statistiques du dashboard
@@ -327,6 +412,109 @@ function closeAllModals() {
   document.getElementById("employeeModal").style.display = "none"
 }
 
+// NOUVELLES FONCTIONS: Gestion de l'assignation de manager
+function toggleManagerAssignment() {
+  // Vérifier les permissions pour créer des utilisateurs
+  if (currentUser && (currentUser.role === "department_head" || currentUser.role === "recruiter")) {
+    showNotification("Vous n'avez pas les permissions pour créer de nouveaux utilisateurs", "warning")
+    document.getElementById("assignManagerToggle").checked = false
+    return
+  }
+
+  const toggle = document.getElementById("assignManagerToggle")
+  const section = document.getElementById("managerAssignmentSection")
+
+  if (toggle.checked) {
+    section.style.display = "block"
+    section.classList.remove("hidden")
+    section.classList.add("visible")
+
+    // Charger les chefs disponibles
+    loadAvailableManagers()
+  } else {
+    section.style.display = "none"
+    section.classList.remove("visible")
+    section.classList.add("hidden")
+
+    // Réinitialiser tous les champs
+    resetManagerFields()
+  }
+}
+
+function toggleManagerType() {
+  const existingRadio = document.getElementById("existingManagerRadio")
+  const newRadio = document.getElementById("newManagerRadio")
+  const existingSection = document.getElementById("existingManagerSection")
+  const newSection = document.getElementById("newManagerSection")
+
+  if (existingRadio.checked) {
+    existingSection.style.display = "block"
+    newSection.style.display = "none"
+    existingSection.classList.add("visible")
+    newSection.classList.add("hidden")
+  } else if (newRadio.checked) {
+    existingSection.style.display = "none"
+    newSection.style.display = "block"
+    existingSection.classList.add("hidden")
+    newSection.classList.add("visible")
+  }
+}
+
+function resetManagerFields() {
+  // Réinitialiser les radios
+  document.getElementById("existingManagerRadio").checked = false
+  document.getElementById("newManagerRadio").checked = false
+
+  // Cacher les sections
+  document.getElementById("existingManagerSection").style.display = "none"
+  document.getElementById("newManagerSection").style.display = "none"
+
+  // Réinitialiser les champs
+  document.getElementById("existingManagerSelect").value = ""
+  document.getElementById("managerFirstName").value = ""
+  document.getElementById("managerLastName").value = ""
+  document.getElementById("managerEmail").value = ""
+  document.getElementById("managerPassword").value = ""
+  document.getElementById("canAddDepartment").checked = true
+  document.getElementById("canManageApplications").checked = true
+}
+
+// Charger les chefs de département disponibles
+async function loadAvailableManagers() {
+  console.log("👥 FRONTEND: Chargement des chefs disponibles")
+
+  try {
+    const response = await fetch("/api/available-managers")
+    const result = await response.json()
+
+    const select = document.getElementById("existingManagerSelect")
+
+    if (result.success) {
+      const managers = result.managers || []
+      console.log(`✅ FRONTEND: ${managers.length} chefs disponibles`)
+
+      select.innerHTML = '<option value="">Sélectionner un chef de département</option>'
+
+      managers.forEach((manager) => {
+        const option = document.createElement("option")
+        option.value = manager.id
+        option.textContent = `${manager.first_name} ${manager.last_name} (${manager.email})`
+        select.appendChild(option)
+      })
+
+      if (managers.length === 0) {
+        select.innerHTML = '<option value="">Aucun chef de département disponible</option>'
+      }
+    } else {
+      console.error("❌ FRONTEND: Erreur chargement chefs:", result.message)
+      select.innerHTML = '<option value="">Erreur de chargement</option>'
+    }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau chargement chefs:", error)
+    document.getElementById("existingManagerSelect").innerHTML = '<option value="">Erreur de connexion</option>'
+  }
+}
+
 // Fonctions modales
 function openDepartmentModal() {
   console.log("🏢 FRONTEND: Ouverture modal département")
@@ -338,6 +526,11 @@ function closeDepartmentModal() {
   console.log("🏢 FRONTEND: Fermeture modal département")
   document.getElementById("departmentModal").style.display = "none"
   document.getElementById("departmentForm").reset()
+
+  // Réinitialiser la section manager
+  document.getElementById("assignManagerToggle").checked = false
+  document.getElementById("managerAssignmentSection").style.display = "none"
+  resetManagerFields()
 }
 
 function openJobModal(preselectedDeptId = null) {
@@ -382,26 +575,74 @@ function toggleDepartmentExpansion(departmentId) {
   }
 }
 
-// Fonction pour créer un département
+// FONCTION MODIFIÉE: Créer un département avec chef optionnel
 async function createDepartment() {
   console.log("🏢 FRONTEND: Début création département")
 
   const name = document.getElementById("departmentName").value.trim()
   const description = document.getElementById("departmentDescription").value.trim()
-  const manager = document.getElementById("departmentManager").value.trim()
   const color = document.getElementById("departmentColor").value
+  const assignManager = document.getElementById("assignManagerToggle").checked
 
   if (!name) {
     showNotification("Le nom du département est requis", "warning")
     return
   }
 
+  // Données de base du département
   const departmentData = {
     name: name,
     description: description || "",
-    manager_name: manager || "",
     color: color,
     budget: 0.0,
+  }
+
+  // Si assignation d'un chef de département
+  if (assignManager) {
+    const existingManagerRadio = document.getElementById("existingManagerRadio")
+    const newManagerRadio = document.getElementById("newManagerRadio")
+
+    if (!existingManagerRadio.checked && !newManagerRadio.checked) {
+      showNotification("Veuillez sélectionner le type d'assignation du chef", "warning")
+      return
+    }
+
+    if (existingManagerRadio.checked) {
+      // Assigner un chef existant
+      const managerId = document.getElementById("existingManagerSelect").value
+
+      if (!managerId) {
+        showNotification("Veuillez sélectionner un chef de département", "warning")
+        return
+      }
+
+      departmentData.assign_existing_manager = true
+      departmentData.existing_manager_id = Number.parseInt(managerId)
+    } else if (newManagerRadio.checked) {
+      // Créer un nouveau chef
+      const managerFirstName = document.getElementById("managerFirstName").value.trim()
+      const managerLastName = document.getElementById("managerLastName").value.trim()
+      const managerEmail = document.getElementById("managerEmail").value.trim()
+      const managerPassword = document.getElementById("managerPassword").value.trim()
+
+      if (!managerFirstName || !managerLastName || !managerEmail || !managerPassword) {
+        showNotification("Tous les champs du nouveau chef sont requis", "warning")
+        return
+      }
+
+      departmentData.create_manager = true
+      departmentData.manager_data = {
+        first_name: managerFirstName,
+        last_name: managerLastName,
+        email: managerEmail,
+        password: managerPassword,
+        role: "department_head",
+        permissions: {
+          can_add_department: document.getElementById("canAddDepartment").checked,
+          can_manage_applications: document.getElementById("canManageApplications").checked,
+        },
+      }
+    }
   }
 
   console.log("📤 FRONTEND: Envoi données département:", departmentData)
@@ -420,7 +661,7 @@ async function createDepartment() {
 
     if (result.success) {
       console.log("✅ FRONTEND: Département créé avec succès")
-      showNotification(`Département "${name}" créé avec succès !`, "success")
+      showNotification(result.message, "success")
       closeDepartmentModal()
       await refreshDashboard()
     } else {
@@ -477,7 +718,7 @@ async function createEmployee() {
     })
 
     const result = await response.json()
-    console.log("📥 FRONTEND: Réponse reçue:", result)
+    console.log("�� FRONTEND: Réponse reçue:", result)
 
     if (result.success) {
       console.log("✅ FRONTEND: Employé créé avec succès")
@@ -564,7 +805,7 @@ async function refreshDashboard() {
   await loadDepartments()
   await loadEmployees()
   await loadJobs()
-  await loadApplications() // NOUVEAU: Recharger les candidatures
+  await loadApplications()
   await loadDashboardStats()
 }
 
@@ -706,9 +947,15 @@ function renderDepartmentsList(deptList) {
                         ${isExpanded ? "Réduire" : "Voir Détails"}
                     </button>
 
+                    ${
+                      currentUser && currentUser.role !== "recruiter"
+                        ? `
                     <button class="btn-add-job" onclick="openJobModal(${dept.id})" title="Ajouter un poste">
                         <i class="fas fa-plus"></i>
                     </button>
+                    `
+                        : ""
+                    }
                 </div>
                 
                 ${
@@ -818,7 +1065,7 @@ function loadEmployeesInSelect(selectId) {
 }
 
 function viewEmployeeProfile(employeeId) {
-  const employee = employees.find(e => e.id === employeeId)
+  const employee = employees.find((e) => e.id === employeeId)
 
   if (!employee) {
     showNotification("Employé introuvable", "error")
@@ -833,12 +1080,6 @@ function viewEmployeeProfile(employeeId) {
     console.log("➡️ Ouvrir comme employé normal")
     window.open(`/employee-profile?id=${employeeId}`, "_blank")
   }
-}
-
-// Fonction pour voir les détails d'un poste
-function viewJobDetails(jobId) {
-  console.log("💼 FRONTEND: Navigation vers job-details pour le poste:", jobId)
-  window.location.href = `/job-details?id=${jobId}`
 }
 
 // Fonctions placeholder
@@ -881,9 +1122,8 @@ function filterDepartments() {
   filteredDepartments = departments.filter((dept) => {
     const name = (dept.name || "").toLowerCase()
     const description = (dept.description || "").toLowerCase()
-    const manager = (dept.manager_name || "").toLowerCase()
 
-    const matches = name.includes(searchTerm) || description.includes(searchTerm) || manager.includes(searchTerm)
+    const matches = name.includes(searchTerm) || description.includes(searchTerm)
 
     if (matches) {
       console.log(`✅ FRONTEND: Département "${dept.name}" correspond à la recherche`)
@@ -1003,8 +1243,7 @@ function filterApplicationByName() {
 
   const filtered = applications.filter((app) => {
     return (
-      app.candidate_name.toLowerCase().includes(searchTerm) ||
-      app.candidate_email.toLowerCase().includes(searchTerm)
+      app.candidate_name.toLowerCase().includes(searchTerm) || app.candidate_email.toLowerCase().includes(searchTerm)
     )
   })
 
@@ -1028,7 +1267,8 @@ function renderApplicationsList(list) {
   }
 
   container.innerHTML = list
-    .map((app) => `
+    .map(
+      (app) => `
       <div class="application-card ${app.status}">
         <div class="application-header">
           <div class="applicant-info">
@@ -1065,11 +1305,12 @@ function renderApplicationsList(list) {
           </button>
         </div>
       </div>
-    `)
+    `,
+    )
     .join("")
 }
 
-// Charger les employés depuis l’API
+// Charger les employés depuis l'API
 async function loadEmployees() {
   console.log("👥 FRONTEND: Chargement des employés")
 
@@ -1104,13 +1345,17 @@ function renderEmployees() {
     return
   }
 
-  container.innerHTML = employees.map(emp => `
+  container.innerHTML = employees
+    .map(
+      (emp) => `
     <div class="employee-card">
       <h4>${emp.first_name} ${emp.last_name}</h4>
       <p><strong>Poste:</strong> ${emp.position}</p>
       <p><strong>Email:</strong> ${emp.email}</p>
       <p><strong>Département:</strong> ${emp.department_name}</p>
-      <p><strong>Compétences:</strong> ${(emp.skills || []).map(s => s.name).join(", ") || "Non spécifiées"}</p>
+      <p><strong>Compétences:</strong> ${(emp.skills || []).map((s) => s.name).join(", ") || "Non spécifiées"}</p>
     </div>
-  `).join("")
+  `,
+    )
+    .join("")
 }

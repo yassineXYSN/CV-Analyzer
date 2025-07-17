@@ -200,20 +200,25 @@
                 </div>
                 {% endif %}
 
-                <!-- Utilisateurs -->
-                <div class="section-header">
-                    <h2><i class="fas fa-users"></i> Utilisateurs ({{ company_admins|length }})</h2>
-                    <div class="header-actions">
-                        <button class="btn-add" onclick="openAddRecruiterModal()">
-                            <i class="fas fa-user-plus"></i>
-                            Ajouter Recruteur
-                        </button>
-                        <button class="btn-add" onclick="openAddDepartmentHeadModal()">
-                            <i class="fas fa-user-tie"></i>
-                            Ajouter Chef Département
-                        </button>
+                <!-- Section Utilisateurs avec contrôle des permissions -->
+                <div class="info-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-users"></i> Utilisateurs ({{ company_admins|length }})</h2>
+                        
+                        <!-- MODIFICATION 1: Affichage conditionnel des boutons SANS message pour non-super admins -->
+                        {% if is_super_admin %}
+                            <div class="header-actions">
+                                <button class="btn-add" onclick="openAddRecruiterModal()">
+                                    <i class="fas fa-user-plus"></i>
+                                    Ajouter Recruteur
+                                </button>
+                                <button class="btn-add" onclick="openAddDepartmentHeadModal()">
+                                    <i class="fas fa-user-tie"></i>
+                                    Ajouter Chef Département
+                                </button>
+                            </div>
+                        {% endif %}
                     </div>
-                </div>
                     
                     <div class="users-grid">
                         {% for admin in company_admins %}
@@ -237,6 +242,20 @@
                                 </div>
                                 {% endif %}
                             </div>
+                            
+                            <!-- Actions utilisateur (optionnel - seulement pour super admins) -->
+                            {% if is_super_admin %}
+                            <div class="user-actions">
+                                <button class="btn-icon-small" onclick="editUser({{ admin.id }})" title="Modifier l'utilisateur">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% if admin.role != 'super_admin' %}
+                                <button class="btn-icon-small btn-danger" onclick="deactivateUser({{ admin.id }})" title="Désactiver l'utilisateur">
+                                    <i class="fas fa-user-slash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -260,132 +279,135 @@
         </div>
     </div>
 
+    <!-- Modals affichés seulement pour les super admins -->
+    {% if is_super_admin %}
     <!-- Modal Ajouter Recruteur -->
-<div class="modal-overlay" id="addRecruiterModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h3><i class="fas fa-user-plus"></i> Ajouter un recruteur</h3>
-            <button class="modal-close" onclick="closeAddRecruiterModal()">
-                <i class="fas fa-times"></i>
-            </button>
+    <div class="modal-overlay" id="addRecruiterModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Ajouter un recruteur</h3>
+                <button class="modal-close" onclick="closeAddRecruiterModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="addRecruiterForm" class="modal-form">
+                <!-- Champs utilisateur de base -->
+                <div class="form-group">
+                    <label for="recruiterEmail"><i class="fas fa-envelope"></i> Email *</label>
+                    <input type="email" id="recruiterEmail" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recruiterPassword"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <input type="password" id="recruiterPassword" name="password" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="recruiterFirstName"><i class="fas fa-user"></i> Prénom *</label>
+                        <input type="text" id="recruiterFirstName" name="first_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="recruiterLastName"><i class="fas fa-user"></i> Nom *</label>
+                        <input type="text" id="recruiterLastName" name="last_name" required>
+                    </div>
+                    <input type="hidden" name="role" value="recruiter">
+                </div>
+                
+                <!-- Permissions spécifiques aux recruteurs -->
+                <div class="form-group">
+                    <h4><i class="fas fa-tasks"></i> Permissions</h4>
+                    <div class="permissions-grid">
+                        <label class="permission-item">
+                            <input type="checkbox" name="can_manage_applications" checked>
+                            <span>Gérer les candidatures</span>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" name="can_recommend_candidates" checked>
+                            <span>Recommander des candidats</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddRecruiterModal()">Annuler</button>
+                    <button type="submit" class="btn-create">Créer recruteur</button>
+                </div>
+            </form>
         </div>
-        
-        <form id="addRecruiterForm" class="modal-form">
-            <!-- Champs utilisateur de base -->
-            <div class="form-group">
-                <label for="recruiterEmail"><i class="fas fa-envelope"></i> Email *</label>
-                <input type="email" id="recruiterEmail" name="email" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="recruiterPassword"><i class="fas fa-lock"></i> Mot de passe *</label>
-                <input type="password" id="recruiterPassword" name="password" required>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="recruiterFirstName"><i class="fas fa-user"></i> Prénom *</label>
-                    <input type="text" id="recruiterFirstName" name="first_name" required>
-                </div>
-                <div class="form-group">
-                    <label for="recruiterLastName"><i class="fas fa-user"></i> Nom *</label>
-                    <input type="text" id="recruiterLastName" name="last_name" required>
-                </div>
-                <input type="hidden" name="role" value="recruiter">
-            </div>
-            
-            <!-- Permissions spécifiques aux recruteurs -->
-            <div class="form-group">
-                <h4><i class="fas fa-tasks"></i> Permissions</h4>
-                <div class="permissions-grid">
-                    <label class="permission-item">
-                        <input type="checkbox" name="can_manage_applications" checked>
-                        <span>Gérer les candidatures</span>
-                    </label>
-                    <label class="permission-item">
-                        <input type="checkbox" name="can_recommend_candidates" checked>
-                        <span>Recommander des candidats</span>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="closeAddRecruiterModal()">Annuler</button>
-                <button type="submit" class="btn-create">Créer recruteur</button>
-            </div>
-        </form>
     </div>
-</div>
 
-<!-- Modal Ajouter Chef Département -->
-<div class="modal-overlay" id="addDepartmentHeadModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h3><i class="fas fa-user-tie"></i> Ajouter un chef de département</h3>
-            <button class="modal-close" onclick="closeAddDepartmentHeadModal()">
-                <i class="fas fa-times"></i>
-            </button>
+    <!-- Modal Ajouter Chef Département -->
+    <div class="modal-overlay" id="addDepartmentHeadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-tie"></i> Ajouter un chef de département</h3>
+                <button class="modal-close" onclick="closeAddDepartmentHeadModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="addDepartmentHeadForm" class="modal-form">
+                <!-- Champs utilisateur de base -->
+                <div class="form-group">
+                    <label for="headEmail"><i class="fas fa-envelope"></i> Email *</label>
+                    <input type="email" id="headEmail" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="headPassword"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <input type="password" id="headPassword" name="password" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="headFirstName"><i class="fas fa-user"></i> Prénom *</label>
+                        <input type="text" id="headFirstName" name="first_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="headLastName"><i class="fas fa-user"></i> Nom *</label>
+                        <input type="text" id="headLastName" name="last_name" required>
+                    </div>
+                    <input type="hidden" name="role" value="department_head">
+                </div>
+                
+                <!-- Permissions spécifiques aux chefs de département -->
+                <div class="form-group">
+                    <h4><i class="fas fa-tasks"></i> Permissions</h4>
+                    <div class="permissions-grid">
+                        <label class="permission-item">
+                            <input type="checkbox" name="can_add_department" checked>
+                            <span>Ajouter des départements</span>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" name="can_manage_applications" checked>
+                            <span>Gérer les candidatures</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Attribution des départements -->
+                <div class="form-group">
+                    <h4><i class="fas fa-building"></i> Départements assignés</h4>
+                    <div class="departments-grid">
+                        {% for department in departments %}
+                        <label class="department-item">
+                            <input type="checkbox" name="departments" value="{{ department.id }}">
+                            <span>{{ department.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddDepartmentHeadModal()">Annuler</button>
+                    <button type="submit" class="btn-create">Créer chef département</button>
+                </div>
+            </form>
         </div>
-        
-        <form id="addDepartmentHeadForm" class="modal-form">
-            <!-- Champs utilisateur de base -->
-            <div class="form-group">
-                <label for="headEmail"><i class="fas fa-envelope"></i> Email *</label>
-                <input type="email" id="headEmail" name="email" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="headPassword"><i class="fas fa-lock"></i> Mot de passe *</label>
-                <input type="password" id="headPassword" name="password" required>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="headFirstName"><i class="fas fa-user"></i> Prénom *</label>
-                    <input type="text" id="headFirstName" name="first_name" required>
-                </div>
-                <div class="form-group">
-                    <label for="headLastName"><i class="fas fa-user"></i> Nom *</label>
-                    <input type="text" id="headLastName" name="last_name" required>
-                </div>
-                <input type="hidden" name="role" value="department_head">
-            </div>
-            
-            <!-- Permissions spécifiques aux chefs de département -->
-            <div class="form-group">
-                <h4><i class="fas fa-tasks"></i> Permissions</h4>
-                <div class="permissions-grid">
-                    <label class="permission-item">
-                        <input type="checkbox" name="can_add_department" checked>
-                        <span>Ajouter des départements</span>
-                    </label>
-                    <label class="permission-item">
-                        <input type="checkbox" name="can_manage_applications" checked>
-                        <span>Gérer les candidatures</span>
-                    </label>
-                </div>
-            </div>
-            
-            <!-- Attribution des départements -->
-            <div class="form-group">
-                <h4><i class="fas fa-building"></i> Départements assignés</h4>
-                <div class="departments-grid">
-                    {% for department in departments %}
-                    <label class="department-item">
-                        <input type="checkbox" name="departments" value="{{ department.id }}">
-                        <span>{{ department.name }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-            </div>
-            
-            <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="closeAddDepartmentHeadModal()">Annuler</button>
-                <button type="submit" class="btn-create">Créer chef département</button>
-            </div>
-        </form>
     </div>
-</div>
+    {% endif %}
 
     <!-- Modal Upload Logo -->
     <div class="modal-overlay" id="logoModal">
@@ -478,52 +500,65 @@
             </div>
         </div>
     </div>
-<script src="/static/company-profile/company-profile.js"></script>
+
+    <script src="/static/company-profile/company-profile.js"></script>
     <script>
-    // Initialisation spécifique à la page
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialisation du logo
-        const uploadArea = document.getElementById('logoUploadArea');
-        const fileInput = document.getElementById('logoFileInput');
-        
-        if (uploadArea && fileInput) {
-            // Click sur la zone d'upload
-            uploadArea.addEventListener('click', function() {
-                if (!isUploading) {
-                    fileInput.click();
-                }
-            });
+        // Initialisation spécifique à la page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si l'utilisateur est super admin
+            const isSuperAdmin = {{ 'true' if is_super_admin else 'false' }};
             
-            // Drag & Drop
-            uploadArea.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                if (!isUploading) {
-                    uploadArea.classList.add('dragover');
-                }
-            });
-            
-            uploadArea.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-            });
-            
-            uploadArea.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
+            // Si ce n'est pas un super admin, s'assurer que les modals sont bien cachés
+            if (!isSuperAdmin) {
+                const recruiterModal = document.getElementById('addRecruiterModal');
+                const deptHeadModal = document.getElementById('addDepartmentHeadModal');
                 
-                if (!isUploading && e.dataTransfer.files.length > 0) {
-                    handleFileSelect(e.dataTransfer.files[0]);
-                }
-            });
+                if (recruiterModal) recruiterModal.style.display = 'none';
+                if (deptHeadModal) deptHeadModal.style.display = 'none';
+            }
             
-            // Sélection de fichier
-            fileInput.addEventListener('change', function(e) {
-                if (!isUploading && e.target.files.length > 0) {
-                    handleFileSelect(e.target.files[0]);
-                }
-            });
-        }
-    });
-</script>
+            // Initialisation du logo
+            const uploadArea = document.getElementById('logoUploadArea');
+            const fileInput = document.getElementById('logoFileInput');
+            
+            if (uploadArea && fileInput) {
+                // Click sur la zone d'upload
+                uploadArea.addEventListener('click', function() {
+                    if (!isUploading) {
+                        fileInput.click();
+                    }
+                });
+                
+                // Drag & Drop
+                uploadArea.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    if (!isUploading) {
+                        uploadArea.classList.add('dragover');
+                    }
+                });
+                
+                uploadArea.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    
+                    if (!isUploading && e.dataTransfer.files.length > 0) {
+                        handleFileSelect(e.dataTransfer.files[0]);
+                    }
+                });
+                
+                // Sélection de fichier
+                fileInput.addEventListener('change', function(e) {
+                    if (!isUploading && e.target.files.length > 0) {
+                        handleFileSelect(e.target.files[0]);
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

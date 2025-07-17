@@ -1114,3 +1114,99 @@ body {
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--card-border);
 }
+/* Styles pour le bouton recommander */
+.btn-action.recommend {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-action.recommend:hover {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+}
+
+/* Icône de confirmation pour recommandation */
+.confirmation-icon.recommend {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 24px;
+}
+
+/* Formulaire de recommandation */
+.recommendation-form {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(243, 156, 18, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #f39c12;
+}
+
+.recommendation-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.recommendation-form textarea,
+.recommendation-form select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.recommendation-form textarea:focus,
+.recommendation-form select:focus {
+  outline: none;
+  border-color: #f39c12;
+  box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1);
+}
+
+/* Bouton de confirmation recommander */
+.btn-confirm.recommend {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  border: none;
+}
+
+.btn-confirm.recommend:hover {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+}
+
+/* Badge de statut recommandé */
+.status-badge.recommended {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  font-weight: 600;
+}
+
+/* Animation pour le bouton recommander */
+@keyframes recommend-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.btn-action.recommend:active {
+  animation: recommend-pulse 0.3s ease;
+}
