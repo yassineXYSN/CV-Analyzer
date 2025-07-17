@@ -167,6 +167,19 @@ class Job(Base):
     # Statistiques
     applications_count = Column(Integer, default=0)
 
+class JobSkill(Base):
+    __tablename__ = "job_skills"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    skill_name = Column(String(100), nullable=False)
+    skill_level = Column(Enum('beginner', 'intermediate', 'advanced', 'expert'), default='intermediate')
+    is_required = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.now())
+    
+    # Relationship
+    job = relationship("Job", backref="job_skills")
+
 class Application(Base):
     __tablename__ = "applications"
     

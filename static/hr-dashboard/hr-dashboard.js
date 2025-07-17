@@ -9,6 +9,7 @@ let currentUser = null
 const expandedDepartments = new Set()
 let filteredDepartments = []
 let isSearchActive = false
+let jobSkills = [] // Array to store selected skills
 
 // Initialisation du dashboard
 document.addEventListener("DOMContentLoaded", () => {
@@ -328,6 +329,11 @@ function openJobModal(preselectedDeptId = null) {
   closeAllModals()
   loadDepartmentsInSelect("jobDepartment")
   loadEmployeesInSelect("jobEmployee")
+
+  // Clear and initialize skills list
+  jobSkills = []
+  renderSkillsList()
+
   document.getElementById("jobModal").style.display = "flex"
 
   if (preselectedDeptId) {
@@ -335,12 +341,18 @@ function openJobModal(preselectedDeptId = null) {
       document.getElementById("jobDepartment").value = preselectedDeptId
     }, 100)
   }
+
+  // Focus on first input
+  setTimeout(() => {
+    document.getElementById("jobTitle").focus()
+  }, 200)
 }
 
 function closeJobModal() {
   console.log("💼 FRONTEND: Fermeture modal poste")
   document.getElementById("jobModal").style.display = "none"
   document.getElementById("jobForm").reset()
+  clearJobSkills() // Clear skills when closing modal
 }
 
 function closeEmployeeModal() {
@@ -477,6 +489,141 @@ async function createEmployee() {
   }
 }
 
+// Function to add a skill to the job
+function addSkill() {
+  console.log("🔧 FRONTEND: Tentative d'ajout de compétence")
+
+  const skillNameInput = document.getElementById("skillNameInput")
+  const skillLevelInput = document.getElementById("skillLevelInput")
+  const skillRequiredInput = document.getElementById("skillRequiredInput")
+
+  console.log("🔍 FRONTEND: Vérification des éléments:", {
+    skillNameInput: !!skillNameInput,
+    skillLevelInput: !!skillLevelInput,
+    skillRequiredInput: !!skillRequiredInput,
+  })
+
+  if (!skillNameInput || !skillLevelInput || !skillRequiredInput) {
+    console.error("❌ FRONTEND: Éléments d'entrée de compétences non trouvés")
+    showNotification("Erreur: Éléments de formulaire manquants", "error")
+    return
+  }
+
+  const skillName = skillNameInput.value.trim()
+  const skillLevel = skillLevelInput.value
+  const isRequired = skillRequiredInput.checked
+
+  console.log("📝 FRONTEND: Données de compétence:", { skillName, skillLevel, isRequired })
+
+  if (!skillName) {
+    showNotification("Veuillez saisir le nom de la compétence", "warning")
+    skillNameInput.focus()
+    return
+  }
+
+  // Check if skill already exists
+  const existingSkill = jobSkills.find((skill) => skill.name.toLowerCase() === skillName.toLowerCase())
+
+  if (existingSkill) {
+    showNotification("Cette compétence a déjà été ajoutée", "warning")
+    skillNameInput.focus()
+    return
+  }
+
+  // Add skill to array
+  const newSkill = {
+    name: skillName,
+    level: skillLevel,
+    required: isRequired,
+  }
+
+  jobSkills.push(newSkill)
+
+  // Clear inputs
+  skillNameInput.value = ""
+  skillLevelInput.value = "intermediate"
+  skillRequiredInput.checked = true
+
+  // Refresh skills display
+  renderSkillsList()
+
+  console.log("✅ FRONTEND: Compétence ajoutée:", newSkill)
+  console.log("📋 FRONTEND: Total compétences:", jobSkills.length)
+  showNotification(`Compétence "${skillName}" ajoutée avec succès`, "success")
+
+  // Focus back to skill name input for easy adding of multiple skills
+  skillNameInput.focus()
+}
+
+// Function to remove a skill
+function removeSkill(index) {
+  if (index >= 0 && index < jobSkills.length) {
+    const removedSkill = jobSkills.splice(index, 1)[0]
+    renderSkillsList()
+    console.log("🗑️ FRONTEND: Compétence supprimée:", removedSkill)
+    showNotification(`Compétence "${removedSkill.name}" supprimée`, "info")
+  }
+}
+
+// Function to render the skills list
+function renderSkillsList() {
+  const skillsList = document.getElementById("skillsList")
+
+  if (!skillsList) {
+    console.error("❌ FRONTEND: Element skillsList non trouvé")
+    return
+  }
+
+  console.log("🎨 FRONTEND: Rendu de la liste des compétences, total:", jobSkills.length)
+
+  if (jobSkills.length === 0) {
+    skillsList.innerHTML = `
+            <div class="skills-empty">
+                <i class="fas fa-cogs"></i>
+                <p>Aucune compétence ajoutée</p>
+                <small>Ajoutez des compétences requises pour ce poste</small>
+            </div>
+        `
+    return
+  }
+
+  skillsList.innerHTML = jobSkills
+    .map(
+      (skill, index) => `
+        <div class="skill-item">
+            <div class="skill-info">
+                <span class="skill-name">${skill.name}</span>
+                <span class="skill-level ${skill.level}">${getLevelText(skill.level)}</span>
+                <span class="skill-required ${skill.required ? "required" : "optional"}">
+                    ${skill.required ? "Requis" : "Optionnel"}
+                </span>
+            </div>
+            <button class="btn-remove-skill" onclick="removeSkill(${index})" title="Supprimer" type="button">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `,
+    )
+    .join("")
+}
+
+// Helper function to get level text in French
+function getLevelText(level) {
+  const levelTexts = {
+    beginner: "Débutant",
+    intermediate: "Intermédiaire",
+    advanced: "Avancé",
+    expert: "Expert",
+  }
+  return levelTexts[level] || level
+}
+
+// Function to clear job skills when modal is closed
+function clearJobSkills() {
+  jobSkills = []
+  renderSkillsList()
+}
+
 // Fonction pour créer un poste
 async function createJob() {
   console.log("💼 FRONTEND: Début création poste")
@@ -492,6 +639,13 @@ async function createJob() {
   const requirements = document.getElementById("jobRequirements").value.trim()
   const responsibilities = document.getElementById("jobResponsibilities").value.trim()
   const assignedEmployeeId = document.getElementById("jobEmployee").value
+
+  // Prepare skills data for API
+  const skillsData = jobSkills.map((skill) => ({
+    skill_name: skill.name,
+    skill_level: skill.level,
+    is_required: skill.required,
+  }))
 
   if (!title || !departmentId || !employmentType || !description) {
     showNotification("Veuillez remplir tous les champs obligatoires", "warning")
@@ -510,6 +664,7 @@ async function createJob() {
     requirements: requirements || "",
     responsibilities: responsibilities || "",
     assigned_employee_id: assignedEmployeeId ? Number.parseInt(assignedEmployeeId) : null,
+    skills: skillsData,
   }
 
   console.log("📤 FRONTEND: Envoi données poste:", jobData)
@@ -801,7 +956,7 @@ function loadEmployeesInSelect(selectId) {
 }
 
 function viewEmployeeProfile(employeeId) {
-  const employee = employees.find(e => e.id === employeeId)
+  const employee = employees.find((e) => e.id === employeeId)
 
   if (!employee) {
     showNotification("Employé introuvable", "error")
@@ -816,12 +971,6 @@ function viewEmployeeProfile(employeeId) {
     console.log("➡️ Ouvrir comme employé normal")
     window.open(`/employee-profile?id=${employeeId}`, "_blank")
   }
-}
-
-// Fonction pour voir les détails d'un poste
-function viewJobDetails(jobId) {
-  console.log("💼 FRONTEND: Navigation vers job-details pour le poste:", jobId)
-  window.location.href = `/job-details?id=${jobId}`
 }
 
 // Fonctions placeholder
@@ -986,8 +1135,7 @@ function filterApplicationByName() {
 
   const filtered = applications.filter((app) => {
     return (
-      app.candidate_name.toLowerCase().includes(searchTerm) ||
-      app.candidate_email.toLowerCase().includes(searchTerm)
+      app.candidate_name.toLowerCase().includes(searchTerm) || app.candidate_email.toLowerCase().includes(searchTerm)
     )
   })
 
@@ -1011,7 +1159,8 @@ function renderApplicationsList(list) {
   }
 
   container.innerHTML = list
-    .map((app) => `
+    .map(
+      (app) => `
       <div class="application-card ${app.status}">
         <div class="application-header">
           <div class="applicant-info">
@@ -1048,7 +1197,8 @@ function renderApplicationsList(list) {
           </button>
         </div>
       </div>
-    `)
+    `,
+    )
     .join("")
 }
 
@@ -1087,13 +1237,17 @@ function renderEmployees() {
     return
   }
 
-  container.innerHTML = employees.map(emp => `
+  container.innerHTML = employees
+    .map(
+      (emp) => `
     <div class="employee-card">
       <h4>${emp.first_name} ${emp.last_name}</h4>
       <p><strong>Poste:</strong> ${emp.position}</p>
       <p><strong>Email:</strong> ${emp.email}</p>
       <p><strong>Département:</strong> ${emp.department_name}</p>
-      <p><strong>Compétences:</strong> ${(emp.skills || []).map(s => s.name).join(", ") || "Non spécifiées"}</p>
+      <p><strong>Compétences:</strong> ${(emp.skills || []).map((s) => s.name).join(", ") || "Non spécifiées"}</p>
     </div>
-  `).join("")
+  `,
+    )
+    .join("")
 }

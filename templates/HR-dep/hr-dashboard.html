@@ -404,6 +404,40 @@
                             <option value="">Aucun employé assigné</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-cogs"></i>
+                            Compétences requises
+                        </label>
+                        <div class="skills-container">
+                            <div class="skills-input-section">
+                                <div class="skill-input-row">
+                                    <input 
+                                        type="text" 
+                                        id="skillNameInput" 
+                                        class="form-input" 
+                                        placeholder="Nom de la compétence (ex: Python, JavaScript...)"
+                                        style="flex: 1; margin-right: 10px;"
+                                    >
+                                    <select id="skillLevelInput" class="form-select" style="width: 150px; margin-right: 10px;">
+                                        <option value="beginner">Débutant</option>
+                                        <option value="intermediate" selected>Intermédiaire</option>
+                                        <option value="advanced">Avancé</option>
+                                        <option value="expert">Expert</option>
+                                    </select>
+                                    <label class="skill-required-label">
+                                        <input type="checkbox" id="skillRequiredInput" checked> Requis
+                                    </label>
+                                    <button type="button" class="btn-add-skill" onclick="addSkill()">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="skills-list" id="skillsList">
+                                <!-- Les compétences ajoutées apparaîtront ici -->
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -553,5 +587,19 @@
     </div>
 
     <script src="/static/hr-dashboard/hr-dashboard.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Enter key support for skill input
+    const skillNameInput = document.getElementById('skillNameInput');
+    if (skillNameInput) {
+        skillNameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addSkill();
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>

@@ -2,13 +2,16 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from databasehr.database import SessionLocal
 # Ajout de l'import de Company
-from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, Company
+from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, Company, JobSkill
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
-from typing import Optional 
+from typing import Optional, List
 
-router = APIRouter()
+class SkillRequest(BaseModel):
+    skill_name: str
+    skill_level: str = "intermediate"
+    is_required: bool = True
 
 class JobRequest(BaseModel):
     title: str
@@ -22,6 +25,9 @@ class JobRequest(BaseModel):
     requirements: Optional[str] = ""
     responsibilities: Optional[str] = ""
     assigned_employee_id: Optional[int] = None
+    skills: Optional[List[SkillRequest]] = []
+
+router = APIRouter()
 
 @router.post("/api/create-job")
 async def create_job(job_data: JobRequest):
@@ -83,18 +89,76 @@ async def create_job(job_data: JobRequest):
             db.add(new_job)
             db.commit()
             db.refresh(new_job)
-            
+
+            # Add skills to the job
+            skills_added = 0
+            skills_errors = []
+
+            if job_data.skills:
+                print(f"🔧 BACKEND: Tentative d'ajout de {len(job_data.skills)} compétences pour le poste {new_job.id}")
+                
+                for i, skill_data in enumerate(job_data.skills):
+                    try:
+                        # Validate skill data
+                        if not skill_data.skill_name or not skill_data.skill_name.strip():
+                            skills_errors.append(f"Compétence {i+1}: Nom manquant")
+                            continue
+                            
+                        if skill_data.skill_level not in ['beginner', 'intermediate', 'advanced', 'expert']:
+                            skills_errors.append(f"Compétence {skill_data.skill_name}: Niveau invalide")
+                            continue
+                        
+                        # Check for duplicate skills
+                        existing_skill = db.query(JobSkill).filter(
+                            JobSkill.job_id == new_job.id,
+                            JobSkill.skill_name.ilike(skill_data.skill_name.strip())
+                        ).first()
+                        
+                        if existing_skill:
+                            skills_errors.append(f"Compétence {skill_data.skill_name}: Déjà ajoutée")
+                            continue
+                        
+                        job_skill = JobSkill(
+                            job_id=new_job.id,
+                            skill_name=skill_data.skill_name.strip(),
+                            skill_level=skill_data.skill_level,
+                            is_required=skill_data.is_required
+                        )
+                        
+                        db.add(job_skill)
+                        skills_added += 1
+                        print(f"✅ BACKEND: Compétence ajoutée: {skill_data.skill_name} ({skill_data.skill_level}, {'Requis' if skill_data.is_required else 'Optionnel'})")
+                        
+                    except Exception as skill_error:
+                        error_msg = f"Erreur ajout compétence {skill_data.skill_name}: {str(skill_error)}"
+                        skills_errors.append(error_msg)
+                        print(f"❌ BACKEND: {error_msg}")
+
+            # Commit all changes including skills
+            db.commit()
+
+            # Prepare response message
+            message = f"Poste '{job_data.title}' créé avec succès"
+            if skills_added > 0:
+                message += f" avec {skills_added} compétence(s)"
+            if skills_errors:
+                message += f". Erreurs: {'; '.join(skills_errors[:3])}"  # Show first 3 errors
+
             return {
                 "success": True,
-                "message": f"Poste '{job_data.title}' créé avec succès",
-                "job": new_job
+                "message": message,
+                "job_id": new_job.id,
+                "skills_added": skills_added,
+                "skills_errors": skills_errors
             }
         except Exception as e:
             db.rollback()
+            print(f"❌ BACKEND: Erreur création poste: {str(e)}")
             return {"success": False, "message": f"Erreur lors de la création du poste: {str(e)}"}
         finally:
             db.close()
     except Exception as e:
+        print(f"❌ BACKEND: Erreur interne: {str(e)}")
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
 @router.get("/api/jobs")
