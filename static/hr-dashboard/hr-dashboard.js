@@ -329,7 +329,7 @@ function closeRecommendModal() {
       if (modal.parentElement) {
         modal.remove()
       }
-    }, 300)
+    }, 10)
   }
 }
 
@@ -378,9 +378,13 @@ async function confirmRecommendation(applicationId) {
 
     const result = await response.json()
     hideLoading()
-
+    
     if (result.success) {
+      const confirmBtn = document.querySelector(".modal-footer .btn-primary.recommend")
+      if (confirmBtn) confirmBtn.disabled = true
+      closeRecommendModal()
       console.log("👍 Candidature recommandée avec succès")
+
       showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
 
       // Recharger les candidatures pour voir les changements
@@ -1875,3 +1879,303 @@ function hideLoading() {
 }
 
 console.log("✅ FRONTEND: Script chargé avec succès")
+// FONCTION MISE À JOUR: Rendre les boutons d'action selon le rôle utilisateur
+function renderApplicationActionButtons(app) {
+  if (!currentUser) return ""
+
+  // Pour les chefs de département : seulement le bouton recommander
+  if (currentUser.role === "department_head") {
+    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
+      // Échapper les caractères spéciaux pour éviter les erreurs JavaScript
+      const safeCandidateName = app.candidate_name.replace(/'/g, "\\'").replace(/"/g, '\\"')
+      const safeJobTitle = app.job_title.replace(/'/g, "\\'").replace(/"/g, '\\"')
+
+      return `
+        <button class="app-btn recommend" onclick="showRecommendConfirmation(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
+          <i class="fas fa-thumbs-up"></i> Recommander
+        </button>
+      `
+    }
+    // Si déjà recommandé, afficher un indicateur
+    if (app.is_recommended) {
+      return `
+        <div class="recommendation-status">
+          <i class="fas fa-check-circle"></i> Déjà recommandé
+        </div>
+      `
+    }
+    return "" // Pas de boutons pour les autres statuts
+  }
+
+  // Pour les recruteurs et super admins : boutons complets selon le statut
+  if (app.status === "pending") {
+    return `
+      <button class="app-btn review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+        <i class="fas fa-eye"></i> Examiner
+      </button>
+      <button class="app-btn accept" onclick="showAcceptConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}', '${app.department_name}')">
+        <i class="fas fa-check"></i> Accepter
+      </button>
+      <button class="app-btn reject" onclick="showRejectConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}')">
+        <i class="fas fa-times"></i> Rejeter
+      </button>
+    `
+  } else if (app.status === "reviewed") {
+    return `
+      <button class="app-btn schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
+        <i class="fas fa-calendar"></i> Programmer entretien
+      </button>
+      <button class="app-btn accept" onclick="showAcceptConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}', '${app.department_name}')">
+        <i class="fas fa-check-circle"></i> Accepter
+      </button>
+      <button class="app-btn reject" onclick="showRejectConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}')">
+        <i class="fas fa-times"></i> Rejeter
+      </button>
+    `
+  } else if (app.status === "interview_scheduled") {
+    return `
+      <button class="app-btn complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+        <i class="fas fa-check-double"></i> Entretien terminé
+      </button>
+      <button class="app-btn accept" onclick="showAcceptConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}', '${app.department_name}')">
+        <i class="fas fa-user-check"></i> Accepter
+      </button>
+      <button class="app-btn reject" onclick="showRejectConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}')">
+        <i class="fas fa-times"></i> Rejeter
+      </button>
+    `
+  }
+
+  return ""
+}
+
+// FONCTION IDENTIQUE À JOB-DETAILS: Afficher la modal de confirmation de recommandation
+function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
+  console.log(`👍 Affichage confirmation recommandation pour ${candidateName} (ID: ${applicationId})`)
+
+  if (!currentUser || currentUser.role !== "department_head") {
+    showNotification("Seuls les chefs de département peuvent recommander des candidatures", "warning")
+    return
+  }
+
+  const safeCandidateName = candidateName.replace(/'/g, "\\'").replace(/"/g, '\\"')
+  const safeJobTitle = jobTitle.replace(/'/g, "\\'").replace(/"/g, '\\"')
+
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay"
+  modal.style.opacity = "1"
+  modal.style.display = "flex"
+
+  modal.innerHTML = `
+    <div class="modal-content recommend-modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-thumbs-up"></i> Recommander cette candidature</h3>
+        <button class="modal-close" onclick="closeRecommendConfirmationModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="candidate-info-modal">
+          <div class="candidate-avatar-modal">${candidateName
+            .split(" ")
+            .map((n) => n[0])
+            .join("")}</div>
+          <div>
+            <h4>${candidateName}</h4>
+            <p><strong>Poste:</strong> ${jobTitle}</p>
+            <p><strong>Votre rôle:</strong> Chef de département</p>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-comment"></i>
+            Commentaire de recommandation *
+          </label>
+          <textarea 
+            id="recommendationComment" 
+            class="form-textarea" 
+            placeholder="Expliquez pourquoi vous recommandez ce candidat (compétences, expérience, adéquation au poste...)..."
+            rows="4"
+            required
+          ></textarea>
+          <small class="form-help">Ce commentaire sera visible par les recruteurs et super admins</small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-flag"></i>
+            Niveau de priorité de votre recommandation
+          </label>
+          <select id="recommendationPriority" class="form-select">
+            <option value="normal">📋 Recommandation normale</option>
+            <option value="high">⭐ Recommandation forte</option>
+            <option value="urgent">🔥 Recommandation urgente</option>
+          </select>
+          <small class="form-help">Choisissez le niveau selon l'adéquation du candidat</small>
+        </div>
+        
+        <div class="recommendation-info">
+          <h5><i class="fas fa-info-circle"></i> Cette action va :</h5>
+          <ul>
+            <li><i class="fas fa-star text-warning"></i> Marquer la candidature comme recommandée</li>
+            <li><i class="fas fa-bell text-info"></i> Notifier les recruteurs et super admins</li>
+            <li><i class="fas fa-arrow-up text-success"></i> Donner une priorité élevée à cette candidature</li>
+            <li><i class="fas fa-user-tie text-primary"></i> Associer votre nom à cette recommandation</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeRecommendConfirmationModal()">
+          <i class="fas fa-times"></i> Annuler
+        </button>
+        <button class="btn-primary recommend" onclick="confirmRecommendApplication(${applicationId})">
+          <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
+        </button>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      closeRecommendConfirmationModal()
+    }
+  })
+
+  document.addEventListener("keydown", handleEscapeKey)
+
+  // Focus sur le textarea
+  setTimeout(() => {
+    const commentField = document.getElementById("recommendationComment")
+    if (commentField) {
+      commentField.focus()
+    }
+  }, 100)
+}
+
+// FONCTION IDENTIQUE À JOB-DETAILS: Confirmer la recommandation
+async function confirmRecommendApplication(applicationId) {
+  console.log(`👍 Confirmation recommandation candidature ${applicationId}`)
+
+  try {
+    const commentElement = document.getElementById("recommendationComment")
+    const priorityElement = document.getElementById("recommendationPriority")
+
+    if (!commentElement || !priorityElement) {
+      showNotification("Erreur: éléments du formulaire non trouvés", "error")
+      return
+    }
+
+    const comment = commentElement.value.trim()
+    const priority = priorityElement.value
+
+    if (!comment) {
+      showNotification("Le commentaire de recommandation est obligatoire", "warning")
+      commentElement.focus()
+      return
+    }
+
+    if (comment.length < 10) {
+      showNotification("Le commentaire doit contenir au moins 10 caractères", "warning")
+      commentElement.focus()
+      return
+    }
+
+    closeRecommendConfirmationModal()
+    showLoading("Traitement de votre recommandation...")
+
+    const response = await fetch(`/api/applications/${applicationId}/recommend`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        comment: comment,
+        priority: priority,
+      }),
+    })
+
+    const result = await response.json()
+    hideLoading()
+
+    if (result.success) {
+      console.log("👍 Candidature recommandée avec succès")
+      showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
+
+      // Recharger les candidatures pour voir les changements
+      setTimeout(async () => {
+        console.log("🔄 Rechargement des données après recommandation...")
+        await loadApplications()
+      }, 1000)
+
+      setTimeout(() => {
+        showNotification("🎯 Les recruteurs et super admins ont été notifiés de votre recommandation", "info")
+      }, 2000)
+    } else {
+      console.error("❌ Erreur recommandation candidature:", result.message)
+      showNotification(`❌ ${result.message}`, "error")
+    }
+  } catch (error) {
+    hideLoading()
+    console.error("❌ Erreur réseau recommandation candidature:", error)
+    showNotification("❌ Erreur de connexion lors de la recommandation", "error")
+  }
+}
+
+// FONCTION IDENTIQUE À JOB-DETAILS: Fermer la modal de confirmation
+function closeRecommendConfirmationModal() {
+  const modal = document.querySelector(".modal-overlay")
+  if (modal) {
+    modal.classList.add("closing")
+    const recommendModal = modal.querySelector(".recommend-modal")
+    if (recommendModal) {
+      recommendModal.classList.add("closing")
+    }
+
+    setTimeout(() => {
+      modal.remove()
+      document.removeEventListener("keydown", handleEscapeKey)
+    }, 300)
+  }
+}
+
+// FONCTION IDENTIQUE À JOB-DETAILS: Gérer la touche Escape
+function handleEscapeKey(e) {
+  if (e.key === "Escape") {
+    closeRecommendConfirmationModal()
+  }
+}
+
+// Ajouter les styles CSS pour les boutons de recommandation
+const recommendationStyles = document.createElement("style")
+recommendationStyles.textContent = `
+  .app-btn.recommend {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    animation: pulse 2s infinite;
+  }
+
+  .app-btn.recommend:hover {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+  }
+
+  .recommendation-status {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    font-size: 0.85rem;
+  }
+`
+document.head.appendChild(recommendationStyles)
