@@ -351,7 +351,7 @@ function renderApplications(filter = "all") {
               ? `
             <div class="recommendation-comment">
               <i class="fas fa-comment-alt"></i>
-              <p class="recommendation-title">Commentaire de recommandation:</p>
+              <strong style="color:black">Commentaire de recommandation:</strong>
               <p>"${app.recommendation_comment}"</p>
               ${app.recommended_by ? `<small>— ${app.recommended_by}</small>` : ""}
             </div>
@@ -392,12 +392,7 @@ function renderCandidateActions(app) {
     } else if (app.is_recommended) {
       console.log("✅ Affichage statut recommandé")
       return `
-        <div class="recommendation-success">
-          <i class="fas fa-check-circle"></i>
-          <div class="recommendation-success-text">
-            Candidature recommandée avec succès !
-          </div>
-        </div>
+
         <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
           <i class="fas fa-info-circle"></i> Voir profil
         </button>

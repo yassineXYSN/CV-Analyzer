@@ -84,23 +84,33 @@ function renderApplications(filter = "all") {
   }
 
   container.innerHTML = filteredApps
-    .map((app) => `
+    .map(
+      (app) => `
       <div class="application-card ${app.status} ${app.is_recommended ? "has-recommendation" : ""}">
         <div class="application-header">
           <div class="applicant-info">
             <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
             <div class="applicant-details">
               <h4>${app.candidate_name}
-                ${app.is_recommended ? `
+                ${
+                  app.is_recommended
+                    ? `
                   <span class="recommendation-badge ${app.recommendation_priority}" 
                          title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
                     <i class="fas fa-star"></i> 
-                    ${app.recommendation_priority === "urgent" ? "URGENT" : 
-                      app.recommendation_priority === "high" ? "PRIORITÉ HAUTE" : "RECOMMANDÉ"}
+                    ${
+                      app.recommendation_priority === "urgent"
+                        ? "URGENT"
+                        : app.recommendation_priority === "high"
+                          ? "PRIORITÉ HAUTE"
+                          : "RECOMMANDÉ"
+                    }
                   </span>
-                ` : currentUser.role === "department_head" ? 
-                  '<span class="no-recommendation"><i class="fas fa-clock"></i> Non recommandé</span>' : 
-                  ""}
+                `
+                    : currentUser.role === "department_head"
+                      ? '<span class="no-recommendation"><i class="fas fa-clock"></i> Non recommandé</span>'
+                      : ""
+                }
               </h4>
               <p>${app.candidate_email}</p>
               <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
@@ -108,21 +118,27 @@ function renderApplications(filter = "all") {
           </div>
           <div class="application-status ${app.status}">
             ${getStatusText(app.status)}
-            ${app.is_recommended && app.recommendation_priority !== "normal" ? 
-              `<span class="priority-indicator ${app.recommendation_priority}">
+            ${
+              app.is_recommended && app.recommendation_priority !== "normal"
+                ? `<span class="priority-indicator ${app.recommendation_priority}">
                 ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
-              </span>` : 
-              ""}
+              </span>`
+                : ""
+            }
           </div>
         </div>
         
-        ${app.is_recommended ? `
+        ${
+          app.is_recommended
+            ? `
           <div class="recommendation-info">
             <i class="fas fa-user-tie"></i>
             Recommandé par: ${app.recommended_by || "N/A"} 
             ${app.recommendation_date ? `le ${formatDate(app.recommendation_date)}` : ""}
           </div>
-        ` : ""}
+        `
+            : ""
+        }
         
         <div class="application-job">
           <div class="job-info">
@@ -136,14 +152,18 @@ function renderApplications(filter = "all") {
           </div>
         </div>
         
-        ${app.recommendation_comment ? `
+        ${
+          app.recommendation_comment
+            ? `
           <div class="recommendation-comment">
             <i class="fas fa-comment-alt"></i>
             <strong>Commentaire de recommandation:</strong>
             <p>"${app.recommendation_comment}"</p>
             ${app.recommended_by ? `<small>— ${app.recommended_by}</small>` : ""}
           </div>
-        ` : ""}
+        `
+            : ""
+        }
         
         <div class="application-actions">
           <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
@@ -155,9 +175,10 @@ function renderApplications(filter = "all") {
           ${renderApplicationActionButtons(app)}
         </div>
       </div>
-    `)
+    `,
+    )
     .join("")
-}     
+}
 
 // NOUVELLE FONCTION: Rendre les boutons d'action selon le rôle utilisateur
 function renderApplicationActionButtons(app) {
@@ -189,28 +210,7 @@ function renderApplicationActionButtons(app) {
 
   // Pour les recruteurs : boutons complets
   if (currentUser.role === "recruiter") {
-    if (app.status === "pending" || app.is_recommended) {
-      return `
-        <button class="app-btn examine" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-          <i class="fas fa-eye"></i> Examiner
-        </button>
-        <button class="app-btn accept" onclick="acceptApplication(${app.id})">
-          <i class="fas fa-check"></i> Accepter
-        </button>
-        <button class="app-btn reject" onclick="rejectApplication(${app.id})">
-          <i class="fas fa-times"></i> Rejeter
-        </button>
-      `
-    } else if (app.status === "reviewed") {
-      return `
-        <button class="app-btn accept" onclick="acceptApplication(${app.id})">
-          <i class="fas fa-check"></i> Accepter
-        </button>
-        <button class="app-btn reject" onclick="rejectApplication(${app.id})">
-          <i class="fas fa-times"></i> Rejeter
-        </button>
-      `
-    }
+    return ""
   }
 
   // Pour les super admins : pas de boutons d'action
@@ -401,171 +401,6 @@ async function confirmRecommendation(applicationId) {
   }
 }
 
-// FONCTION MODIFIÉE: Accepter une candidature (seulement pour recruteurs et super admins)
-async function acceptApplication(applicationId) {
-  if (currentUser && currentUser.role === "department_head") {
-    showNotification("Les chefs de département ne peuvent pas accepter directement. Utilisez 'Recommander'.", "warning")
-    return
-  }
-
-  if (confirm("Êtes-vous sûr de vouloir accepter cette candidature ?")) {
-    try {
-      showLoading("Traitement de l'acceptation...")
-
-      const response = await fetch(`/api/accept-application/${applicationId}`, {
-        method: "POST",
-      })
-
-      const result = await response.json()
-      hideLoading()
-
-      if (result.success) {
-        showNotification(result.message, "success")
-        await loadApplications()
-      } else {
-        showNotification(result.message, "error")
-      }
-    } catch (error) {
-      hideLoading()
-      console.error("❌ Erreur acceptation candidature:", error)
-      showNotification("Erreur de connexion", "error")
-    }
-  }
-}
-
-// FONCTION MODIFIÉE: Rejeter une candidature (seulement pour recruteurs et super admins)
-async function rejectApplication(applicationId) {
-  if (currentUser && currentUser.role === "department_head") {
-    showNotification(
-      "Les chefs de département ne peuvent pas rejeter directement. Utilisez 'Recommander' si approprié.",
-      "warning",
-    )
-    return
-  }
-
-  if (confirm("Êtes-vous sûr de vouloir rejeter cette candidature ?")) {
-    try {
-      showLoading("Traitement du rejet...")
-
-      const response = await fetch(`/api/applications/${applicationId}/update-status`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: "rejected",
-        }),
-      })
-
-      const result = await response.json()
-      hideLoading()
-
-      if (result.success) {
-        showNotification(result.message, "success")
-        await loadApplications()
-      } else {
-        showNotification(result.message, "error")
-      }
-    } catch (error) {
-      hideLoading()
-      console.error("❌ Erreur rejet candidature:", error)
-      showNotification("Erreur de connexion", "error")
-    }
-  }
-}
-
-// FONCTION MODIFIÉE: Mettre à jour le statut d'une candidature
-async function updateApplicationStatus(applicationId, newStatus) {
-  if (currentUser && currentUser.role === "department_head" && newStatus !== "recommended") {
-    showNotification("Les chefs de département peuvent uniquement recommander des candidatures.", "warning")
-    return
-  }
-
-  try {
-    showLoading("Mise à jour du statut...")
-
-    const response = await fetch(`/api/applications/${applicationId}/update-status`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        status: newStatus,
-      }),
-    })
-
-    const result = await response.json()
-    hideLoading()
-
-    if (result.success) {
-      showNotification(result.message, "success")
-      await loadApplications()
-    } else {
-      showNotification(result.message, "error")
-    }
-  } catch (error) {
-    hideLoading()
-    console.error("❌ Erreur mise à jour statut:", error)
-    showNotification("Erreur de connexion", "error")
-  }
-}
-
-// Fonctions utilitaires pour les candidatures
-function getInitials(name) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-}
-
-function getFilterText(filter) {
-  const filterTexts = {
-    all: "",
-    pending: "en attente",
-    reviewed: "examinées",
-    interview_scheduled: "avec entretien programmé",
-    accepted: "acceptées",
-    rejected: "rejetées",
-    recommended: "recommandées",
-  }
-  return filterTexts[filter] || ""
-}
-
-function getStatusText(status) {
-  const statusTexts = {
-    pending: "En attente",
-    reviewed: "Examinée",
-    interview_scheduled: "Entretien programmé",
-    accepted: "Acceptée",
-    rejected: "Rejetée",
-  }
-  return statusTexts[status] || status
-}
-
-function formatDate(dateString) {
-  if (!dateString) return "Date inconnue"
-  const date = new Date(dateString)
-  return date.toLocaleDateString("fr-FR")
-}
-
-// Fonctions d'interaction avec les candidatures
-function viewCandidateProfile(candidateId) {
-  console.log("👤 FRONTEND: Ouverture profil candidat:", candidateId)
-  window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
-}
-
-// FONCTION CORRIGÉE: Voir les détails d'un poste
-function viewJobDetails(jobId) {
-  console.log("💼 FRONTEND: Navigation vers job-details pour le poste:", jobId)
-  window.location.href = `/job-details?id=${jobId}`
-}
-
-function filterApplications(status) {
-  console.log("🔍 FRONTEND: Filtrage candidatures:", status)
-  renderApplications(status)
-}
-
 // Fonction pour charger l'utilisateur actuel
 async function loadCurrentUser() {
   console.log("👤 FRONTEND: Chargement utilisateur actuel")
@@ -627,7 +462,7 @@ function adaptInterfaceForRole() {
       console.log("🚫 FRONTEND: Bouton + sidebar départements masqué")
     }
 
-    // MODIFICATION 2: Ajouter un indicateur visuel SANS icône
+    // Ajouter un indicateur visuel
     const roleElement = document.getElementById("userRoleDisplay")
     if (roleElement) {
       roleElement.style.color = "#f59e0b"
@@ -665,7 +500,7 @@ function adaptInterfaceForRole() {
       console.log("🚫 FRONTEND: Bouton + sidebar départements masqué pour recruteur")
     }
 
-    // MODIFICATION 2: Ajouter un indicateur visuel SANS icône
+    // Ajouter un indicateur visuel
     const roleElement = document.getElementById("userRoleDisplay")
     if (roleElement) {
       roleElement.style.color = "#10b981"
@@ -676,7 +511,7 @@ function adaptInterfaceForRole() {
   else if (currentUser.role === "super_admin") {
     console.log("👑 FRONTEND: Mode Super Admin - Accès complet")
 
-    // MODIFICATION 2: Ajouter un indicateur visuel SANS icône
+    // Ajouter un indicateur visuel
     const roleElement = document.getElementById("userRoleDisplay")
     if (roleElement) {
       roleElement.style.color = "#dc2626"
@@ -789,11 +624,17 @@ function logout() {
   window.location.href = "/hr-login"
 }
 
-// Gestion des modals
+// Gestion des modals - FONCTIONS AMÉLIORÉES POUR LE CSS
 function closeAllModals() {
-  document.getElementById("departmentModal").style.display = "none"
-  document.getElementById("jobModal").style.display = "none"
-  document.getElementById("employeeModal").style.display = "none"
+  const modals = ["departmentModal", "jobModal", "employeeModal"]
+  modals.forEach((modalId) => {
+    const modal = document.getElementById(modalId)
+    if (modal) {
+      modal.style.display = "none"
+      modal.classList.remove("show")
+    }
+  })
+  document.body.style.overflow = "auto"
 }
 
 // NOUVELLES FONCTIONS: Gestion de l'assignation de manager
@@ -899,59 +740,131 @@ async function loadAvailableManagers() {
   }
 }
 
-// Fonctions modales
+// FONCTIONS MODALES AMÉLIORÉES POUR LE CSS
 function openDepartmentModal() {
   console.log("🏢 FRONTEND: Ouverture modal département")
   closeAllModals()
-  document.getElementById("departmentModal").style.display = "flex"
+
+  const modal = document.getElementById("departmentModal")
+  if (modal) {
+    modal.style.display = "flex"
+    modal.classList.add("show")
+    document.body.style.overflow = "hidden"
+
+    // Réinitialiser le formulaire
+    document.getElementById("departmentForm").reset()
+    document.getElementById("departmentColor").value = "#3b82f6"
+
+    // Masquer la section manager par défaut
+    document.getElementById("assignManagerToggle").checked = false
+    document.getElementById("managerAssignmentSection").style.display = "none"
+    resetManagerFields()
+
+    // Animation d'entrée
+    requestAnimationFrame(() => {
+      modal.style.opacity = "1"
+    })
+  }
 }
 
 function closeDepartmentModal() {
   console.log("🏢 FRONTEND: Fermeture modal département")
-  document.getElementById("departmentModal").style.display = "none"
-  document.getElementById("departmentForm").reset()
+  const modal = document.getElementById("departmentModal")
+  if (modal) {
+    modal.classList.remove("show")
+    setTimeout(() => {
+      modal.style.display = "none"
+      document.body.style.overflow = "auto"
+    }, 300)
 
-  // Réinitialiser la section manager
-  document.getElementById("assignManagerToggle").checked = false
-  document.getElementById("managerAssignmentSection").style.display = "none"
-  resetManagerFields()
+    // Réinitialiser le formulaire
+    document.getElementById("departmentForm").reset()
+    document.getElementById("assignManagerToggle").checked = false
+    document.getElementById("managerAssignmentSection").style.display = "none"
+    resetManagerFields()
+  }
 }
 
 function openJobModal(preselectedDeptId = null) {
   console.log("💼 FRONTEND: Ouverture modal poste")
   closeAllModals()
-  loadDepartmentsInSelect("jobDepartment")
-  loadEmployeesInSelect("jobEmployee")
-  document.getElementById("jobModal").style.display = "flex"
 
-  if (preselectedDeptId) {
-    setTimeout(() => {
-      document.getElementById("jobDepartment").value = preselectedDeptId
-    }, 100)
+  const modal = document.getElementById("jobModal")
+  if (modal) {
+    modal.style.display = "flex"
+    modal.classList.add("show")
+    document.body.style.overflow = "hidden"
+
+    // Réinitialiser le formulaire
+    document.getElementById("jobForm").reset()
+
+    // Charger les données dans les selects
+    loadDepartmentsInSelect("jobDepartment")
+    loadEmployeesInSelect("jobEmployee")
+
+    // Pré-sélectionner le département si fourni
+    if (preselectedDeptId) {
+      setTimeout(() => {
+        const deptSelect = document.getElementById("jobDepartment")
+        if (deptSelect) {
+          deptSelect.value = preselectedDeptId
+        }
+      }, 100)
+    }
+
+    // Définir la date limite par défaut (dans 30 jours)
+    const deadline = new Date()
+    deadline.setDate(deadline.getDate() + 30)
+    document.getElementById("jobDeadline").value = deadline.toISOString().split("T")[0]
+
+    // Animation d'entrée
+    requestAnimationFrame(() => {
+      modal.style.opacity = "1"
+    })
   }
 }
 
 function closeJobModal() {
   console.log("💼 FRONTEND: Fermeture modal poste")
-  document.getElementById("jobModal").style.display = "none"
-  document.getElementById("jobForm").reset()
+  const modal = document.getElementById("jobModal")
+  if (modal) {
+    modal.classList.remove("show")
+    setTimeout(() => {
+      modal.style.display = "none"
+      document.body.style.overflow = "auto"
+    }, 300)
+
+    // Réinitialiser le formulaire
+    document.getElementById("jobForm").reset()
+  }
 }
 
 function closeEmployeeModal() {
   console.log("👤 FRONTEND: Fermeture modal employé")
-  document.getElementById("employeeModal").style.display = "none"
-  document.getElementById("employeeForm").reset()
+  const modal = document.getElementById("employeeModal")
+  if (modal) {
+    modal.classList.remove("show")
+    setTimeout(() => {
+      modal.style.display = "none"
+      document.body.style.overflow = "auto"
+    }, 300)
+
+    // Réinitialiser le formulaire
+    document.getElementById("employeeForm").reset()
+  }
 }
 
 // Fonction pour basculer l'expansion d'un département
 function toggleDepartmentExpansion(departmentId) {
+  console.log("🔄 FRONTEND: Basculer expansion département:", departmentId)
+
   if (expandedDepartments.has(departmentId)) {
     expandedDepartments.delete(departmentId)
   } else {
     expandedDepartments.add(departmentId)
   }
 
-  // Réafficher les départements (filtrés ou non)
+  // Réafficher les départements
   if (isSearchActive) {
     displayFilteredDepartments(filteredDepartments)
   } else {
@@ -1014,6 +927,11 @@ async function createDepartment() {
         return
       }
 
+      if (managerPassword.length < 8) {
+        showNotification("Le mot de passe doit contenir au moins 8 caractères", "warning")
+        return
+      }
+
       departmentData.create_manager = true
       departmentData.manager_data = {
         first_name: managerFirstName,
@@ -1032,6 +950,8 @@ async function createDepartment() {
   console.log("📤 FRONTEND: Envoi données département:", departmentData)
 
   try {
+    showLoading("Création du département en cours...")
+
     const response = await fetch("/api/create-department", {
       method: "POST",
       headers: {
@@ -1041,11 +961,11 @@ async function createDepartment() {
     })
 
     const result = await response.json()
-    console.log("📥 FRONTEND: Réponse reçue:", result)
+    hideLoading()
 
     if (result.success) {
       console.log("✅ FRONTEND: Département créé avec succès")
-      showNotification(result.message, "success")
+      showNotification(result.message || "Département créé avec succès!", "success")
       closeDepartmentModal()
       await refreshDashboard()
     } else {
@@ -1053,6 +973,101 @@ async function createDepartment() {
       showNotification("Erreur: " + result.message, "error")
     }
   } catch (error) {
+    hideLoading()
+    console.error("❌ FRONTEND: Erreur réseau:", error)
+    showNotification("Erreur de connexion au serveur. Veuillez réessayer.", "error")
+  }
+}
+
+// Fonction pour créer un poste - AMÉLIORÉE
+async function createJob() {
+  console.log("💼 FRONTEND: Début création poste")
+
+  const title = document.getElementById("jobTitle").value.trim()
+  const departmentId = document.getElementById("jobDepartment").value
+  const priority = document.getElementById("jobPriority").value
+  const deadline = document.getElementById("jobDeadline").value
+  const employmentType = document.getElementById("jobType").value
+  const salaryMin = document.getElementById("jobSalaryMin").value
+  const salaryMax = document.getElementById("jobSalaryMax").value
+  const description = document.getElementById("jobDescription").value.trim()
+  const requirements = document.getElementById("jobRequirements").value.trim()
+  const responsibilities = document.getElementById("jobResponsibilities").value.trim()
+  const assignedEmployeeId = document.getElementById("jobEmployee").value
+
+  // Validation
+  if (!title) {
+    showNotification("Le titre du poste est obligatoire", "warning")
+    return
+  }
+
+  if (!departmentId) {
+    showNotification("Veuillez sélectionner un département", "warning")
+    return
+  }
+
+  if (!priority) {
+    showNotification("Veuillez sélectionner une priorité", "warning")
+    return
+  }
+
+  if (!employmentType) {
+    showNotification("Veuillez sélectionner un type de contrat", "warning")
+    return
+  }
+
+  if (!description) {
+    showNotification("La description du poste est obligatoire", "warning")
+    return
+  }
+
+  // Validation salaire
+  if (salaryMin && salaryMax && Number.parseFloat(salaryMin) > Number.parseFloat(salaryMax)) {
+    showNotification("Le salaire minimum ne peut pas être supérieur au salaire maximum", "warning")
+    return
+  }
+
+  const jobData = {
+    title: title,
+    department_id: Number.parseInt(departmentId),
+    description: description,
+    employment_type: employmentType,
+    priority: priority,
+    deadline: deadline || null,
+    salary_min: salaryMin ? Number.parseFloat(salaryMin) : null,
+    salary_max: salaryMax ? Number.parseFloat(salaryMax) : null,
+    requirements: requirements || "",
+    responsibilities: responsibilities || "",
+    assigned_employee_id: assignedEmployeeId ? Number.parseInt(assignedEmployeeId) : null,
+  }
+
+  console.log("📤 FRONTEND: Envoi données poste:", jobData)
+
+  try {
+    showLoading("Création du poste en cours...")
+
+    const response = await fetch("/api/create-job", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(jobData),
+    })
+
+    const result = await response.json()
+    hideLoading()
+
+    if (result.success) {
+      console.log("✅ FRONTEND: Poste créé avec succès")
+      showNotification(`Poste "${title}" créé avec succès !`, "success")
+      closeJobModal()
+      await refreshDashboard()
+    } else {
+      console.error("❌ FRONTEND: Erreur création poste:", result.message)
+      showNotification("Erreur: " + result.message, "error")
+    }
+  } catch (error) {
+    hideLoading()
     console.error("❌ FRONTEND: Erreur réseau:", error)
     showNotification("Erreur de connexion au serveur. Veuillez réessayer.", "error")
   }
@@ -1077,6 +1092,13 @@ async function createEmployee() {
     return
   }
 
+  // Validation email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    showNotification("Veuillez saisir un email valide", "warning")
+    return
+  }
+
   const employeeData = {
     first_name: firstName,
     last_name: lastName,
@@ -1093,6 +1115,8 @@ async function createEmployee() {
   console.log("📤 FRONTEND: Envoi données employé:", employeeData)
 
   try {
+    showLoading("Création de l'employé en cours...")
+
     const response = await fetch("/api/create-employee", {
       method: "POST",
       headers: {
@@ -1102,7 +1126,7 @@ async function createEmployee() {
     })
 
     const result = await response.json()
-    console.log("📥 FRONTEND: Réponse reçue:", result)
+    hideLoading()
 
     if (result.success) {
       console.log("✅ FRONTEND: Employé créé avec succès")
@@ -1114,70 +1138,7 @@ async function createEmployee() {
       showNotification("Erreur: " + result.message, "error")
     }
   } catch (error) {
-    console.error("❌ FRONTEND: Erreur réseau:", error)
-    showNotification("Erreur de connexion au serveur. Veuillez réessayer.", "error")
-  }
-}
-
-// Fonction pour créer un poste
-async function createJob() {
-  console.log("💼 FRONTEND: Début création poste")
-
-  const title = document.getElementById("jobTitle").value.trim()
-  const departmentId = document.getElementById("jobDepartment").value
-  const priority = document.getElementById("jobPriority").value
-  const deadline = document.getElementById("jobDeadline").value
-  const employmentType = document.getElementById("jobType").value
-  const salaryMin = document.getElementById("jobSalaryMin").value
-  const salaryMax = document.getElementById("jobSalaryMax").value
-  const description = document.getElementById("jobDescription").value.trim()
-  const requirements = document.getElementById("jobRequirements").value.trim()
-  const responsibilities = document.getElementById("jobResponsibilities").value.trim()
-  const assignedEmployeeId = document.getElementById("jobEmployee").value
-
-  if (!title || !departmentId || !employmentType || !description) {
-    showNotification("Veuillez remplir tous les champs obligatoires", "warning")
-    return
-  }
-
-  const jobData = {
-    title: title,
-    department_id: Number.parseInt(departmentId),
-    description: description,
-    employment_type: employmentType,
-    priority: priority,
-    deadline: deadline || null,
-    salary_min: salaryMin ? Number.parseFloat(salaryMin) : null,
-    salary_max: salaryMax ? Number.parseFloat(salaryMax) : null,
-    requirements: requirements || "",
-    responsibilities: responsibilities || "",
-    assigned_employee_id: assignedEmployeeId ? Number.parseInt(assignedEmployeeId) : null,
-  }
-
-  console.log("📤 FRONTEND: Envoi données poste:", jobData)
-
-  try {
-    const response = await fetch("/api/create-job", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(jobData),
-    })
-
-    const result = await response.json()
-    console.log("📥 FRONTEND: Réponse reçue:", result)
-
-    if (result.success) {
-      console.log("✅ FRONTEND: Poste créé avec succès")
-      showNotification(`Poste "${title}" créé avec succès !`, "success")
-      closeJobModal()
-      await refreshDashboard()
-    } else {
-      console.error("❌ FRONTEND: Erreur création poste:", result.message)
-      showNotification("Erreur: " + result.message, "error")
-    }
-  } catch (error) {
+    hideLoading()
     console.error("❌ FRONTEND: Erreur réseau:", error)
     showNotification("Erreur de connexion au serveur. Veuillez réessayer.", "error")
   }
@@ -1254,15 +1215,15 @@ function displayDepartments() {
 
   if (departments.length === 0) {
     departmentsList.innerHTML = `
-            <div class="empty-departments">
-                <div class="empty-icon"><i class="fas fa-building"></i></div>
-                <h4>Aucun département</h4>
-                <p>Commencez par créer votre premier département</p>
-                <button class="empty-btn" onclick="openDepartmentModal()">
-                    <i class="fas fa-plus"></i> Créer Département
-                </button>
-            </div>
-        `
+      <div class="empty-departments">
+        <div class="empty-icon"><i class="fas fa-building"></i></div>
+        <h4>Aucun département</h4>
+        <p>Commencez par créer votre premier département</p>
+        <button class="empty-btn" onclick="openDepartmentModal()">
+          <i class="fas fa-plus"></i> Créer Département
+        </button>
+      </div>
+    `
     return
   }
 
@@ -1280,22 +1241,22 @@ function displayFilteredDepartments(filteredDepts) {
 
   if (filteredDepts.length === 0) {
     departmentsList.innerHTML = `
-            <div class="empty-departments">
-                <div class="empty-icon"><i class="fas fa-search"></i></div>
-                <h4>Aucun résultat trouvé</h4>
-                <p>Aucun département ne correspond à votre recherche</p>
-                <button class="empty-btn" onclick="clearSearch()">
-                    <i class="fas fa-times"></i> Effacer la recherche
-                </button>
-            </div>
-        `
+      <div class="empty-departments">
+        <div class="empty-icon"><i class="fas fa-search"></i></div>
+        <h4>Aucun résultat trouvé</h4>
+        <p>Aucun département ne correspond à votre recherche</p>
+        <button class="empty-btn" onclick="clearSearch()">
+          <i class="fas fa-times"></i> Effacer la recherche
+        </button>
+      </div>
+    `
     return
   }
 
   renderDepartmentsList(filteredDepts)
 }
 
-// Fonction pour générer le HTML des départements
+// FONCTION AMÉLIORÉE: Générer le HTML des départements avec le nouveau CSS
 function renderDepartmentsList(deptList) {
   const departmentsList = document.getElementById("departmentsList")
   let html = ""
@@ -1306,116 +1267,115 @@ function renderDepartmentsList(deptList) {
     const departmentJobs = jobs.filter((job) => job.department_id === dept.id)
 
     html += `
-            <div class="department-card-enhanced" style="border-left: 4px solid ${dept.color || "#e74c3c"}">
-                <div class="department-header">
-                    <div class="department-info">
-                        <h4>${dept.name || "Département sans nom"}</h4>
-                        <p>${dept.description || "Aucune description"}</p>
-                        ${dept.manager_name ? `<span class="manager">👤 ${dept.manager_name}</span>` : ""}
-                    </div>
-                    <div class="department-stats">
-                        <span class="stat-badge employees">
-                            <i class="fas fa-users"></i> ${dept.employee_count || 0}
-                        </span>
-                        <span class="stat-badge jobs">
-                            <i class="fas fa-briefcase"></i> ${dept.job_count || 0}
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="department-actions">
-                    <button class="btn-expand ${isExpanded ? "expanded" : ""}" 
-                            onclick="toggleDepartmentExpansion(${dept.id})" 
-                            title="${isExpanded ? "Réduire" : "Voir les détails"}">
-                        <i class="fas fa-chevron-${isExpanded ? "up" : "down"}"></i>
-                        ${isExpanded ? "Réduire" : "Voir Détails"}
-                    </button>
-
-                    ${
-                      currentUser && currentUser.role !== "recruiter"
-                        ? `
-                    <button class="btn-add-job" onclick="openJobModal(${dept.id})" title="Ajouter un poste">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    `
-                        : ""
-                    }
-                </div>
-                
-                ${
-                  isExpanded
-                    ? `
-                    <div class="department-details">
-                        <div class="details-tabs">
-                            <div class="tab-section">
-                                <h5><i class="fas fa-users"></i> Employés (${departmentEmployees.length})</h5>
-                                <div class="items-list">
-                                    ${
-                                      departmentEmployees.length === 0
-                                        ? '<p class="empty-message">Aucun employé dans ce département</p>'
-                                        : departmentEmployees
-                                            .map(
-                                              (emp) => `
-                                            <div class="item-card employee-card">
-                                                <div class="item-avatar">
-                                                    ${emp.first_name.charAt(0)}${emp.last_name.charAt(0)}
-                                                </div>
-                                                <div class="item-info">
-                                                    <strong>${emp.first_name} ${emp.last_name}</strong>
-                                                    <span>${emp.position}</span>
-                                                    <small>${emp.email}</small>
-                                                </div>
-                                                <div class="item-actions">
-                                                    <button class="btn-icon-small" onclick="viewEmployeeProfile(${emp.id})" title="Voir le profil">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        `,
-                                            )
-                                            .join("")
-                                    }
-                                </div>
-                            </div>
-                            
-                            <div class="tab-section">
-                                <h5><i class="fas fa-briefcase"></i> Postes (${departmentJobs.length})</h5>
-                                <div class="items-list">
-                                    ${
-                                      departmentJobs.length === 0
-                                        ? '<p class="empty-message">Aucun poste dans ce département</p>'
-                                        : departmentJobs
-                                            .map(
-                                              (job) => `
-                                            <div class="item-card job-card">
-                                                <div class="item-info">
-                                                    <strong>${job.title}</strong>
-                                                    <span>${job.employment_type}</span>
-                                                    <small class="priority-${job.priority}">${job.priority.toUpperCase()}</small>
-                                                    ${job.status === "filled" ? '<small class="status-filled">✅ POURVU</small>' : ""}
-                                                </div>
-                                                <div class="item-actions">
-                                                    <button class="btn-icon-small" onclick="viewJobDetails(${job.id})" title="Voir les détails">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        `,
-                                            )
-                                            .join("")
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `
-                    : ""
-                }
+      <div class="department-card-enhanced" data-id="${dept.id}">
+        <div class="department-header">
+          <div class="department-info">
+            <h4 style="color: ${dept.color || "#3b82f6"}">${dept.name || "Département sans nom"}</h4>
+            <p>${dept.description || "Aucune description"}</p>
+            <div class="manager">
+              <i class="fas fa-user-tie"></i>
+              ${dept.manager_name || "Aucun responsable assigné"}
             </div>
-        `
+          </div>
+          <div class="department-stats">
+            <div class="stat-badge employees">
+              <i class="fas fa-users"></i>
+              ${dept.employee_count || departmentEmployees.length} employé${(dept.employee_count || departmentEmployees.length) > 1 ? "s" : ""}
+            </div>
+            <div class="stat-badge jobs">
+              <i class="fas fa-briefcase"></i>
+              ${dept.job_count || departmentJobs.length} poste${(dept.job_count || departmentJobs.length) > 1 ? "s" : ""}
+            </div>
+          </div>
+        </div>
+        
+        <div class="department-actions">
+          <button class="btn-expand ${isExpanded ? "expanded" : ""}" 
+                  onclick="toggleDepartmentExpansion(${dept.id})" 
+                  title="${isExpanded ? "Masquer" : "Voir"} les détails">
+            <i class="fas fa-chevron-${isExpanded ? "up" : "down"}"></i>
+            ${isExpanded ? "Masquer" : "Voir"} les détails
+          </button>
+
+          <button class="btn-add-job" onclick="openJobModal(${dept.id})" title="Créer un poste">
+            <i class="fas fa-briefcase"></i>
+          </button>
+        </div>
+        
+        ${isExpanded ? renderDepartmentDetails(dept, departmentEmployees, departmentJobs) : ""}
+      </div>
+    `
   })
 
   departmentsList.innerHTML = html
+}
+
+// FONCTION AMÉLIORÉE: Afficher les détails d'un département
+function renderDepartmentDetails(department, deptEmployees, deptJobs) {
+  return `
+    <div class="department-details">
+      <div class="details-tabs">
+        <div class="tab-section">
+          <h5><i class="fas fa-users"></i> Employés (${deptEmployees.length})</h5>
+          <div class="items-list">
+            ${
+              deptEmployees.length > 0
+                ? deptEmployees
+                    .map(
+                      (emp) => `
+                      <div class="item-card">
+                        <div class="item-avatar">${emp.first_name ? emp.first_name[0] : ""}${emp.last_name ? emp.last_name[0] : ""}</div>
+                        <div class="item-info">
+                          <strong>${emp.first_name || ""} ${emp.last_name || ""}</strong>
+                          <span>${emp.position || "Poste non défini"}</span>
+                          <small>${emp.email || "Email non défini"}</small>
+                        </div>
+                        <div class="item-actions">
+                          <button class="btn-icon-small" onclick="viewEmployeeProfile(${emp.id})" title="Voir le profil">
+                            <i class="fas fa-eye"></i>
+                          </button>
+                        </div>
+                      </div>
+                    `,
+                    )
+                    .join("")
+                : '<div class="empty-message">Aucun employé dans ce département</div>'
+            }
+          </div>
+        </div>
+        
+        <div class="tab-section">
+          <h5><i class="fas fa-briefcase"></i> Postes (${deptJobs.length})</h5>
+          <div class="items-list">
+            ${
+              deptJobs.length > 0
+                ? deptJobs
+                    .map(
+                      (job) => `
+                      <div class="item-card">
+                        <div class="item-avatar"><i class="fas fa-briefcase"></i></div>
+                        <div class="item-info">
+                          <strong>${job.title || "Titre non défini"}</strong>
+                          <span>${job.employment_type || "Type non défini"} - ${job.salary_min && job.salary_max ? `${job.salary_min}€ - ${job.salary_max}€` : "Salaire non spécifié"}</span>
+                          <small class="priority-${job.priority || "normal"}">${getPriorityLabel(job.priority || "normal")}</small>
+                          ${job.assigned_employee_id ? '<span class="status-filled"><i class="fas fa-check"></i> Poste pourvu</span>' : ""}
+                        </div>
+                        <div class="item-actions">
+                          <button class="btn-icon-small" onclick="viewJobDetails(${job.id})" title="Voir les détails">
+                            <i class="fas fa-eye"></i>
+                          </button>
+                        </div>
+                      </div>
+                    `,
+                    )
+                    .join("")
+                : '<div class="empty-message">Aucun poste dans ce département</div>'
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  `
 }
 
 // Fonction pour charger les départements dans un select
@@ -1443,7 +1403,7 @@ function loadEmployeesInSelect(selectId) {
   employees.forEach((emp) => {
     const option = document.createElement("option")
     option.value = emp.id
-    option.textContent = `${emp.first_name} ${emp.last_name} (${emp.position})`
+    option.textContent = `${emp.first_name || ""} ${emp.last_name || ""} (${emp.position || "Poste non défini"})`
     select.appendChild(option)
   })
 }
@@ -1536,102 +1496,103 @@ function clearSearch() {
   displayDepartments()
 }
 
-// Fermer les modales en cliquant à l'extérieur
-document.addEventListener("click", (e) => {
-  if (e.target.classList.contains("modal-overlay")) {
-    if (e.target.classList.contains("recommend-modal-overlay")) {
-      closeRecommendModal()
+// Charger les employés depuis l'API
+async function loadEmployees() {
+  console.log("👥 FRONTEND: Chargement des employés")
+
+  try {
+    const response = await fetch("/api/employees")
+    const result = await response.json()
+
+    if (result.success) {
+      employees = result.employees || []
+      console.log(`✅ FRONTEND: ${employees.length} employés chargés`)
     } else {
-      e.target.style.display = "none"
+      console.error("❌ FRONTEND: Erreur chargement employés:", result.message)
+      employees = []
     }
+  } catch (error) {
+    console.error("❌ FRONTEND: Erreur réseau chargement employés:", error)
+    employees = []
   }
-})
+}
 
-// Mise à jour de la couleur preview
-document.addEventListener("DOMContentLoaded", () => {
-  const colorInput = document.getElementById("departmentColor")
-  const colorPreview = document.querySelector(".color-preview")
+// Fonctions utilitaires pour les candidatures
+function getInitials(name) {
+  if (!name) return "??"
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+}
 
-  if (colorInput && colorPreview) {
-    colorInput.addEventListener("change", function () {
-      colorPreview.style.backgroundColor = this.value
-    })
-
-    // Initialiser la couleur preview
-    colorPreview.style.backgroundColor = colorInput.value
+function getFilterText(filter) {
+  const filterTexts = {
+    all: "",
+    pending: "en attente",
+    reviewed: "examinées",
+    interview_scheduled: "avec entretien programmé",
+    accepted: "acceptées",
+    rejected: "rejetées",
+    recommended: "recommandées",
   }
-})
+  return filterTexts[filter] || ""
+}
 
-// Fonction de notification améliorée
-function showNotification(message, type = "info") {
-  const notification = document.createElement("div")
-  notification.className = `notification ${type}`
-
-  const icons = {
-    success: "fa-check-circle",
-    error: "fa-exclamation-circle",
-    warning: "fa-exclamation-triangle",
-    info: "fa-info-circle",
+function getStatusText(status) {
+  const statusTexts = {
+    pending: "En attente",
+    reviewed: "Examinée",
+    interview_scheduled: "Entretien programmé",
+    accepted: "Acceptée",
+    rejected: "Rejetée",
   }
+  return statusTexts[status] || status
+}
 
-  const colors = {
-    success: "linear-gradient(135deg, #27ae60, #2ecc71)",
-    error: "linear-gradient(135deg, #e74c3c, #c0392b)",
-    warning: "linear-gradient(135deg, #f39c12, #e67e22)",
-    info: "linear-gradient(135deg, #3498db, #2980b9)",
+function getPriorityLabel(priority) {
+  const labels = {
+    urgent: "🔥 Urgent",
+    normal: "📋 Normal",
+    low: "⏳ Faible",
   }
+  return labels[priority] || priority
+}
 
-  notification.innerHTML = `
-        <div class="notification-icon">
-            <i class="fas ${icons[type]}"></i>
-        </div>
-        <div class="notification-content">
-            <span>${message}</span>
-        </div>
-        <button class="notification-close" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
-    `
+function formatDate(dateString) {
+  if (!dateString) return "Date inconnue"
+  const date = new Date(dateString)
+  return date.toLocaleDateString("fr-FR")
+}
 
-  notification.style.cssText = `
-        position: fixed;
-        top: 2rem;
-        right: 2rem;
-        background: ${colors[type]};
-        color: white;
-        padding: 1rem;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        z-index: 20000;
-        backdrop-filter: blur(10px);
-        animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        min-width: 320px;
-        max-width: 450px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    `
+// Fonctions d'interaction avec les candidatures
+function viewCandidateProfile(candidateId) {
+  console.log("👤 FRONTEND: Ouverture profil candidat:", candidateId)
+  window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
+}
 
-  document.body.appendChild(notification)
+// FONCTION CORRIGÉE: Voir les détails d'un poste
+function viewJobDetails(jobId) {
+  console.log("💼 FRONTEND: Navigation vers job-details pour le poste:", jobId)
+  window.location.href = `/job-details?id=${jobId}`
+}
 
-  setTimeout(() => {
-    notification.style.animation = "slideOutRight 0.3s ease-in"
-    setTimeout(() => {
-      if (notification.parentElement) {
-        document.body.removeChild(notification)
-      }
-    }, 300)
-  }, 5000)
+function filterApplications(status) {
+  console.log("🔍 FRONTEND: Filtrage candidatures:", status)
+  renderApplications(status)
 }
 
 function filterApplicationByName() {
   const input = document.getElementById("applicationSearchInput")
+  if (!input) return
+
   const searchTerm = input.value.toLowerCase().trim()
 
   const filtered = applications.filter((app) => {
     return (
-      app.candidate_name.toLowerCase().includes(searchTerm) || app.candidate_email.toLowerCase().includes(searchTerm)
+      (app.candidate_name || "").toLowerCase().includes(searchTerm) ||
+      (app.candidate_email || "").toLowerCase().includes(searchTerm)
     )
   })
 
@@ -1716,54 +1677,178 @@ function renderApplicationsList(list) {
     .join("")
 }
 
-// Charger les employés depuis l'API
-async function loadEmployees() {
-  console.log("👥 FRONTEND: Chargement des employés")
-
-  try {
-    const response = await fetch("/api/employees")
-    const result = await response.json()
-
-    if (result.success) {
-      employees = result.employees
-      console.log(`✅ FRONTEND: ${employees.length} employés chargés`)
-      renderEmployees()
+// Fermer les modales en cliquant à l'extérieur
+document.addEventListener("click", (e) => {
+  if (e.target.classList.contains("modal-overlay")) {
+    if (e.target.classList.contains("recommend-modal-overlay")) {
+      closeRecommendModal()
     } else {
-      console.error("❌ FRONTEND: Erreur chargement employés:", result.message)
-      employees = []
+      const modal = e.target
+      modal.classList.remove("show")
+      setTimeout(() => {
+        modal.style.display = "none"
+        document.body.style.overflow = "auto"
+      }, 300)
     }
-  } catch (error) {
-    console.error("❌ FRONTEND: Erreur réseau chargement employés:", error)
-    employees = []
   }
-}
+})
 
-// Affichage simple des employés
-function renderEmployees() {
-  const container = document.getElementById("employeesContainer")
-  if (!container) {
-    console.warn("📦 FRONTEND: Container employés introuvable")
-    return
+// Gestion des touches clavier
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    // Fermer les modals ouverts
+    const modals = ["departmentModal", "jobModal", "employeeModal"]
+    modals.forEach((modalId) => {
+      const modal = document.getElementById(modalId)
+      if (modal && modal.style.display === "flex") {
+        modal.classList.remove("show")
+        setTimeout(() => {
+          modal.style.display = "none"
+          document.body.style.overflow = "auto"
+        }, 300)
+      }
+    })
+
+    // Fermer la modal de recommandation
+    const recommendModal = document.querySelector(".recommend-modal-overlay")
+    if (recommendModal) {
+      closeRecommendModal()
+    }
   }
+})
 
-  if (employees.length === 0) {
-    container.innerHTML = "<p>Aucun employé trouvé.</p>"
-    return
+// Mise à jour de la couleur preview
+document.addEventListener("DOMContentLoaded", () => {
+  const colorInput = document.getElementById("departmentColor")
+  const colorPreview = document.querySelector(".color-preview")
+
+  if (colorInput && colorPreview) {
+    colorInput.addEventListener("change", function () {
+      colorPreview.style.backgroundColor = this.value
+    })
+
+    // Initialiser la couleur preview
+    colorPreview.style.backgroundColor = colorInput.value
   }
+})
 
-  container.innerHTML = employees
-    .map(
-      (emp) => `
-    <div class="employee-card">
-      <h4>${emp.first_name} ${emp.last_name}</h4>
-      <p><strong>Poste:</strong> ${emp.position}</p>
-      <p><strong>Email:</strong> ${emp.email}</p>
-      <p><strong>Département:</strong> ${emp.department_name}</p>
-      <p><strong>Compétences:</strong> ${(emp.skills || []).map((s) => s.name).join(", ") || "Non spécifiées"}</p>
+// FONCTION DE NOTIFICATION AMÉLIORÉE POUR LE NOUVEAU CSS
+function showNotification(message, type = "info") {
+  console.log(`📢 NOTIFICATION [${type.toUpperCase()}]: ${message}`)
+
+  // Créer l'élément de notification
+  const notification = document.createElement("div")
+  notification.className = `notification notification-${type}`
+  notification.innerHTML = `
+    <div class="notification-content">
+      <span class="notification-message">${message}</span>
+      <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
-  `,
-    )
-    .join("")
+  `
+
+  // Ajouter les styles si pas encore fait
+  if (!document.getElementById("notificationStyles")) {
+    const styles = document.createElement("style")
+    styles.id = "notificationStyles"
+    styles.textContent = `
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        min-width: 300px;
+        max-width: 500px;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        animation: slideInRight 0.3s ease;
+        border-left: 4px solid;
+      }
+      
+      .notification-success {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.8));
+        border-left-color: #10b981;
+        color: white;
+      }
+      
+      .notification-error {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.8));
+        border-left-color: #ef4444;
+        color: white;
+      }
+      
+      .notification-warning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.8));
+        border-left-color: #f59e0b;
+        color: white;
+      }
+      
+      .notification-info {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.8));
+        border-left-color: #3b82f6;
+        color: white;
+      }
+      
+      .notification-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+      }
+      
+      .notification-message {
+        flex: 1;
+        font-weight: 500;
+      }
+      
+      .notification-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+      }
+      
+      .notification-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+      }
+      
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+    `
+    document.head.appendChild(styles)
+  }
+
+  // Ajouter la notification au DOM
+  document.body.appendChild(notification)
+
+  // Supprimer automatiquement après 5 secondes
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.style.animation = "slideInRight 0.3s ease reverse"
+      setTimeout(() => {
+        notification.remove()
+      }, 300)
+    }
+  }, 5000)
 }
 
 // Fonction utilitaire pour afficher le loading
@@ -1772,8 +1857,8 @@ function showLoading(message) {
 
   const loadingHTML = `
     <div class="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 25000;">
-      <div class="loading-content" style="background: white; padding: 2rem; border-radius: 12px; text-align: center;">
-        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #3498db;"></i>
+      <div class="loading-content" style="background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%); padding: 2rem; border-radius: 12px; text-align: center; color: white; border: 1px solid rgba(59, 130, 246, 0.3);">
+        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #3b82f6;"></i>
         <p style="margin: 0; font-weight: 500;">${message}</p>
       </div>
     </div>
@@ -1788,3 +1873,5 @@ function hideLoading() {
     loadingOverlay.remove()
   }
 }
+
+console.log("✅ FRONTEND: Script chargé avec succès")
