@@ -108,7 +108,7 @@ function renderApplications(filter = "all") {
                   </span>
                 `
                     : currentUser.role === "department_head"
-                      ? '<span class="no-recommendation"><i class="fas fa-clock"></i> Non recommandé</span>'
+                      ? ''
                       : ""
                 }
               </h4>
