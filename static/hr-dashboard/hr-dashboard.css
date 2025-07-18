@@ -2432,3 +2432,528 @@ html {
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
+/* Styles pour les recommandations */
+.recommendation-badge {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  animation: pulse 2s infinite;
+  box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+}
+
+.recommendation-badge.high {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  animation: pulse 1.5s infinite;
+}
+
+.recommendation-badge.urgent {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  animation: urgentPulse 1s infinite;
+  box-shadow: 0 2px 12px rgba(231, 76, 60, 0.4);
+}
+
+.recommendation-info {
+  color: #f39c12;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+.priority-badge {
+  padding: 0.15rem 0.4rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.priority-badge.high {
+  background: #e67e22;
+  color: white;
+}
+
+.priority-badge.urgent {
+  background: #e74c3c;
+  color: white;
+  animation: blink 1s infinite;
+}
+
+.recommendation-comment {
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  border: 1px solid #ffeaa7;
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 0.8rem 0;
+  position: relative;
+}
+
+.recommendation-comment::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #ffeaa7;
+}
+
+.recommendation-comment i {
+  color: #f39c12;
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.recommendation-comment p {
+  margin: 0.5rem 0 0.3rem 0;
+  font-style: italic;
+  color: #856404;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.recommendation-comment small {
+  color: #6c757d;
+  font-weight: 600;
+}
+
+.recommendation-date {
+  color: #f39c12 !important;
+  font-weight: 500;
+}
+
+/* Modal de recommandation */
+.recommend-modal {
+  max-width: 550px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.candidate-info-modal {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #dee2e6;
+}
+
+.candidate-avatar-modal {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 1.4rem;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.recommendation-info {
+  background: rgba(39, 76, 100, 0.3);
+  border: 1px solid #bee5eb;
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-top: 1.5rem;
+}
+
+.recommendation-info h5 {
+  margin: 0 0 0.8rem 0;
+  color: #0c5460;
+  font-weight: 600;
+}
+
+.recommendation-info ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.recommendation-info li {
+  margin: 0.6rem 0;
+  color: #495057;
+  font-weight: 500;
+}
+
+.recommendation-info i {
+  margin-right: 0.5rem;
+  width: 16px;
+}
+
+/* Boutons d'action selon le rôle */
+.app-btn.recommend {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  border: none;
+}
+
+.app-btn.recommend:hover {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  transform: translateY(-2px);
+}
+
+.app-btn.examine {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+}
+
+.app-btn.accept {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: white;
+  border: none;
+}
+
+.app-btn.reject {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  border: none;
+}
+
+.btn-primary.recommend {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border: none;
+}
+
+.btn-primary.recommend:hover {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes urgentPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes urgentBounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  60% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Statut recommandé */
+.application-status.recommended {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+}
+
+.application-card.recommended {
+  border-left: 4px solid #f39c12;
+  box-shadow: 0 4px 15px rgba(243, 156, 18, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .recommendation-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    margin-left: 0.3rem;
+  }
+
+  .candidate-info-modal {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .candidate-avatar-modal {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+
+  .recommend-modal {
+    width: 98%;
+    margin: 0.5rem;
+  }
+
+  .no-recommendation {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+  }
+}
+
+/* Ajouter les nouveaux styles pour les améliorations */
+
+/* Indicateur pour les candidatures non recommandées (chefs de département) */
+.no-recommendation {
+  background: #f8f9fa;
+  color: #6c757d;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid #dee2e6;
+}
+
+/* Indicateur de priorité */
+.priority-indicator {
+  font-size: 1.2rem;
+  margin-left: 0.5rem;
+  animation: bounce 2s infinite;
+}
+
+.priority-indicator.urgent {
+  animation: urgentBounce 0.8s infinite;
+}
+
+
+
+.application-card.has-recommendation {
+  background: linear-gradient(135deg, #082b42, #01213b);
+  border-left: 4px solid #3b82f6;
+  border-left: 4px solid #f39c12;
+  box-shadow: 0 4px 15px rgba(243, 156, 18, 0.15);
+}
+
+
+/* Statut de recommandation pour les chefs de département */
+.recommendation-status {
+  background: #f39c12;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  border: 1px solid #c3e6cb;
+}
+
+/* Mode consultation pour les admins */
+.admin-view-only {
+  background: #e9ecef;
+  color: #495057;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  border: 1px solid #ced4da;
+}
+
+/* Amélioration de la modal de recommandation */
+.recommend-modal-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Styles pour les formulaires de la modal de recommandation */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.form-label i {
+  margin-right: 0.5rem;
+  color: #6c757d;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.3s ease;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background-color: white;
+  transition: border-color 0.3s ease;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-help {
+  color: #6c757d;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* Styles pour les boutons de la modal */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
+  margin-top: 1.5rem;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2980b9, #21618c);
+  transform: translateY(-1px);
+}
+
+/* Amélioration de la modal header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #495057;
+  font-size: 1.25rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  transition: color 0.3s ease;
+}
+
+.modal-close:hover {
+  color: #495057;
+}
+
+.text-warning {
+  color: #f39c12 !important;
+}
+.text-info {
+  color: #17a2b8 !important;
+}
+.text-success {
+  color: #28a745 !important;
+}
+.text-primary {
+  color: #007bff !important;
+}

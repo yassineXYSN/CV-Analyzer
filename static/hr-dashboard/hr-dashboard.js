@@ -57,7 +57,7 @@ async function loadApplications() {
   }
 }
 
-// FONCTION MISE À JOUR: Rendu des candidatures
+// FONCTION MISE À JOUR: Rendu des candidatures avec témoin de recommandation
 function renderApplications(filter = "all") {
   console.log("📋 FRONTEND: Rendu des candidatures, filtre:", filter)
 
@@ -74,57 +74,440 @@ function renderApplications(filter = "all") {
 
   if (filteredApps.length === 0) {
     container.innerHTML = `
-            <div class="empty-applications">
-                <i class="fas fa-file-alt"></i>
-                <h4>Aucune candidature</h4>
-                <p>Aucune candidature ${getFilterText(filter)}</p>
-            </div>
-        `
+      <div class="empty-applications">
+        <i class="fas fa-file-alt"></i>
+        <h4>Aucune candidature</h4>
+        <p>Aucune candidature ${getFilterText(filter)}</p>
+      </div>
+    `
     return
   }
 
   container.innerHTML = filteredApps
-    .map(
-      (app) => `
-            <div class="application-card ${app.status}">
-                <div class="application-header">
-                    <div class="applicant-info">
-                        <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
-                        <div class="applicant-details">
-                            <h4>${app.candidate_name}</h4>
-                            <p>${app.candidate_email}</p>
-                            <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
-                        </div>
-                    </div>
-                    <div class="application-status ${app.status}">
-                        ${getStatusText(app.status)}
-                    </div>
-                </div>
-                
-                <div class="application-job">
-                    <div class="job-info">
-                        <div class="job-title">${app.job_title}</div>
-                        <div class="job-department">${app.department_name}</div>
-                        <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
-                    </div>
-                    <div class="application-date">
-                        Candidature envoyée le ${formatDate(app.application_date)}
-                        <br><small>Il y a ${app.days_since_application} jour(s)</small>
-                    </div>
-                </div>
-                
-                <div class="application-actions">
-                    <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
-                        <i class="fas fa-user"></i> Voir Profil
-                    </button>
-                    <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
-                        <i class="fas fa-info-circle"></i> Détails sur le job
-                    </button>
-                </div>
+    .map((app) => `
+      <div class="application-card ${app.status} ${app.is_recommended ? "has-recommendation" : ""}">
+        <div class="application-header">
+          <div class="applicant-info">
+            <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
+            <div class="applicant-details">
+              <h4>${app.candidate_name}
+                ${app.is_recommended ? `
+                  <span class="recommendation-badge ${app.recommendation_priority}" 
+                         title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
+                    <i class="fas fa-star"></i> 
+                    ${app.recommendation_priority === "urgent" ? "URGENT" : 
+                      app.recommendation_priority === "high" ? "PRIORITÉ HAUTE" : "RECOMMANDÉ"}
+                  </span>
+                ` : currentUser.role === "department_head" ? 
+                  '<span class="no-recommendation"><i class="fas fa-clock"></i> Non recommandé</span>' : 
+                  ""}
+              </h4>
+              <p>${app.candidate_email}</p>
+              <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
             </div>
-        `,
-    )
+          </div>
+          <div class="application-status ${app.status}">
+            ${getStatusText(app.status)}
+            ${app.is_recommended && app.recommendation_priority !== "normal" ? 
+              `<span class="priority-indicator ${app.recommendation_priority}">
+                ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+              </span>` : 
+              ""}
+          </div>
+        </div>
+        
+        ${app.is_recommended ? `
+          <div class="recommendation-info">
+            <i class="fas fa-user-tie"></i>
+            Recommandé par: ${app.recommended_by || "N/A"} 
+            ${app.recommendation_date ? `le ${formatDate(app.recommendation_date)}` : ""}
+          </div>
+        ` : ""}
+        
+        <div class="application-job">
+          <div class="job-info">
+            <div class="job-title">${app.job_title}</div>
+            <div class="job-department">${app.department_name}</div>
+            <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
+          </div>
+          <div class="application-date">
+            Candidature envoyée le ${formatDate(app.application_date)}
+            <br><small>Il y a ${app.days_since_application} jour(s)</small>
+          </div>
+        </div>
+        
+        ${app.recommendation_comment ? `
+          <div class="recommendation-comment">
+            <i class="fas fa-comment-alt"></i>
+            <strong>Commentaire de recommandation:</strong>
+            <p>"${app.recommendation_comment}"</p>
+            ${app.recommended_by ? `<small>— ${app.recommended_by}</small>` : ""}
+          </div>
+        ` : ""}
+        
+        <div class="application-actions">
+          <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
+            <i class="fas fa-user"></i> Voir Profil
+          </button>
+          <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
+            <i class="fas fa-info-circle"></i> Détails du poste
+          </button>
+          ${renderApplicationActionButtons(app)}
+        </div>
+      </div>
+    `)
     .join("")
+}     
+
+// NOUVELLE FONCTION: Rendre les boutons d'action selon le rôle utilisateur
+function renderApplicationActionButtons(app) {
+  if (!currentUser) return ""
+
+  // Pour les chefs de département : seulement le bouton recommander
+  if (currentUser.role === "department_head") {
+    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
+      // Échapper les caractères spéciaux
+      const safeCandidateName = app.candidate_name.replace(/'/g, "\\'").replace(/"/g, '\\"')
+      const safeJobTitle = app.job_title.replace(/'/g, "\\'").replace(/"/g, '\\"')
+
+      return `
+        <button class="app-btn recommend" onclick="showRecommendModal(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
+          <i class="fas fa-thumbs-up"></i> Recommander
+        </button>
+      `
+    }
+    // Si déjà recommandé, afficher un indicateur
+    if (app.is_recommended) {
+      return `
+        <div class="recommendation-status">
+          <i class="fas fa-check-circle"></i> Déjà recommandé
+        </div>
+      `
+    }
+    return "" // Pas de boutons pour les autres statuts
+  }
+
+  // Pour les recruteurs : boutons complets
+  if (currentUser.role === "recruiter") {
+    if (app.status === "pending" || app.is_recommended) {
+      return `
+        <button class="app-btn examine" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+          <i class="fas fa-eye"></i> Examiner
+        </button>
+        <button class="app-btn accept" onclick="acceptApplication(${app.id})">
+          <i class="fas fa-check"></i> Accepter
+        </button>
+        <button class="app-btn reject" onclick="rejectApplication(${app.id})">
+          <i class="fas fa-times"></i> Rejeter
+        </button>
+      `
+    } else if (app.status === "reviewed") {
+      return `
+        <button class="app-btn accept" onclick="acceptApplication(${app.id})">
+          <i class="fas fa-check"></i> Accepter
+        </button>
+        <button class="app-btn reject" onclick="rejectApplication(${app.id})">
+          <i class="fas fa-times"></i> Rejeter
+        </button>
+      `
+    }
+  }
+
+  // Pour les super admins : pas de boutons d'action
+  if (currentUser.role === "super_admin") {
+    return "" // Pas de boutons pour les super admins
+  }
+
+  return ""
+}
+
+// NOUVELLE FONCTION: Afficher la modal de recommandation
+function showRecommendModal(applicationId, candidateName, jobTitle) {
+  console.log(`👍 Affichage modal recommandation pour ${candidateName} (ID: ${applicationId})`)
+
+  // Vérifier les permissions
+  if (!currentUser || currentUser.role !== "department_head") {
+    showNotification("Seuls les chefs de département peuvent recommander des candidatures", "warning")
+    return
+  }
+
+  // Échapper les caractères spéciaux pour éviter les erreurs JavaScript
+  const safeCandidateName = candidateName.replace(/'/g, "\\'").replace(/"/g, '\\"')
+  const safeJobTitle = jobTitle.replace(/'/g, "\\'").replace(/"/g, '\\"')
+
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay recommend-modal-overlay"
+  modal.style.zIndex = "15000"
+
+  modal.innerHTML = `
+    <div class="modal-content recommend-modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-thumbs-up"></i> Recommander cette candidature</h3>
+        <button class="modal-close" onclick="closeRecommendModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="candidate-info-modal">
+          <div class="candidate-avatar-modal">${getInitials(candidateName)}</div>
+          <div>
+            <h4>${candidateName}</h4>
+            <p><strong>Poste:</strong> ${jobTitle}</p>
+            <p><strong>Votre rôle:</strong> Chef de département</p>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-comment"></i>
+            Commentaire de recommandation *
+          </label>
+          <textarea 
+            id="recommendationComment" 
+            class="form-textarea" 
+            placeholder="Expliquez pourquoi vous recommandez ce candidat (compétences, expérience, adéquation au poste...)..."
+            rows="4"
+            required
+          ></textarea>
+          <small class="form-help">Ce commentaire sera visible par les recruteurs et super admins</small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-flag"></i>
+            Niveau de priorité de votre recommandation
+          </label>
+          <select id="recommendationPriority" class="form-select">
+            <option value="normal">📋 Recommandation normale</option>
+            <option value="high">⭐ Recommandation forte</option>
+            <option value="urgent">🔥 Recommandation urgente</option>
+          </select>
+          <small class="form-help">Choisissez le niveau selon l'adéquation du candidat</small>
+        </div>
+        
+        <div class="recommendation-info">
+          <h5><i class="fas fa-info-circle"></i> Cette action va :</h5>
+          <ul>
+            <li><i class="fas fa-star text-warning"></i> Marquer la candidature comme recommandée</li>
+            <li><i class="fas fa-bell text-info"></i> Notifier les recruteurs et super admins</li>
+            <li><i class="fas fa-arrow-up text-success"></i> Donner une priorité élevée à cette candidature</li>
+            <li><i class="fas fa-user-tie text-primary"></i> Associer votre nom à cette recommandation</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeRecommendModal()">
+          <i class="fas fa-times"></i> Annuler
+        </button>
+        <button class="btn-primary recommend" onclick="confirmRecommendation(${applicationId})">
+          <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
+        </button>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    modal.style.opacity = "1"
+  })
+
+  // Focus sur le textarea
+  setTimeout(() => {
+    const commentField = document.getElementById("recommendationComment")
+    if (commentField) {
+      commentField.focus()
+    }
+  }, 100)
+}
+
+// NOUVELLE FONCTION: Fermer la modal de recommandation
+function closeRecommendModal() {
+  const modal = document.querySelector(".recommend-modal-overlay")
+  if (modal) {
+    modal.style.opacity = "0"
+    setTimeout(() => {
+      if (modal.parentElement) {
+        modal.remove()
+      }
+    }, 300)
+  }
+}
+
+// NOUVELLE FONCTION: Confirmer la recommandation
+async function confirmRecommendation(applicationId) {
+  console.log(`👍 Confirmation recommandation candidature ${applicationId}`)
+
+  try {
+    const commentElement = document.getElementById("recommendationComment")
+    const priorityElement = document.getElementById("recommendationPriority")
+
+    if (!commentElement || !priorityElement) {
+      showNotification("Erreur: éléments du formulaire non trouvés", "error")
+      return
+    }
+
+    const comment = commentElement.value.trim()
+    const priority = priorityElement.value
+
+    // Validation
+    if (!comment) {
+      showNotification("Le commentaire de recommandation est obligatoire", "warning")
+      commentElement.focus()
+      return
+    }
+
+    if (comment.length < 10) {
+      showNotification("Le commentaire doit contenir au moins 10 caractères", "warning")
+      commentElement.focus()
+      return
+    }
+
+    closeRecommendModal()
+    showLoading("Traitement de votre recommandation...")
+
+    const response = await fetch(`/api/applications/${applicationId}/recommend`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        comment: comment,
+        priority: priority,
+      }),
+    })
+
+    const result = await response.json()
+    hideLoading()
+
+    if (result.success) {
+      console.log("👍 Candidature recommandée avec succès")
+      showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
+
+      // Recharger les candidatures pour voir les changements
+      await loadApplications()
+
+      // Afficher un message de confirmation supplémentaire
+      setTimeout(() => {
+        showNotification("🎯 Les recruteurs et super admins ont été notifiés de votre recommandation", "info")
+      }, 2000)
+    } else {
+      console.error("❌ Erreur recommandation candidature:", result.message)
+      showNotification(`❌ ${result.message}`, "error")
+    }
+  } catch (error) {
+    hideLoading()
+    console.error("❌ Erreur réseau recommandation candidature:", error)
+    showNotification("❌ Erreur de connexion lors de la recommandation", "error")
+  }
+}
+
+// FONCTION MODIFIÉE: Accepter une candidature (seulement pour recruteurs et super admins)
+async function acceptApplication(applicationId) {
+  if (currentUser && currentUser.role === "department_head") {
+    showNotification("Les chefs de département ne peuvent pas accepter directement. Utilisez 'Recommander'.", "warning")
+    return
+  }
+
+  if (confirm("Êtes-vous sûr de vouloir accepter cette candidature ?")) {
+    try {
+      showLoading("Traitement de l'acceptation...")
+
+      const response = await fetch(`/api/accept-application/${applicationId}`, {
+        method: "POST",
+      })
+
+      const result = await response.json()
+      hideLoading()
+
+      if (result.success) {
+        showNotification(result.message, "success")
+        await loadApplications()
+      } else {
+        showNotification(result.message, "error")
+      }
+    } catch (error) {
+      hideLoading()
+      console.error("❌ Erreur acceptation candidature:", error)
+      showNotification("Erreur de connexion", "error")
+    }
+  }
+}
+
+// FONCTION MODIFIÉE: Rejeter une candidature (seulement pour recruteurs et super admins)
+async function rejectApplication(applicationId) {
+  if (currentUser && currentUser.role === "department_head") {
+    showNotification(
+      "Les chefs de département ne peuvent pas rejeter directement. Utilisez 'Recommander' si approprié.",
+      "warning",
+    )
+    return
+  }
+
+  if (confirm("Êtes-vous sûr de vouloir rejeter cette candidature ?")) {
+    try {
+      showLoading("Traitement du rejet...")
+
+      const response = await fetch(`/api/applications/${applicationId}/update-status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "rejected",
+        }),
+      })
+
+      const result = await response.json()
+      hideLoading()
+
+      if (result.success) {
+        showNotification(result.message, "success")
+        await loadApplications()
+      } else {
+        showNotification(result.message, "error")
+      }
+    } catch (error) {
+      hideLoading()
+      console.error("❌ Erreur rejet candidature:", error)
+      showNotification("Erreur de connexion", "error")
+    }
+  }
+}
+
+// FONCTION MODIFIÉE: Mettre à jour le statut d'une candidature
+async function updateApplicationStatus(applicationId, newStatus) {
+  if (currentUser && currentUser.role === "department_head" && newStatus !== "recommended") {
+    showNotification("Les chefs de département peuvent uniquement recommander des candidatures.", "warning")
+    return
+  }
+
+  try {
+    showLoading("Mise à jour du statut...")
+
+    const response = await fetch(`/api/applications/${applicationId}/update-status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        status: newStatus,
+      }),
+    })
+
+    const result = await response.json()
+    hideLoading()
+
+    if (result.success) {
+      showNotification(result.message, "success")
+      await loadApplications()
+    } else {
+      showNotification(result.message, "error")
+    }
+  } catch (error) {
+    hideLoading()
+    console.error("❌ Erreur mise à jour statut:", error)
+    showNotification("Erreur de connexion", "error")
+  }
 }
 
 // Fonctions utilitaires pour les candidatures
@@ -144,6 +527,7 @@ function getFilterText(filter) {
     interview_scheduled: "avec entretien programmé",
     accepted: "acceptées",
     rejected: "rejetées",
+    recommended: "recommandées",
   }
   return filterTexts[filter] || ""
 }
@@ -718,7 +1102,7 @@ async function createEmployee() {
     })
 
     const result = await response.json()
-    console.log("�� FRONTEND: Réponse reçue:", result)
+    console.log("📥 FRONTEND: Réponse reçue:", result)
 
     if (result.success) {
       console.log("✅ FRONTEND: Employé créé avec succès")
@@ -1155,7 +1539,11 @@ function clearSearch() {
 // Fermer les modales en cliquant à l'extérieur
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("modal-overlay")) {
-    e.target.style.display = "none"
+    if (e.target.classList.contains("recommend-modal-overlay")) {
+      closeRecommendModal()
+    } else {
+      e.target.style.display = "none"
+    }
   }
 })
 
@@ -1274,13 +1662,17 @@ function renderApplicationsList(list) {
           <div class="applicant-info">
             <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
             <div class="applicant-details">
-              <h4>${app.candidate_name}</h4>
+              <h4>${app.candidate_name}
+                  ${app.is_recommended ? '<span class="recommendation-badge" title="Candidat recommandé par un chef de département"><i class="fas fa-star"></i> Recommandé</span>' : ""}
+              </h4>
               <p>${app.candidate_email}</p>
               <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
+              ${app.is_recommended && app.recommended_by ? `<small class="recommendation-info"><i class="fas fa-user-tie"></i> Recommandé par ${app.recommended_by}</small>` : ""}
             </div>
           </div>
           <div class="application-status ${app.status}">
             ${getStatusText(app.status)}
+            ${app.is_recommended && app.recommendation_priority !== "normal" ? `<span class="priority-badge ${app.recommendation_priority}">${app.recommendation_priority.toUpperCase()}</span>` : ""}
           </div>
         </div>
         
@@ -1293,8 +1685,21 @@ function renderApplicationsList(list) {
           <div class="application-date">
             Candidature envoyée le ${formatDate(app.application_date)}
             <br><small>Il y a ${app.days_since_application} jour(s)</small>
+            ${app.recommendation_date ? `<br><small class="recommendation-date">Recommandé le ${formatDate(app.recommendation_date)}</small>` : ""}
           </div>
         </div>
+        
+        ${
+          app.recommendation_comment
+            ? `
+        <div class="recommendation-comment">
+          <i class="fas fa-comment"></i>
+          <strong>Commentaire de recommandation:</strong>
+          <p>${app.recommendation_comment}</p>
+        </div>
+        `
+            : ""
+        }
         
         <div class="application-actions">
           <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
@@ -1303,6 +1708,7 @@ function renderApplicationsList(list) {
           <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
             <i class="fas fa-info-circle"></i> Détails
           </button>
+          ${renderApplicationActionButtons(app)}
         </div>
       </div>
     `,
@@ -1358,4 +1764,27 @@ function renderEmployees() {
   `,
     )
     .join("")
+}
+
+// Fonction utilitaire pour afficher le loading
+function showLoading(message) {
+  console.log("⏳ Affichage loading:", message)
+
+  const loadingHTML = `
+    <div class="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 25000;">
+      <div class="loading-content" style="background: white; padding: 2rem; border-radius: 12px; text-align: center;">
+        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #3498db;"></i>
+        <p style="margin: 0; font-weight: 500;">${message}</p>
+      </div>
+    </div>
+  `
+  document.body.insertAdjacentHTML("beforeend", loadingHTML)
+}
+
+// Fonction utilitaire pour masquer le loading
+function hideLoading() {
+  const loadingOverlay = document.querySelector(".loading-overlay")
+  if (loadingOverlay) {
+    loadingOverlay.remove()
+  }
 }

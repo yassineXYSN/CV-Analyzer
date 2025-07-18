@@ -5,8 +5,13 @@ from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
 from typing import Optional
+from pydantic import BaseModel
 
 router = APIRouter()
+
+class RecommendationRequest(BaseModel):
+    comment: Optional[str] = ""
+    priority: str = "normal"
 
 @router.get("/api/applications")
 async def get_applications(status: Optional[str] = None):
@@ -74,6 +79,13 @@ async def get_applications(status: Optional[str] = None):
                         Contact.id == candidate.contact_id
                     ).first()
                 
+                # Récupérer les informations de recommandation
+                recommended_by_admin = None
+                if app.recommended_by_admin_id:
+                    recommended_by_admin = db.query(HRAdmin).filter(
+                        HRAdmin.id == app.recommended_by_admin_id
+                    ).first()
+                
                 if candidate and job:
                     days_since_application = 0
                     if app.application_date:
@@ -95,7 +107,13 @@ async def get_applications(status: Optional[str] = None):
                         "hr_notes": app.hr_notes,
                         "priority": job.priority,
                         "reviewed_by": app.reviewed_by,
-                        "reviewed_at": app.reviewed_at.isoformat() if app.reviewed_at else None
+                        "reviewed_at": app.reviewed_at.isoformat() if app.reviewed_at else None,
+                        # Nouveaux champs de recommandation
+                        "is_recommended": app.is_recommended or False,
+                        "recommendation_priority": app.recommendation_priority,
+                        "recommendation_comment": app.recommendation_comment,
+                        "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
+                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None
                     })
             
             print(f"✅ {len(applications_list)} candidatures récupérées pour l'utilisateur {current_admin.role}")
@@ -112,6 +130,87 @@ async def get_applications(status: Optional[str] = None):
             db.close()
     except Exception as e:
         print(f"❌ Erreur interne: {str(e)}")
+        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+
+@router.post("/api/applications/{application_id}/recommend")
+async def recommend_application(application_id: int, recommendation_data: RecommendationRequest):
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        db = SessionLocal()
+        try:
+            # Vérifier que l'utilisateur est chef de département
+            current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+            if not current_admin or current_admin.role != 'department_head':
+                return {"success": False, "message": "Seuls les chefs de département peuvent recommander des candidatures"}
+            
+            company = get_user_company(user_id)
+            if not company:
+                return {"success": False, "message": "Aucune entreprise associée"}
+            
+            # Vérifier que la candidature appartient à un département géré par ce chef
+            application = db.query(Application).join(
+                Job, Application.job_id == Job.id
+            ).join(
+                Department, Job.department_id == Department.id
+            ).filter(
+                Application.id == application_id,
+                Job.company_id == company.id
+            ).first()
+            
+            if not application:
+                return {"success": False, "message": "Candidature non trouvée"}
+            
+            # Vérifier que le chef a accès à ce département
+            assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                AdminDepartments.admin_id == user_id
+            ).all()
+            
+            job = db.query(Job).filter(Job.id == application.job_id).first()
+            if job.department_id not in [dept.department_id for dept in assigned_dept_ids]:
+                return {"success": False, "message": "Vous n'avez pas accès à ce département"}
+            
+            # Récupérer le candidat pour le nom
+            candidate = db.query(ProfileCandidat).filter(
+                ProfileCandidat.id == application.candidate_profile_id
+            ).first()
+            
+            if not candidate:
+                return {"success": False, "message": "Candidat non trouvé"}
+            
+            # Mettre à jour la candidature avec la recommandation
+            # Le statut reste inchangé, seuls les champs de recommandation sont mis à jour
+            application.is_recommended = True
+            application.recommended_by_admin_id = user_id
+            application.recommendation_comment = recommendation_data.comment
+            application.recommendation_priority = recommendation_data.priority
+            application.recommendation_date = datetime.now()
+            
+            # Mettre à jour les notes HR avec les informations de recommandation
+            recommendation_note = f"RECOMMANDÉ par {current_admin.first_name} {current_admin.last_name} (Chef de département)\n"
+            recommendation_note += f"Priorité: {recommendation_data.priority.upper()}\n"
+            if recommendation_data.comment:
+                recommendation_note += f"Commentaire: {recommendation_data.comment}\n"
+            recommendation_note += f"Date de recommandation: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            
+            application.hr_notes = recommendation_note
+            
+            db.commit()
+            
+            return {
+                "success": True,
+                "message": f"Candidature de {candidate.name} recommandée avec succès aux recruteurs et super admins"
+            }
+            
+        except Exception as e:
+            db.rollback()
+            return {"success": False, "message": f"Erreur lors de la recommandation: {str(e)}"}
+        finally:
+            db.close()
+            
+    except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
 @router.post("/api/applications/{application_id}/update-status")
@@ -131,6 +230,10 @@ async def update_application_status(application_id: int, status_data: dict):
             current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
             if not current_admin:
                 return {"success": False, "message": "Utilisateur non trouvé"}
+            
+            # RESTRICTION: Les chefs de département ne peuvent que recommander
+            if current_admin.role == 'department_head':
+                return {"success": False, "message": "Les chefs de département utilisent la fonction 'Recommander' et ne peuvent pas changer le statut directement"}
             
             # Construire la requête avec vérification des permissions
             query = db.query(Application).join(
@@ -169,7 +272,8 @@ async def update_application_status(application_id: int, status_data: dict):
             if not new_status:
                 return {"success": False, "message": "Statut manquant"}
             
-            if new_status == 'accepted' and job and candidate and contact:
+            # Logique d'acceptation (seulement pour recruteurs et super admins)
+            if new_status == 'accepted' and current_admin.role in ['recruiter', 'super_admin'] and job and candidate and contact:
                 try:
                     employee_id = f"EMP{datetime.now().strftime('%Y%m%d%H%M%S')}"
                     salary = None
@@ -213,7 +317,7 @@ async def update_application_status(application_id: int, status_data: dict):
                     other_applications = db.query(Application).filter(
                         Application.job_id == job.id,
                         Application.id != application_id,
-                        Application.status.in_(['pending', 'reviewed', 'interview_scheduled'])
+                        Application.status.in_(['pending', 'reviewed', 'interview_scheduled'])  # ← ENLEVER 'recommended' d'ici
                     ).all()
                     
                     for other_app in other_applications:
@@ -222,6 +326,8 @@ async def update_application_status(application_id: int, status_data: dict):
                         other_app.decision_date = datetime.now()
                         other_app.reviewed_by = user_id
                         other_app.reviewed_at = datetime.now()
+                        # Garder les informations de recommandation même si rejetée
+                        # other_app.is_recommended reste inchangé
                     
                     db.commit()
                     
@@ -350,7 +456,8 @@ async def create_demo_applications():
                             application_date=datetime.now(),
                             hr_rating=4.2 if status == 'reviewed' else None,
                             hr_notes=f"Candidature intéressante pour le poste de {job.title}" if status == 'reviewed' else None,
-                            source="Site web"
+                            source="Site web",
+                            is_recommended=False
                         )
                         
                         db.add(new_application)
@@ -388,20 +495,16 @@ def accept_application(application_id: int):
         if not current_admin:
             return {"success": False, "message": "Utilisateur non trouvé"}
         
+        # RESTRICTION: Les chefs de département ne peuvent pas accepter directement
+        if current_admin.role == 'department_head':
+            return {"success": False, "message": "Les chefs de département ne peuvent pas accepter directement les candidatures. Veuillez utiliser la fonction 'Recommander'."}
+        
         # Construire la requête avec vérification des permissions
         application_query = db.query(Application).join(
             Job, Application.job_id == Job.id
         ).join(
             Department, Job.department_id == Department.id
         ).filter(Application.id == application_id)
-        
-        # Si c'est un chef de département, vérifier qu'il a accès à cette candidature
-        if current_admin.role == 'department_head':
-            assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
-                AdminDepartments.admin_id == user_id
-            ).subquery()
-            
-            application_query = application_query.filter(Department.id.in_(assigned_dept_ids))
         
         application = application_query.first()
         if not application:

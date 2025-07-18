@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from databasehr.database import SessionLocal
-# Ajout de l'import de Company
 from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
@@ -190,6 +189,7 @@ async def get_job_details(job_id: int):
                     Employee.id == job.assigned_employee_id
                 ).first()
             
+            # CORRECTION: Récupérer les candidatures avec les informations de recommandation
             applications = db.query(Application).filter(
                 Application.job_id == job_id
             ).all()
@@ -200,6 +200,13 @@ async def get_job_details(job_id: int):
                     ProfileCandidat.id == app.candidate_profile_id
                 ).first()
                 
+                # Récupérer les informations de l'admin qui a recommandé
+                recommended_by_admin = None
+                if app.recommended_by_admin_id:
+                    recommended_by_admin = db.query(HRAdmin).filter(
+                        HRAdmin.id == app.recommended_by_admin_id
+                    ).first()
+                
                 if candidate:
                     applications_list.append({
                         "id": app.id,
@@ -209,7 +216,13 @@ async def get_job_details(job_id: int):
                         "application_date": app.application_date.isoformat() if app.application_date else None,
                         "hr_rating": float(app.hr_rating) if app.hr_rating else None,
                         "hr_notes": app.hr_notes,
-                        "candidate_id": candidate.id
+                        "candidate_id": candidate.id,
+                        # AJOUT: Informations de recommandation
+                        "is_recommended": app.is_recommended or False,
+                        "recommendation_priority": app.recommendation_priority,
+                        "recommendation_comment": app.recommendation_comment,
+                        "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
+                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None
                     })
             
             days_remaining = None
@@ -249,71 +262,5 @@ async def get_job_details(job_id: int):
             return {"success": False, "message": f"Erreur lors de la récupération du poste: {str(e)}"}
         finally:
             db.close()
-    except Exception as e:
-        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
-    
-class RecommendationRequest(BaseModel):
-    comment: Optional[str] = ""
-    priority: str = "normal"
-    recommended_by: int
-
-@router.post("/api/applications/{application_id}/recommend")
-async def recommend_application(application_id: int, recommendation_data: RecommendationRequest):
-    try:
-        user_id = current_user_session.get('user_id')
-        if not user_id:
-            return {"success": False, "message": "Utilisateur non connecté"}
-        
-        # Vérifier que l'utilisateur est chef de département
-        db = SessionLocal()
-        try:
-            user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
-            if not user or user.role != "department_head":
-                return {"success": False, "message": "Seuls les chefs de département peuvent recommander des candidatures"}
-            
-            company = get_user_company(user_id)
-            if not company:
-                return {"success": False, "message": "Aucune entreprise associée"}
-            
-            # Récupérer la candidature
-            application = db.query(Application).filter(
-                Application.id == application_id
-            ).first()
-            
-            if not application:
-                return {"success": False, "message": "Candidature non trouvée"}
-            
-            # Récupérer le candidat pour le nom
-            candidate = db.query(ProfileCandidat).filter(
-                ProfileCandidat.id == application.candidate_profile_id
-            ).first()
-            
-            if not candidate:
-                return {"success": False, "message": "Candidat non trouvé"}
-            
-            # Mettre à jour la candidature avec la recommandation
-            application.status = "recommended"
-            application.hr_notes = f"RECOMMANDÉ par {user.first_name} {user.last_name} ({user.role})\n"
-            application.hr_notes += f"Priorité: {recommendation_data.priority.upper()}\n"
-            if recommendation_data.comment:
-                application.hr_notes += f"Commentaire: {recommendation_data.comment}\n"
-            application.hr_notes += f"Date de recommandation: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
-            
-            application.reviewed_by = user_id
-            application.reviewed_at = datetime.now()
-            
-            db.commit()
-            
-            return {
-                "success": True,
-                "message": f"Candidature de {candidate.name} recommandée avec succès aux recruteurs et super admins"
-            }
-            
-        except Exception as e:
-            db.rollback()
-            return {"success": False, "message": f"Erreur lors de la recommandation: {str(e)}"}
-        finally:
-            db.close()
-            
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}

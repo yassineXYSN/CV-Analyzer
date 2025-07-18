@@ -192,10 +192,23 @@ class Application(Base):
     decision_date = Column(DateTime)
     decision_reason = Column(Text)
     
+    # NOUVEAUX CHAMPS DE RECOMMANDATION
+    is_recommended = Column(Boolean, default=False)
+    recommended_by_admin_id = Column(Integer, ForeignKey("hr_admins.id"))
+    recommendation_comment = Column(Text)
+    recommendation_priority = Column(Enum('normal', 'high', 'urgent'), default='normal')
+    recommendation_date = Column(DateTime)
+    
     # Métadonnées
     source = Column(String(100))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relations
+    job = relationship("Job")
+    candidate_profile = relationship("ProfileCandidat")
+    reviewed_by_admin = relationship("HRAdmin", foreign_keys=[reviewed_by])
+    recommended_by_admin = relationship("HRAdmin", foreign_keys=[recommended_by_admin_id])
 
 # NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
 class ActivityLog(Base):
@@ -243,4 +256,3 @@ class AdminDepartments(Base):
     # Relations
     admin = relationship("HRAdmin")
     department = relationship("Department")
-    
