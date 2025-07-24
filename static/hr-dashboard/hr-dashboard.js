@@ -107,8 +107,8 @@ function renderApplications(filter = "all") {
                     }
                   </span>
                 `
-                    : currentUser.role === "department_head"
-                      ? ''
+                    : currentUser && currentUser.role === "department_head"
+                      ? ""
                       : ""
                 }
               </h4>
@@ -180,14 +180,14 @@ function renderApplications(filter = "all") {
     .join("")
 }
 
-// NOUVELLE FONCTION: Rendre les boutons d'action selon le rôle utilisateur
+// FONCTION CORRIGÉE: Rendre les boutons d'action selon le rôle utilisateur
 function renderApplicationActionButtons(app) {
   if (!currentUser) return ""
 
   // Pour les chefs de département : seulement le bouton recommander
   if (currentUser.role === "department_head") {
     if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
-      // Échapper les caractères spéciaux
+      // Échapper les caractères spéciaux pour éviter les erreurs JavaScript
       const safeCandidateName = app.candidate_name.replace(/'/g, "\\'").replace(/"/g, '\\"')
       const safeJobTitle = app.job_title.replace(/'/g, "\\'").replace(/"/g, '\\"')
 
@@ -221,7 +221,7 @@ function renderApplicationActionButtons(app) {
   return ""
 }
 
-// NOUVELLE FONCTION: Afficher la modal de recommandation
+// FONCTION CORRIGÉE: Afficher la modal de recommandation
 function showRecommendModal(applicationId, candidateName, jobTitle) {
   console.log(`👍 Affichage modal recommandation pour ${candidateName} (ID: ${applicationId})`)
 
@@ -231,33 +231,130 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
     return
   }
 
-  // Échapper les caractères spéciaux pour éviter les erreurs JavaScript
-  const safeCandidateName = candidateName.replace(/'/g, "\\'").replace(/"/g, '\\"')
-  const safeJobTitle = jobTitle.replace(/'/g, "\\'").replace(/"/g, '\\"')
+  // Nettoyer toute modal existante
+  const existingModal = document.querySelector(".recommend-modal-overlay")
+  if (existingModal) {
+    existingModal.remove()
+  }
 
   const modal = document.createElement("div")
   modal.className = "modal-overlay recommend-modal-overlay"
-  modal.style.zIndex = "15000"
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 25000;
+    padding: 2rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  `
 
   modal.innerHTML = `
-    <div class="modal-content recommend-modal">
-      <div class="modal-header">
-        <h3><i class="fas fa-thumbs-up"></i> Recommander cette candidature</h3>
-        <button class="modal-close" onclick="closeRecommendModal()">&times;</button>
+    <div class="modal-content recommend-modal" style="
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid rgba(243, 156, 18, 0.4);
+      border-radius: 20px;
+      max-width: 550px;
+      width: 95%;
+      max-height: 85vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      transform: scale(0.95);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    ">
+      <div class="modal-header" style="
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        border-bottom: none;
+        position: relative;
+        border-radius: 20px 20px 0 0;
+      ">
+        <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+          <i class="fas fa-thumbs-up" style="color: #f39c12;"></i> 
+          Recommander cette candidature
+        </h3>
+        <button class="modal-close" onclick="closeRecommendModal()" style="
+          position: absolute;
+          top: 1.5rem;
+          right: 1.5rem;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: white;
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+          font-size: 1.2rem;
+        ">&times;</button>
       </div>
-      <div class="modal-body">
-        <div class="candidate-info-modal">
-          <div class="candidate-avatar-modal">${getInitials(candidateName)}</div>
+      
+      <div class="modal-body" style="
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 2rem;
+        background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+      ">
+        <div class="candidate-info-modal" style="
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+          padding: 1.5rem;
+          background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+          border: 1px solid rgba(243, 156, 18, 0.3);
+          border-radius: 16px;
+          margin-bottom: 2rem;
+          position: relative;
+          overflow: hidden;
+        ">
+          <div class="candidate-avatar-modal" style="
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+          ">${getInitials(candidateName)}</div>
           <div>
-            <h4>${candidateName}</h4>
-            <p><strong>Poste:</strong> ${jobTitle}</p>
-            <p><strong>Votre rôle:</strong> Chef de département</p>
+            <h4 style="color: #f8fafc; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 700;">${candidateName}</h4>
+            <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Poste:</strong> ${jobTitle}</p>
+            <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Votre rôle:</strong> Chef de département</p>
           </div>
         </div>
         
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-comment"></i>
+        <div class="form-group" style="margin-bottom: 2rem;">
+          <label class="form-label" style="
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            color: #f1f5f9;
+            font-weight: 600;
+            font-size: 0.95rem;
+          ">
+            <i class="fas fa-comment" style="color: #f39c12;"></i>
             Commentaire de recommandation *
           </label>
           <textarea 
@@ -266,38 +363,185 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
             placeholder="Expliquez pourquoi vous recommandez ce candidat (compétences, expérience, adéquation au poste...)..."
             rows="4"
             required
+            style="
+              width: 100%;
+              padding: 1rem;
+              border: 2px solid rgba(203, 213, 225, 0.3);
+              border-radius: 12px;
+              font-size: 0.95rem;
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+              background: rgba(248, 250, 252, 0.95);
+              color: #1e293b;
+              font-weight: 500;
+              box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+              font-family: inherit;
+              resize: vertical;
+              line-height: 1.5;
+            "
           ></textarea>
-          <small class="form-help">Ce commentaire sera visible par les recruteurs et super admins</small>
+          <small class="form-help" style="
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          ">💡 Ce commentaire sera visible par les recruteurs et super admins</small>
         </div>
         
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-flag"></i>
+        <div class="form-group" style="margin-bottom: 2rem;">
+          <label class="form-label" style="
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            color: #f1f5f9;
+            font-weight: 600;
+            font-size: 0.95rem;
+          ">
+            <i class="fas fa-flag" style="color: #f39c12;"></i>
             Niveau de priorité de votre recommandation
           </label>
-          <select id="recommendationPriority" class="form-select">
+          <select id="recommendationPriority" class="form-select" style="
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid rgba(203, 213, 225, 0.3);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(248, 250, 252, 0.95);
+            color: #1e293b;
+            font-weight: 500;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+          ">
             <option value="normal">📋 Recommandation normale</option>
             <option value="high">⭐ Recommandation forte</option>
             <option value="urgent">🔥 Recommandation urgente</option>
           </select>
-          <small class="form-help">Choisissez le niveau selon l'adéquation du candidat</small>
+          <small class="form-help" style="
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          ">💡 Choisissez le niveau selon l'adéquation du candidat</small>
         </div>
         
-        <div class="recommendation-info">
-          <h5><i class="fas fa-info-circle"></i> Cette action va :</h5>
-          <ul>
-            <li><i class="fas fa-star text-warning"></i> Marquer la candidature comme recommandée</li>
-            <li><i class="fas fa-bell text-info"></i> Notifier les recruteurs et super admins</li>
-            <li><i class="fas fa-arrow-up text-success"></i> Donner une priorité élevée à cette candidature</li>
-            <li><i class="fas fa-user-tie text-primary"></i> Associer votre nom à cette recommandation</li>
+        <div class="recommendation-info" style="
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          border-radius: 16px;
+          padding: 1.5rem;
+          margin-top: 2rem;
+          position: relative;
+        ">
+          <h5 style="
+            margin: 0 0 1rem 0;
+            color: #f8fafc;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          ">
+            <i class="fas fa-info-circle" style="color: #3b82f6;"></i> 
+            Cette action va :
+          </h5>
+          <ul style="margin: 0; padding-left: 1.5rem; list-style: none;">
+            <li style="
+              margin: 0.75rem 0;
+              color: #cbd5e1;
+              font-weight: 500;
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+            ">
+              <i class="fas fa-star" style="color: #f59e0b; width: 20px; font-size: 1rem;"></i>
+              Marquer la candidature comme recommandée
+            </li>
+            <li style="
+              margin: 0.75rem 0;
+              color: #cbd5e1;
+              font-weight: 500;
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+            ">
+              <i class="fas fa-bell" style="color: #17a2b8; width: 20px; font-size: 1rem;"></i>
+              Notifier les recruteurs et super admins
+            </li>
+            <li style="
+              margin: 0.75rem 0;
+              color: #cbd5e1;
+              font-weight: 500;
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+            ">
+              <i class="fas fa-arrow-up" style="color: #28a745; width: 20px; font-size: 1rem;"></i>
+              Donner une priorité élevée à cette candidature
+            </li>
+            <li style="
+              margin: 0.75rem 0;
+              color: #cbd5e1;
+              font-weight: 500;
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+            ">
+              <i class="fas fa-user-tie" style="color: #007bff; width: 20px; font-size: 1rem;"></i>
+              Associer votre nom à cette recommandation
+            </li>
           </ul>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeRecommendModal()">
+      
+      <div class="modal-footer" style="
+        flex-shrink: 0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 1.5rem 2rem;
+        border-top: 1px solid rgba(59, 130, 246, 0.2);
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 0 0 20px 20px;
+      ">
+        <button class="btn-secondary" onclick="closeRecommendModal()" style="
+          padding: 0.875rem 1.75rem;
+          border: none;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.95rem;
+          background: linear-gradient(135deg, #64748b, #475569);
+          color: white;
+          border: 1px solid rgba(100, 116, 139, 0.3);
+        ">
           <i class="fas fa-times"></i> Annuler
         </button>
-        <button class="btn-primary recommend" onclick="confirmRecommendation(${applicationId})">
+        <button class="btn-primary recommend" onclick="confirmRecommendation(${applicationId})" style="
+          padding: 0.875rem 1.75rem;
+          border: none;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.95rem;
+          background: linear-gradient(135deg, #f39c12, #e67e22);
+          color: white;
+          border: 1px solid rgba(243, 156, 18, 0.3);
+          box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+        ">
           <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
         </button>
       </div>
@@ -305,10 +549,16 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
   `
 
   document.body.appendChild(modal)
+  // Empêcher le scroll du body
+  document.body.style.overflow = "hidden"
 
   // Animation d'entrée
   requestAnimationFrame(() => {
     modal.style.opacity = "1"
+    const modalContent = modal.querySelector(".recommend-modal")
+    if (modalContent) {
+      modalContent.style.transform = "scale(1)"
+    }
   })
 
   // Focus sur le textarea
@@ -318,22 +568,36 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
       commentField.focus()
     }
   }, 100)
+
+  // Fermer en cliquant à l'extérieur
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      closeRecommendModal()
+    }
+  })
 }
 
-// NOUVELLE FONCTION: Fermer la modal de recommandation
+// FONCTION CORRIGÉE: Fermer la modal de recommandation
 function closeRecommendModal() {
   const modal = document.querySelector(".recommend-modal-overlay")
   if (modal) {
     modal.style.opacity = "0"
+    const modalContent = modal.querySelector(".recommend-modal")
+    if (modalContent) {
+      modalContent.style.transform = "scale(0.95)"
+    }
+
     setTimeout(() => {
       if (modal.parentElement) {
         modal.remove()
       }
-    }, 10)
+      // S'assurer que le body peut scroller à nouveau
+      document.body.style.overflow = "auto"
+    }, 300)
   }
 }
 
-// NOUVELLE FONCTION: Confirmer la recommandation
+// FONCTION CORRIGÉE: Confirmer la recommandation
 async function confirmRecommendation(applicationId) {
   console.log(`👍 Confirmation recommandation candidature ${applicationId}`)
 
@@ -362,7 +626,9 @@ async function confirmRecommendation(applicationId) {
       return
     }
 
+    // Fermer la modal AVANT d'afficher le loading
     closeRecommendModal()
+
     showLoading("Traitement de votre recommandation...")
 
     const response = await fetch(`/api/applications/${applicationId}/recommend`, {
@@ -378,13 +644,11 @@ async function confirmRecommendation(applicationId) {
 
     const result = await response.json()
     hideLoading()
-    
+
     if (result.success) {
-      const confirmBtn = document.querySelector(".modal-footer .btn-primary.recommend")
-      if (confirmBtn) confirmBtn.disabled = true
-      closeRecommendModal()
       console.log("👍 Candidature recommandée avec succès")
 
+      // Afficher la notification de succès
       showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
 
       // Recharger les candidatures pour voir les changements
@@ -590,14 +854,7 @@ function updateStatsDisplay(stats) {
   const jobChange = document.querySelector("#totalJobs").parentElement.querySelector(".stat-change")
   const empChange = document.querySelector("#totalEmployees").parentElement.querySelector(".stat-change")
 
-  if (deptChange) deptChange.textContent = stats.dept_change || "+0%"
-  if (jobChange) jobChange.textContent = stats.job_change || "+0%"
-  if (empChange) empChange.textContent = stats.emp_change || "+0%"
 
-  // Mettre à jour les classes de couleur
-  updateStatChangeClass(deptChange, stats.dept_change || "+0%")
-  updateStatChangeClass(jobChange, stats.job_change || "+0%")
-  updateStatChangeClass(empChange, stats.emp_change || "+0%")
 
   console.log("✅ FRONTEND: Statistiques affichées")
 }
@@ -1700,7 +1957,14 @@ document.addEventListener("click", (e) => {
 // Gestion des touches clavier
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
-    // Fermer les modals ouverts
+    // Fermer la modal de recommandation si ouverte
+    const recommendModal = document.querySelector(".recommend-modal-overlay")
+    if (recommendModal) {
+      closeRecommendModal()
+      return
+    }
+
+    // Fermer les autres modals
     const modals = ["departmentModal", "jobModal", "employeeModal"]
     modals.forEach((modalId) => {
       const modal = document.getElementById(modalId)
@@ -1712,12 +1976,6 @@ document.addEventListener("keydown", (e) => {
         }, 300)
       }
     })
-
-    // Fermer la modal de recommandation
-    const recommendModal = document.querySelector(".recommend-modal-overlay")
-    if (recommendModal) {
-      closeRecommendModal()
-    }
   }
 })
 
@@ -1736,79 +1994,47 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 })
 
-// FONCTION DE NOTIFICATION AMÉLIORÉE POUR LE NOUVEAU CSS
+// FONCTION DE NOTIFICATION AMÉLIORÉE
 function showNotification(message, type = "info") {
   console.log(`📢 NOTIFICATION [${type.toUpperCase()}]: ${message}`)
 
   // Créer l'élément de notification
   const notification = document.createElement("div")
   notification.className = `notification notification-${type}`
-  notification.innerHTML = `
-    <div class="notification-content">
-      <span class="notification-message">${message}</span>
-      <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 30000;
+    min-width: 300px;
+    max-width: 500px;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(15px);
+    border-left: 4px solid;
+    font-weight: 500;
+    animation: slideInRight 0.3s ease;
+    color: white;
   `
 
-  // Ajouter les styles si pas encore fait
-  if (!document.getElementById("notificationStyles")) {
-    const styles = document.createElement("style")
-    styles.id = "notificationStyles"
-    styles.textContent = `
-      .notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10000;
-        min-width: 300px;
-        max-width: 500px;
-        padding: 1rem;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(10px);
-        animation: slideInRight 0.3s ease;
-        border-left: 4px solid;
-      }
-      
-      .notification-success {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.8));
-        border-left-color: #10b981;
-        color: white;
-      }
-      
-      .notification-error {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.8));
-        border-left-color: #ef4444;
-        color: white;
-      }
-      
-      .notification-warning {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.8));
-        border-left-color: #f59e0b;
-        color: white;
-      }
-      
-      .notification-info {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.8));
-        border-left-color: #3b82f6;
-        color: white;
-      }
-      
-      .notification-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-      }
-      
-      .notification-message {
-        flex: 1;
-        font-weight: 500;
-      }
-      
-      .notification-close {
+  // Couleurs selon le type
+  const colors = {
+    success:
+      "background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.9)); border-left-color: #10b981;",
+    error:
+      "background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.9)); border-left-color: #ef4444;",
+    warning:
+      "background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.9)); border-left-color: #f59e0b;",
+    info: "background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.9)); border-left-color: #3b82f6;",
+  }
+
+  notification.style.cssText += colors[type] || colors.info
+
+  notification.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+      <span style="flex: 1; font-weight: 500;">${message}</span>
+      <button onclick="this.parentElement.parentElement.remove()" style="
         background: rgba(255, 255, 255, 0.2);
         border: none;
         color: white;
@@ -1820,13 +2046,18 @@ function showNotification(message, type = "info") {
         align-items: center;
         justify-content: center;
         transition: all 0.3s ease;
-      }
-      
-      .notification-close:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: scale(1.1);
-      }
-      
+        flex-shrink: 0;
+      ">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `
+
+  // Ajouter les styles d'animation si pas encore fait
+  if (!document.getElementById("notificationStyles")) {
+    const styles = document.createElement("style")
+    styles.id = "notificationStyles"
+    styles.textContent = `
       @keyframes slideInRight {
         from {
           opacity: 0;
@@ -1837,6 +2068,17 @@ function showNotification(message, type = "info") {
           transform: translateX(0);
         }
       }
+      
+      @keyframes slideOutRight {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+      }
     `
     document.head.appendChild(styles)
   }
@@ -1844,12 +2086,14 @@ function showNotification(message, type = "info") {
   // Ajouter la notification au DOM
   document.body.appendChild(notification)
 
-  // Supprimer automatiquement après 5 secondes
+  // Supprimer automatiquement avec animation
   setTimeout(() => {
     if (notification.parentElement) {
-      notification.style.animation = "slideInRight 0.3s ease reverse"
+      notification.style.animation = "slideOutRight 0.3s ease"
       setTimeout(() => {
-        notification.remove()
+        if (notification.parentElement) {
+          notification.remove()
+        }
       }, 300)
     }
   }, 5000)
@@ -1860,8 +2104,28 @@ function showLoading(message) {
   console.log("⏳ Affichage loading:", message)
 
   const loadingHTML = `
-    <div class="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 25000;">
-      <div class="loading-content" style="background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%); padding: 2rem; border-radius: 12px; text-align: center; color: white; border: 1px solid rgba(59, 130, 246, 0.3);">
+    <div class="loading-overlay" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 28000;
+    ">
+      <div class="loading-content" style="
+        background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        color: white;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      ">
         <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #3b82f6;"></i>
         <p style="margin: 0; font-weight: 500;">${message}</p>
       </div>
@@ -1878,304 +2142,4 @@ function hideLoading() {
   }
 }
 
-console.log("✅ FRONTEND: Script chargé avec succès")
-// FONCTION MISE À JOUR: Rendre les boutons d'action selon le rôle utilisateur
-function renderApplicationActionButtons(app) {
-  if (!currentUser) return ""
-
-  // Pour les chefs de département : seulement le bouton recommander
-  if (currentUser.role === "department_head") {
-    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
-      // Échapper les caractères spéciaux pour éviter les erreurs JavaScript
-      const safeCandidateName = app.candidate_name.replace(/'/g, "\\'").replace(/"/g, '\\"')
-      const safeJobTitle = app.job_title.replace(/'/g, "\\'").replace(/"/g, '\\"')
-
-      return `
-        <button class="app-btn recommend" onclick="showRecommendConfirmation(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
-          <i class="fas fa-thumbs-up"></i> Recommander
-        </button>
-      `
-    }
-    // Si déjà recommandé, afficher un indicateur
-    if (app.is_recommended) {
-      return `
-        <div class="recommendation-status">
-          <i class="fas fa-check-circle"></i> Déjà recommandé
-        </div>
-      `
-    }
-    return "" // Pas de boutons pour les autres statuts
-  }
-
-  // Pour les recruteurs et super admins : boutons complets selon le statut
-  if (app.status === "pending") {
-    return `
-      <button class="app-btn review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-        <i class="fas fa-eye"></i> Examiner
-      </button>
-      <button class="app-btn accept" onclick="showAcceptConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}', '${app.department_name}')">
-        <i class="fas fa-check"></i> Accepter
-      </button>
-      <button class="app-btn reject" onclick="showRejectConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}')">
-        <i class="fas fa-times"></i> Rejeter
-      </button>
-    `
-  } else if (app.status === "reviewed") {
-    return `
-      <button class="app-btn schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
-        <i class="fas fa-calendar"></i> Programmer entretien
-      </button>
-      <button class="app-btn accept" onclick="showAcceptConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}', '${app.department_name}')">
-        <i class="fas fa-check-circle"></i> Accepter
-      </button>
-      <button class="app-btn reject" onclick="showRejectConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}')">
-        <i class="fas fa-times"></i> Rejeter
-      </button>
-    `
-  } else if (app.status === "interview_scheduled") {
-    return `
-      <button class="app-btn complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-        <i class="fas fa-check-double"></i> Entretien terminé
-      </button>
-      <button class="app-btn accept" onclick="showAcceptConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}', '${app.department_name}')">
-        <i class="fas fa-user-check"></i> Accepter
-      </button>
-      <button class="app-btn reject" onclick="showRejectConfirmation(${app.id}, '${app.candidate_name}', '${app.job_title}')">
-        <i class="fas fa-times"></i> Rejeter
-      </button>
-    `
-  }
-
-  return ""
-}
-
-// FONCTION IDENTIQUE À JOB-DETAILS: Afficher la modal de confirmation de recommandation
-function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
-  console.log(`👍 Affichage confirmation recommandation pour ${candidateName} (ID: ${applicationId})`)
-
-  if (!currentUser || currentUser.role !== "department_head") {
-    showNotification("Seuls les chefs de département peuvent recommander des candidatures", "warning")
-    return
-  }
-
-  const safeCandidateName = candidateName.replace(/'/g, "\\'").replace(/"/g, '\\"')
-  const safeJobTitle = jobTitle.replace(/'/g, "\\'").replace(/"/g, '\\"')
-
-  const modal = document.createElement("div")
-  modal.className = "modal-overlay"
-  modal.style.opacity = "1"
-  modal.style.display = "flex"
-
-  modal.innerHTML = `
-    <div class="modal-content recommend-modal">
-      <div class="modal-header">
-        <h3><i class="fas fa-thumbs-up"></i> Recommander cette candidature</h3>
-        <button class="modal-close" onclick="closeRecommendConfirmationModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      
-      <div class="modal-body">
-        <div class="candidate-info-modal">
-          <div class="candidate-avatar-modal">${candidateName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")}</div>
-          <div>
-            <h4>${candidateName}</h4>
-            <p><strong>Poste:</strong> ${jobTitle}</p>
-            <p><strong>Votre rôle:</strong> Chef de département</p>
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-comment"></i>
-            Commentaire de recommandation *
-          </label>
-          <textarea 
-            id="recommendationComment" 
-            class="form-textarea" 
-            placeholder="Expliquez pourquoi vous recommandez ce candidat (compétences, expérience, adéquation au poste...)..."
-            rows="4"
-            required
-          ></textarea>
-          <small class="form-help">Ce commentaire sera visible par les recruteurs et super admins</small>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-flag"></i>
-            Niveau de priorité de votre recommandation
-          </label>
-          <select id="recommendationPriority" class="form-select">
-            <option value="normal">📋 Recommandation normale</option>
-            <option value="high">⭐ Recommandation forte</option>
-            <option value="urgent">🔥 Recommandation urgente</option>
-          </select>
-          <small class="form-help">Choisissez le niveau selon l'adéquation du candidat</small>
-        </div>
-        
-        <div class="recommendation-info">
-          <h5><i class="fas fa-info-circle"></i> Cette action va :</h5>
-          <ul>
-            <li><i class="fas fa-star text-warning"></i> Marquer la candidature comme recommandée</li>
-            <li><i class="fas fa-bell text-info"></i> Notifier les recruteurs et super admins</li>
-            <li><i class="fas fa-arrow-up text-success"></i> Donner une priorité élevée à cette candidature</li>
-            <li><i class="fas fa-user-tie text-primary"></i> Associer votre nom à cette recommandation</li>
-          </ul>
-        </div>
-      </div>
-      
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeRecommendConfirmationModal()">
-          <i class="fas fa-times"></i> Annuler
-        </button>
-        <button class="btn-primary recommend" onclick="confirmRecommendApplication(${applicationId})">
-          <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
-        </button>
-      </div>
-    </div>
-  `
-
-  document.body.appendChild(modal)
-
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) {
-      closeRecommendConfirmationModal()
-    }
-  })
-
-  document.addEventListener("keydown", handleEscapeKey)
-
-  // Focus sur le textarea
-  setTimeout(() => {
-    const commentField = document.getElementById("recommendationComment")
-    if (commentField) {
-      commentField.focus()
-    }
-  }, 100)
-}
-
-// FONCTION IDENTIQUE À JOB-DETAILS: Confirmer la recommandation
-async function confirmRecommendApplication(applicationId) {
-  console.log(`👍 Confirmation recommandation candidature ${applicationId}`)
-
-  try {
-    const commentElement = document.getElementById("recommendationComment")
-    const priorityElement = document.getElementById("recommendationPriority")
-
-    if (!commentElement || !priorityElement) {
-      showNotification("Erreur: éléments du formulaire non trouvés", "error")
-      return
-    }
-
-    const comment = commentElement.value.trim()
-    const priority = priorityElement.value
-
-    if (!comment) {
-      showNotification("Le commentaire de recommandation est obligatoire", "warning")
-      commentElement.focus()
-      return
-    }
-
-    if (comment.length < 10) {
-      showNotification("Le commentaire doit contenir au moins 10 caractères", "warning")
-      commentElement.focus()
-      return
-    }
-
-    closeRecommendConfirmationModal()
-    showLoading("Traitement de votre recommandation...")
-
-    const response = await fetch(`/api/applications/${applicationId}/recommend`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        comment: comment,
-        priority: priority,
-      }),
-    })
-
-    const result = await response.json()
-    hideLoading()
-
-    if (result.success) {
-      console.log("👍 Candidature recommandée avec succès")
-      showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
-
-      // Recharger les candidatures pour voir les changements
-      setTimeout(async () => {
-        console.log("🔄 Rechargement des données après recommandation...")
-        await loadApplications()
-      }, 1000)
-
-      setTimeout(() => {
-        showNotification("🎯 Les recruteurs et super admins ont été notifiés de votre recommandation", "info")
-      }, 2000)
-    } else {
-      console.error("❌ Erreur recommandation candidature:", result.message)
-      showNotification(`❌ ${result.message}`, "error")
-    }
-  } catch (error) {
-    hideLoading()
-    console.error("❌ Erreur réseau recommandation candidature:", error)
-    showNotification("❌ Erreur de connexion lors de la recommandation", "error")
-  }
-}
-
-// FONCTION IDENTIQUE À JOB-DETAILS: Fermer la modal de confirmation
-function closeRecommendConfirmationModal() {
-  const modal = document.querySelector(".modal-overlay")
-  if (modal) {
-    modal.classList.add("closing")
-    const recommendModal = modal.querySelector(".recommend-modal")
-    if (recommendModal) {
-      recommendModal.classList.add("closing")
-    }
-
-    setTimeout(() => {
-      modal.remove()
-      document.removeEventListener("keydown", handleEscapeKey)
-    }, 300)
-  }
-}
-
-// FONCTION IDENTIQUE À JOB-DETAILS: Gérer la touche Escape
-function handleEscapeKey(e) {
-  if (e.key === "Escape") {
-    closeRecommendConfirmationModal()
-  }
-}
-
-// Ajouter les styles CSS pour les boutons de recommandation
-const recommendationStyles = document.createElement("style")
-recommendationStyles.textContent = `
-  .app-btn.recommend {
-    background: linear-gradient(135deg, #f39c12, #e67e22);
-    color: white;
-    border: 1px solid rgba(243, 156, 18, 0.3);
-    animation: pulse 2s infinite;
-  }
-
-  .app-btn.recommend:hover {
-    background: linear-gradient(135deg, #e67e22, #d35400);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
-  }
-
-  .recommendation-status {
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
-    font-size: 0.85rem;
-  }
-`
-document.head.appendChild(recommendationStyles)
+console.log("✅ FRONTEND: Script de recommandation corrigé et fonctionnel")

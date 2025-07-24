@@ -3337,3 +3337,181 @@ html {
 .notification-close:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+/* CORRECTIONS CSS POUR LES MODALS ET NOTIFICATIONS */
+
+/* Modal de recommandation avec z-index corrigé */
+.recommend-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 25000 !important;
+  padding: 2rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Modal content avec animations fluides */
+.recommend-modal {
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 2px solid rgba(243, 156, 18, 0.4) !important;
+  border-radius: 20px !important;
+  max-width: 550px !important;
+  width: 95% !important;
+  max-height: 85vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Header de la modal */
+.recommend-modal .modal-header {
+  flex-shrink: 0 !important;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+  color: white !important;
+  padding: 1.5rem 2rem !important;
+  border-bottom: none !important;
+  position: relative !important;
+  border-radius: 20px 20px 0 0 !important;
+}
+
+/* Body avec scroll contrôlé */
+.recommend-modal .modal-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 2rem !important;
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%) !important;
+}
+
+/* Footer fixe */
+.recommend-modal .modal-footer {
+  flex-shrink: 0 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 1rem !important;
+  padding: 1.5rem 2rem !important;
+  border-top: 1px solid rgba(59, 130, 246, 0.2) !important;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  border-radius: 0 0 20px 20px !important;
+}
+
+/* Notifications avec z-index très élevé */
+.notification {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 30000 !important;
+  min-width: 300px !important;
+  max-width: 500px !important;
+  padding: 1rem !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(15px) !important;
+  border-left: 4px solid !important;
+  font-weight: 500 !important;
+  animation: slideInRight 0.3s ease !important;
+}
+
+/* Loading overlay avec z-index approprié */
+.loading-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(5px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 28000 !important;
+}
+
+/* Bouton de recommandation avec animation */
+.app-btn.recommend {
+  background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+  color: white !important;
+  border: 1px solid rgba(243, 156, 18, 0.3) !important;
+  animation: pulse 2s infinite !important;
+  transition: all 0.3s ease !important;
+}
+
+.app-btn.recommend:hover {
+  background: linear-gradient(135deg, #e67e22, #d35400) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4) !important;
+}
+
+/* Statut de recommandation */
+.recommendation-status {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: white !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  font-weight: 500 !important;
+  font-size: 0.85rem !important;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+  .recommend-modal {
+    width: 98% !important;
+    max-height: 90vh !important;
+    margin: 1rem 0.5rem !important;
+  }
+
+  .recommend-modal .modal-header,
+  .recommend-modal .modal-body,
+  .recommend-modal .modal-footer {
+    padding: 1.25rem !important;
+  }
+
+  .notification {
+    top: 10px !important;
+    right: 10px !important;
+    left: 10px !important;
+    min-width: auto !important;
+    max-width: none !important;
+  }
+}
+
+/* Animation de pulsation pour les éléments importants */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Scrollbar personnalisée pour la modal */
+.recommend-modal .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.recommend-modal .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.recommend-modal .modal-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border-radius: 3px;
+}
+
+.recommend-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+}
