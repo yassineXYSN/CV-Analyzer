@@ -40,33 +40,44 @@ body {
   line-height: 1.6;
 }
 
-/* ===== SCROLLBARS INVISIBLES POUR LES FORMULAIRES ===== */
-.modal-body::-webkit-scrollbar,
-.form-section::-webkit-scrollbar,
-.manager-assignment-pro::-webkit-scrollbar,
-.manager-subsection-pro::-webkit-scrollbar {
+/* ===== SCROLLBARS INVISIBLES POUR LES FORMULAIRES SPÉCIFIQUES ===== */
+
+/* Scrollbars invisibles pour les modals de département et job */
+#departmentModal .modal-body::-webkit-scrollbar,
+#jobModal .modal-body::-webkit-scrollbar,
+#departmentModal .form-section::-webkit-scrollbar,
+#jobModal .form-section::-webkit-scrollbar,
+#departmentModal .manager-assignment-pro::-webkit-scrollbar,
+#jobModal .manager-assignment-pro::-webkit-scrollbar,
+#departmentModal .manager-subsection-pro::-webkit-scrollbar,
+#jobModal .manager-subsection-pro::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
-  display: none;
+  display: none !important;
 }
 
-.modal-body,
-.form-section,
-.manager-assignment-pro,
-.manager-subsection-pro {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+#departmentModal .modal-body,
+#jobModal .modal-body,
+#departmentModal .form-section,
+#jobModal .form-section,
+#departmentModal .manager-assignment-pro,
+#jobModal .manager-assignment-pro,
+#departmentModal .manager-subsection-pro,
+#jobModal .manager-subsection-pro {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
 }
 
-/* Garder le scroll fonctionnel mais invisible */
-.modal-body {
+/* Garder le scroll fonctionnel mais invisible pour les modals de formulaires */
+#departmentModal .modal-body,
+#jobModal .modal-body {
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 /* ===== SCROLLBARS VISIBLES POUR LE RESTE ===== */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 0px;
   height: 6px;
 }
 
@@ -200,7 +211,7 @@ html {
   grid-template-columns: 1fr 400px;
   gap: 1.5rem;
   height: calc(100vh - 140px);
-  overflow: hidden; /* Éviter le double scroll */
+  overflow: hidden;
 }
 
 .main-content {
@@ -208,7 +219,6 @@ html {
   overflow-x: hidden;
   padding-right: 0.5rem;
   scroll-behavior: smooth;
-  /* Éviter le scroll horizontal */
   max-width: 100%;
 }
 
@@ -231,7 +241,7 @@ html {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.5rem;
-  margin-right: -0.5rem; /* Compenser le padding pour éviter le décalage */
+  margin-right: -0.5rem;
 }
 
 /* Header */
@@ -393,7 +403,7 @@ html {
 .section-header h2 {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #f8fafc; /* Titre plus visible */
+  color: #f8fafc;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -614,7 +624,7 @@ html {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0.5rem;
-  margin: -0.5rem; /* Compenser le padding */
+  margin: -0.5rem;
 }
 
 .application-card {
@@ -729,7 +739,7 @@ html {
 .sidebar-header h3 {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #f1f5f9; /* Plus visible */
+  color: #f1f5f9;
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -743,20 +753,20 @@ html {
 }
 
 .applicant-details h4 {
-  color: #f8fafc; /* Plus visible */
+  color: #f8fafc;
   margin-bottom: 0.25rem;
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .applicant-details p {
-  color: #cbd5e1; /* Plus visible */
+  color: #cbd5e1;
   font-size: 0.9rem;
   margin-bottom: 0.25rem;
 }
 
 .department-info h4 {
-  color: #f8fafc; /* Plus visible */
+  color: #f8fafc;
   margin-bottom: 0.5rem;
   font-size: 1.2rem;
   font-weight: 700;
@@ -764,7 +774,7 @@ html {
 }
 
 .department-info p {
-  color: #cbd5e1; /* Plus visible */
+  color: #cbd5e1;
   font-size: 0.9rem;
   margin-bottom: 0.5rem;
   line-height: 1.5;
@@ -1229,6 +1239,7 @@ html {
   color: var(--text-primary);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  scrollbar-width: 0px;
 }
 
 @keyframes modalSlideIn {
