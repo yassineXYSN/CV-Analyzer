@@ -86,100 +86,146 @@ function renderApplications(filter = "all") {
   container.innerHTML = filteredApps
     .map(
       (app) => `
-      <div class="application-card ${app.status} ${app.is_recommended ? "has-recommendation" : ""}">
-        <div class="application-header">
-          <div class="applicant-info">
-            <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
-            <div class="applicant-details">
-              <h4>${app.candidate_name}
-                ${
-                  app.is_recommended
-                    ? `
-                  <span class="recommendation-badge ${app.recommendation_priority}" 
-                         title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
-                    <i class="fas fa-star"></i> 
-                    ${
-                      app.recommendation_priority === "urgent"
-                        ? "URGENT"
-                        : app.recommendation_priority === "high"
-                          ? "PRIORITÉ HAUTE"
-                          : "RECOMMANDÉ"
-                    }
-                  </span>
-                `
-                    : currentUser && currentUser.role === "department_head"
-                      ? ""
-                      : ""
-                }
-              </h4>
-              <p>${app.candidate_email}</p>
-              <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
-            </div>
-          </div>
-          <div class="application-status ${app.status}">
-            ${getStatusText(app.status)}
+  <div class="application-card ${app.status}">
+    <div class="application-header">
+      <div class="applicant-info">
+        <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
+        <div class="applicant-details">
+          <h4>${app.candidate_name}
             ${
-              app.is_recommended && app.recommendation_priority !== "normal"
-                ? `<span class="priority-indicator ${app.recommendation_priority}">
-                ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
-              </span>`
+              app.is_recommended
+                ? `
+              <span class="recommendation-badge ${app.recommendation_priority}" 
+                     title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
+                <i class="fas fa-star"></i> 
+                ${
+                  app.recommendation_priority === "urgent"
+                    ? "URGENT"
+                    : app.recommendation_priority === "high"
+                      ? "PRIORITÉ HAUTE"
+                      : "RECOMMANDÉ"
+                }
+              </span>
+            `
                 : ""
             }
-          </div>
-        </div>
-        
-        ${
-          app.is_recommended
-            ? `
-          <div class="recommendation-info">
-            <i class="fas fa-user-tie"></i>
-            Recommandé par: ${app.recommended_by || "N/A"} 
-            ${app.recommendation_date ? `le ${formatDate(app.recommendation_date)}` : ""}
-          </div>
-        `
-            : ""
-        }
-        
-        <div class="application-job">
-          <div class="job-info">
-            <div class="job-title">${app.job_title}</div>
-            <div class="job-department">${app.department_name}</div>
-            <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
-          </div>
-          <div class="application-date">
-            Candidature envoyée le ${formatDate(app.application_date)}
-            <br><small>Il y a ${app.days_since_application} jour(s)</small>
-          </div>
-        </div>
-        
-        ${
-          app.recommendation_comment
-            ? `
-          <div class="recommendation-comment">
-            <i class="fas fa-comment-alt"></i>
-            <strong>Commentaire de recommandation:</strong>
-            <p>"${app.recommendation_comment}"</p>
-            ${app.recommended_by ? `<small>— ${app.recommended_by}</small>` : ""}
-          </div>
-        `
-            : ""
-        }
-        
-        <div class="application-actions">
-          <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
-            <i class="fas fa-user"></i> Voir Profil
-          </button>
-          <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
-            <i class="fas fa-info-circle"></i> Détails du poste
-          </button>
-          ${renderApplicationActionButtons(app)}
+          </h4>
+          <p>${app.candidate_email}</p>
+          <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
         </div>
       </div>
-    `,
+      <div class="application-status ${app.status}">
+        ${getStatusText(app.status)}
+        ${
+          app.is_recommended && app.recommendation_priority !== "normal"
+            ? `<span class="priority-indicator ${app.recommendation_priority}">
+            ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+          </span>`
+            : ""
+        }
+      </div>
+    </div>
+    
+    ${
+      app.is_recommended
+        ? `
+      <div class="recommendation-info clickable" onclick="toggleRecommendationComment(${app.id})" style="
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+        border: 1px solid rgba(243, 156, 18, 0.3);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin: 0.75rem 0;
+        position: relative;
+      " onmouseover="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(230, 126, 34, 0.08))'" 
+         onmouseout="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05))'">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-user-tie" style="color: #f39c12;"></i>
+            <span style="color: #f39c12; font-weight: 500;">
+              Recommandé par: ${app.recommended_by || "N/A"} 
+              ${app.recommendation_date ? `le ${formatDate(app.recommendation_date)}` : ""}
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <small style="color: #cbd5e1; font-size: 0.8rem;">Voir le commentaire</small>
+            <i class="fas fa-chevron-down recommendation-chevron-${app.id}" style="
+              color: #f39c12; 
+              transition: transform 0.3s ease;
+              font-size: 0.9rem;
+            "></i>
+          </div>
+        </div>
+      </div>
+      
+      ${
+        app.recommendation_comment
+          ? `
+        <div class="recommendation-comment recommendation-comment-${app.id}" style="
+          background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+          border: 1px solid rgba(243, 156, 18, 0.3);
+          border-radius: 8px;
+          padding: 0;
+          margin: 0 0 1rem 0;
+          max-height: 0;
+          overflow: hidden;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          opacity: 0;
+        ">
+          <div style="padding: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <i class="fas fa-comment-alt" style="color: #f39c12;"></i>
+              <strong style="color: #f8fafc;">Commentaire de recommandation:</strong>
+            </div>
+            <p style="
+              font-style: italic;
+              margin: 0.5rem 0;
+              color: #e2e8f0;
+              line-height: 1.5;
+              background: rgba(0, 0, 0, 0.2);
+              padding: 0.75rem;
+              border-radius: 6px;
+              border-left: 3px solid #f39c12;
+            ">"${app.recommendation_comment}"</p>
+            ${app.recommended_by ? `<small style="color: #cbd5e1; font-weight: 500;">— ${app.recommended_by}</small>` : ""}
+          </div>
+        </div>
+      `
+          : ""
+      }
+    `
+        : ""
+    }
+    
+    <div class="application-job">
+      <div class="job-info">
+        <div class="job-title">${app.job_title}</div>
+        <div class="job-department">${app.department_name}</div>
+        <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
+      </div>
+      <div class="application-date">
+        Candidature envoyée le ${formatDate(app.application_date)}
+        <br><small>Il y a ${app.days_since_application} jour(s)</small>
+      </div>
+    </div>
+    
+    <div class="application-actions">
+      <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
+        <i class="fas fa-user"></i> Voir Profil
+      </button>
+      <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
+        <i class="fas fa-info-circle"></i> Détails du poste
+      </button>
+      ${renderApplicationActionButtons(app)}
+    </div>
+  </div>
+`,
     )
     .join("")
 }
 
+// NOUVELLE FONCTION: Toggle du commentaire de recommandation
 // FONCTION CORRIGÉE: Rendre les boutons d'action selon le rôle utilisateur
 function renderApplicationActionButtons(app) {
   if (!currentUser) return ""
@@ -577,6 +623,57 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
   })
 }
 
+// NOUVELLE FONCTION: Toggle du commentaire de recommandation
+function toggleRecommendationComment(applicationId) {
+  console.log(`🔄 Toggle commentaire recommandation pour l'application ${applicationId}`)
+
+  const commentElement = document.querySelector(`.recommendation-comment-${applicationId}`)
+  const chevronElement = document.querySelector(`.recommendation-chevron-${applicationId}`)
+
+  if (!commentElement || !chevronElement) {
+    console.error("❌ Éléments de recommandation non trouvés")
+    return
+  }
+
+  const isExpanded = commentElement.style.maxHeight && commentElement.style.maxHeight !== "0px"
+
+  if (isExpanded) {
+    // Fermer le commentaire
+    commentElement.style.maxHeight = "0px"
+    commentElement.style.opacity = "0"
+    commentElement.style.padding = "0"
+    chevronElement.style.transform = "rotate(0deg)"
+
+    // Changer le texte d'indication
+    const parentInfo = chevronElement.closest(".recommendation-info")
+    const hintText = parentInfo.querySelector("small")
+    if (hintText) {
+      hintText.textContent = "Voir le commentaire"
+    }
+  } else {
+    // Ouvrir le commentaire
+    commentElement.style.maxHeight = commentElement.scrollHeight + "px"
+    commentElement.style.opacity = "1"
+    commentElement.style.padding = "0"
+    chevronElement.style.transform = "rotate(180deg)"
+
+    // Changer le texte d'indication
+    const parentInfo = chevronElement.closest(".recommendation-info")
+    const hintText = parentInfo.querySelector("small")
+    if (hintText) {
+      hintText.textContent = "Masquer le commentaire"
+    }
+
+    // Scroll fluide vers le commentaire après l'animation
+    setTimeout(() => {
+      commentElement.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      })
+    }, 200)
+  }
+}
+
 // FONCTION CORRIGÉE: Fermer la modal de recommandation
 function closeRecommendModal() {
   const modal = document.querySelector(".recommend-modal-overlay")
@@ -854,7 +951,14 @@ function updateStatsDisplay(stats) {
   const jobChange = document.querySelector("#totalJobs").parentElement.querySelector(".stat-change")
   const empChange = document.querySelector("#totalEmployees").parentElement.querySelector(".stat-change")
 
+  if (deptChange) deptChange.textContent = stats.dept_change || "+0%"
+  if (jobChange) jobChange.textContent = stats.job_change || "+0%"
+  if (empChange) empChange.textContent = stats.emp_change || "+0%"
 
+  // Mettre à jour les classes de couleur
+  updateStatChangeClass(deptChange, stats.dept_change || "+0%")
+  updateStatChangeClass(jobChange, stats.job_change || "+0%")
+  updateStatChangeClass(empChange, stats.emp_change || "+0%")
 
   console.log("✅ FRONTEND: Statistiques affichées")
 }
@@ -1773,7 +1877,7 @@ async function loadEmployees() {
       employees = []
     }
   } catch (error) {
-    console.error("❌ FRONTEND: Erreur réseau chargement employés:", error)
+    console.error("❌ Erreur réseau chargement employés:", error)
     employees = []
   }
 }
