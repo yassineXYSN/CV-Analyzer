@@ -4,18 +4,43 @@ console.log("🎯 FRONTEND: Dashboard chargé avec succès")
 let departments = []
 let employees = []
 let jobs = []
-let applications = [] // Variable pour les candidatures
 let currentUser = null
 const expandedDepartments = new Set()
 let filteredDepartments = []
 let isSearchActive = false
 let jobSkills = [] // Array to store selected skills
 
-// Initialisation du dashboard
+// Initialize global applications variable
+window.applications = []
+
+// Initialize dashboard when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 FRONTEND: Initialisation du dashboard")
+  console.log("🚀 FRONTEND: Dashboard initializing...")
+
+  // Initialize all dashboard features
   initializeDashboard()
+
+  console.log("✅ FRONTEND: Dashboard initialized")
 })
+
+async function loadDashboardData() {
+  console.log("📊 FRONTEND: Loading dashboard data...")
+
+  try {
+    // Load applications with compatibility (use the enhanced function if available)
+    if (typeof window.loadApplicationsWithFilters === "function") {
+      console.log("🎯 FRONTEND: Using enhanced applications loader with compatibility")
+      await window.loadApplicationsWithFilters()
+    } else {
+      console.log("⚠️ FRONTEND: Falling back to basic applications loader")
+      await loadApplications()
+    }
+
+    console.log("✅ FRONTEND: Dashboard data loaded successfully")
+  } catch (error) {
+    console.error("❌ FRONTEND: Error loading dashboard data:", error)
+  }
+}
 
 // Fonction d'initialisation
 async function initializeDashboard() {
@@ -26,13 +51,10 @@ async function initializeDashboard() {
     await loadCurrentUser()
 
     // Charger les données de base
-    await Promise.all([
-      loadDepartments(),
-      loadEmployees(),
-      loadJobs(),
-      loadApplications(), // NOUVEAU: Charger les candidatures
-      loadDashboardStats(),
-    ])
+    await Promise.all([loadDepartments(), loadEmployees(), loadJobs(), loadDashboardStats()])
+
+    // Load applications with compatibility AFTER other data is loaded
+    await loadDashboardData()
 
     console.log("✅ FRONTEND: Initialisation terminée")
   } catch (error) {
@@ -40,35 +62,45 @@ async function initializeDashboard() {
   }
 }
 
-// NOUVELLE FONCTION: Charger les candidatures depuis l'API
+// FONCTION DE BASE: Charger les candidatures depuis l'API (fallback)
 async function loadApplications() {
-  console.log("📋 FRONTEND: Chargement des candidatures")
+  console.log("📋 FRONTEND: Chargement des candidatures (mode basique)")
 
   try {
     const response = await fetch("/api/applications")
     const result = await response.json()
 
     if (result.success) {
-      applications = result.applications || []
-      console.log(`✅ FRONTEND: ${applications.length} candidatures chargées`)
-      renderApplications()
+      window.applications = result.applications || []
+      console.log(`✅ FRONTEND: ${window.applications.length} candidatures chargées`)
+
+      // Check if we have compatibility data
+      if (window.applications.length > 0 && window.applications[0].compatibility_percentage !== undefined) {
+        console.log("🎯 FRONTEND: Compatibility data detected, using enhanced rendering")
+        if (typeof window.renderApplicationsWithCompatibility === "function") {
+          window.renderApplicationsWithCompatibility()
+        } else {
+          renderApplications()
+        }
+      } else {
+        console.log("📋 FRONTEND: No compatibility data, using basic rendering")
+        renderApplications()
+      }
     } else {
       console.error("❌ FRONTEND: Erreur chargement candidatures:", result.message)
-      // En cas d'erreur, afficher un état vide
-      applications = []
+      window.applications = []
       renderApplications()
     }
   } catch (error) {
     console.error("❌ FRONTEND: Erreur réseau chargement candidatures:", error)
-    // En cas d'erreur réseau, afficher un état vide
-    applications = []
+    window.applications = []
     renderApplications()
   }
 }
 
-// FONCTION MISE À JOUR: Rendu des candidatures
+// FONCTION MISE À JOUR: Rendu des candidatures (basique)
 function renderApplications(filter = "all") {
-  console.log("📋 FRONTEND: Rendu des candidatures, filtre:", filter)
+  console.log("📋 FRONTEND: Rendu des candidatures (mode basique), filtre:", filter)
 
   const container = document.getElementById("applicationsContainer")
   if (!container) {
@@ -76,9 +108,9 @@ function renderApplications(filter = "all") {
     return
   }
 
-  let filteredApps = applications
+  let filteredApps = window.applications
   if (filter !== "all") {
-    filteredApps = applications.filter((app) => app.status === filter)
+    filteredApps = window.applications.filter((app) => app.status === filter)
   }
 
   if (filteredApps.length === 0) {
@@ -87,6 +119,9 @@ function renderApplications(filter = "all") {
                 <i class="fas fa-file-alt"></i>
                 <h4>Aucune candidature</h4>
                 <p>Aucune candidature ${getFilterText(filter)}</p>
+                <button class="empty-btn" onclick="createDemoApplications()">
+                    <i class="fas fa-plus"></i> Créer des candidatures de test
+                </button>
             </div>
         `
     return
@@ -122,18 +157,109 @@ function renderApplications(filter = "all") {
                     </div>
                 </div>
                 
+                ${
+                  app.compatibility_percentage !== undefined
+                    ? `
+                    <!-- Compatibility Section -->
+                    <div class="application-compatibility-section">
+                        <div class="compatibility-header">
+                            <div class="compatibility-title">
+                                <i class="fas fa-chart-pie"></i>
+                                Compatibilité des compétences
+                            </div>
+                            <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
+                                ${app.compatibility_percentage}%
+                                <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="compatibility-progress">
+                            <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage)}" 
+                                 style="width: ${app.compatibility_percentage}%"></div>
+                        </div>
+                        
+                        <div class="compatibility-details">
+                            <span class="skill-stat matched">
+                                <i class="fas fa-check-circle"></i>
+                                ${app.matched_skills_count || 0} compétences correspondantes
+                            </span>
+                            <span class="skill-stat missing">
+                                <i class="fas fa-times-circle"></i>
+                                ${(app.total_job_skills || 0) - (app.matched_skills_count || 0)} manquantes
+                            </span>
+                            <span>Total: ${app.total_job_skills || 0} compétences</span>
+                        </div>
+                        
+                        <div class="compatibility-actions">
+                            <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
+                                <i class="fas fa-search"></i> Détails compatibilité
+                            </button>
+                        </div>
+                    </div>
+                `
+                    : ""
+                }
+                
                 <div class="application-actions">
                     <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
                         <i class="fas fa-user"></i> Voir Profil
                     </button>
                     <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
-                        <i class="fas fa-info-circle"></i> Détails sur le job
+                        <i class="fas fa-info-circle"></i> Détails Poste
                     </button>
+                    <button class="app-btn review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+                        <i class="fas fa-eye"></i> Examiner
+                    </button>
+                    ${
+                      app.status === "pending" || app.status === "reviewed"
+                        ? `
+                        <button class="app-btn schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
+                            <i class="fas fa-calendar"></i> Programmer
+                        </button>
+                    `
+                        : ""
+                    }
+                    ${
+                      app.status === "interview_scheduled"
+                        ? `
+                        <button class="app-btn complete" onclick="updateApplicationStatus(${app.id}, 'interview_completed')">
+                            <i class="fas fa-check"></i> Terminer
+                        </button>
+                    `
+                        : ""
+                    }
+                    ${
+                      app.status === "interview_completed" || app.status === "reviewed"
+                        ? `
+                        <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
+                            <i class="fas fa-thumbs-up"></i> Accepter
+                        </button>
+                        <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
+                            <i class="fas fa-thumbs-down"></i> Rejeter
+                        </button>
+                    `
+                        : ""
+                    }
                 </div>
             </div>
         `,
     )
     .join("")
+}
+
+// Compatibility helper functions (fallback if compatibility.js not loaded)
+function getCompatibilityClass(percentage) {
+  if (percentage >= 75) return "high"
+  if (percentage >= 50) return "medium"
+  if (percentage >= 25) return "low"
+  return "very-low"
+}
+
+function getCompatibilityIcon(percentage) {
+  if (percentage >= 75) return "star"
+  if (percentage >= 50) return "star-half-alt"
+  if (percentage >= 25) return "exclamation-triangle"
+  return "times-circle"
 }
 
 // Fonctions utilitaires pour les candidatures
@@ -187,7 +313,56 @@ function viewJobDetails(jobId) {
 
 function filterApplications(status) {
   console.log("🔍 FRONTEND: Filtrage candidatures:", status)
-  renderApplications(status)
+  if (typeof window.renderApplicationsWithCompatibility === "function") {
+    window.renderApplicationsWithCompatibility(status)
+  } else {
+    renderApplications(status)
+  }
+}
+
+// Filter applications by compatibility (fallback)
+function filterApplicationsByCompatibility(compatibilityLevel) {
+  console.log("🔍 FRONTEND: Filtering applications by compatibility:", compatibilityLevel)
+
+  if (typeof window.loadApplicationsWithFilters === "function") {
+    const statusFilter = document.querySelector(".filter-select").value || "all"
+    window.loadApplicationsWithFilters(statusFilter, compatibilityLevel)
+  } else {
+    console.log("⚠️ FRONTEND: Enhanced compatibility filtering not available")
+  }
+}
+
+// View compatibility details (fallback)
+function viewCompatibilityDetails(applicationId) {
+  console.log("🔍 FRONTEND: Viewing compatibility details for application:", applicationId)
+
+  if (typeof window.viewCompatibilityDetails === "function") {
+    window.viewCompatibilityDetails(applicationId)
+  } else {
+    showNotification("Fonctionnalité de compatibilité non disponible", "warning")
+  }
+}
+
+// Update application status (fallback)
+function updateApplicationStatus(applicationId, newStatus) {
+  console.log("📝 FRONTEND: Updating application status:", { applicationId, newStatus })
+
+  if (typeof window.updateApplicationStatus === "function") {
+    window.updateApplicationStatus(applicationId, newStatus)
+  } else {
+    showNotification("Fonctionnalité de mise à jour non disponible", "warning")
+  }
+}
+
+// Create demo applications (fallback)
+function createDemoApplications() {
+  console.log("🎭 FRONTEND: Creating demo applications")
+
+  if (typeof window.createDemoApplications === "function") {
+    window.createDemoApplications()
+  } else {
+    showNotification("Fonctionnalité de création de démo non disponible", "warning")
+  }
 }
 
 // Fonction pour charger l'utilisateur actuel
@@ -702,8 +877,10 @@ async function refreshDashboard() {
   await loadDepartments()
   await loadEmployees()
   await loadJobs()
-  await loadApplications() // NOUVEAU: Recharger les candidatures
   await loadDashboardStats()
+
+  // Reload applications with compatibility
+  await loadDashboardData()
 }
 
 // Fonction pour charger les départements
@@ -1079,10 +1256,10 @@ function showNotification(message, type = "info") {
   }
 
   const colors = {
-    success: "linear-gradient(135deg, #27ae60, #2ecc71)",
-    error: "linear-gradient(135deg, #e74c3c, #c0392b)",
-    warning: "linear-gradient(135deg, #f39c12, #e67e22)",
-    info: "linear-gradient(135deg, #3498db, #2980b9)",
+    success: "linear-gradient(135deg, #10b981, #059669)",
+    error: "linear-gradient(135deg, #ef4444, #dc2626)",
+    warning: "linear-gradient(135deg, #f59e0b, #d97706)",
+    info: "linear-gradient(135deg, #3b82f6, #2563eb)",
   }
 
   notification.innerHTML = `
@@ -1129,19 +1306,6 @@ function showNotification(message, type = "info") {
   }, 5000)
 }
 
-function filterApplicationByName() {
-  const input = document.getElementById("applicationSearchInput")
-  const searchTerm = input.value.toLowerCase().trim()
-
-  const filtered = applications.filter((app) => {
-    return (
-      app.candidate_name.toLowerCase().includes(searchTerm) || app.candidate_email.toLowerCase().includes(searchTerm)
-    )
-  })
-
-  renderApplicationsList(filtered)
-}
-
 function renderApplicationsList(list) {
   const container = document.getElementById("applicationsContainer")
 
@@ -1158,51 +1322,18 @@ function renderApplicationsList(list) {
     return
   }
 
-  container.innerHTML = list
-    .map(
-      (app) => `
-      <div class="application-card ${app.status}">
-        <div class="application-header">
-          <div class="applicant-info">
-            <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
-            <div class="applicant-details">
-              <h4>${app.candidate_name}</h4>
-              <p>${app.candidate_email}</p>
-              <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
-            </div>
-          </div>
-          <div class="application-status ${app.status}">
-            ${getStatusText(app.status)}
-          </div>
-        </div>
-        
-        <div class="application-job">
-          <div class="job-info">
-            <div class="job-title">${app.job_title}</div>
-            <div class="job-department">${app.department_name}</div>
-            <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
-          </div>
-          <div class="application-date">
-            Candidature envoyée le ${formatDate(app.application_date)}
-            <br><small>Il y a ${app.days_since_application} jour(s)</small>
-          </div>
-        </div>
-        
-        <div class="application-actions">
-          <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
-            <i class="fas fa-user"></i> Voir Profil
-          </button>
-          <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
-            <i class="fas fa-info-circle"></i> Détails
-          </button>
-        </div>
-      </div>
-    `,
-    )
-    .join("")
+  // Use the same rendering logic as the main function
+  const originalApplications = window.applications
+  window.applications = list
+  if (typeof window.renderApplicationsWithCompatibility === "function") {
+    window.renderApplicationsWithCompatibility()
+  } else {
+    renderApplications()
+  }
+  window.applications = originalApplications
 }
 
-// Charger les employés depuis l’API
+// Charger les employés depuis l'API
 async function loadEmployees() {
   console.log("👥 FRONTEND: Chargement des employés")
 
@@ -1213,7 +1344,6 @@ async function loadEmployees() {
     if (result.success) {
       employees = result.employees
       console.log(`✅ FRONTEND: ${employees.length} employés chargés`)
-      renderEmployees()
     } else {
       console.error("❌ FRONTEND: Erreur chargement employés:", result.message)
       employees = []
@@ -1222,32 +1352,4 @@ async function loadEmployees() {
     console.error("❌ FRONTEND: Erreur réseau chargement employés:", error)
     employees = []
   }
-}
-
-// Affichage simple des employés
-function renderEmployees() {
-  const container = document.getElementById("employeesContainer")
-  if (!container) {
-    console.warn("📦 FRONTEND: Container employés introuvable")
-    return
-  }
-
-  if (employees.length === 0) {
-    container.innerHTML = "<p>Aucun employé trouvé.</p>"
-    return
-  }
-
-  container.innerHTML = employees
-    .map(
-      (emp) => `
-    <div class="employee-card">
-      <h4>${emp.first_name} ${emp.last_name}</h4>
-      <p><strong>Poste:</strong> ${emp.position}</p>
-      <p><strong>Email:</strong> ${emp.email}</p>
-      <p><strong>Département:</strong> ${emp.department_name}</p>
-      <p><strong>Compétences:</strong> ${(emp.skills || []).map((s) => s.name).join(", ") || "Non spécifiées"}</p>
-    </div>
-  `,
-    )
-    .join("")
 }

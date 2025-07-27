@@ -166,6 +166,9 @@ class Job(Base):
     
     # Statistiques
     applications_count = Column(Integer, default=0)
+    
+    # Relationships
+    department = relationship("Department")
 
 class JobSkill(Base):
     __tablename__ = "job_skills"
@@ -207,6 +210,10 @@ class Application(Base):
     source = Column(String(100))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    job = relationship("Job")
+    candidate_profile = relationship("ProfileCandidat")
 
 # NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
 class ActivityLog(Base):
