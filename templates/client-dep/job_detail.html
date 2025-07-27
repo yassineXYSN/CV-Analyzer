@@ -549,6 +549,44 @@
             border-color: rgba(96, 165, 250, 0.2);
         }
 
+        /* Skill Match Section */
+        .skill-match-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .skill-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .skill-item:last-child {
+            border-bottom: none;
+        }
+
+        .skill-item .icon {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .skill-item.matched .icon {
+            color: var(--success-color);
+        }
+
+        .skill-item.not-matched .icon {
+            color: var(--error-color);
+        }
+
+        .skill-item.not-matched {
+            opacity: 0.7;
+        }
+
         /* Toast */
         .toast {
             position: fixed;
@@ -580,6 +618,10 @@
 
         .toast.error {
             border-left-color: var(--error-color);
+        }
+
+        .toast.info {
+            border-left-color: var(--info-color);
         }
 
         .toast-content {
@@ -814,7 +856,7 @@
                         </div>
 
                         <div class="job-actions">
-                            <button class="apply-btn" id="applyBtn" onclick="applyToJob({{ job.id }},{{ current_user.id }})">
+                            <button class="apply-btn" id="applyBtn" onclick="applyToJob({{ job.id }})">
                                 <i class="fas fa-paper-plane"></i>
                                 <span id="applyBtnText">Postuler maintenant</span>
                             </button>
@@ -911,11 +953,62 @@
                         </div>
                     </div>
 
+                    <!-- Skill Match Section -->
+                    {% if current_user and (matched_job_skills or unmatched_job_skills) %}
+                    <div class="content-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-cogs"></i>
+                            Vos compétences vs. le poste
+                        </h3>
+                        <ul class="skill-match-list">
+                            {% if matched_job_skills %}
+                                {% for skill in matched_job_skills %}
+                                    <li class="skill-item matched">
+                                        <span class="icon">
+                                            <i class="fas fa-check-circle"></i>
+                                        </span>
+                                        <span>{{ skill.skill_name }}</span>
+                                        {% if skill.is_required %}
+                                            <span style="font-size: 0.8em; color: var(--text-muted); margin-left: auto;">(Requis)</span>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            {% endif %}
+                            {% if unmatched_job_skills %}
+                                {% for skill in unmatched_job_skills %}
+                                    <li class="skill-item not-matched">
+                                        <span class="icon">
+                                            <i class="fas fa-times-circle"></i>
+                                        </span>
+                                        <span>{{ skill.skill_name }}</span>
+                                        {% if skill.is_required %}
+                                            <span style="font-size: 0.8em; color: var(--text-muted); margin-left: auto;">(Requis)</span>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            {% endif %}
+                        </ul>
+                        {% if not matched_job_skills and not unmatched_job_skills %}
+                            <p style="color: var(--text-muted);">Aucune compétence spécifique n'est listée pour ce poste.</p>
+                        {% endif %}
+                    </div>
+                    {% elif current_user %}
+                    <div class="content-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-cogs"></i>
+                            Vos compétences vs. le poste
+                        </h3>
+                        <p style="color: var(--text-muted);">
+                            Pour voir la correspondance des compétences, veuillez vous assurer que votre profil candidat est complet avec vos compétences.
+                        </p>
+                    </div>
+                    {% endif %}
+
                     <!-- Job Tags -->
                     <div class="content-section">
                         <h3 class="section-title">
                             <i class="fas fa-tags"></i>
-                            {{ has_applied }}
+                            Tags du poste
                         </h3>
                         <div class="job-tags">
                             <span class="tag employment-type">{{ job.employment_type }}</span>

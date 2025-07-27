@@ -168,6 +168,22 @@ class Job(Base):
     
     # Statistiques
     applications_count = Column(Integer, default=0)
+    
+    # Relationships
+    department = relationship("Department")
+
+class JobSkill(Base):
+    __tablename__ = "job_skills"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    skill_name = Column(String(100), nullable=False)
+    skill_level = Column(Enum('beginner', 'intermediate', 'advanced', 'expert'), default='intermediate')
+    is_required = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.now())
+    
+    # Relationship
+    job = relationship("Job", backref="job_skills")
 
 class Application(Base):
     __tablename__ = "applications"
@@ -209,6 +225,10 @@ class Application(Base):
     candidate_profile = relationship("ProfileCandidat")
     reviewed_by_admin = relationship("HRAdmin", foreign_keys=[reviewed_by])
     recommended_by_admin = relationship("HRAdmin", foreign_keys=[recommended_by_admin_id])
+
+    # Relationships
+    job = relationship("Job")
+    candidate_profile = relationship("ProfileCandidat")
 
 # NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
 class ActivityLog(Base):

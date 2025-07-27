@@ -1,7 +1,8 @@
+import json
 from fastapi import APIRouter, Request, Query, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from database import SessionLocal
-from databaseclient.models import Job, Company, Department, Application, ProfileCandidat, SavedJob
+from databaseclient.models import Job, Company, Department, Application, ProfileCandidat, SavedJob, JobSkill
 from routers.client_dep.dependencies import get_db, get_current_user
 import math
 from pydantic import BaseModel
@@ -168,76 +169,128 @@ async def jobs_page(
     if filters:
         query = query.filter(and_(*filters))
     
-    # Apply sorting
-    if sort == "newest":
-        query = query.order_by(Job.created_at.desc())
-    elif sort == "oldest":
-        query = query.order_by(Job.created_at.asc())
-    elif sort == "salary_high":
-        query = query.order_by(Job.salary_max.desc().nullslast())
-    elif sort == "salary_low":
-        query = query.order_by(Job.salary_min.asc().nullslast())
-    elif sort == "relevance" and search:
-        # For relevance, prioritize title matches, then company, then description
-        query = query.order_by(
-            Job.title.ilike(f"%{search}%").desc(),
-            Company.company_name.ilike(f"%{search}%").desc(),
-            Job.created_at.desc()
-        )
-    else:
-        # Default to newest
-        query = query.order_by(Job.created_at.desc())
-    
-    # Get total count
-    total_jobs = query.count()
-    print(f"Total jobs found: {total_jobs}")
-    
-    # Apply pagination
-    offset = (page - 1) * per_page
-    jobs = query.offset(offset).limit(per_page).all()
-    
-    # Debug: print some job salary info
-    for job in jobs[:3]:  # Just first 3 jobs
-        print(f"Job: {job.title}, Salary: {job.salary_min}-{job.salary_max}")
-    
-    # Check application status and saved status for each job if user is logged in
-    jobs_with_status = []
+    # Fetch all jobs matching filters (before sorting by compatibility or pagination)
+    all_filtered_jobs = query.all()
+
+    # Prepare candidate skills for comparison
+    candidate_skills_lower = []
     if current_user:
-        # Get the candidate profile for the current user
         candidate_profile = db.query(ProfileCandidat).filter(
             ProfileCandidat.user_id == current_user.id
         ).first()
+        
+        if candidate_profile and candidate_profile.skills:
+            raw_skills_data = candidate_profile.skills 
+            
+            try:
+                # Attempt to load as JSON if it's a string
+                if isinstance(raw_skills_data, str):
+                    parsed_skills = json.loads(raw_skills_data)
+                else:
+                    # Assume it's already a list if not a string (e.g., if JSON column type worked)
+                    parsed_skills = raw_skills_data
 
-        # Get all applications for this user
-        user_applications = set()
-        if candidate_profile:
+                if isinstance(parsed_skills, list):
+                    processed_skills = []
+                    for s in parsed_skills:
+                        if isinstance(s, str) and s: # Ensure skill is a non-empty string
+                            # Handle "Skill: Percentage" format
+                            if ':' in s:
+                                processed_skills.append(s.split(':')[0].strip())
+                            else:
+                                # Handle simple skill names
+                                processed_skills.append(s.strip())
+                    candidate_skills_lower = [s.lower() for s in processed_skills]
+                else:
+                    print(f"WARNING: Parsed candidate skills for user {current_user.id} is not a list: {parsed_skills}")
+                    candidate_skills_lower = [] # Fallback if unexpected format
+            except json.JSONDecodeError:
+                print(f"ERROR: Could not decode JSON for candidate skills: {raw_skills_data}")
+                candidate_skills_lower = [] # Fallback if JSON decoding fails
+            except Exception as e:
+                print(f"ERROR: Unexpected error processing candidate skills: {e}")
+                candidate_skills_lower = []
+
+    # Process jobs to add skill compatibility, application status, and saved status
+    processed_jobs = []
+    user_applications = set()
+    saved_job_ids = set()
+
+    if current_user:
+        candidate_profile_for_status = db.query(ProfileCandidat).filter(
+            ProfileCandidat.user_id == current_user.id
+        ).first()
+        if candidate_profile_for_status:
             user_applications = db.query(Application.job_id).filter(
-                Application.candidate_profile_id == candidate_profile.id
+                Application.candidate_profile_id == candidate_profile_for_status.id
             ).all()
             user_applications = {app.job_id for app in user_applications}
         
-        # Get all saved jobs for this user
-        saved_jobs = db.query(SavedJob.job_id).filter(
+        saved_jobs_db = db.query(SavedJob.job_id).filter(
             SavedJob.user_id == current_user.id
         ).all()
-        saved_job_ids = {saved.job_id for saved in saved_jobs}
+        saved_job_ids = {saved.job_id for saved in saved_jobs_db}
+
+    for job in all_filtered_jobs:
+        job_skills_for_card = db.query(JobSkill).filter(JobSkill.job_id == job.id).all()
         
-        for job in jobs:
-            job_dict = {
-                'job': job,
-                'has_applied': job.id in user_applications,
-                'is_saved': job.id in saved_job_ids
-            }
-            jobs_with_status.append(job_dict)
+        matched_skills_count = 0
+        total_job_skills = len(job_skills_for_card)
+        
+        if total_job_skills > 0 and candidate_skills_lower:
+            for job_skill in job_skills_for_card:
+                if job_skill.skill_name.lower().strip() in candidate_skills_lower:
+                    matched_skills_count += 1
+            compatibility_percentage = (matched_skills_count / total_job_skills) * 100
+        else:
+            compatibility_percentage = 0 # Default to 0 if no job skills or no candidate skills
+        
+        processed_jobs.append({
+            'job': job,
+            'has_applied': job.id in user_applications,
+            'is_saved': job.id in saved_job_ids,
+            'compatibility_percentage': round(compatibility_percentage)
+        })
+    
+    # Apply sorting to the processed list
+    if sort == "newest":
+        processed_jobs.sort(key=lambda x: x['job'].created_at, reverse=True)
+    elif sort == "oldest":
+        processed_jobs.sort(key=lambda x: x['job'].created_at, reverse=False)
+    elif sort == "salary_high":
+        # Sort by salary_max, then salary_min, handling None values
+        processed_jobs.sort(key=lambda x: (x['job'].salary_max if x['job'].salary_max is not None else -1, 
+                                           x['job'].salary_min if x['job'].salary_min is not None else -1), 
+                            reverse=True)
+    elif sort == "salary_low":
+        # Sort by salary_min, then salary_max, handling None values
+        processed_jobs.sort(key=lambda x: (x['job'].salary_min if x['job'].salary_min is not None else float('inf'), 
+                                           x['job'].salary_max if x['job'].salary_max is not None else float('inf')), 
+                            reverse=False)
+    elif sort == "relevance" and search:
+        # This sort is harder to do in Python without a proper scoring function.
+        # For simplicity, we'll default to newest if relevance is requested without a search term,
+        # or if a more complex relevance score isn't implemented.
+        # For now, we'll just use a simple title/company match for relevance.
+        processed_jobs.sort(key=lambda x: (
+            (search.lower() in x['job'].title.lower()) * 2 + # Higher weight for title match
+            (search.lower() in x['job'].company.company_name.lower() if x['job'].company else 0)
+        ), reverse=True)
+        processed_jobs.sort(key=lambda x: x['job'].created_at, reverse=True) # Secondary sort by newest
+    elif sort == "compatibility":
+        # Sort by compatibility percentage, highest first
+        processed_jobs.sort(key=lambda x: x['compatibility_percentage'], reverse=True)
     else:
-        # User not logged in
-        for job in jobs:
-            job_dict = {
-                'job': job,
-                'has_applied': False,
-                'is_saved': False
-            }
-            jobs_with_status.append(job_dict)
+        # Default to newest
+        processed_jobs.sort(key=lambda x: x['job'].created_at, reverse=True)
+
+    # Get total count after all filters and processing
+    total_jobs = len(processed_jobs)
+    print(f"Total jobs found after processing: {total_jobs}")
+
+    # Apply pagination to the sorted list
+    offset = (page - 1) * per_page
+    jobs_for_page = processed_jobs[offset : offset + per_page]
     
     # Create pagination object
     pagination = Pagination(page, per_page, total_jobs)
@@ -264,7 +317,7 @@ async def jobs_page(
     
     return templates.TemplateResponse("client-dep/jobs.html", {
         "request": request,
-        "jobs_with_status": jobs_with_status,
+        "jobs_with_status": jobs_for_page, # Pass the paginated and processed jobs
         "pagination": pagination,
         "search_params": search_params,
         "sort": sort,
@@ -289,20 +342,81 @@ async def job_detail(request: Request, job_id: int, db: Session = Depends(get_db
     job.views_count = (job.views_count or 0) + 1
     db.commit()
     
+    # Get job skills
+    job_skills = db.query(JobSkill).filter(JobSkill.job_id == job.id).all()
+    
+    # Prepare candidate skills for comparison
+    candidate_skills_lower = []
+    if current_user:
+        candidate_profile = db.query(ProfileCandidat).filter(
+            ProfileCandidat.user_id == current_user.id
+        ).first()
+        
+        if candidate_profile and candidate_profile.skills:
+            raw_skills_data = candidate_profile.skills 
+            
+            print(f"DEBUG: Raw candidate skills from DB: {raw_skills_data} (Type: {type(raw_skills_data)})")
+
+            try:
+                # Attempt to load as JSON if it's a string
+                if isinstance(raw_skills_data, str):
+                    parsed_skills = json.loads(raw_skills_data)
+                else:
+                    # Assume it's already a list if not a string (e.g., if JSON column type worked)
+                    parsed_skills = raw_skills_data
+
+                if isinstance(parsed_skills, list):
+                    processed_skills = []
+                    for s in parsed_skills:
+                        if isinstance(s, str) and s: # Ensure skill is a non-empty string
+                            # Handle "Skill: Percentage" format
+                            if ':' in s:
+                                processed_skills.append(s.split(':')[0].strip())
+                            else:
+                                # Handle simple skill names
+                                processed_skills.append(s.strip())
+                    candidate_skills_lower = [s.lower() for s in processed_skills]
+                else:
+                    print(f"WARNING: Parsed candidate skills for user {current_user.id} is not a list: {parsed_skills}")
+                    candidate_skills_lower = [] # Fallback if unexpected format
+            except json.JSONDecodeError:
+                print(f"ERROR: Could not decode JSON for candidate skills: {raw_skills_data}")
+                candidate_skills_lower = [] # Fallback if JSON decoding fails
+            except Exception as e:
+                print(f"ERROR: Unexpected error processing candidate skills: {e}")
+                candidate_skills_lower = []
+
+    print(f"DEBUG: Parsed candidate skills for comparison: {candidate_skills_lower}")
+    print(f"DEBUG: Job skills for comparison: {[s.skill_name.lower() for s in job_skills]}")
+
+    # Perform skill matching in Python
+    matched_job_skills = []
+    unmatched_job_skills = []
+    
+    for skill in job_skills:
+        job_skill_name_lower = skill.skill_name.lower().strip()
+        if job_skill_name_lower in candidate_skills_lower:
+            matched_job_skills.append(skill)
+            print(f"DEBUG: Skill match found: '{job_skill_name_lower}' in {candidate_skills_lower}")
+        else:
+            unmatched_job_skills.append(skill)
+            print(f"DEBUG: Skill '{job_skill_name_lower}' is NOT present in {candidate_skills_lower}")
+
+
     # Check if user has applied and saved
     has_applied = False
     is_saved = False
     if current_user:
         # Get the candidate profile for the current user
-        candidate_profile = db.query(ProfileCandidat).filter(
+        candidate_profile_for_app = db.query(ProfileCandidat).filter(
             ProfileCandidat.user_id == current_user.id
         ).first()
 
-        if candidate_profile:
+        if candidate_profile_for_app:
             application = db.query(Application).filter(
                 and_(
                     Application.job_id == job_id,
-                    Application.candidate_profile_id == candidate_profile.id
+                    Application.candidate_profile_id == candidate_profile_for_app.id
                 )
             ).first()
             has_applied = application is not None
@@ -321,7 +435,10 @@ async def job_detail(request: Request, job_id: int, db: Session = Depends(get_db
         "job": job,
         "current_user": current_user,
         "has_applied": has_applied,
-        "is_saved": is_saved
+        "is_saved": is_saved,
+        "matched_job_skills": matched_job_skills, # Pass matched job skills
+        "unmatched_job_skills": unmatched_job_skills, # Pass unmatched job skills
+        "candidate_skills": candidate_skills_lower # Still pass for general info/debugging if needed
     })
 
 @router.get("/my-applications", response_class=HTMLResponse)

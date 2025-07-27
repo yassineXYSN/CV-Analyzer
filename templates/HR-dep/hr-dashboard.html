@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CV Analyzer Pro - Dashboard RH</title>
     <link rel="stylesheet" href="/static/hr-dashboard/hr-dashboard.css">
+    <link rel="stylesheet" href="/static/hr-dashboard/compatibility.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -128,10 +129,10 @@
                     </div>
                 </section>
 
-                <!-- Candidatures en attente -->
+                <!-- Candidatures avec Compatibilité -->
                 <section class="section-card">
                     <div class="section-header">
-                        <h2><i class="fas fa-file-alt"></i> Candidatures </h2>
+                        <h2><i class="fas fa-file-alt"></i> Candidatures avec Analyse de Compatibilité</h2>
                         <div class="header-actions">
                             <div class="search-box">
                                 <i class="fas fa-search"></i>
@@ -149,6 +150,13 @@
                                 <option value="interview_scheduled">Entretien programmé</option>
                                 <option value="accepted">Acceptées</option>
                                 <option value="rejected">Rejetées</option>
+                            </select>
+                            <select class="compatibility-filter-select" onchange="filterApplicationsByCompatibility(this.value)">
+                                <option value="all">Toutes compatibilités</option>
+                                <option value="high">Élevée (75%+)</option>
+                                <option value="medium">Moyenne (50-74%)</option>
+                                <option value="low">Faible (25-49%)</option>
+                                <option value="very_low">Très faible (0-24%)</option>
                             </select>
                         </div>
                     </div>
@@ -194,7 +202,7 @@
         </div>
     </div>
 
-    <!-- Modal Département AMÉLIORÉ -->
+    <!-- Modal Département -->
     <div id="departmentModal" class="modal-overlay" style="z-index: 10000;">
         <div class="modal-content department-modal-enhanced">
             <div class="modal-header">
@@ -252,7 +260,7 @@
                         </div>
                     </div>
 
-                    <!-- Section Chef de Département PROFESSIONNALISÉE -->
+                    <!-- Section Chef de Département -->
                     <div class="form-section manager-section-enhanced">
                         <div class="section-header-professional">
                             <div class="section-title">
@@ -471,7 +479,7 @@
         </div>
     </div>
 
-    <!-- Modal Job AMÉLIORÉ -->
+    <!-- Modal Job -->
     <div id="jobModal" class="modal-overlay" style="z-index: 10001;">
         <div class="modal-content job-modal-enhanced">
             <div class="modal-header">
@@ -625,6 +633,41 @@
                                 placeholder="Détaillez les missions quotidiennes, projets à mener, équipes à gérer..."
                                 rows="3"
                             ></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Section Compétences requises -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-cogs"></i> Compétences requises</h4>
+                        <div class="form-group">
+                            <div class="skills-container">
+                                <div class="skills-input-section">
+                                    <div class="skill-input-row">
+                                        <input 
+                                            type="text" 
+                                            id="skillNameInput" 
+                                            class="form-input" 
+                                            placeholder="Nom de la compétence (ex: Python, JavaScript...)"
+                                            style="flex: 1; margin-right: 10px;"
+                                        >
+                                        <select id="skillLevelInput" class="form-select" style="width: 150px; margin-right: 10px;">
+                                            <option value="beginner">Débutant</option>
+                                            <option value="intermediate" selected>Intermédiaire</option>
+                                            <option value="advanced">Avancé</option>
+                                            <option value="expert">Expert</option>
+                                        </select>
+                                        <label class="skill-required-label">
+                                            <input type="checkbox" id="skillRequiredInput" checked> Requis
+                                        </label>
+                                        <button type="button" class="btn-add-skill" onclick="addSkill()">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="skills-list" id="skillsList">
+                                    <!-- Les compétences ajoutées apparaîtront ici -->
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -795,6 +838,44 @@
         </div>
     </div>
 
+    <!-- Load JavaScript files in correct order -->
+    <script src="/static/hr-dashboard/compatibility.js"></script>
     <script src="/static/hr-dashboard/hr-dashboard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 FRONTEND: Initializing compatibility features');
+            
+            // Add Enter key support for skill input
+            const skillNameInput = document.getElementById('skillNameInput');
+            if (skillNameInput) {
+                skillNameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addSkill();
+                    }
+                });
+            }
+
+            // Initialize color picker preview
+            const colorInput = document.getElementById('departmentColor');
+            const colorPreview = document.querySelector('.color-preview');
+
+            if (colorInput && colorPreview) {
+                colorInput.addEventListener('change', function() {
+                    colorPreview.style.backgroundColor = this.value;
+                });
+
+                // Initialize the color preview
+                colorPreview.style.backgroundColor = colorInput.value;
+            }
+
+            // Close modals when clicking outside
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    e.target.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
