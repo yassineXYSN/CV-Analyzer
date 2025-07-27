@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Accueil Flask</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <h1>Unlock your premier<br>frontline workforce<br>management solution</h1>
+            <p>Reduce the risk of no-shows and provide a<br>positive experience for new hires.<br>Book a one-to-one chat with us.</p>
+        </div>
+        <div class="right">
+            <form method="POST" action="/add_user">
+                <label>First Name</label>
+                <input type="text" name="name" placeholder="Jon" required>
+
+                <label>Email</label>
+                <input type="email" name="email" placeholder="jondoe@company.com" required>
+
+                <label>Company</label>
+                <select name="company_id" required>
+                    <option value="" disabled selected>Select a company...</option>
+                    {% for company in companies %}
+                        <option value="{{ company.id }}">{{ company.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>Job</label>
+                <select name="job_id" required>
+                    <option value="" disabled selected>Select a job...</option>
+                    {% for job in jobs %}
+                        <option value="{{ job.id }}">{{ job.title }} ({{ job.location }})</option>
+                    {% endfor %}
+                </select>
+
+                <label>Phone</label>
+                <input type="text" name="phone" placeholder="+216...">
+
+                <label>Region</label>
+                <select name="region">
+                    <option value="" disabled selected>Select…</option>
+                    <option>Africa</option>
+                    <option>Europe</option>
+                    <option>North America</option>
+                    <option>Asia</option>
+                </select>
+
+                <button type="submit">Book Demo</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

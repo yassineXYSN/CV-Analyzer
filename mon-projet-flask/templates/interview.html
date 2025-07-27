@@ -1,0 +1,536 @@
+<!-- interview.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Entretien avec transcription complète</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: Arial, sans-serif; background: #f3f4f6; }
+    .main-flex { display: flex; flex-direction: row; height: 100vh; width: 100vw; }
+    #jitsi-container { flex: 2 1 0; min-width: 0; height: 100vh; background: #22223b; display: flex; align-items: center; justify-content: center; }
+    .chatbot-side { flex: 1 1 350px; min-width: 320px; max-width: 500px; height: 100vh; background: #fff; border-left: 2px solid #e5e7eb; display: flex; flex-direction: column; box-shadow: -2px 0 8px rgba(0,0,0,0.04); }
+    .chatbot-header { padding: 18px 24px 8px 24px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; font-size: 1.1em; font-weight: bold; color: #4f46e5; letter-spacing: 1px; }
+    .chatbot-lang { padding: 10px 24px 0 24px; }
+    .chatbot-container { flex: 1 1 auto; padding: 18px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f8f8f8; }
+    .chatbot-message { max-width: 80%; padding: 12px 18px; border-radius: 18px; font-size: 1.1em; background: #e0e7ff; color: #222; align-self: flex-start; box-shadow: 0 2px 8px rgba(0,0,0,0.04); word-break: break-word; transition: background 0.2s; }
+    .chatbot-message.user { background: #4f46e5; color: #fff; align-self: flex-end; }
+    .error-message { color: #e53e3e; font-weight: bold; background: #fff0f0; border-radius: 8px; padding: 8px 12px; margin: 4px 0; display: inline-block; }
+    @media (max-width: 900px) { .main-flex { flex-direction: column; } #jitsi-container, .chatbot-side { height: 50vh; min-width: 0; max-width: 100vw; } }
+    #emotion-badge { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #fff; color: #222; border-radius: 22px; box-shadow: 0 4px 24px rgba(60,60,60,0.10), 0 1.5px 6px rgba(60,60,60,0.07); padding: 32px 38px 28px 38px; margin: 36px auto 0 auto; min-width: 180px; max-width: 340px; min-height: 90px; font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; transition: box-shadow 0.2s, background 0.2s; border: 1.5px solid #f3f4f6; }
+    #emotion-badge:hover { box-shadow: 0 8px 32px rgba(60,60,60,0.13), 0 2px 8px rgba(60,60,60,0.09); background: #f8fafc; }
+    #emotion-badge .emoji { font-size: 3.2em; line-height: 1.1; margin-bottom: 6px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.07)); }
+    #emotion-badge .label { font-size: 1.25em; font-weight: 600; letter-spacing: 0.01em; color: #22223b; margin-top: 2px; }
+    @media (max-width: 600px) { #emotion-badge { padding: 18px 8vw 16px 8vw; font-size: 1em; } #emotion-badge .emoji { font-size: 2.1em; } }
+    #emotion-badge.happy { background: #e0ffe0; color: #059669; }
+    #emotion-badge.sad { background: #e0e7ff; color: #2563eb; }
+    #emotion-badge.angry { background: #ffe0e0; color: #b91c1c; }
+    #emotion-badge.surprise { background: #fef9c3; color: #b45309; }
+    #emotion-badge.fear { background: #f3e8ff; color: #7c3aed; }
+    #emotion-badge.disgust { background: #d1fae5; color: #047857; }
+    #emotion-badge.neutral { background: #f3f4f6; color: #444; }
+    #emotion-badge.calm { background: #dbeafe; color: #1d4ed8; }
+    #emotion-badge.excited { background: #fef9c3; color: #b45309; }
+    #emotion-badge.frustration { background: #fef3c7; color: #d97706; }
+  </style>
+</head>
+<body>
+  <div class="main-flex">
+    <div id="jitsi-container"></div>
+    <div class="chatbot-side">
+      <div class="chatbot-header">Transcription en temps réel</div>
+      <div class="chatbot-lang">
+        <label for="language-select">Langue :</label>
+        <select id="language-select">
+          <option value="fr-FR" selected>Français</option>
+          <option value="ar-SA">Arabe</option>
+          <option value="en-US">Anglais</option>
+        </select>
+      </div>
+      <div class="chatbot-container" id="chatbot-container"></div>
+      <button id="leave-btn" style="margin: 12px 24px 0 24px; padding: 10px 18px; background: #ef4444; color: #fff; border: none; border-radius: 8px; font-size: 1em; cursor: pointer;">Quitter la réunion</button>
+      <button id="end-interview-btn" class="btn btn-success btn-lg shadow" style="margin: 18px 24px 0 24px; border-radius: 12px; font-size: 1.15em; font-weight: 500; display:none;">
+        <span style="font-size:1.2em;vertical-align:middle;">📄</span> Voir le rapport final
+      </button>
+      <div id="emotion-badge" class="neutral emotion-badge"></div>
+      <video id="face-capture-video" width="320" height="240" autoplay muted style="display:none;"></video>
+      <canvas id="face-capture-canvas" width="320" height="240" style="display:none;"></canvas>
+      <button id="analyze-btn" style="display:none; margin: 12px 24px 0 24px; padding: 10px 18px; background: #10b981; color: #fff; border: none; border-radius: 8px; font-size: 1em; cursor: pointer;">Analyser l'émotion</button>
+      <div id="emotion-result" style="margin: 18px 24px 0 24px;"></div>
+      <div id="audio-emotion-result" style="margin: 18px 24px 0 24px;"></div>
+      <div id="face-emotion-result" style="margin: 18px 24px 0 24px;"></div>
+      <div id="face-dominant-emotion" style="font-size:2em; text-align:center; margin:18px 0;"></div>
+      <div id="face-advanced-analysis" style="font-size:1.1em; text-align:center; margin:12px 0;"></div>
+
+    </div>
+  </div>
+
+  <div class="modal fade" id="rapportModal" tabindex="-1" aria-labelledby="rapportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width:98vw;">
+      <div class="modal-content" style="border-radius:18px;box-shadow:0 8px 32px rgba(44,62,80,0.13);">
+        <div class="modal-header" style="background:#f3f4f6;border-radius:18px 18px 0 0;">
+          <h5 class="modal-title" id="rapportModalLabel" style="color:#4f46e5;font-weight:700;">Rapport final du candidat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body" id="rapport-content" style="background:#f8fafc;max-height:85vh;overflow-y:auto;">
+          Chargement du rapport...
+        </div>
+        <div class="modal-footer" style="background:#f3f4f6;border-radius:0 0 18px 18px;">
+          <a href="/index" class="btn btn-secondary">Retour à l’accueil</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://meet.jit.si/external_api.js"></script>
+  <script>
+    const domain = "meet.jit.si";
+    const roomName = "{{ meet_room_name }}";
+    const options = {
+      roomName,
+      width: "100%",
+      height: "100%",
+      parentNode: document.querySelector('#jitsi-container'),
+      userInfo: { displayName: "{{ user_name }}" }
+    };
+    const api = new JitsiMeetExternalAPI(domain, options);
+
+    function showAnalyzeBtn() {
+      const btn = document.getElementById('analyze-btn');
+      btn.style.display = 'block';
+      btn.scrollIntoView({behavior: 'smooth'});
+    }
+
+    function showEndInterviewBtn() {
+      document.getElementById('end-interview-btn').style.display = 'block';
+    }
+
+    api.addEventListener('readyToClose', function() {
+      if (recognition) recognition.stop();
+      document.getElementById('leave-btn').style.display = 'none';
+      showAnalyzeBtn();
+      showEndInterviewBtn();
+    });
+
+    window.addEventListener('beforeunload', function() {
+      if (recognition) recognition.stop();
+      showAnalyzeBtn();
+      showEndInterviewBtn();
+    });
+  </script>
+
+  <script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const chatbotContainer = document.getElementById("chatbot-container");
+    const languageSelect = document.getElementById("language-select");
+    let recognition;
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const leaveBtn = document.getElementById('leave-btn');
+    const emotionResult = document.getElementById('emotion-result');
+    let allTranscripts = [];
+    let faceEmotions = {};
+    let audioEmotions = {};
+    let textScores = {};
+
+    function addMessage(text, isUser = false) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'chatbot-message' + (isUser ? ' user' : '');
+      msgDiv.textContent = text;
+      chatbotContainer.appendChild(msgDiv);
+      chatbotContainer.scrollTop = chatbotContainer.scrollHeight;
+      allTranscripts.push(text);
+    }
+
+    function saveTranscription(slotId, transcription) {
+      const formData = new FormData();
+      formData.append('slot_id', slotId);
+      formData.append('transcription', transcription);
+      fetch('/save_transcription', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log('Transcription et analyse enregistrées !');
+        } else {
+          alert('Erreur : ' + data.message);
+        }
+      });
+    }
+
+    function startRecognition(lang) {
+      if (recognition) recognition.stop();
+      recognition = new SpeechRecognition();
+      recognition.lang = lang;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript = result[0].transcript;
+          if (result.isFinal && transcript.trim() !== "") {
+            addMessage(transcript, true);
+          }
+        }
+      };
+      recognition.onerror = (event) => {
+        addMessage(`Erreur : ${event.error}`);
+      };
+      recognition.start();
+    }
+
+    if (!SpeechRecognition) {
+      addMessage("<span class='error-message'>Navigateur non compatible</span>");
+    } else {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => startRecognition(languageSelect.value))
+        .catch(error => addMessage("<span class='error-message'>Autorisez l’accès au micro</span>"));
+      languageSelect.addEventListener("change", () => startRecognition(languageSelect.value));
+    }
+
+    analyzeBtn.addEventListener('click', function() {
+      analyzeBtn.disabled = true;
+      emotionResult.textContent = 'Analyse en cours...';
+      const fullText = allTranscripts.join(' ').trim();
+      if (!fullText) {
+        emotionResult.textContent = 'Aucune transcription à analyser.';
+        analyzeBtn.disabled = false;
+        return;
+      }
+      fetch('/analyze_emotion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: fullText })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Sauvegarder les scores globalement pour le rapport final
+          textScores = data.scores;
+          console.log('Scores sauvegardés:', textScores);
+          
+          let html = `<div style="background:#fff;color:#111;padding:22px 28px;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.07);font-size:1.13em;max-width:420px;">
+            <b style='font-size:1.2em;'>Scores de sentiment détectés :</b><br><br>`;
+          const EMOJI = { positive: '😊', neutral: '😐', negative: '😞' };
+          let sorted = Object.entries(data.scores).sort((a, b) => b[1] - a[1]);
+          sorted.forEach(([sent, score]) => {
+            html += `<div style='display:flex;align-items:center;gap:10px;margin-bottom:7px;'>
+              <span style='font-size:1.3em;'>${EMOJI[sent]||''}</span>
+              <span style='flex:1;text-transform:capitalize;'>${sent}</span>
+              <span style='font-weight:bold;'>${score.toFixed(2)}%</span>
+            </div>`;
+          });
+          html += `</div>`;
+          const mainSentiment = sorted[0][0];
+          let decisionMsg = '';
+          if (mainSentiment === 'positive') {
+            decisionMsg = `<div style='margin-top:18px;padding:16px 18px;background:#e0ffe0;color:#166534;border-radius:12px;font-weight:bold;font-size:1.1em;box-shadow:0 2px 8px rgba(0,0,0,0.04);'>
+              ✅ Le candidat est <span style='color:#059669;'>perçu comme positif</span> d'après l'analyse du speech.</div>`;
+          } else if (mainSentiment === 'negative') {
+            decisionMsg = `<div style='margin-top:18px;padding:16px 18px;background:#ffe0e0;color:#b91c1c;border-radius:12px;font-weight:bold;font-size:1.1em;box-shadow:0 2px 8px rgba(0,0,0,0.04);'>
+              ❌ Le candidat est <span style='color:#b91c1c;'>perçu comme négatif</span> d'après l'analyse du speech.</div>`;
+          } else {
+            decisionMsg = `<div style='margin-top:18px;padding:16px 18px;background:#f3f4f6;color:#444;border-radius:12px;font-weight:bold;font-size:1.1em;box-shadow:0 2px 8px rgba(0,0,0,0.04);'>
+              ℹ️ Le candidat est <b>neutre</b> d'après l'analyse du speech.</div>`;
+          }
+          html += decisionMsg;
+          emotionResult.innerHTML = html;
+        } else {
+          emotionResult.innerHTML = `<div style='color:#b91c1c;background:#fff0f0;padding:14px 18px;border-radius:10px;'>Erreur : ${data.message}</div>`;
+        }
+      })
+      .catch(e => {
+        emotionResult.innerHTML = `<div style='color:#b91c1c;background:#fff0f0;padding:14px 18px;border-radius:10px;'>Erreur lors de l'analyse.</div>`;
+      })
+      .finally(() => analyzeBtn.disabled = false);
+    });
+
+    leaveBtn.addEventListener('click', function() {
+      if (recognition) recognition.stop();
+      if (typeof api !== 'undefined') api.executeCommand('hangup');
+      leaveBtn.style.display = 'none';
+      showAnalyzeBtn();
+      showEndInterviewBtn();
+    });
+  </script>
+
+  <script>
+    let autoMediaRecorder;
+    let autoAudioChunks = [];
+
+    function startAutoAudioRecording() {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        autoMediaRecorder = new MediaRecorder(stream);
+        autoAudioChunks = [];
+        autoMediaRecorder.ondataavailable = e => autoAudioChunks.push(e.data);
+        autoMediaRecorder.start();
+      });
+    }
+
+    function stopAndSendAutoAudio(slotId) {
+      return new Promise((resolve) => {
+        if (!autoMediaRecorder) return resolve();
+        autoMediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(autoAudioChunks, { type: 'audio/wav' });
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'audio.wav');
+          formData.append('slot_id', slotId);
+          const res = await fetch('/upload_audio', { method: 'POST', body: formData });
+          const data = await res.json();
+          if (data.success && data.path) {
+            await fetch('/analyze_audio_emotion', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ audio_path: data.path, slot_id: slotId })
+            });
+          }
+          resolve();
+        };
+        autoMediaRecorder.stop();
+      });
+    }
+
+    // Fonction pour analyser l'audio en temps réel
+    let audioAnalysisInterval;
+    
+    function startRealTimeAudioAnalysis() {
+      if (audioAnalysisInterval) {
+        clearInterval(audioAnalysisInterval);
+      }
+      
+      audioAnalysisInterval = setInterval(async () => {
+        if (autoMediaRecorder && autoMediaRecorder.state === 'recording') {
+          // Créer un enregistrement court pour l'analyse
+          const tempRecorder = new MediaRecorder(autoMediaRecorder.stream);
+          const tempChunks = [];
+          
+          tempRecorder.ondataavailable = e => tempChunks.push(e.data);
+          tempRecorder.onstop = async () => {
+            const audioBlob = new Blob(tempChunks, { type: 'audio/wav' });
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'temp_audio.wav');
+            formData.append('slot_id', slot_id);
+            
+            try {
+              const res = await fetch('/upload_audio', { method: 'POST', body: formData });
+              const data = await res.json();
+              if (data.success && data.path) {
+                const emotionRes = await fetch('/analyze_audio_emotion', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ audio_path: data.path, slot_id: slot_id })
+                });
+                const emotionData = await emotionRes.json();
+                if (emotionData.success && emotionData.emotions && emotionData.emotions.length > 0) {
+                  // Mettre à jour l'affichage des émotions audio en temps réel
+                  updateAudioEmotionDisplay(emotionData.emotions[0]);
+                  
+                  // Émettre un événement pour actualiser le rapport si il est ouvert
+                  document.dispatchEvent(new CustomEvent('audioEmotionUpdated', {
+                    detail: { emotions: emotionData.emotions }
+                  }));
+                }
+              }
+            } catch (error) {
+              console.log('Erreur analyse audio temps réel:', error);
+            }
+          };
+          
+          tempRecorder.start();
+          setTimeout(() => tempRecorder.stop(), 3000); // Enregistrer 3 secondes
+        }
+      }, 5000); // Analyser toutes les 5 secondes
+    }
+    
+    function updateAudioEmotionDisplay(mainEmotion) {
+      const audioEmotionBadge = document.getElementById('audio-emotion-badge');
+      if (audioEmotionBadge) {
+        const EMOJI = { 
+          happy: '😊', calm: '😌', neutral: '😐', excited: '🤩', 
+          frustration: '😤', sad: '😢', angry: '😠', fear: '😨' 
+        };
+        const LABEL_FR = { 
+          happy: 'Heureux', calm: 'Calme', neutral: 'Neutre', excited: 'Excité',
+          frustration: 'Frustré', sad: 'Triste', angry: 'En colère', fear: 'Peur'
+        };
+        
+        audioEmotionBadge.innerHTML = `
+          <span class="emoji">${EMOJI[mainEmotion.label] || '🎵'}</span>
+          <span class="label">${LABEL_FR[mainEmotion.label] || mainEmotion.label}</span>
+        `;
+        audioEmotionBadge.className = mainEmotion.label + ' emotion-badge';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      startAutoAudioRecording();
+      // Démarrer l'analyse audio en temps réel après un délai
+      setTimeout(() => {
+        startRealTimeAudioAnalysis();
+      }, 2000);
+    });
+
+    if (typeof api !== 'undefined') {
+      api.addEventListener('readyToClose', async function() {
+        await stopAndSendAutoAudio('{{ slot_id }}');
+        // Sauvegarde la transcription réelle à la fin de l'entretien
+        let transcription_reelle = allTranscripts.join('\n');
+        saveTranscription(slot_id, transcription_reelle);
+        showEndInterviewBtn();
+      });
+    }
+  </script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+  <script>
+    let blinkCount = 0, lastLeftOpen = 1, lastRightOpen = 1, emotionHistory = [], lastEmotion = null, emotionSwitches = 0, smileCount = 0;
+
+    async function startFaceApiLive() {
+      await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+      await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+      await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+      const video = document.getElementById('face-capture-video');
+      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => video.srcObject = stream);
+      video.onplay = () => setInterval(async () => {
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks()
+          .withFaceExpressions();
+        if (detections.length > 0) {
+          const expressions = detections[0].expressions;
+          const main = Object.entries(expressions).sort((a, b) => b[1] - a[1])[0][0];
+          document.getElementById('face-dominant-emotion').textContent = EMOJI[main] || '';
+          const landmarks = detections[0].landmarks;
+          const leftEye = landmarks.getLeftEye();
+          const rightEye = landmarks.getRightEye();
+          function eyeOpen(eye) {
+            const vertical = Math.abs(eye[1].y - eye[5].y) + Math.abs(eye[2].y - eye[4].y);
+            const horizontal = Math.abs(eye[0].x - eye[3].x);
+            return vertical / (2.0 * horizontal);
+          }
+          const leftOpen = eyeOpen(leftEye);
+          const rightOpen = eyeOpen(rightEye);
+          if (lastLeftOpen > 0.2 && leftOpen < 0.18 && lastRightOpen > 0.2 && rightOpen < 0.18) blinkCount++;
+          lastLeftOpen = leftOpen; lastRightOpen = rightOpen;
+          emotionHistory.push(main);
+          if (lastEmotion && main !== lastEmotion) emotionSwitches++;
+          lastEmotion = main;
+          if (main === 'happy') smileCount++;
+          const nose = landmarks.getNose();
+          const eyeCenterX = (leftEye[0].x + rightEye[3].x) / 2;
+          const noseX = nose[3].x;
+          const gazeMsg = Math.abs(noseX - eyeCenterX) > 15 ? "<span style='background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:8px;margin:2px;'>👀 Fuite du regard</span>" : "<span style='background:#d1fae5;color:#166534;padding:4px 10px;border-radius:8px;margin:2px;'>👁️ Regard direct</span>";
+          const jaw = landmarks.getJawOutline();
+          const jawSlope = Math.abs(jaw[0].y - jaw[16].y);
+          const postureMsg = jawSlope > 20 ? "<span style='background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:8px;margin:2px;'>🧑‍🦯 Tête penchée</span>" : "<span style='background:#d1fae5;color:#166534;padding:4px 10px;border-radius:8px;margin:2px;'>🧑‍💼 Tête droite</span>";
+          const mouth = landmarks.getMouth();
+          const mouthOpen = Math.abs(mouth[14].y - mouth[18].y);
+          const yawnBadge = mouthOpen > 20 ? "<span style='background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:8px;margin:2px;'>🥱 Bâillement</span>" : "";
+          const fatigueBadge = blinkCount > 10 ? "<span style='background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:8px;margin:2px;'>😴 Fatigue</span>" : "<span style='background:#d1fae5;color:#166534;padding:4px 10px;border-radius:8px;margin:2px;'>💪 Éveillé</span>";
+          const stressBadge = emotionSwitches > 5 ? "<span style='background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:8px;margin:2px;'>😬 Stress</span>" : "<span style='background:#d1fae5;color:#166534;padding:4px 10px;border-radius:8px;margin:2px;'>😌 Détendu</span>";
+          const smileBadge = smileCount > 5 ? "<span style='background:#d1fae5;color:#166534;padding:4px 10px;border-radius:8px;margin:2px;'>😊 Sourire</span>" : "<span style='background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:8px;margin:2px;'>😐 Peu de sourire</span>";
+          let synthese = '';
+          if (blinkCount > 10 || mouthOpen > 20) synthese = "<b style='color:#b91c1c;'>Global : Fatigue détectée</b>";
+          else if (emotionSwitches > 5) synthese = "<b style='color:#b91c1c;'>Global : Stress détecté</b>";
+          else if (smileCount > 5 && jawSlope < 20 && Math.abs(noseX - eyeCenterX) < 15) synthese = "<b style='color:#059669;'>Global : Confiance et aisance</b>";
+          else synthese = "<b>Global : Analyse en cours...</b>";
+          document.getElementById('face-advanced-analysis').innerHTML = `${fatigueBadge} ${stressBadge} ${smileBadge} ${gazeMsg} ${postureMsg} ${yawnBadge}<br><span style='font-size:0.95em;color:#888;'>Clignements : <b>${blinkCount}</b></span><br><hr style='margin:8px 0;'>${synthese}`;
+        } else document.getElementById('face-dominant-emotion').textContent = '';
+      }, 1000);
+    }
+    startFaceApiLive();
+  </script>
+
+  <script>
+    const badge = document.getElementById('emotion-badge');
+    const EMOJI = { angry: '😠', disgust: '🤢', fear: '😨', happy: '😊', sad: '😢', surprise: '😲', neutral: '😐' };
+    const LABEL_FR = { angry: 'En colère', disgust: 'Dégoût', fear: 'Peur', happy: 'Heureux', sad: 'Triste', surprise: 'Surpris', neutral: 'Neutre' };
+    const slotId = '{{ slot_id }}';
+    let faceStream = null;
+
+    async function startFaceCapture() {
+      try {
+        faceStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.getElementById('face-capture-video');
+        video.srcObject = faceStream;
+        video.onloadedmetadata = () => {
+          video.play();
+          setInterval(captureAndSendFace, 2000);
+        };
+      } catch (e) {
+        badge.innerHTML = 'Webcam refusée';
+        badge.className = 'neutral emotion-badge';
+      }
+    }
+
+    function updateEmotionBadge(main) {
+      badge.innerHTML = `<span class="emoji">${EMOJI[main]||''}</span><span class="label">${LABEL_FR[main]||main}</span>`;
+      badge.className = main + ' emotion-badge';
+    }
+
+    async function captureAndSendFace() {
+      const video = document.getElementById('face-capture-video');
+      if (video.readyState !== 4) return;
+      const canvas = document.getElementById('face-capture-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(async function(blob) {
+        const formData = new FormData();
+        formData.append('image', blob, 'face.png');
+        formData.append('slot_id', slotId);
+        try {
+          const res = await fetch('/upload_face_image', { method: 'POST', body: formData });
+          const data = await res.json();
+          if (data.success) updateEmotionBadge(data.emotion);
+          else {
+            badge.innerHTML = '';
+            badge.className = 'neutral emotion-badge';
+          }
+        } catch (e) {
+          badge.innerHTML = '';
+          badge.className = 'neutral emotion-badge';
+        }
+      }, 'image/png');
+    }
+
+    window.addEventListener('DOMContentLoaded', startFaceCapture);
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    var slot_id = parseInt("{{ slot_id }}", 10);
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('end-interview-btn').addEventListener('click', function(event) {
+        event.preventDefault();
+        var rapportModal = new bootstrap.Modal(document.getElementById('rapportModal'));
+        rapportModal.show();
+        let transcription = allTranscripts.join('\n');
+        console.log('=== DONNÉES ENVOYÉES AU RAPPORT ===');
+        console.log('Transcription:', transcription);
+        console.log('Text Scores:', textScores);
+        console.log('Slot ID:', slot_id);
+        fetch('/rapport_emotions_popup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            transcription: transcription,
+            text_scores: textScores,
+            slot_id: slot_id
+          })
+        })
+        .then(response => response.text())
+        .then(html => {
+          document.getElementById('rapport-content').innerHTML = html;
+          // Déclencher l'événement pour rebinder le bouton PDF
+          document.dispatchEvent(new Event('rapportContentUpdated'));
+        })
+        .catch(err => {
+          document.getElementById('rapport-content').innerHTML = "Erreur lors du chargement du rapport.";
+        });
+      });
+    });
+  </script>
+</body>
+</html>

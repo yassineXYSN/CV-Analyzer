@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport du Candidat - Slot {{ slot_id }}</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 0; }
+        .rapport-container { max-width: 800px; margin: 50px auto; background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); padding: 40px; }
+        h2 { color: #1e3a8a; font-size: 2.2em; margin-bottom: 1em; text-align: center; font-weight: 700; }
+        .section-title { color: #1e40af; font-size: 1.5em; margin-top: 1.5em; margin-bottom: 0.8em; font-weight: 600; border-bottom: 2px solid #e0e7ff; padding-bottom: 5px; }
+        .decision-box { padding: 20px; border-radius: 15px; margin-bottom: 1.5em; text-align: center; }
+        .transcription-box { background: #f9fafb; padding: 15px; border-radius: 10px; color: #374151; margin-bottom: 1em; }
+        .scores-box { background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); margin-bottom: 1em; text-align: center; }
+        .emotions-list ul { list-style: none; padding-left: 0; }
+        .emotions-list li { display: flex; align-items: center; gap: 10px; margin-bottom: 0.5em; }
+        .emotions-list .emoji { font-size: 1.3em; }
+        .resume { font-size: 1.1em; color: #4b5563; padding: 15px; background: #f9fafb; border-radius: 10px; margin-top: 1.5em; }
+        .chart-img { max-width: 100%; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); margin-bottom: 1.5em; }
+        .debug-info { display: none; } /* Masquer les infos de debug dans le PDF */
+    </style>
+</head>
+<body>
+    <div class="rapport-container">
+        <h2>Rapport d'Évaluation - Slot {{ slot_id }}</h2>
+        {% if debug_info %}
+            <div class="debug-info">{{ debug_info|safe }}</div>
+        {% endif %}
+        {% if decision_html %}
+            <div class="decision-box">
+                {{ decision_html|safe }}
+            </div>
+        {% endif %}
+        <img src="rapport_emotions.png" alt="Graphique des émotions" class="chart-img">
+        <div class="section-title">Analyse Textuelle (Transcription)</div>
+        {% if transcription %}
+            <div class="transcription-box">
+                {{ transcription }}
+            </div>
+            {% if text_scores %}
+                <div class="scores-box">
+                    <b>Scores de Sentiment Détectés :</b><br><br>
+                    {% set emoji_map = {'positive':'😊', 'neutral':'😐', 'negative':'😞'} %}
+                    {% set sorted_scores = text_scores.items()|sort(attribute=1, reverse=True) %}
+                    {% for sent, score in sorted_scores %}
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+                            <span class="emoji">{{ emoji_map.get(sent, '') }}</span>
+                            <span style="flex:1;text-transform:capitalize;">{{ sent }}</span>
+                            <span style="font-weight:bold;">{{ '%.2f'|format(score) }}%</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% set main_sentiment = sorted_scores[0][0] %}
+                {% if main_sentiment == 'positive' %}
+                    <div style='margin:18px auto 18px auto;padding:16px 18px;background:#e0ffe0;color:#166534;border-radius:12px;font-weight:bold;font-size:1.1em;box-shadow:0 2px 8px rgba(0,0,0,0.04);max-width:420px;text-align:center;'>
+                        ✅ Le candidat est <span style='color:#059669;'>perçu comme positif</span> d'après l'analyse du speech.
+                    </div>
+                {% elif main_sentiment == 'negative' %}
+                    <div style='margin:18px auto 18px auto;padding:16px 18px;background:#ffe0e0;color:#b91c1c;border-radius:12px;font-weight:bold;font-size:1.1em;box-shadow:0 2px 8px rgba(0,0,0,0.04);max-width:420px;text-align:center;'>
+                        ❌ Le candidat est <span style='color:#b91c1c;'>perçu comme négatif</span> d'après l'analyse du speech.
+                    </div>
+                {% else %}
+                    <div style='margin:18px auto 18px auto;padding:16px 18px;background:#f3f4f6;color:#444;border-radius:12px;font-weight:bold;font-size:1.1em;box-shadow:0 2px 8px rgba(0,0,0,0.04);max-width:420px;text-align:center;'>
+                        ℹ️ Le candidat est <b>neutre</b> d'après l'analyse du speech.
+                    </div>
+                {% endif %}
+            {% else %}
+                <div style="color:#dc2626; background:#fee2e2; padding:10px; border-radius:8px; text-align:center;">
+                    Aucune analyse de sentiment disponible.
+                </div>
+            {% endif %}
+        {% else %}
+            <div style="color:#dc2626; background:#fee2e2; padding:10px; border-radius:8px; text-align:center; margin-bottom:1.5em;">
+                Aucune transcription disponible pour ce slot.
+            </div>
+        {% endif %}
+        <div class="section-title">Analyse des Émotions Vocales</div>
+        <div class="emotions-list">
+            {{ audio_list|safe }}
+        </div>
+        <div class="section-title">Analyse des Émotions Faciales</div>
+        <div class="emotions-list">
+            {{ face_list|safe }}
+        </div>
+        {% if resume %}
+            <div class="resume"><b>Résumé :</b> {{ resume|safe }}</div>
+        {% endif %}
+    </div>
+</body>
+</html> 
