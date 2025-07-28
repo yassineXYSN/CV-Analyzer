@@ -105,7 +105,7 @@ class Department(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(Text)
-    manager_name = Column(String(255))
+    manager_id = Column(Integer)
     color = Column(String(7), default='#e74c3c')
     budget = Column(Numeric(15, 2))
     is_active = Column(Integer, default=1)
