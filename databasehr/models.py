@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum,TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from databasehr.database import Base
@@ -42,7 +42,7 @@ class HRAdmin(Base):
     password_hash = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    role = Column(Enum('super_admin', 'hr_admin', 'hr_manager'), default='hr_admin')
+    role = Column(Enum('super_admin', 'recruiter', 'department_head'), default='recruiter')
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
@@ -85,6 +85,8 @@ class AdminCompanyAccess(Base):
     access_level = Column(Enum('owner', 'admin', 'viewer'), default='admin')
     granted_at = Column(DateTime, default=func.now())
     granted_by = Column(Integer, ForeignKey("hr_admins.id"))
+    
+
 
 class Department(Base):
     __tablename__ = "departments"
@@ -93,7 +95,7 @@ class Department(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(Text)
-    manager_name = Column(String(255))
+    manager_id = Column(Integer)
     color = Column(String(7), default='#e74c3c')
     budget = Column(DECIMAL(15,2))
     is_active = Column(Boolean, default=True)
@@ -166,6 +168,22 @@ class Job(Base):
     
     # Statistiques
     applications_count = Column(Integer, default=0)
+    
+    # Relationships
+    department = relationship("Department")
+
+class JobSkill(Base):
+    __tablename__ = "job_skills"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    skill_name = Column(String(100), nullable=False)
+    skill_level = Column(Enum('beginner', 'intermediate', 'advanced', 'expert'), default='intermediate')
+    is_required = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.now())
+    
+    # Relationship
+    job = relationship("Job", backref="job_skills")
 
 class Application(Base):
     __tablename__ = "applications"
@@ -190,10 +208,27 @@ class Application(Base):
     decision_date = Column(DateTime)
     decision_reason = Column(Text)
     
+    # NOUVEAUX CHAMPS DE RECOMMANDATION
+    is_recommended = Column(Boolean, default=False)
+    recommended_by_admin_id = Column(Integer, ForeignKey("hr_admins.id"))
+    recommendation_comment = Column(Text)
+    recommendation_priority = Column(Enum('normal', 'high', 'urgent'), default='normal')
+    recommendation_date = Column(DateTime)
+    
     # Métadonnées
     source = Column(String(100))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relations
+    job = relationship("Job")
+    candidate_profile = relationship("ProfileCandidat")
+    reviewed_by_admin = relationship("HRAdmin", foreign_keys=[reviewed_by])
+    recommended_by_admin = relationship("HRAdmin", foreign_keys=[recommended_by_admin_id])
+
+    # Relationships
+    job = relationship("Job")
+    candidate_profile = relationship("ProfileCandidat")
 
 # NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
 class ActivityLog(Base):
@@ -220,3 +255,24 @@ class ActivityLog(Base):
     # Relations
     company = relationship("Company")
     admin = relationship("HRAdmin")
+
+class AdminPermissions(Base):
+    __tablename__ = "admin_permissions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    can_add_department = Column(Boolean, default=False)
+    can_manage_applications = Column(Boolean, default=False)
+    can_recommend_candidates = Column(Boolean, default=False)
+    # Relations
+    admin = relationship("HRAdmin")
+    
+class AdminDepartments(Base):
+    __tablename__ = "admin_departments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
+    # Relations
+    admin = relationship("HRAdmin")
+    department = relationship("Department")

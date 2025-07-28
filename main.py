@@ -9,11 +9,11 @@ import databasehr.models as models
 from routers.hr import (
     authhr, company, department, 
     employee, job, application, candidate, 
-    dashboard, analysis
+    dashboard
 )
 from database import engine
 import databaseclient.models as models
-from routers.client_dep import auth, jobs, profiles, scan, general
+from routers.client_dep import auth, jobs, profiles, scan, general, notifications
 
 
 load_dotenv()
@@ -25,6 +25,7 @@ app.include_router(jobs.router)
 app.include_router(profiles.router)
 app.include_router(scan.router)
 app.include_router(general.router)
+app.include_router(notifications.router)
 
 # Création des tables
 models.Base.metadata.create_all(bind=engine)
@@ -50,7 +51,6 @@ app.include_router(job.router)
 app.include_router(application.router)
 app.include_router(candidate.router)
 app.include_router(dashboard.router)
-app.include_router(analysis.router)
 
 if __name__ == "__main__":
     import uvicorn

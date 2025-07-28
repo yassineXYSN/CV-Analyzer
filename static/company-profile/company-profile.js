@@ -1,11 +1,142 @@
 // Variables globales
-let isEditMode = false
+const isEditMode = false
 let originalData = {}
 
-// Initialisation
-document.addEventListener("DOMContentLoaded", () => {
+// Fonctions pour les modals - seulement si l'utilisateur est super admin
+function openAddRecruiterModal() {
+  const modal = document.getElementById("addRecruiterModal")
+  if (modal) {
+    modal.classList.add("show")
+  } else {
+    showNotification("Accès refusé. Seuls les super administrateurs peuvent créer des comptes recruteur.", "error")
+  }
+}
+
+function closeAddRecruiterModal() {
+  const modal = document.getElementById("addRecruiterModal")
+  if (modal) {
+    modal.classList.remove("show")
+    const form = document.getElementById("addRecruiterForm")
+    if (form) form.reset()
+  }
+}
+
+function openAddDepartmentHeadModal() {
+  const modal = document.getElementById("addDepartmentHeadModal")
+  if (modal) {
+    modal.classList.add("show")
+  } else {
+    showNotification(
+      "Accès refusé. Seuls les super administrateurs peuvent créer des comptes chef de département.",
+      "error",
+    )
+  }
+}
+
+function closeAddDepartmentHeadModal() {
+  const modal = document.getElementById("addDepartmentHeadModal")
+  if (modal) {
+    modal.classList.remove("show")
+    const form = document.getElementById("addDepartmentHeadForm")
+    if (form) form.reset()
+  }
+}
+
+// Initialisation après chargement du DOM
+document.addEventListener("DOMContentLoaded", async () => {
   saveOriginalData()
+
+  // Attacher les écouteurs d'événements seulement si les formulaires existent
+  const recruiterForm = document.getElementById("addRecruiterForm")
+  const deptHeadForm = document.getElementById("addDepartmentHeadForm")
+
+  if (recruiterForm) {
+    recruiterForm.addEventListener("submit", async function (e) {
+      e.preventDefault()
+      const formData = new FormData(this)
+
+      const userData = {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        first_name: formData.get("first_name"),
+        last_name: formData.get("last_name"),
+        role: "recruiter",
+        permissions: {
+          can_manage_applications: formData.get("can_manage_applications") === "on",
+          can_recommend_candidates: formData.get("can_recommend_candidates") === "on",
+        },
+      }
+
+      await createUser(userData)
+    })
+  }
+
+  if (deptHeadForm) {
+    deptHeadForm.addEventListener("submit", async function (e) {
+      e.preventDefault()
+      const formData = new FormData(this)
+      const departments = Array.from(formData.getAll("departments")).map((id) => Number.parseInt(id))
+
+      const userData = {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        first_name: formData.get("first_name"),
+        last_name: formData.get("last_name"),
+        role: "department_head",
+        permissions: {
+          can_add_department: formData.get("can_add_department") === "on",
+          can_manage_applications: formData.get("can_manage_applications") === "on",
+        },
+        departments: departments,
+      }
+
+      await createUser(userData)
+    })
+  }
 })
+
+// Fonction pour créer un utilisateur
+async function createUser(userData) {
+  try {
+    console.log("📤 Création utilisateur:", userData.role, userData.email)
+
+    const response = await fetch("/api/create-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    })
+
+    const result = await response.json()
+    console.log("📥 Réponse création utilisateur:", result)
+
+    if (result.success) {
+      showNotification(result.message, "success")
+      closeAddRecruiterModal()
+      closeAddDepartmentHeadModal()
+      setTimeout(() => location.reload(), 1500)
+    } else {
+      showNotification("Erreur: " + result.message, "error")
+    }
+  } catch (error) {
+    console.error("❌ Erreur création utilisateur:", error)
+    showNotification("Erreur de connexion au serveur", "error")
+  }
+}
+
+// Fonctions pour la gestion des utilisateurs (seulement pour super admins)
+function editUser(userId) {
+  console.log("✏️ Édition utilisateur:", userId)
+  showNotification("Fonctionnalité en cours de développement", "info")
+}
+
+function deactivateUser(userId) {
+  if (confirm("Êtes-vous sûr de vouloir désactiver cet utilisateur ?")) {
+    console.log("🚫 Désactivation utilisateur:", userId)
+    showNotification("Fonctionnalité en cours de développement", "info")
+  }
+}
 
 // Sauvegarder les données originales
 function saveOriginalData() {
@@ -20,155 +151,40 @@ function saveOriginalData() {
   })
 }
 
-// Basculer le mode édition
-function toggleEditMode() {
-  isEditMode = !isEditMode
-  const editBtn = document.getElementById("editBtnText")
-  const editActions = document.getElementById("editActions")
-  const uploadBtn = document.querySelector(".upload-logo-btn")
-
-  if (isEditMode) {
-    enterEditMode()
-    editBtn.textContent = "Annuler"
-    editActions.style.display = "flex"
-    uploadBtn.style.display = "flex"
-  } else {
-    exitEditMode()
-    editBtn.textContent = "Modifier"
-    editActions.style.display = "none"
-    uploadBtn.style.display = "none"
-    restoreOriginalData()
-  }
+// Fonction pour éditer l'entreprise
+function editCompany() {
+  window.location.href = "/company-setup"
 }
 
-// Entrer en mode édition
-function enterEditMode() {
-  const detailValues = document.querySelectorAll(".detail-value")
-  const detailInputs = document.querySelectorAll(".detail-input")
-
-  detailValues.forEach((value) => {
-    value.style.display = "none"
-  })
-
-  detailInputs.forEach((input) => {
-    input.style.display = "block"
-    const fieldName = input.getAttribute("data-field")
-    if (originalData[fieldName]) {
-      if (input.tagName === "TEXTAREA") {
-        input.value = originalData[fieldName]
-      } else if (input.tagName === "SELECT") {
-        input.value = originalData[fieldName]
-      } else {
-        input.value = originalData[fieldName]
-      }
-    }
-  })
+// Fonction pour aller au tableau de bord
+function goToDashboard() {
+  window.location.href = "/dashboard"
 }
 
-// Sortir du mode édition
-function exitEditMode() {
-  const detailValues = document.querySelectorAll(".detail-value")
-  const detailInputs = document.querySelectorAll(".detail-input")
-
-  detailValues.forEach((value) => {
-    value.style.display = "block"
-  })
-
-  detailInputs.forEach((input) => {
-    input.style.display = "none"
-  })
-}
-
-// Restaurer les données originales
-function restoreOriginalData() {
-  const fields = document.querySelectorAll("[data-field]")
-
-  fields.forEach((field) => {
-    const fieldName = field.getAttribute("data-field")
-    if (field.classList.contains("detail-value") && originalData[fieldName]) {
-      field.textContent = originalData[fieldName]
-    }
-  })
-}
-
-// Annuler les modifications
-function cancelEdit() {
-  toggleEditMode()
-}
-
-// Sauvegarder les modifications
-function saveChanges() {
-  const detailInputs = document.querySelectorAll(".detail-input")
-  const detailValues = document.querySelectorAll(".detail-value")
-
-  // Mettre à jour les valeurs affichées avec les nouvelles données
-  detailInputs.forEach((input) => {
-    const fieldName = input.getAttribute("data-field")
-    const correspondingValue = document.querySelector(`.detail-value[data-field="${fieldName}"]`)
-
-    if (correspondingValue) {
-      correspondingValue.textContent = input.value
-    }
-  })
-
-  // Sauvegarder les nouvelles données comme données originales
-  saveOriginalData()
-
-  // Sortir du mode édition
-  isEditMode = false
-  const editBtn = document.getElementById("editBtnText")
-  const editActions = document.getElementById("editActions")
-  const uploadBtn = document.querySelector(".upload-logo-btn")
-
-  exitEditMode()
-  editBtn.textContent = "Modifier"
-  editActions.style.display = "none"
-  uploadBtn.style.display = "none"
-
-  // Afficher un message de confirmation
-  showNotification("Profil mis à jour avec succès !", "success")
-}
-
-// Télécharger un logo
-function uploadLogo() {
-  const input = document.createElement("input")
-  input.type = "file"
-  input.accept = "image/*"
-
-  input.onchange = (event) => {
-    const file = event.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const logoPlaceholder = document.getElementById("companyLogo")
-        logoPlaceholder.innerHTML = `<img src="${e.target.result}" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">`
-        showNotification("Logo mis à jour !", "success")
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  input.click()
-}
-
-// Retourner au dashboard
-function goBack() {
-  if (isEditMode) {
-    if (confirm("Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter ?")) {
-      window.close()
-    }
-  } else {
-    window.close()
-  }
+// Fonction pour configurer l'entreprise
+function goToSetup() {
+  window.location.href = "/company-setup"
 }
 
 // Afficher une notification
 function showNotification(message, type = "info") {
   const notification = document.createElement("div")
   notification.className = `notification ${type}`
+
+  // Icône en fonction du type de notification
+  let icon = "fa-info-circle"
+  if (type === "success") icon = "fa-check-circle"
+  if (type === "error") icon = "fa-exclamation-circle"
+  if (type === "warning") icon = "fa-exclamation-triangle"
+
   notification.innerHTML = `
-    <i class="fas ${type === "success" ? "fa-check-circle" : "fa-info-circle"}"></i>
-    <span>${message}</span>
+    <div class="notification-content">
+      <i class="fas ${icon}"></i>
+      <span>${message}</span>
+    </div>
+    <button class="notification-close" onclick="this.parentElement.remove()">
+      <i class="fas fa-times"></i>
+    </button>
   `
 
   // Styles pour la notification
@@ -176,76 +192,46 @@ function showNotification(message, type = "info") {
     position: fixed;
     top: 2rem;
     right: 2rem;
-    background: ${type === "success" ? "rgba(39, 174, 96, 0.9)" : "rgba(52, 152, 219, 0.9)"};
-    color: white;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid;
+    border-radius: 12px;
     padding: 1rem 1.5rem;
-    border-radius: 8px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    gap: 1rem;
     z-index: 10000;
-    backdrop-filter: blur(10px);
-    animation: slideIn 0.3s ease;
+    min-width: 320px;
+    max-width: 450px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transform: translateX(100%);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   `
+
+  // Couleur de la bordure en fonction du type
+  if (type === "success") notification.style.borderLeftColor = "var(--success-color)"
+  if (type === "error") notification.style.borderLeftColor = "var(--error-color)"
+  if (type === "warning") notification.style.borderLeftColor = "var(--warning-color)"
+  if (type === "info") notification.style.borderLeftColor = "var(--info-color)"
 
   document.body.appendChild(notification)
 
-  // Supprimer la notification après 3 secondes
+  // Animation d'entrée
   setTimeout(() => {
-    notification.style.animation = "slideOut 0.3s ease"
+    notification.style.transform = "translateX(0)"
+  }, 100)
+
+  // Suppression automatique après 5 secondes (sauf pour les erreurs)
+  if (type !== "error") {
     setTimeout(() => {
-      document.body.removeChild(notification)
-    }, 300)
-  }, 3000)
+      notification.style.transform = "translateX(100%)"
+      setTimeout(() => {
+        if (notification.parentElement) {
+          notification.remove()
+        }
+      }, 300)
+    }, 5000)
+  }
 }
-
-// Ajouter les animations CSS
-const style = document.createElement("style")
-style.textContent = `
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes slideOut {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-  }
-`
-document.head.appendChild(style)
-
-// Gestion des raccourcis clavier
-document.addEventListener("keydown", (e) => {
-  // Ctrl/Cmd + S pour sauvegarder
-  if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-    e.preventDefault()
-    if (isEditMode) {
-      saveChanges()
-    }
-  }
-
-  // Escape pour annuler
-  if (e.key === "Escape" && isEditMode) {
-    cancelEdit()
-  }
-})
-
-// Prévenir la perte de données
-window.addEventListener("beforeunload", (e) => {
-  if (isEditMode) {
-    e.preventDefault()
-    e.returnValue = "Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter ?"
-  }
-})

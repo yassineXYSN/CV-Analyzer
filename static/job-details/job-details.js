@@ -2,20 +2,41 @@
 let currentJob = null
 let applications = []
 let allCandidates = []
+let currentUser = null
 
 // Charger les données du job au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🚀 Page job-details chargée")
+  loadCurrentUser()
   loadJobData()
   loadAllCandidates()
 })
+
+// Charger l'utilisateur actuel
+async function loadCurrentUser() {
+  try {
+    console.log("👤 Chargement utilisateur actuel")
+    const response = await fetch("/api/current-user")
+    const result = await response.json()
+
+    if (result.success) {
+      currentUser = result.user
+      console.log("✅ Utilisateur chargé:", currentUser)
+    } else {
+      console.error("❌ Erreur chargement utilisateur:", result.message)
+      if (result.message === "Utilisateur non connecté") {
+        window.location.href = "/hr-login"
+      }
+    }
+  } catch (error) {
+    console.error("❌ Erreur réseau chargement utilisateur:", error)
+  }
+}
 
 // Charger tous les candidats disponibles
 async function loadAllCandidates() {
   try {
     console.log("👥 Chargement de tous les candidats")
-
-    // Simuler des candidats pour la démo (en production, récupérer depuis l'API)
     allCandidates = [
       {
         id: 1,
@@ -42,7 +63,6 @@ async function loadAllCandidates() {
         experience: "4 ans",
       },
     ]
-
     console.log(`✅ ${allCandidates.length} candidats chargés`)
   } catch (error) {
     console.error("❌ Erreur chargement candidats:", error)
@@ -52,19 +72,14 @@ async function loadAllCandidates() {
 // Charger les données du job depuis localStorage ou URL
 function loadJobData() {
   console.log("📊 Début chargement des données")
-
-  // Essayer de récupérer l'ID depuis l'URL
   const urlParams = new URLSearchParams(window.location.search)
   const jobId = urlParams.get("id")
-
   console.log("🔍 Job ID depuis URL:", jobId)
 
   if (jobId) {
-    // Charger depuis l'API
     console.log("🌐 Chargement depuis API")
     loadJobFromAPI(jobId)
   } else {
-    // Essayer localStorage
     console.log("💾 Tentative chargement depuis localStorage")
     const jobData = localStorage.getItem("selectedJob")
     if (jobData) {
@@ -84,7 +99,7 @@ function loadJobData() {
   }
 }
 
-// Charger le job depuis l'API
+// FONCTION CORRIGÉE: Charger le job depuis l'API avec meilleur debugging
 async function loadJobFromAPI(jobId) {
   try {
     console.log(`🔄 Chargement job ID: ${jobId}`)
@@ -104,7 +119,18 @@ async function loadJobFromAPI(jobId) {
         console.log("✅ Job chargé:", currentJob.title)
         console.log("👥 Candidatures:", applications.length)
 
-        // Masquer le loading et afficher les données
+        // AJOUT: Log détaillé des candidatures pour debugging
+        applications.forEach((app, index) => {
+          console.log(`📋 Candidature ${index + 1}:`, {
+            id: app.id,
+            name: app.name,
+            status: app.status,
+            is_recommended: app.is_recommended,
+            recommendation_priority: app.recommendation_priority,
+            recommended_by: app.recommended_by,
+          })
+        })
+
         hideLoading()
         displayJobInfo()
         renderApplications()
@@ -122,14 +148,6 @@ async function loadJobFromAPI(jobId) {
   }
 }
 
-// Masquer le loading
-function hideLoading() {
-  const loadingOverlay = document.querySelector(".loading-overlay")
-  if (loadingOverlay) {
-    loadingOverlay.remove()
-  }
-}
-
 // Afficher les informations du job
 function displayJobInfo() {
   if (!currentJob) {
@@ -138,36 +156,28 @@ function displayJobInfo() {
   }
 
   console.log("🎨 Affichage des informations du job")
-  console.log("📋 Données du job:", currentJob)
 
   try {
-    // Vérifier et afficher les informations principales
     const titleElement = document.getElementById("jobTitle")
     if (titleElement) {
       titleElement.textContent = currentJob.title || "Titre non disponible"
-      console.log("✅ Titre affiché:", currentJob.title)
     }
 
     const departmentElement = document.getElementById("jobDepartment")
     if (departmentElement) {
       departmentElement.textContent = currentJob.department_name || "Département non spécifié"
-      console.log("✅ Département affiché:", currentJob.department_name)
     }
 
     const descriptionElement = document.getElementById("jobDescription")
     if (descriptionElement) {
       descriptionElement.textContent = currentJob.description || "Description non disponible"
-      console.log("✅ Description affichée")
     }
 
-    // Responsabilités
     const responsibilitiesElement = document.getElementById("jobResponsibilities")
     if (responsibilitiesElement) {
       responsibilitiesElement.textContent = currentJob.responsibilities || "Aucune responsabilité spécifiée"
-      console.log("✅ Responsabilités affichées")
     }
 
-    // Meta informations
     const typeElement = document.getElementById("jobType")
     if (typeElement) {
       typeElement.textContent = (currentJob.employment_type || "").toUpperCase()
@@ -185,14 +195,12 @@ function displayJobInfo() {
         : "Non définie"
     }
 
-    // Statut
     const statusElement = document.getElementById("jobStatus")
     if (statusElement) {
       statusElement.textContent = (currentJob.status || "").toUpperCase()
       statusElement.className = `status-badge ${currentJob.status || "draft"}`
     }
 
-    // Salaire
     const salaryElement = document.getElementById("jobSalary")
     if (salaryElement) {
       let salaryText = "Non spécifié"
@@ -204,7 +212,6 @@ function displayJobInfo() {
       salaryElement.textContent = salaryText
     }
 
-    // Détails
     const contractTypeElement = document.getElementById("contractType")
     if (contractTypeElement) {
       contractTypeElement.textContent = (currentJob.employment_type || "").toUpperCase()
@@ -220,7 +227,6 @@ function displayJobInfo() {
       assignedEmployeeElement.textContent = currentJob.assigned_employee_name || "Non assigné"
     }
 
-    // Statistiques réelles
     const applicationsElement = document.getElementById("jobApplications")
     if (applicationsElement) {
       applicationsElement.textContent = currentJob.applications_count || 0
@@ -242,13 +248,7 @@ function displayJobInfo() {
   }
 }
 
-// Fonction pour retourner au dashboard
-function goBackToDashboard() {
-  console.log("🔙 Retour au dashboard")
-  window.location.href = "/dashboard"
-}
-
-// Rendre les candidatures avec actions de gestion
+// FONCTION CORRIGÉE: Rendre les candidatures avec informations de recommandation
 function renderApplications(filter = "all") {
   console.log(`👥 Rendu des candidatures (filtre: ${filter})`)
 
@@ -271,48 +271,152 @@ function renderApplications(filter = "all") {
         <i class="fas fa-inbox"></i>
         <h4>Aucune candidature ${filter === "all" ? "" : filter}</h4>
         <p>Les candidatures apparaîtront ici une fois soumises.</p>
-
       </div>
     `
     return
   }
 
   container.innerHTML = filteredApplications
-    .map(
-      (app) => `
-        <div class="application-item-detailed">
+    .map((app) => {
+      console.log(`🔍 Rendu candidature ${app.name}:`, {
+        is_recommended: app.is_recommended,
+        recommendation_priority: app.recommendation_priority,
+        recommended_by: app.recommended_by,
+      })
+
+      return `
+        <div class="application-item-detailed ${app.is_recommended ? "has-recommendation" : ""}">
           <div class="candidate-info">
             <div class="candidate-avatar">${app.name
               .split(" ")
               .map((n) => n[0])
               .join("")}</div>
             <div class="candidate-details">
-              <div class="candidate-name">${app.name}</div>
+              <div class="candidate-name">
+                ${app.name}
+                ${
+                  app.is_recommended
+                    ? `
+                  <span class="recommendation-badge ${app.recommendation_priority || "normal"}" 
+                         title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
+                    <i class="fas fa-star"></i> 
+                    ${
+                      app.recommendation_priority === "urgent"
+                        ? "URGENT"
+                        : app.recommendation_priority === "high"
+                          ? "PRIORITÉ HAUTE"
+                          : "RECOMMANDÉ"
+                    }
+                  </span>
+                `
+                    : ""
+                }
+              </div>
               <div class="candidate-title">${app.title || "Candidat"}</div>
               <div class="candidate-meta">
                 <span class="application-date">
                   Candidature: ${new Date(app.application_date).toLocaleDateString("fr-FR")}
                 </span>
                 ${app.hr_rating ? `<span class="hr-rating">Note HR: ${app.hr_rating}/5 ⭐</span>` : ""}
+                ${
+                  app.is_recommended && app.recommended_by
+                    ? `
+                  <span class="recommendation-info">
+                    <i class="fas fa-user-tie"></i> Recommandé par ${app.recommended_by}
+                    ${app.recommendation_date ? ` le ${new Date(app.recommendation_date).toLocaleDateString("fr-FR")}` : ""}
+                  </span>
+                `
+                    : ""
+                }
               </div>
             </div>
           </div>
           <div class="application-status-section">
             <div class="status-badge ${app.status}">
               ${getStatusText(app.status)}
+              ${
+                app.is_recommended && app.recommendation_priority !== "normal"
+                  ? `<span class="priority-indicator ${app.recommendation_priority}">
+                  ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+                </span>`
+                  : ""
+              }
             </div>
             <div class="application-actions">
               ${renderCandidateActions(app)}
             </div>
           </div>
+          ${
+            app.is_recommended && app.recommendation_comment
+              ? `
+            <div class="recommendation-comment">
+              <i class="fas fa-comment-alt"></i>
+              <strong style="color:black">Commentaire de recommandation:</strong>
+              <p>"${app.recommendation_comment}"</p>
+              ${app.recommended_by ? `<small>— ${app.recommended_by}</small>` : ""}
+            </div>
+          `
+              : ""
+          }
         </div>
-      `,
-    )
+      `
+    })
     .join("")
 }
 
-// Rendre les actions pour chaque candidat
+// FONCTION CORRIGÉE: Rendre les actions pour chaque candidat selon le rôle
 function renderCandidateActions(app) {
+  console.log(`🎯 Rendu actions pour ${app.name}:`, {
+    userRole: currentUser?.role,
+    appStatus: app.status,
+    isRecommended: app.is_recommended,
+  })
+
+  if (currentUser && currentUser.role === "department_head") {
+    console.log("🏢 Mode chef de département")
+
+    // CORRECTION: Vérifier explicitement si la candidature est recommandée
+    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
+      const safeCandidateName = app.name.replace(/'/g, "\\'").replace(/"/g, '\\"')
+      const safeJobTitle = currentJob.title.replace(/'/g, "\\'").replace(/"/g, '\\"')
+
+      console.log("✅ Affichage bouton recommander")
+      return `
+        <button class="btn-action recommend" onclick="showRecommendConfirmation(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
+          <i class="fas fa-thumbs-up"></i> Recommander
+        </button>
+        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+          <i class="fas fa-info-circle"></i> Voir profil
+        </button>
+      `
+    } else if (app.is_recommended) {
+      console.log("✅ Affichage statut recommandé")
+      return `
+
+        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+          <i class="fas fa-info-circle"></i> Voir profil
+        </button>
+      `
+    } else {
+      console.log("ℹ️ Candidature non éligible pour recommandation")
+      return `
+        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+          <i class="fas fa-info-circle"></i> Voir profil
+        </button>
+        <small style="color: #6b7280; font-style: italic;">
+          ${
+            app.status === "accepted"
+              ? "Candidature déjà acceptée"
+              : app.status === "rejected"
+                ? "Candidature rejetée"
+                : "Statut: " + getStatusText(app.status)
+          }
+        </small>
+      `
+    }
+  }
+
+  // Pour les autres rôles (recruteur, super_admin) : boutons complets
   if (app.status === "pending") {
     return `
       <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
@@ -350,98 +454,174 @@ function renderCandidateActions(app) {
       </button>
     `
   } else {
-      return `
-        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-          <i class="fas fa-info-circle"></i> Voir profil
-        </button>
+    return `
+      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+        <i class="fas fa-info-circle"></i> Voir profil
+      </button>
     `
   }
 }
 
-// Afficher les candidats disponibles
-function showAvailableCandidates() {
-  console.log("👥 Affichage candidats disponibles")
+// FONCTION CORRIGÉE: Afficher la modal de confirmation de recommandation
+function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
+  console.log(`👍 Affichage confirmation recommandation pour ${candidateName} (ID: ${applicationId})`)
 
-  const container = document.getElementById("availableCandidates")
-  if (!container) return
+  if (!currentUser || currentUser.role !== "department_head") {
+    showNotification("Seuls les chefs de département peuvent recommander des candidatures", "warning")
+    return
+  }
 
-  // Filtrer les candidats qui n'ont pas encore candidaté pour ce poste
-  const appliedCandidateIds = applications.map((app) => app.candidate_id)
-  const availableCandidates = allCandidates.filter((candidate) => !appliedCandidateIds.includes(candidate.id))
+  const safeCandidateName = candidateName.replace(/'/g, "\\'").replace(/"/g, '\\"')
+  const safeJobTitle = jobTitle.replace(/'/g, "\\'").replace(/"/g, '\\"')
 
-  if (availableCandidates.length === 0) {
-    container.innerHTML = `
-      <div class="no-candidates">
-        <p>Tous les candidats disponibles ont déjà candidaté pour ce poste.</p>
-      </div>
-    `
-  } else {
-    container.innerHTML = availableCandidates
-      .map(
-        (candidate) => `
-      <div class="available-candidate">
-        <div class="candidate-info">
-          <div class="candidate-avatar">${candidate.name
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay"
+  modal.style.opacity = "1"
+
+  modal.innerHTML = `
+    <div class="confirmation-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="confirmation-icon recommend">
+            <i class="fas fa-thumbs-up"></i>
+          </div>
+          <h3>Recommander cette candidature</h3>
+          <p>Recommander <strong>${candidateName}</strong> pour le poste</p>
+        </div>
+        
+        <div class="candidate-modal-info">
+          <div class="candidate-modal-avatar">${candidateName
             .split(" ")
             .map((n) => n[0])
             .join("")}</div>
-          <div class="candidate-details">
-            <h4>${candidate.name}</h4>
-            <p>${candidate.title}</p>
-            <div class="candidate-skills">
-              ${candidate.skills.map((skill) => `<span class="skill-tag">${skill}</span>`).join("")}
-            </div>
-            <small>${candidate.experience} d'expérience</small>
+          <div class="candidate-modal-details">
+            <h4>${candidateName}</h4>
+            <p>Poste: ${jobTitle}</p>
           </div>
         </div>
-        <div class="candidate-actions">
-          <button class="btn-secondary" onclick="viewCandidateProfile(${candidate.id})">
-            <i class="fas fa-eye"></i> Voir profil
+        
+        <div class="modal-body">
+          <p><strong>En tant que chef de département, vous pouvez recommander cette candidature :</strong></p>
+          <div class="confirmation-details">
+            <ul class="confirmation-list">
+              <li><i class="fas fa-star"></i> Marquer la candidature comme recommandée</li>
+              <li><i class="fas fa-bell"></i> Notifier les recruteurs et super admins</li>
+              <li><i class="fas fa-comment"></i> Ajouter vos commentaires de recommandation</li>
+              <li><i class="fas fa-priority-high"></i> Donner une priorité élevée à cette candidature</li>
+            </ul>
+          </div>
+          
+          <div class="recommendation-form">
+            <label for="recommendationComment">Commentaire de recommandation :</label>
+            <textarea id="recommendationComment" placeholder="Expliquez pourquoi vous recommandez ce candidat..." rows="3" required></textarea>
+            
+            <label for="recommendationPriority">Niveau de recommandation :</label>
+            <select id="recommendationPriority">
+              <option value="normal">Recommandation normale</option>
+              <option value="high">Recommandation forte</option>
+              <option value="urgent">Recommandation urgente</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="btn-confirm recommend" onclick="confirmRecommendApplication(${applicationId})">
+            <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
           </button>
-          <button class="btn-primary" onclick="addCandidateToJob(${candidate.id})">
-            <i class="fas fa-plus"></i> Ajouter au poste
+          <button class="btn-cancel" onclick="closeConfirmationModal()">
+            <i class="fas fa-times"></i> Annuler
           </button>
         </div>
       </div>
-    `,
-      )
-      .join("")
-  }
+    </div>
+  `
 
-  container.style.display = container.style.display === "none" ? "block" : "none"
+  document.body.appendChild(modal)
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      closeConfirmationModal()
+    }
+  })
+
+  document.addEventListener("keydown", handleEscapeKey)
 }
 
-// Ajouter un candidat au poste
-async function addCandidateToJob(candidateId) {
-  console.log(`➕ Ajout candidat ${candidateId} au poste ${currentJob.id}`)
+// FONCTION CORRIGÉE: Confirmer la recommandation avec meilleur feedback
+async function confirmRecommendApplication(applicationId) {
+  console.log(`👍 Confirmation recommandation candidature ${applicationId}`)
 
   try {
-    // Simuler l'ajout (en production, appeler l'API)
-    const candidate = allCandidates.find((c) => c.id === candidateId)
-    if (!candidate) return
+    const commentElement = document.getElementById("recommendationComment")
+    const priorityElement = document.getElementById("recommendationPriority")
 
-    const newApplication = {
-      id: Date.now(), // ID temporaire
-      candidate_id: candidateId,
-      name: candidate.name,
-      title: candidate.title,
-      status: "pending",
-      application_date: new Date().toISOString(),
-      hr_rating: null,
-      hr_notes: null,
+    if (!commentElement || !priorityElement) {
+      showNotification("Erreur: éléments du formulaire non trouvés", "error")
+      return
     }
 
-    applications.push(newApplication)
+    const comment = commentElement.value.trim()
+    const priority = priorityElement.value
 
-    showNotification(`${candidate.name} a été ajouté(e) aux candidatures pour ce poste`, "success")
+    if (!comment) {
+      showNotification("Le commentaire de recommandation est obligatoire", "warning")
+      commentElement.focus()
+      return
+    }
 
-    // Rafraîchir l'affichage
-    renderApplications()
-    showAvailableCandidates() // Rafraîchir la liste des candidats disponibles
+    if (comment.length < 10) {
+      showNotification("Le commentaire doit contenir au moins 10 caractères", "warning")
+      commentElement.focus()
+      return
+    }
+
+    closeConfirmationModal()
+    showLoading("Traitement de votre recommandation...")
+
+    const response = await fetch(`/api/applications/${applicationId}/recommend`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        comment: comment,
+        priority: priority,
+      }),
+    })
+
+    const result = await response.json()
+    hideLoading()
+
+    if (result.success) {
+      console.log("👍 Candidature recommandée avec succès")
+      showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
+
+      // CORRECTION: Attendre un peu avant de recharger pour que la base de données soit mise à jour
+      setTimeout(async () => {
+        console.log("🔄 Rechargement des données après recommandation...")
+        if (currentJob && currentJob.id) {
+          await loadJobFromAPI(currentJob.id)
+        }
+      }, 1000)
+
+      setTimeout(() => {
+        showNotification("🎯 Les recruteurs et super admins ont été notifiés de votre recommandation", "info")
+      }, 2000)
+    } else {
+      console.error("❌ Erreur recommandation candidature:", result.message)
+      showNotification(`❌ ${result.message}`, "error")
+    }
   } catch (error) {
-    console.error("❌ Erreur ajout candidat:", error)
-    showNotification("Erreur lors de l'ajout du candidat", "error")
+    hideLoading()
+    console.error("❌ Erreur réseau recommandation candidature:", error)
+    showNotification("❌ Erreur de connexion lors de la recommandation", "error")
   }
+}
+
+// Fonction pour retourner au dashboard
+function goBackToDashboard() {
+  console.log("🔙 Retour au dashboard")
+  window.location.href = "/dashboard"
 }
 
 // Obtenir le texte du statut
@@ -454,6 +634,7 @@ function getStatusText(status) {
     accepted: "Acceptée",
     rejected: "Rejetée",
     withdrawn: "Retirée",
+    recommended: "Recommandée",
   }
   return statusTexts[status] || status
 }
@@ -464,6 +645,7 @@ function showAcceptConfirmation(applicationId, candidateName, jobTitle, departme
 
   const modal = document.createElement("div")
   modal.className = "modal-overlay"
+  modal.style.opacity = "1"
 
   modal.innerHTML = `
     <div class="confirmation-modal">
@@ -519,19 +701,12 @@ function showAcceptConfirmation(applicationId, candidateName, jobTitle, departme
 
   document.body.appendChild(modal)
 
-  // Animation d'entrée
-  requestAnimationFrame(() => {
-    modal.style.opacity = "1"
-  })
-
-  // Fermer la modal en cliquant à l'extérieur
   modal.addEventListener("click", (e) => {
     if (e.target === modal) {
       closeConfirmationModal()
     }
   })
 
-  // Fermer avec Escape
   document.addEventListener("keydown", handleEscapeKey)
 }
 
@@ -541,6 +716,7 @@ function showRejectConfirmation(applicationId, candidateName, jobTitle) {
 
   const modal = document.createElement("div")
   modal.className = "modal-overlay"
+  modal.style.opacity = "1"
 
   modal.innerHTML = `
     <div class="confirmation-modal">
@@ -594,19 +770,12 @@ function showRejectConfirmation(applicationId, candidateName, jobTitle) {
 
   document.body.appendChild(modal)
 
-  // Animation d'entrée
-  requestAnimationFrame(() => {
-    modal.style.opacity = "1"
-  })
-
-  // Fermer la modal en cliquant à l'extérieur
   modal.addEventListener("click", (e) => {
     if (e.target === modal) {
       closeConfirmationModal()
     }
   })
 
-  // Fermer avec Escape
   document.addEventListener("keydown", handleEscapeKey)
 }
 
@@ -621,9 +790,11 @@ function handleEscapeKey(e) {
 function closeConfirmationModal() {
   const modal = document.querySelector(".modal-overlay")
   if (modal) {
-    // Animation de sortie
     modal.classList.add("closing")
-    modal.querySelector(".confirmation-modal").classList.add("closing")
+    const confirmationModal = modal.querySelector(".confirmation-modal")
+    if (confirmationModal) {
+      confirmationModal.classList.add("closing")
+    }
 
     setTimeout(() => {
       modal.remove()
@@ -632,7 +803,7 @@ function closeConfirmationModal() {
   }
 }
 
-// Fonction pour confirmer l'acceptation - CORRIGÉE
+// Fonction pour confirmer l'acceptation
 async function confirmAcceptApplication(applicationId) {
   try {
     closeConfirmationModal()
@@ -647,20 +818,19 @@ async function confirmAcceptApplication(applicationId) {
 
     if (response.ok && result.success) {
       showNotification(result.message || "Candidat accepté avec succès", "success")
-      loadJobData()  // Mise à jour de l'affichage
+      setTimeout(() => {
+        loadJobData()
+      }, 1000)
     } else {
-      // ✅ Affichage du message d'erreur retourné
       console.warn("Erreur renvoyée:", result)
       showNotification(result.message || "Erreur lors de l'acceptation", "error")
     }
-
   } catch (error) {
     console.error("❌ Erreur réseau ou système:", error)
     hideLoading()
     showNotification("Erreur inattendue lors de la communication avec le serveur", "error")
   }
 }
-
 
 // Fonction pour confirmer le rejet
 async function confirmRejectApplication(applicationId) {
@@ -688,12 +858,11 @@ async function confirmRejectApplication(applicationId) {
       console.log("❌ Candidature rejetée avec succès")
       showNotification(result.message || "Candidature rejetée", "success")
 
-      // Recharger les données du poste
-      if (currentJob && currentJob.id) {
-        await loadJobFromAPI(currentJob.id)
-      }
-
-      console.log("✅ Données rechargées après rejet")
+      setTimeout(async () => {
+        if (currentJob && currentJob.id) {
+          await loadJobFromAPI(currentJob.id)
+        }
+      }, 1000)
     } else {
       console.error("❌ Erreur rejet candidature:", result.message)
       showNotification(result.message, "error")
@@ -726,10 +895,11 @@ async function updateApplicationStatus(applicationId, newStatus) {
       console.log(`✅ Statut mis à jour vers ${newStatus}`)
       showNotification(result.message, "success")
 
-      // Recharger les candidatures
-      if (currentJob && currentJob.id) {
-        await loadJobFromAPI(currentJob.id)
-      }
+      setTimeout(async () => {
+        if (currentJob && currentJob.id) {
+          await loadJobFromAPI(currentJob.id)
+        }
+      }, 1000)
     } else {
       console.error("❌ Erreur mise à jour statut:", result.message)
       showNotification(result.message, "error")
@@ -744,12 +914,10 @@ async function updateApplicationStatus(applicationId, newStatus) {
 function filterApplications(filter) {
   console.log(`🔍 Filtrage: ${filter}`)
 
-  // Mettre à jour les boutons actifs
   document.querySelectorAll(".filter-btn").forEach((btn) => {
     btn.classList.remove("active")
   })
 
-  // Trouver le bouton cliqué et l'activer
   const clickedBtn = Array.from(document.querySelectorAll(".filter-btn")).find((btn) =>
     btn.textContent.toLowerCase().includes(filter === "all" ? "toutes" : filter),
   )
@@ -819,30 +987,36 @@ function viewCandidateProfile(candidateId) {
 function showLoading(message) {
   console.log("⏳ Affichage loading:", message)
 
-  // Supprimer le loading existant
   hideLoading()
 
   const loadingHTML = `
-    <div class="loading-overlay">
-      <div class="loading-content">
-        <i class="fas fa-spinner fa-spin"></i>
-        <p>${message}</p>
+    <div class="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 25000;">
+      <div class="loading-content" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)); backdrop-filter: blur(20px); padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);">
+        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #3498db;"></i>
+        <p style="margin: 0; font-weight: 500; color: #374151;">${message}</p>
       </div>
     </div>
   `
   document.body.insertAdjacentHTML("beforeend", loadingHTML)
 }
 
+function hideLoading() {
+  const loadingOverlay = document.querySelector(".loading-overlay")
+  if (loadingOverlay) {
+    loadingOverlay.remove()
+  }
+}
+
 function showError(message) {
   console.log("❌ Affichage erreur:", message)
 
   const errorHTML = `
-    <div class="error-overlay">
-      <div class="error-content">
-        <i class="fas fa-exclamation-triangle"></i>
-        <h2>Erreur</h2>
-        <p>${message}</p>
-        <button onclick="goBackToDashboard()" class="btn-primary">
+    <div class="error-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 25000;">
+      <div class="error-content" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)); backdrop-filter: blur(20px); padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25); max-width: 400px;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ef4444; margin-bottom: 1rem;"></i>
+        <h2 style="color: #374151; margin-bottom: 1rem;">Erreur</h2>
+        <p style="color: #6b7280; margin-bottom: 2rem;">${message}</p>
+        <button onclick="goBackToDashboard()" class="btn-primary" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 500; cursor: pointer;">
           <i class="fas fa-arrow-left"></i> Retour au Dashboard
         </button>
       </div>
@@ -866,10 +1040,10 @@ function showNotification(message, type = "info") {
   }
 
   const colors = {
-    success: "rgba(39, 174, 96, 0.9)",
-    error: "rgba(231, 76, 60, 0.9)",
-    warning: "rgba(243, 156, 18, 0.9)",
-    info: "rgba(52, 152, 219, 0.9)",
+    success: "linear-gradient(135deg, #10b981, #059669)",
+    error: "linear-gradient(135deg, #ef4444, #dc2626)",
+    warning: "linear-gradient(135deg, #f59e0b, #d97706)",
+    info: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
   }
 
   notification.innerHTML = `
@@ -891,12 +1065,13 @@ function showNotification(message, type = "info") {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    z-index: 10000;
+    z-index: 20000;
     backdrop-filter: blur(10px);
     animation: slideInRight 0.3s ease;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     min-width: 300px;
     max-width: 400px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
   `
 
   document.body.appendChild(notification)
@@ -913,7 +1088,6 @@ function showNotification(message, type = "info") {
 
 // Gestion des événements globaux
 document.addEventListener("click", (e) => {
-  // Gestion des boutons de filtre
   if (e.target.classList.contains("filter-btn")) {
     const filterText = e.target.textContent.toLowerCase()
     let filter = "all"
@@ -926,5 +1100,31 @@ document.addEventListener("click", (e) => {
   }
 })
 
-console.log("✅ Script job-details.js chargé complètement")
+// Ajouter les animations CSS
+const style = document.createElement("style")
+style.textContent = `
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes slideOutRight {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100px);
+    }
+  }
+`
+document.head.appendChild(style)
 
+console.log("✅ Script job-details.js chargé complètement")

@@ -48,27 +48,27 @@
             <div class="job-card">
                 <div class="job-header-info">
                     <div class="job-title-section">
-                        <h2 id="jobTitle">Chargement...</h2>
-                        <p class="job-department" id="jobDepartment">Département</p>
+                        <h2 id="jobTitle">Développeur Full-Stack Senior</h2>
+                        <p class="job-department" id="jobDepartment">Département IT</p>
                         <div class="job-meta">
                             <div class="meta-item">
                                 <i class="fas fa-briefcase"></i>
-                                <span id="jobType">Type</span>
+                                <span id="jobType">CDI</span>
                             </div>
                             <div class="meta-item">
                                 <i class="fas fa-flag"></i>
-                                <span id="jobPriority">Priorité</span>
+                                <span id="jobPriority">URGENT</span>
                             </div>
                             <div class="meta-item">
                                 <i class="fas fa-calendar"></i>
-                                <span id="jobDeadline">Date limite</span>
+                                <span id="jobDeadline">31 Décembre 2024</span>
                             </div>
                         </div>
                     </div>
                     <div class="job-status">
-                        <div class="status-badge" id="jobStatus">Statut</div>
+                        <div class="status-badge active" id="jobStatus">ACTIF</div>
                         <div class="salary-info">
-                            <div class="salary-amount" id="jobSalary">€ 0</div>
+                            <div class="salary-amount" id="jobSalary">€ 45,000 - 65,000</div>
                             <div class="salary-label">Salaire annuel</div>
                         </div>
                     </div>
@@ -80,14 +80,14 @@
                 <div class="stat-item">
                     <div class="stat-icon"><i class="fas fa-users"></i></div>
                     <div class="stat-info">
-                        <h3 id="jobApplications">0</h3>
+                        <h3 id="jobApplications">12</h3>
                         <p>Candidatures</p>
                     </div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-icon"><i class="fas fa-calendar"></i></div>
                     <div class="stat-info">
-                        <h3 id="daysRemaining">--</h3>
+                        <h3 id="daysRemaining">15</h3>
                         <p>Jours restants</p>
                     </div>
                 </div>
@@ -96,58 +96,138 @@
 
         <!-- Main Grid -->
         <div class="job-section full-width">
-  <div class="section-header">
-    <h3><i class="fas fa-info-circle"></i> Description du Poste</h3>
-  </div>
-  <div class="job-description" id="jobDescription">
-    <p>Chargement de la description...</p>
-  </div>
-  <div class="job-details-grid">
-    <div class="detail-item">
-      <label><i class="fas fa-file-contract"></i> Type de contrat</label>
-      <span id="contractType">CDI</span>
-    </div>
-    <div class="detail-item">
-      <label><i class="fas fa-calendar-plus"></i> Date de création</label>
-      <span id="jobCreated">Aujourd'hui</span>
-    </div>
-    <div class="detail-item">
-      <label><i class="fas fa-user-tie"></i> Employé assigné</label>
-      <span id="assignedEmployee">Non assigné</span>
-    </div>
-    <div class="detail-item">
-      <label><i class="fas fa-tasks"></i> Responsabilités</label>
-      <span id="jobResponsibilities">Chargement...</span>
-    </div>
-  </div>
-</div>
+            <div class="section-header">
+                <h3><i class="fas fa-info-circle"></i> Description du Poste</h3>
+            </div>
+            <div class="job-description" id="jobDescription">
+                <p>Nous recherchons un développeur Full-Stack expérimenté pour rejoindre notre équipe dynamique. Vous travaillerez sur des projets innovants utilisant les dernières technologies web.</p>
+            </div>
+            <div class="job-details-grid">
+                <div class="detail-item">
+                    <label><i class="fas fa-file-contract"></i> Type de contrat</label>
+                    <span id="contractType">CDI</span>
+                </div>
+                <div class="detail-item">
+                    <label><i class="fas fa-calendar-plus"></i> Date de création</label>
+                    <span id="jobCreated">15 Novembre 2024</span>
+                </div>
+                <div class="detail-item">
+                    <label><i class="fas fa-user-tie"></i> Employé assigné</label>
+                    <span id="assignedEmployee">Marie Dubois</span>
+                </div>
+                <div class="detail-item">
+                    <label><i class="fas fa-tasks"></i> Responsabilités</label>
+                    <span id="jobResponsibilities">Développement d'applications web, maintenance du code, collaboration équipe</span>
+                </div>
+            </div>
+        </div>
 
-
-            <!-- Applications et Candidats disponibles -->
-            <div class="job-section applications-section">
-                <div class="section-header">
-                    <h3><i class="fas fa-users"></i> Gestion des Candidatures</h3>
-                    <div class="filter-buttons">
-                        <button class="filter-btn active" onclick="filterApplications('all')">Toutes</button>
-                        <button class="filter-btn" onclick="filterApplications('pending')">En attente</button>
-                        <button class="filter-btn" onclick="filterApplications('reviewed')">Examinées</button>
-                        <button class="filter-btn" onclick="filterApplications('accepted')">Acceptées</button>
+        <!-- Applications et Candidats disponibles -->
+        <div class="job-section applications-section">
+            <div class="section-header">
+                <h3><i class="fas fa-users"></i> Gestion des Candidatures</h3>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filterApplications('all')">Toutes</button>
+                    <button class="filter-btn" onclick="filterApplications('pending')">En attente</button>
+                    <button class="filter-btn" onclick="filterApplications('reviewed')">Examinées</button>
+                    <button class="filter-btn" onclick="filterApplications('accepted')">Acceptées</button>
+                </div>
+            </div>
+            
+            <!-- Candidatures existantes -->
+            <div class="applications-list" id="applicationsList">
+                <!-- Sample applications -->
+                <div class="application-item-detailed has-recommendation">
+                    <div class="candidate-info">
+                        <div class="candidate-avatar">JD</div>
+                        <div class="candidate-details">
+                            <div class="candidate-name">
+                                Jean Dupont
+                                <span class="recommendation-badge urgent">
+                                    <i class="fas fa-star"></i> URGENT
+                                </span>
+                            </div>
+                            <div class="candidate-title">Développeur Full-Stack</div>
+                            <div class="candidate-meta">
+                                <span class="application-date">Candidature: 20/11/2024</span>
+                                <span class="hr-rating">Note HR: 4/5 ⭐</span>
+                                <span class="recommendation-info">
+                                    <i class="fas fa-user-tie"></i> Recommandé par Chef IT le 21/11/2024
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="application-status-section">
+                        <div class="status-badge pending">
+                            EN ATTENTE
+                            <span class="priority-indicator urgent">🔥</span>
+                        </div>
+                        <div class="application-actions">
+                            <button class="btn-action review">
+                                <i class="fas fa-eye"></i> Examiner
+                            </button>
+                            <button class="btn-action accept">
+                                <i class="fas fa-check"></i> Accepter
+                            </button>
+                            <button class="btn-action reject">
+                                <i class="fas fa-times"></i> Rejeter
+                            </button>
+                        </div>
+                    </div>
+                    <div class="recommendation-comment">
+                        <i class="fas fa-comment-alt"></i>
+                        <strong>Commentaire de recommandation:</strong>
+                        <p>"Excellent candidat avec une solide expérience en React et Node.js. Je recommande vivement son embauche."</p>
+                        <small>— Chef IT</small>
                     </div>
                 </div>
-                
-                <!-- Candidatures existantes -->
-                <div class="applications-list" id="applicationsList">
-                    <!-- Applications will be loaded here -->
-                </div>
-                
-                <!-- Section pour ajouter des candidats -->
-                <div class="add-candidates-section">
-                    <div class="section-header">
-                        <h4><i class="fas fa-user-plus"></i> Ajouter des candidats</h4>
 
+                <div class="application-item-detailed">
+                    <div class="candidate-info">
+                        <div class="candidate-avatar">ML</div>
+                        <div class="candidate-details">
+                            <div class="candidate-name">Marie Laurent</div>
+                            <div class="candidate-title">Développeuse Frontend</div>
+                            <div class="candidate-meta">
+                                <span class="application-date">Candidature: 18/11/2024</span>
+                                <span class="hr-rating">Note HR: 3/5 ⭐</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="available-candidates" id="availableCandidates" style="display: none;">
-                        <!-- Available candidates will be loaded here -->
+                    <div class="application-status-section">
+                        <div class="status-badge reviewed">EXAMINÉE</div>
+                        <div class="application-actions">
+                            <button class="btn-action schedule">
+                                <i class="fas fa-calendar"></i> Programmer entretien
+                            </button>
+                            <button class="btn-action accept">
+                                <i class="fas fa-check-circle"></i> Accepter
+                            </button>
+                            <button class="btn-action reject">
+                                <i class="fas fa-times"></i> Rejeter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="application-item-detailed">
+                    <div class="candidate-info">
+                        <div class="candidate-avatar">PM</div>
+                        <div class="candidate-details">
+                            <div class="candidate-name">Pierre Martin</div>
+                            <div class="candidate-title">Développeur Backend</div>
+                            <div class="candidate-meta">
+                                <span class="application-date">Candidature: 16/11/2024</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="application-status-section">
+                        <div class="status-badge accepted">ACCEPTÉE</div>
+                        <div class="application-actions">
+                            <button class="btn-action info">
+                                <i class="fas fa-info-circle"></i> Voir profil
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
