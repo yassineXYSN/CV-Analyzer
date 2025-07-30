@@ -44,6 +44,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     profile = relationship("ProfileCandidat", back_populates="user", uselist=False)
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
 
 class ProfileCandidat(Base):
     __tablename__ = "profile_candidat"
@@ -223,6 +224,36 @@ class UserSession(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("User")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(String(50), nullable=False)  # 'application_status_change', 'job_match', etc.
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Optional fields for application-related notifications
+    application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
+    
+    # Additional data stored as JSON-like fields
+    status = Column(String(50), nullable=True)  # application status
+    company_name = Column(String(200), nullable=True)
+    job_title = Column(String(200), nullable=True)
+    admin_name = Column(String(100), nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="notifications")
+    application = relationship("Application", backref="notifications")
+    job = relationship("Job", backref="notifications")
+
+# Add this to your User model if it doesn't exist
+# User.notifications = relationship("Notification", back_populates="user")
+
 
 # Helper functions for job operations
 def get_jobs_with_pagination(page=1, per_page=9, search_query=None, location=None, category=None, employment_type=None, salary_min=None, salary_max=None):

@@ -1182,6 +1182,38 @@
                 margin-top: -3rem;
             }
         }
+
+        /* New styles for skill compatibility */
+        .skill-compatibility {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            color: var(--text_primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border_color);
+        }
+
+        .skill-compatibility i {
+            color: #FFD700; /* Gold star color */
+        }
+
+        .skill-compatibility .percentage {
+            font-weight: 700;
+        }
+
+        .skill-compatibility .percentage.high {
+            color: var(--success_color);
+        }
+
+        .skill-compatibility .percentage.medium {
+            color: #f59e0b; /* Warning color */
+        }
+
+        .skill-compatibility .percentage.low {
+            color: var(--error_color);
+        }
     </style>
 </head>
 <body>
@@ -1318,6 +1350,7 @@
                         <option value="salary_high" {% if sort == 'salary_high' %}selected{% endif %}>Salaire décroissant</option>
                         <option value="salary_low" {% if sort == 'salary_low' %}selected{% endif %}>Salaire croissant</option>
                         <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>Pertinence</option>
+                        <option value="compatibility" {% if sort == 'compatibility' %}selected{% endif %}>Compatibilité</option>
                     </select>
                 </div>
             </div>
@@ -1360,6 +1393,20 @@
                                         {{ job.views_count }} vues
                                     </span>
                                 </div>
+                                {% if current_user %}
+                                    <div class="skill-compatibility">
+                                        <i class="fas fa-star"></i>
+                                        <span style="font-weight: 600;">Compatibilité des compétences:</span> 
+                                        <span class="percentage {% if job_data.compatibility_percentage >= 75 %}high{% elif job_data.compatibility_percentage >= 50 %}medium{% else %}low{% endif %}">
+                                            {{ job_data.compatibility_percentage }}%
+                                        </span>
+                                    </div>
+                                {% else %}
+                                    <div class="skill-compatibility" style="color: var(--text_muted);">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Connectez-vous pour voir la compatibilité.</span>
+                                    </div>
+                                {% endif %}
                             </div>
                             <button class="save-job-btn {% if job_data.is_saved %}saved{% endif %}" onclick="toggleSaveJob({{ job.id }}, this)">
                                 <i class="{% if job_data.is_saved %}fas{% else %}far{% endif %} fa-heart"></i>

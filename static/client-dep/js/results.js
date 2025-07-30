@@ -1,253 +1,305 @@
-// Results page JavaScript
-
-document.addEventListener("DOMContentLoaded", () => {
-  initializeScoreAnimation()
-  initializeDetailedAnalysis()
-  initializeTabs()
-  initializeActions()
-})
-
-function initializeScoreAnimation() {
+// Initialize results
+function initializeResults() {
+  const scoreValue = Number.parseFloat("{{ score }}".replace(",", "."))
+  const bar = document.getElementById("scoreBar")
   const scoreDisplay = document.getElementById("scoreDisplay")
-  const scoreBar = document.getElementById("scoreBar")
-  const scoreInterpretation = document.getElementById("scoreInterpretation")
+  const interpretation = document.getElementById("scoreInterpretation")
 
-  if (!scoreDisplay || !window.analysisData) return
-
-  const score = window.analysisData.score
-
-  // Animate score
-  let currentScore = 0
-  const scoreInterval = setInterval(() => {
-    currentScore += 1
-    scoreDisplay.textContent = currentScore + "%"
-
-    if (currentScore >= score) {
-      clearInterval(scoreInterval)
-      scoreDisplay.textContent = score + "%"
-    }
-  }, 30)
-
-  // Animate progress bar
+  // Animate score bar
   setTimeout(() => {
-    scoreBar.style.width = score + "%"
+    bar.style.width = scoreValue + "%"
   }, 500)
 
-  // Set interpretation
-  let interpretation = ""
-  let color = ""
-
-  if (score >= 80) {
-    interpretation = "🎉 Excellent match! Votre profil correspond parfaitement au poste."
-    color = "#00ff88"
-  } else if (score >= 60) {
-    interpretation = "👍 Bon match! Quelques améliorations pourraient optimiser votre profil."
-    color = "#00d4ff"
-  } else if (score >= 40) {
-    interpretation = "⚠️ Match modéré. Des améliorations significatives sont recommandées."
-    color = "#ffa502"
+  // Set color and interpretation based on score
+  let color, message
+  if (scoreValue < 50) {
+    color = "var(--danger-gradient)"
+    message = "⚠️ Score faible - Optimisation nécessaire"
+  } else if (scoreValue < 75) {
+    color = "var(--warning-gradient)"
+    message = "📈 Score correct - Améliorations possibles"
   } else {
-    interpretation = "❌ Match faible. Votre profil nécessite des améliorations importantes."
-    color = "#ff4757"
+    color = "var(--accent-gradient)"
+    message = "🎉 Excellent score - Profil très adapté !"
   }
 
-  if (scoreInterpretation) {
-    scoreInterpretation.innerHTML = interpretation
-    scoreInterpretation.style.color = color
-  }
-}
+  bar.style.background = color
+  interpretation.innerHTML = message
+  interpretation.style.color = scoreValue < 50 ? "#ff4757" : scoreValue < 75 ? "#ffa502" : "#00ff88"
 
-function initializeDetailedAnalysis() {
-  const detailedAnalysisSection = document.getElementById("detailedAnalysis")
-  const toggleButton = document.querySelector('[onclick="toggleDetailedAnalysis()"]')
-
-  if (!toggleButton) return
-
-  window.toggleDetailedAnalysis = () => {
-    if (detailedAnalysisSection.style.display === "none" || !detailedAnalysisSection.style.display) {
-      // Show detailed analysis
-      detailedAnalysisSection.style.display = "block"
-      toggleButton.textContent = "📊 Masquer l'analyse détaillée"
-
-      // Load detailed analysis data
-      loadDetailedAnalysis()
-    } else {
-      // Hide detailed analysis
-      detailedAnalysisSection.style.display = "none"
-      toggleButton.textContent = "📊 Créer une analyse détaillée"
+  // Animate score number
+  let currentScore = 0
+  const increment = scoreValue / 50
+  const timer = setInterval(() => {
+    currentScore += increment
+    if (currentScore >= scoreValue) {
+      currentScore = scoreValue
+      clearInterval(timer)
     }
-  }
+    scoreDisplay.textContent = Math.round(currentScore) + "%"
+  }, 40)
 }
 
-function loadDetailedAnalysis() {
-  if (!window.analysisData || !window.analysisData.pdf_text) {
-    console.error("No analysis data available")
+// Switch between tabs
+function switchTab(tabName) {
+  // Remove active class from all tabs and panes
+  document.querySelectorAll(".tab-button").forEach((btn) => btn.classList.remove("active"))
+  document.querySelectorAll(".tab-pane").forEach((pane) => pane.classList.remove("active"))
+
+  // Add active class to selected tab and pane
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add("active")
+  document.getElementById(`${tabName}-tab`).classList.add("active")
+}
+
+// Toggle detailed analysis
+async function toggleDetailedAnalysis() {
+  const detailedSection = document.getElementById("detailedAnalysis")
+  const button = document.getElementById("createDetailedAnalysisButton") // Get button by its ID
+
+  // If the button is already hidden, do nothing (safety check)
+  if (button.style.display === "none") {
     return
   }
 
   // Show loading state
-  const tabContent = document.querySelector(".tab-content")
-  if (tabContent) {
-    tabContent.innerHTML =
-      '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">Génération de l\'analyse détaillée...</div>'
-  }
+  button.innerHTML = "⏳ Création d'une analyse détaillée en cours..."
+  button.disabled = true
+  button.style.opacity = "0.6"
+  button.style.cursor = "not-allowed"
 
-  // Make API call to generate detailed analysis
-  fetch("/create-detailed-analysis", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      pdf_text: window.analysisData.pdf_text,
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        populateDetailedAnalysis(data)
-      } else {
-        console.error("Error generating detailed analysis:", data.error)
-        showError("Erreur lors de la génération de l'analyse détaillée.")
-      }
+  try {
+    // Fetch detailed analysis
+    const response = await fetch("/create-detailed-analysis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: "{{ filename }}", // This will still be a Jinja variable from the HTML context
+        summary: `{{ summary }}`, // This will still be a Jinja variable from the HTML context
+        pdf_text: window.analysisData.pdf_text, // Use data passed to window.analysisData
+        score: window.analysisData.score, // Use data passed to window.analysisData
+      }),
     })
-    .catch((error) => {
-      console.error("Error:", error)
-      showError("Erreur de connexion lors de la génération de l'analyse.")
-    })
+
+    if (!response.ok) {
+      throw new Error("Erreur réseau: " + response.status)
+    }
+
+    const data = await response.json()
+    console.log("Received data:", data) // Debug log
+
+    if (!data.success) {
+      throw new Error(data.error || "Erreur inconnue")
+    }
+
+    // Populate detailed analysis
+    populateDetailedAnalysis(data)
+
+    // Show the section
+    detailedSection.style.display = "block"
+
+    // Hide the button permanently after successful generation
+    button.style.display = "none"
+
+    // Smooth scroll to detailed section with offset for navbar
+    setTimeout(() => {
+      const navbarHeight = document.querySelector(".navbar").offsetHeight
+      const elementPosition = detailedSection.offsetTop - navbarHeight - 20
+
+      window.scrollTo({
+        top: elementPosition,
+        behavior: "smooth",
+      })
+    }, 300)
+  } catch (error) {
+    console.error("Erreur:", error)
+    alert("Erreur lors de la création de l'analyse détaillée: " + error.message)
+    // Reset button state if there was an error, so user can try again
+    button.innerHTML = "📊 Créer une analyse détaillée"
+    button.disabled = false
+    button.style.opacity = "1"
+    button.style.cursor = "pointer"
+  }
 }
 
+// Populate detailed analysis content
 function populateDetailedAnalysis(data) {
+  console.log("Populating detailed analysis with data:", data)
+
   // Populate category scores
   const categoryScoresList = document.getElementById("categoryScoresList")
-  if (categoryScoresList && data.categorie_scores) {
-    categoryScoresList.innerHTML = Object.entries(data.categorie_scores)
-      .map(
-        ([category, score], index) => `
-            <div class="score-item" style="animation-delay: ${index * 0.1}s">
-                <div class="score-info">
-                    <span class="category-name">${category}</span>
-                    <span class="score-value">${score}%</span>
-                </div>
-                <div class="score-bar-container">
-                    <div class="score-bar" style="width: ${score}%; background: ${getScoreColor(score)}; animation-delay: ${index * 0.1 + 0.5}s"></div>
-                </div>
-            </div>
-        `,
+  categoryScoresList.innerHTML = ""
+
+  if (data.categorie_scores) {
+    Object.entries(data.categorie_scores).forEach(([category, score], index) => {
+      const scoreItem = document.createElement("div")
+      scoreItem.className = "score-item"
+      scoreItem.style.animationDelay = `${index * 0.1}s`
+
+      scoreItem.innerHTML = `
+                        <div class="score-info">
+                            <span class="category-name">${category}</span>
+                            <span class="score-value">${score}%</span>
+                        </div>
+                        <div class="score-bar-container">
+                            <div class="score-bar" style="width: 0%; background: ${getScoreColor(score)}; transition: width 1.5s ease;"></div>
+                        </div>
+                    `
+
+      categoryScoresList.appendChild(scoreItem)
+
+      // Animate the score bar
+      setTimeout(
+        () => {
+          const bar = scoreItem.querySelector(".score-bar")
+          bar.style.width = score + "%"
+        },
+        200 + index * 100,
       )
-      .join("")
+    })
   }
 
   // Populate good points
   const goodPointsList = document.getElementById("goodPointsList")
-  if (goodPointsList && data.good_points) {
-    goodPointsList.innerHTML = data.good_points
-      .map(
-        (point, index) => `
-            <div class="point-item good-point" style="animation-delay: ${index * 0.1}s">
-                <div class="point-icon">✓</div>
-                <div class="point-text">${point}</div>
-            </div>
-        `,
-      )
-      .join("")
+  goodPointsList.innerHTML = ""
+
+  if (data.good_points && Array.isArray(data.good_points)) {
+    console.log("Good points:", data.good_points)
+    data.good_points.forEach((point, index) => {
+      const pointItem = document.createElement("div")
+      pointItem.className = "point-item good-point"
+      pointItem.style.animationDelay = `${index * 0.1}s`
+      pointItem.innerHTML = `
+                        <div class="point-icon">✓</div>
+                        <div class="point-text">${point}</div>
+                    `
+      goodPointsList.appendChild(pointItem)
+    })
   }
 
   // Populate weak points
   const weakPointsList = document.getElementById("weakPointsList")
-  if (weakPointsList && data.weak_points) {
-    weakPointsList.innerHTML = data.weak_points
-      .map(
-        (point, index) => `
-            <div class="point-item weak-point" style="animation-delay: ${index * 0.1}s">
-                <div class="point-icon">!</div>
-                <div class="point-text">${point}</div>
-            </div>
-        `,
-      )
-      .join("")
+  weakPointsList.innerHTML = ""
+
+  if (data.weak_points && Array.isArray(data.weak_points)) {
+    console.log("Weak points:", data.weak_points)
+    data.weak_points.forEach((point, index) => {
+      const pointItem = document.createElement("div")
+      pointItem.className = "point-item weak-point"
+      pointItem.style.animationDelay = `${index * 0.1}s`
+      pointItem.innerHTML = `
+                        <div class="point-icon">⚠</div>
+                        <div class="point-text">${point}</div>
+                    `
+      weakPointsList.appendChild(pointItem)
+    })
+  } else {
+    console.log("No weak points data found:", data.weak_points)
+    // Add a fallback message
+    const noDataItem = document.createElement("div")
+    noDataItem.className = "point-item weak-point"
+    noDataItem.innerHTML = `
+                    <div class="point-icon">ℹ</div>
+                    <div class="point-text">Aucun point faible majeur identifié dans cette analyse.</div>
+                `
+    weakPointsList.appendChild(noDataItem)
   }
 
   // Populate improvements
   const improvementsList = document.getElementById("improvementsList")
-  if (improvementsList && data.improvements) {
-    improvementsList.innerHTML = data.improvements
-      .map(
-        (improvement, index) => `
-            <div class="improvement-item" style="animation-delay: ${index * 0.1}s">
-                <div class="improvement-icon">💡</div>
-                <div class="improvement-text">${improvement}</div>
-            </div>
-        `,
-      )
-      .join("")
+  improvementsList.innerHTML = ""
+
+  if (data.improvements && Array.isArray(data.improvements)) {
+    console.log("Improvements:", data.improvements)
+    data.improvements.forEach((improvement, index) => {
+      const improvementItem = document.createElement("div")
+      improvementItem.className = "improvement-item"
+      improvementItem.style.animationDelay = `${index * 0.1}s`
+      improvementItem.innerHTML = `
+                        <div class="improvement-icon">💡</div>
+                        <div class="improvement-text">${improvement}</div>
+                    `
+      improvementsList.appendChild(improvementItem)
+    })
   }
 }
 
+// Get color based on score
 function getScoreColor(score) {
-  if (score >= 80) return "linear-gradient(135deg, #00ff88, #00d4ff)"
-  if (score >= 60) return "linear-gradient(135deg, #00d4ff, #667eea)"
-  if (score >= 40) return "linear-gradient(135deg, #ffa502, #ff6348)"
-  return "linear-gradient(135deg, #ff4757, #ff3838)"
+  if (score >= 80) return "var(--accent-gradient)"
+  if (score >= 60) return "var(--warning-gradient)"
+  return "var(--danger-gradient)"
 }
 
-function initializeTabs() {
-  const tabButtons = document.querySelectorAll(".tab-button")
-  const tabPanes = document.querySelectorAll(".tab-pane")
-
-  window.switchTab = (tabId) => {
-    // Remove active class from all tabs and panes
-    tabButtons.forEach((btn) => btn.classList.remove("active"))
-    tabPanes.forEach((pane) => pane.classList.remove("active"))
-
-    // Add active class to selected tab and pane
-    const selectedButton = document.querySelector(`[data-tab="${tabId}"]`)
-    const selectedPane = document.getElementById(`${tabId}-tab`)
-
-    if (selectedButton) selectedButton.classList.add("active")
-    if (selectedPane) selectedPane.classList.add("active")
+// Create account function
+function createAccount() {
+  const formData = {
+    fullName: document.getElementById("fullName").value,
+    email: document.getElementById("email").value,
+    phone: document.getElementById("phone").value,
+    currentPosition: document.getElementById("currentPosition").value,
+    experience: document.getElementById("experience").value,
+    skills: document.getElementById("skills").value,
+    cvAnalysis: {
+      score: "{{ score }}",
+      summary: "{{ summary }}",
+      filename: "{{ filename }}",
+    },
   }
+
+  // Validate required fields
+  if (!formData.fullName || !formData.email) {
+    alert("⚠️ Veuillez remplir au moins votre nom et email.")
+    return
+  }
+
+  // Simulate account creation
+  const button = event.target
+  button.innerHTML = '<span class="loading-spinner"></span> Création en cours...'
+  button.disabled = true
+
+  setTimeout(() => {
+    alert("🎉 Profil créé avec succès ! Vous recevrez un email de confirmation.")
+    button.innerHTML = "✅ Profil créé !"
+    button.style.background = "var(--accent-gradient)"
+
+    // Show success message
+    const successMsg = document.createElement("div")
+    successMsg.style.cssText = `
+                    background: rgba(0, 255, 136, 0.1);
+                    border: 1px solid rgba(0, 255, 136, 0.3);
+                    border-radius: 12px;
+                    padding: 1rem;
+                    margin-top: 1rem;
+                    text-align: center;
+                    color: #00ff88;
+                `
+    successMsg.innerHTML =
+      "🎉 Votre profil professionnel a été créé ! Vous pouvez maintenant suivre vos analyses et candidatures."
+    button.parentNode.appendChild(successMsg)
+  }, 2000)
 }
 
-function initializeActions() {
-  // Download CV function
-  window.downloadCV = () => {
-    // Simulate CV download
-    const link = document.createElement("a")
-    link.href = "#" // This would be the actual CV file URL
-    link.download = "cv-analyzed.pdf"
-    link.click()
-
-    if (window.CVAnalyzer) {
-      window.CVAnalyzer.showNotification("Téléchargement du CV en cours...", "info")
-    }
-  }
-
-  // Download report function
-  window.downloadReport = () => {
-    // Simulate report download
-    const link = document.createElement("a")
-    link.href = "#" // This would be the actual report file URL
-    link.download = "rapport-analyse-cv.pdf"
-    link.click()
-
-    if (window.CVAnalyzer) {
-      window.CVAnalyzer.showNotification("Téléchargement du rapport en cours...", "info")
-    }
-  }
+// Download CV function
+function downloadCV() {
+  alert("Fonctionnalité de téléchargement CV en cours de développement !")
 }
 
-function showError(message) {
-  const tabContent = document.querySelector(".tab-content")
-  if (tabContent) {
-    tabContent.innerHTML = `
-            <div style="text-align: center; padding: 2rem; color: #ff4757;">
-                <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                <p>${message}</p>
-                <button onclick="loadDetailedAnalysis()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--accent-gradient); color: #000; border: none; border-radius: 8px; cursor: pointer;">
-                    Réessayer
-                </button>
-            </div>
-        `
-  }
+// Download report function
+function downloadReport() {
+  alert("Fonctionnalité de téléchargement PDF en cours de développement !")
 }
+
+// Initialize on load
+document.addEventListener("DOMContentLoaded", () => {
+  initializeResults()
+})
+
+// Navbar scroll effect
+window.addEventListener("scroll", () => {
+  const navbar = document.querySelector(".navbar")
+  if (window.scrollY > 100) {
+    navbar.style.background = "rgba(10, 10, 10, 0.95)"
+  } else {
+    navbar.style.background = "rgba(10, 10, 10, 0.9)"
+  }
+})

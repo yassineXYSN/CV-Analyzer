@@ -1,75 +1,102 @@
-console.log("🎯 FRONTEND: Dashboard chargé avec succès")
+console.log("🎯 FRONTEND: Dashboard Core chargé avec succès")
 
 // Variables globales
 let departments = []
 let employees = []
 let jobs = []
-let applications = []
 let currentUser = null
 const expandedDepartments = new Set()
 let filteredDepartments = []
 let isSearchActive = false
 
-// Initialisation du dashboard
+// Initialize global applications variable
+window.applications = []
+
+// Initialize dashboard when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 FRONTEND: Initialisation du dashboard")
+  console.log("🚀 FRONTEND: Dashboard initializing...")
   initializeDashboard()
+  console.log("✅ FRONTEND: Dashboard initialized")
 })
 
 // Fonction d'initialisation
 async function initializeDashboard() {
   try {
     console.log("🔄 FRONTEND: Début initialisation")
-
     // Charger l'utilisateur actuel
     await loadCurrentUser()
-
     // Charger les données de base
-    await Promise.all([loadDepartments(), loadEmployees(), loadJobs(), loadApplications(), loadDashboardStats()])
-
+    await Promise.all([loadDepartments(), loadEmployees(), loadJobs(), loadDashboardStats()])
+    // Load applications with compatibility AFTER other data is loaded
+    await loadDashboardData()
     console.log("✅ FRONTEND: Initialisation terminée")
   } catch (error) {
     console.error("❌ FRONTEND: Erreur lors de l'initialisation:", error)
   }
 }
 
-// NOUVELLE FONCTION: Charger les candidatures depuis l'API
-async function loadApplications() {
-  console.log("📋 FRONTEND: Chargement des candidatures")
+async function loadDashboardData() {
+  console.log("📊 FRONTEND: Loading dashboard data...")
+  try {
+    // Load applications with compatibility (use the enhanced function if available)
+    if (typeof window.loadApplicationsWithFilters === "function") {
+      console.log("🎯 FRONTEND: Using enhanced applications loader with compatibility")
+      await window.loadApplicationsWithFilters()
+    } else {
+      console.log("⚠️ FRONTEND: Falling back to basic applications loader")
+      await loadApplications()
+    }
+    console.log("✅ FRONTEND: Dashboard data loaded successfully")
+  } catch (error) {
+    console.error("❌ FRONTEND: Error loading dashboard data:", error)
+  }
+}
 
+// FONCTION DE BASE: Charger les candidatures depuis l'API (fallback)
+async function loadApplications() {
+  console.log("📋 FRONTEND: Chargement des candidatures (mode basique)")
   try {
     const response = await fetch("/api/applications")
     const result = await response.json()
-
     if (result.success) {
-      applications = result.applications || []
-      console.log(`✅ FRONTEND: ${applications.length} candidatures chargées`)
-      renderApplications()
+      window.applications = result.applications || []
+      console.log(`✅ FRONTEND: ${window.applications.length} candidatures chargées`)
+      // Check if we have compatibility data
+      if (window.applications.length > 0 && window.applications[0].compatibility_percentage !== undefined) {
+        console.log("🎯 FRONTEND: Compatibility data detected, using enhanced rendering")
+        if (typeof window.renderApplicationsWithCompatibility === "function") {
+          window.renderApplicationsWithCompatibility()
+        } else {
+          renderApplications()
+        }
+      } else {
+        console.log("📋 FRONTEND: No compatibility data, using basic rendering")
+        renderApplications()
+      }
     } else {
       console.error("❌ FRONTEND: Erreur chargement candidatures:", result.message)
-      applications = []
+      window.applications = []
       renderApplications()
     }
   } catch (error) {
     console.error("❌ FRONTEND: Erreur réseau chargement candidatures:", error)
-    applications = []
+    window.applications = []
     renderApplications()
   }
 }
 
 // FONCTION MISE À JOUR: Rendu des candidatures avec témoin de recommandation
 function renderApplications(filter = "all") {
-  console.log("📋 FRONTEND: Rendu des candidatures, filtre:", filter)
-
+  console.log("📋 FRONTEND: Rendu des candidatures avec recommandations, filtre:", filter)
   const container = document.getElementById("applicationsContainer")
   if (!container) {
     console.error("❌ FRONTEND: Container candidatures non trouvé")
     return
   }
 
-  let filteredApps = applications
+  let filteredApps = window.applications
   if (filter !== "all") {
-    filteredApps = applications.filter((app) => app.status === filter)
+    filteredApps = window.applications.filter((app) => app.status === filter)
   }
 
   if (filteredApps.length === 0) {
@@ -78,6 +105,9 @@ function renderApplications(filter = "all") {
         <i class="fas fa-file-alt"></i>
         <h4>Aucune candidature</h4>
         <p>Aucune candidature ${getFilterText(filter)}</p>
+        <button class="empty-btn" onclick="createDemoApplications()">
+          <i class="fas fa-plus"></i> Créer des candidatures de test
+        </button>
       </div>
     `
     return
@@ -95,16 +125,16 @@ function renderApplications(filter = "all") {
             ${
               app.is_recommended
                 ? `
-              <span class="recommendation-badge ${app.recommendation_priority}" 
-                     title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
-                <i class="fas fa-star"></i> 
-                ${
-                  app.recommendation_priority === "urgent"
-                    ? "URGENT"
-                    : app.recommendation_priority === "high"
-                      ? "PRIORITÉ HAUTE"
-                      : "RECOMMANDÉ"
-                }
+              <span class="recommendation-badge ${app.recommendation_priority}"
+                    title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
+                <i class="fas fa-star"></i>
+                 ${
+                   app.recommendation_priority === "urgent"
+                     ? "URGENT"
+                     : app.recommendation_priority === "high"
+                       ? "PRIORITÉ HAUTE"
+                       : "RECOMMANDÉ"
+                 }
               </span>
             `
                 : ""
@@ -125,7 +155,7 @@ function renderApplications(filter = "all") {
         }
       </div>
     </div>
-    
+
     ${
       app.is_recommended
         ? `
@@ -138,8 +168,8 @@ function renderApplications(filter = "all") {
         padding: 0.75rem;
         margin: 0.75rem 0;
         position: relative;
-      " onmouseover="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(230, 126, 34, 0.08))'" 
-         onmouseout="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05))'">
+      " onmouseover="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(230, 126, 34, 0.08))'"
+          onmouseout="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05))'">
         <div style="display: flex; align-items: center; justify-content: space-between;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <i class="fas fa-user-tie" style="color: #f39c12;"></i>
@@ -158,7 +188,7 @@ function renderApplications(filter = "all") {
           </div>
         </div>
       </div>
-      
+
       ${
         app.recommendation_comment
           ? `
@@ -197,7 +227,7 @@ function renderApplications(filter = "all") {
     `
         : ""
     }
-    
+
     <div class="application-job">
       <div class="job-info">
         <div class="job-title">${app.job_title}</div>
@@ -209,7 +239,50 @@ function renderApplications(filter = "all") {
         <br><small>Il y a ${app.days_since_application} jour(s)</small>
       </div>
     </div>
-    
+
+    ${
+      app.compatibility_percentage !== undefined
+        ? `
+        <!-- Compatibility Section -->
+        <div class="application-compatibility-section">
+            <div class="compatibility-header">
+                <div class="compatibility-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Compatibilité des compétences
+                </div>
+                <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
+                    ${app.compatibility_percentage}%
+                    <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
+                </div>
+            </div>
+            
+            <div class="compatibility-progress">
+                <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage)}"
+                      style="width: ${app.compatibility_percentage}%"></div>
+            </div>
+            
+            <div class="compatibility-details">
+                <span class="skill-stat matched">
+                    <i class="fas fa-check-circle"></i>
+                    ${app.matched_skills_count || 0} compétences correspondantes
+                </span>
+                <span class="skill-stat missing">
+                    <i class="fas fa-times-circle"></i>
+                    ${(app.total_job_skills || 0) - (app.matched_skills_count || 0)} manquantes
+                </span>
+                <span>Total: ${app.total_job_skills || 0} compétences</span>
+            </div>
+            
+            <div class="compatibility-actions">
+                <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
+                    <i class="fas fa-search"></i> Détails compatibilité
+                </button>
+            </div>
+        </div>
+    `
+        : ""
+    }
+
     <div class="application-actions">
       <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
         <i class="fas fa-user"></i> Voir Profil
@@ -219,13 +292,61 @@ function renderApplications(filter = "all") {
       </button>
       ${renderApplicationActionButtons(app)}
     </div>
-  </div>
-`,
+  </div>`,
     )
     .join("")
 }
 
 // NOUVELLE FONCTION: Toggle du commentaire de recommandation
+function toggleRecommendationComment(applicationId) {
+  console.log(`🔄 Toggle commentaire recommandation pour l'application ${applicationId}`)
+  const commentElement = document.querySelector(`.recommendation-comment-${applicationId}`)
+  const chevronElement = document.querySelector(`.recommendation-chevron-${applicationId}`)
+
+  if (!commentElement || !chevronElement) {
+    console.error("❌ Éléments de recommandation non trouvés")
+    return
+  }
+
+  const isExpanded = commentElement.style.maxHeight && commentElement.style.maxHeight !== "0px"
+
+  if (isExpanded) {
+    // Fermer le commentaire
+    commentElement.style.maxHeight = "0px"
+    commentElement.style.opacity = "0"
+    commentElement.style.padding = "0"
+    chevronElement.style.transform = "rotate(0deg)"
+
+    // Changer le texte d'indication
+    const parentInfo = chevronElement.closest(".recommendation-info")
+    const hintText = parentInfo.querySelector("small")
+    if (hintText) {
+      hintText.textContent = "Voir le commentaire"
+    }
+  } else {
+    // Ouvrir le commentaire
+    commentElement.style.maxHeight = commentElement.scrollHeight + "px"
+    commentElement.style.opacity = "1"
+    commentElement.style.padding = "0"
+    chevronElement.style.transform = "rotate(180deg)"
+
+    // Changer le texte d'indication
+    const parentInfo = chevronElement.closest(".recommendation-info")
+    const hintText = parentInfo.querySelector("small")
+    if (hintText) {
+      hintText.textContent = "Masquer le commentaire"
+    }
+
+    // Scroll fluide vers le commentaire après l'animation
+    setTimeout(() => {
+      commentElement.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      })
+    }, 200)
+  }
+}
+
 // FONCTION CORRIGÉE: Rendre les boutons d'action selon le rôle utilisateur
 function renderApplicationActionButtons(app) {
   if (!currentUser) return ""
@@ -236,7 +357,6 @@ function renderApplicationActionButtons(app) {
       // Échapper les caractères spéciaux pour éviter les erreurs JavaScript
       const safeCandidateName = app.candidate_name.replace(/'/g, "\\'").replace(/"/g, '\\"')
       const safeJobTitle = app.job_title.replace(/'/g, "\\'").replace(/"/g, '\\"')
-
       return `
         <button class="app-btn recommend" onclick="showRecommendModal(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
           <i class="fas fa-thumbs-up"></i> Recommander
@@ -256,7 +376,41 @@ function renderApplicationActionButtons(app) {
 
   // Pour les recruteurs : boutons complets
   if (currentUser.role === "recruiter") {
-    return ""
+    return `
+      <button class="app-btn review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+        <i class="fas fa-eye"></i> Examiner
+      </button>
+      ${
+        app.status === "pending" || app.status === "reviewed"
+          ? `
+          <button class="app-btn schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
+            <i class="fas fa-calendar"></i> Programmer
+          </button>
+        `
+          : ""
+      }
+      ${
+        app.status === "interview_scheduled"
+          ? `
+          <button class="app-btn complete" onclick="updateApplicationStatus(${app.id}, 'interview_completed')">
+            <i class="fas fa-check"></i> Terminer
+          </button>
+        `
+          : ""
+      }
+      ${
+        app.status === "interview_completed" || app.status === "reviewed"
+          ? `
+          <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
+            <i class="fas fa-thumbs-up"></i> Accepter
+          </button>
+          <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
+            <i class="fas fa-thumbs-down"></i> Rejeter
+          </button>
+        `
+          : ""
+      }
+    `
   }
 
   // Pour les super admins : pas de boutons d'action
@@ -349,7 +503,7 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
           font-size: 1.2rem;
         ">&times;</button>
       </div>
-      
+
       <div class="modal-body" style="
         flex: 1;
         overflow-y: auto;
@@ -389,7 +543,7 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
             <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Votre rôle:</strong> Chef de département</p>
           </div>
         </div>
-        
+
         <div class="form-group" style="margin-bottom: 2rem;">
           <label class="form-label" style="
             display: flex;
@@ -404,8 +558,8 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
             Commentaire de recommandation *
           </label>
           <textarea 
-            id="recommendationComment" 
-            class="form-textarea" 
+            id="recommendationComment"
+            class="form-textarea"
             placeholder="Expliquez pourquoi vous recommandez ce candidat (compétences, expérience, adéquation au poste...)..."
             rows="4"
             required
@@ -435,7 +589,7 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
             gap: 0.5rem;
           ">💡 Ce commentaire sera visible par les recruteurs et super admins</small>
         </div>
-        
+
         <div class="form-group" style="margin-bottom: 2rem;">
           <label class="form-label" style="
             display: flex;
@@ -476,7 +630,7 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
             gap: 0.5rem;
           ">💡 Choisissez le niveau selon l'adéquation du candidat</small>
         </div>
-        
+
         <div class="recommendation-info" style="
           background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
           border: 1px solid rgba(59, 130, 246, 0.3);
@@ -544,7 +698,7 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
           </ul>
         </div>
       </div>
-      
+
       <div class="modal-footer" style="
         flex-shrink: 0;
         display: flex;
@@ -595,6 +749,7 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
   `
 
   document.body.appendChild(modal)
+
   // Empêcher le scroll du body
   document.body.style.overflow = "hidden"
 
@@ -623,57 +778,6 @@ function showRecommendModal(applicationId, candidateName, jobTitle) {
   })
 }
 
-// NOUVELLE FONCTION: Toggle du commentaire de recommandation
-function toggleRecommendationComment(applicationId) {
-  console.log(`🔄 Toggle commentaire recommandation pour l'application ${applicationId}`)
-
-  const commentElement = document.querySelector(`.recommendation-comment-${applicationId}`)
-  const chevronElement = document.querySelector(`.recommendation-chevron-${applicationId}`)
-
-  if (!commentElement || !chevronElement) {
-    console.error("❌ Éléments de recommandation non trouvés")
-    return
-  }
-
-  const isExpanded = commentElement.style.maxHeight && commentElement.style.maxHeight !== "0px"
-
-  if (isExpanded) {
-    // Fermer le commentaire
-    commentElement.style.maxHeight = "0px"
-    commentElement.style.opacity = "0"
-    commentElement.style.padding = "0"
-    chevronElement.style.transform = "rotate(0deg)"
-
-    // Changer le texte d'indication
-    const parentInfo = chevronElement.closest(".recommendation-info")
-    const hintText = parentInfo.querySelector("small")
-    if (hintText) {
-      hintText.textContent = "Voir le commentaire"
-    }
-  } else {
-    // Ouvrir le commentaire
-    commentElement.style.maxHeight = commentElement.scrollHeight + "px"
-    commentElement.style.opacity = "1"
-    commentElement.style.padding = "0"
-    chevronElement.style.transform = "rotate(180deg)"
-
-    // Changer le texte d'indication
-    const parentInfo = chevronElement.closest(".recommendation-info")
-    const hintText = parentInfo.querySelector("small")
-    if (hintText) {
-      hintText.textContent = "Masquer le commentaire"
-    }
-
-    // Scroll fluide vers le commentaire après l'animation
-    setTimeout(() => {
-      commentElement.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      })
-    }, 200)
-  }
-}
-
 // FONCTION CORRIGÉE: Fermer la modal de recommandation
 function closeRecommendModal() {
   const modal = document.querySelector(".recommend-modal-overlay")
@@ -683,7 +787,6 @@ function closeRecommendModal() {
     if (modalContent) {
       modalContent.style.transform = "scale(0.95)"
     }
-
     setTimeout(() => {
       if (modal.parentElement) {
         modal.remove()
@@ -697,7 +800,6 @@ function closeRecommendModal() {
 // FONCTION CORRIGÉE: Confirmer la recommandation
 async function confirmRecommendation(applicationId) {
   console.log(`👍 Confirmation recommandation candidature ${applicationId}`)
-
   try {
     const commentElement = document.getElementById("recommendationComment")
     const priorityElement = document.getElementById("recommendationPriority")
@@ -725,7 +827,6 @@ async function confirmRecommendation(applicationId) {
 
     // Fermer la modal AVANT d'afficher le loading
     closeRecommendModal()
-
     showLoading("Traitement de votre recommandation...")
 
     const response = await fetch(`/api/applications/${applicationId}/recommend`, {
@@ -744,7 +845,6 @@ async function confirmRecommendation(applicationId) {
 
     if (result.success) {
       console.log("👍 Candidature recommandée avec succès")
-
       // Afficher la notification de succès
       showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
 
@@ -766,20 +866,91 @@ async function confirmRecommendation(applicationId) {
   }
 }
 
+// Compatibility helper functions (fallback if compatibility.js not loaded)
+function getCompatibilityClass(percentage) {
+  if (percentage >= 75) return "high"
+  if (percentage >= 50) return "medium"
+  if (percentage >= 25) return "low"
+  return "very-low"
+}
+
+function getCompatibilityIcon(percentage) {
+  if (percentage >= 75) return "star"
+  if (percentage >= 50) return "star-half-alt"
+  if (percentage >= 25) return "exclamation-triangle"
+  return "times-circle"
+}
+
+// Fonctions utilitaires pour les candidatures
+function getInitials(name) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+}
+
+function filterApplications(status) {
+  console.log("🔍 FRONTEND: Filtrage candidatures:", status)
+  if (typeof window.renderApplicationsWithCompatibility === "function") {
+    window.renderApplicationsWithCompatibility(status)
+  } else {
+    renderApplications(status)
+  }
+}
+
+// Filter applications by compatibility (fallback)
+function filterApplicationsByCompatibility(compatibilityLevel) {
+  console.log("🔍 FRONTEND: Filtering applications by compatibility:", compatibilityLevel)
+  if (typeof window.loadApplicationsWithFilters === "function") {
+    const statusFilter = document.querySelector(".filter-select").value || "all"
+    window.loadApplicationsWithFilters(statusFilter, compatibilityLevel)
+  } else {
+    console.log("⚠️ FRONTEND: Enhanced compatibility filtering not available")
+  }
+}
+
+// View compatibility details (fallback)
+function viewCompatibilityDetails(applicationId) {
+  console.log("🔍 FRONTEND: Viewing compatibility details for application:", applicationId)
+  if (typeof window.viewCompatibilityDetails === "function") {
+    window.viewCompatibilityDetails(applicationId)
+  } else {
+    showNotification("Fonctionnalité de compatibilité non disponible", "warning")
+  }
+}
+
+// Update application status (fallback)
+function updateApplicationStatus(applicationId, newStatus) {
+  console.log("📝 FRONTEND: Updating application status:", { applicationId, newStatus })
+  if (typeof window.updateApplicationStatus === "function") {
+    window.updateApplicationStatus(applicationId, newStatus)
+  } else {
+    showNotification("Fonctionnalité de mise à jour non disponible", "warning")
+  }
+}
+
+// Create demo applications (fallback)
+function createDemoApplications() {
+  console.log("🎭 FRONTEND: Creating demo applications")
+  if (typeof window.createDemoApplications === "function") {
+    window.createDemoApplications()
+  } else {
+    showNotification("Fonctionnalité de création de démo non disponible", "warning")
+  }
+}
+
 // Fonction pour charger l'utilisateur actuel
 async function loadCurrentUser() {
   console.log("👤 FRONTEND: Chargement utilisateur actuel")
-
   try {
     const response = await fetch("/api/current-user")
     const result = await response.json()
     console.log("API Response:", result)
-
     if (result.success) {
       currentUser = result.user
       console.log("✅ FRONTEND: Utilisateur chargé:", currentUser)
       updateUserDisplay()
-
       // Adapter l'interface selon le rôle
       adaptInterfaceForRole()
     } else {
@@ -796,13 +967,11 @@ async function loadCurrentUser() {
 // FONCTION MISE À JOUR: Adapter l'interface selon le rôle
 function adaptInterfaceForRole() {
   if (!currentUser) return
-
   console.log(`🔧 FRONTEND: Adaptation interface pour le rôle: ${currentUser.role}`)
 
   // Restrictions pour CHEF DE DÉPARTEMENT
   if (currentUser.role === "department_head") {
     console.log("🔒 FRONTEND: Mode chef de département activé")
-
     // Masquer tous les boutons de création de département
     const createDeptButtons = document.querySelectorAll('[onclick="openDepartmentModal()"]')
     createDeptButtons.forEach((btn) => {
@@ -833,11 +1002,9 @@ function adaptInterfaceForRole() {
       roleElement.style.color = "#f59e0b"
     }
   }
-
   // Restrictions pour RECRUTEUR
   else if (currentUser.role === "recruiter") {
     console.log("🔍 FRONTEND: Mode recruteur activé")
-
     // Masquer tous les boutons de création de département
     const createDeptButtons = document.querySelectorAll('[onclick="openDepartmentModal()"]')
     createDeptButtons.forEach((btn) => {
@@ -871,11 +1038,9 @@ function adaptInterfaceForRole() {
       roleElement.style.color = "#10b981"
     }
   }
-
   // Mode SUPER ADMIN (accès complet)
   else if (currentUser.role === "super_admin") {
     console.log("👑 FRONTEND: Mode Super Admin - Accès complet")
-
     // Ajouter un indicateur visuel
     const roleElement = document.getElementById("userRoleDisplay")
     if (roleElement) {
@@ -889,13 +1054,11 @@ function updateUserDisplay() {
   if (currentUser) {
     const userName = `${currentUser.first_name} ${currentUser.last_name}`
     const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
-
     const roleTranslations = {
       super_admin: "Super Admin",
       recruiter: "Recruteur",
       department_head: "Chef de Département",
     }
-
     const translatedRole = roleTranslations[currentUser.role] || currentUser.role
 
     // Mettre à jour le rôle au-dessus du titre
@@ -921,11 +1084,9 @@ function updateUserDisplay() {
 // Fonction pour charger les statistiques du dashboard
 async function loadDashboardStats() {
   console.log("📊 FRONTEND: Chargement statistiques dashboard")
-
   try {
     const response = await fetch("/api/dashboard-stats")
     const result = await response.json()
-
     if (result.success) {
       const stats = result.stats
       console.log("✅ FRONTEND: Statistiques chargées:", stats)
@@ -966,9 +1127,7 @@ function updateStatsDisplay(stats) {
 // Fonction pour mettre à jour les classes de couleur des changements
 function updateStatChangeClass(element, change) {
   if (!element) return
-
   element.classList.remove("positive", "negative", "warning")
-
   if (change.startsWith("+")) {
     element.classList.add("positive")
   } else if (change.startsWith("-")) {
@@ -1018,14 +1177,12 @@ function toggleManagerAssignment() {
     section.style.display = "block"
     section.classList.remove("hidden")
     section.classList.add("visible")
-
     // Charger les chefs disponibles
     loadAvailableManagers()
   } else {
     section.style.display = "none"
     section.classList.remove("visible")
     section.classList.add("hidden")
-
     // Réinitialiser tous les champs
     resetManagerFields()
   }
@@ -1072,11 +1229,9 @@ function resetManagerFields() {
 // Charger les chefs de département disponibles
 async function loadAvailableManagers() {
   console.log("👥 FRONTEND: Chargement des chefs disponibles")
-
   try {
     const response = await fetch("/api/available-managers")
     const result = await response.json()
-
     const select = document.getElementById("existingManagerSelect")
 
     if (result.success) {
@@ -1084,7 +1239,6 @@ async function loadAvailableManagers() {
       console.log(`✅ FRONTEND: ${managers.length} chefs disponibles`)
 
       select.innerHTML = '<option value="">Sélectionner un chef de département</option>'
-
       managers.forEach((manager) => {
         const option = document.createElement("option")
         option.value = manager.id
@@ -1109,7 +1263,6 @@ async function loadAvailableManagers() {
 function openDepartmentModal() {
   console.log("🏢 FRONTEND: Ouverture modal département")
   closeAllModals()
-
   const modal = document.getElementById("departmentModal")
   if (modal) {
     modal.style.display = "flex"
@@ -1154,6 +1307,12 @@ function openJobModal(preselectedDeptId = null) {
   console.log("💼 FRONTEND: Ouverture modal poste")
   closeAllModals()
 
+  // Load skills functionality if available
+  if (typeof window.openJobModalWithSkills === "function") {
+    window.openJobModalWithSkills(preselectedDeptId)
+    return
+  }
+
   const modal = document.getElementById("jobModal")
   if (modal) {
     modal.style.display = "flex"
@@ -1187,10 +1346,22 @@ function openJobModal(preselectedDeptId = null) {
       modal.style.opacity = "1"
     })
   }
+
+  // Focus on first input
+  setTimeout(() => {
+    document.getElementById("jobTitle").focus()
+  }, 200)
 }
 
 function closeJobModal() {
   console.log("💼 FRONTEND: Fermeture modal poste")
+
+  // Use skills version if available
+  if (typeof window.closeJobModalWithSkills === "function") {
+    window.closeJobModalWithSkills()
+    return
+  }
+
   const modal = document.getElementById("jobModal")
   if (modal) {
     modal.classList.remove("show")
@@ -1198,7 +1369,6 @@ function closeJobModal() {
       modal.style.display = "none"
       document.body.style.overflow = "auto"
     }, 300)
-
     // Réinitialiser le formulaire
     document.getElementById("jobForm").reset()
   }
@@ -1213,7 +1383,6 @@ function closeEmployeeModal() {
       modal.style.display = "none"
       document.body.style.overflow = "auto"
     }, 300)
-
     // Réinitialiser le formulaire
     document.getElementById("employeeForm").reset()
   }
@@ -1222,7 +1391,6 @@ function closeEmployeeModal() {
 // Fonction pour basculer l'expansion d'un département
 function toggleDepartmentExpansion(departmentId) {
   console.log("🔄 FRONTEND: Basculer expansion département:", departmentId)
-
   if (expandedDepartments.has(departmentId)) {
     expandedDepartments.delete(departmentId)
   } else {
@@ -1240,7 +1408,6 @@ function toggleDepartmentExpansion(departmentId) {
 // FONCTION MODIFIÉE: Créer un département avec chef optionnel
 async function createDepartment() {
   console.log("🏢 FRONTEND: Début création département")
-
   const name = document.getElementById("departmentName").value.trim()
   const description = document.getElementById("departmentDescription").value.trim()
   const color = document.getElementById("departmentColor").value
@@ -1272,12 +1439,10 @@ async function createDepartment() {
     if (existingManagerRadio.checked) {
       // Assigner un chef existant
       const managerId = document.getElementById("existingManagerSelect").value
-
       if (!managerId) {
         showNotification("Veuillez sélectionner un chef de département", "warning")
         return
       }
-
       departmentData.assign_existing_manager = true
       departmentData.existing_manager_id = Number.parseInt(managerId)
     } else if (newManagerRadio.checked) {
@@ -1316,7 +1481,6 @@ async function createDepartment() {
 
   try {
     showLoading("Création du département en cours...")
-
     const response = await fetch("/api/create-department", {
       method: "POST",
       headers: {
@@ -1348,6 +1512,12 @@ async function createDepartment() {
 async function createJob() {
   console.log("💼 FRONTEND: Début création poste")
 
+  // Use skills version if available
+  if (typeof window.createJobWithSkills === "function") {
+    await window.createJobWithSkills()
+    return
+  }
+
   const title = document.getElementById("jobTitle").value.trim()
   const departmentId = document.getElementById("jobDepartment").value
   const priority = document.getElementById("jobPriority").value
@@ -1365,22 +1535,18 @@ async function createJob() {
     showNotification("Le titre du poste est obligatoire", "warning")
     return
   }
-
   if (!departmentId) {
     showNotification("Veuillez sélectionner un département", "warning")
     return
   }
-
   if (!priority) {
     showNotification("Veuillez sélectionner une priorité", "warning")
     return
   }
-
   if (!employmentType) {
     showNotification("Veuillez sélectionner un type de contrat", "warning")
     return
   }
-
   if (!description) {
     showNotification("La description du poste est obligatoire", "warning")
     return
@@ -1410,7 +1576,6 @@ async function createJob() {
 
   try {
     showLoading("Création du poste en cours...")
-
     const response = await fetch("/api/create-job", {
       method: "POST",
       headers: {
@@ -1441,7 +1606,6 @@ async function createJob() {
 // Fonction pour créer un employé
 async function createEmployee() {
   console.log("👤 FRONTEND: Début création employé")
-
   const firstName = document.getElementById("employeeFirstName").value.trim()
   const lastName = document.getElementById("employeeLastName").value.trim()
   const email = document.getElementById("employeeEmail").value.trim()
@@ -1481,7 +1645,6 @@ async function createEmployee() {
 
   try {
     showLoading("Création de l'employé en cours...")
-
     const response = await fetch("/api/create-employee", {
       method: "POST",
       headers: {
@@ -1515,22 +1678,20 @@ async function refreshDashboard() {
   await loadDepartments()
   await loadEmployees()
   await loadJobs()
-  await loadApplications()
   await loadDashboardStats()
+  // Reload applications with compatibility
+  await loadDashboardData()
 }
 
 // Fonction pour charger les départements
 async function loadDepartments() {
   console.log("🔄 FRONTEND: Chargement des départements")
-
   try {
     const response = await fetch("/api/departments")
     const result = await response.json()
-
     if (result.success) {
       departments = result.departments || []
       console.log(`✅ FRONTEND: ${departments.length} départements chargés`)
-
       // Si une recherche est active, refiltrer les résultats
       if (isSearchActive) {
         const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim()
@@ -1553,11 +1714,9 @@ async function loadDepartments() {
 // Fonction pour charger les postes
 async function loadJobs() {
   console.log("🔄 FRONTEND: Chargement des postes")
-
   try {
     const response = await fetch("/api/jobs")
     const result = await response.json()
-
     if (result.success) {
       jobs = result.jobs || []
       console.log(`✅ FRONTEND: ${jobs.length} postes chargés`)
@@ -1572,7 +1731,6 @@ async function loadJobs() {
 // Fonction pour afficher les départements
 function displayDepartments() {
   const departmentsList = document.getElementById("departmentsList")
-
   if (!departmentsList) {
     console.error("❌ FRONTEND: Element departmentsList non trouvé")
     return
@@ -1598,7 +1756,6 @@ function displayDepartments() {
 // Fonction pour afficher les départements filtrés
 function displayFilteredDepartments(filteredDepts) {
   const departmentsList = document.getElementById("departmentsList")
-
   if (!departmentsList) {
     console.error("❌ FRONTEND: Element departmentsList non trouvé")
     return
@@ -1653,20 +1810,19 @@ function renderDepartmentsList(deptList) {
             </div>
           </div>
         </div>
-        
+
         <div class="department-actions">
-          <button class="btn-expand ${isExpanded ? "expanded" : ""}" 
-                  onclick="toggleDepartmentExpansion(${dept.id})" 
-                  title="${isExpanded ? "Masquer" : "Voir"} les détails">
+          <button class="btn-expand ${isExpanded ? "expanded" : ""}"
+                   onclick="toggleDepartmentExpansion(${dept.id})"
+                   title="${isExpanded ? "Masquer" : "Voir"} les détails">
             <i class="fas fa-chevron-${isExpanded ? "up" : "down"}"></i>
             ${isExpanded ? "Masquer" : "Voir"} les détails
           </button>
-
           <button class="btn-add-job" onclick="openJobModal(${dept.id})" title="Créer un poste">
             <i class="fas fa-briefcase"></i>
           </button>
         </div>
-        
+
         ${isExpanded ? renderDepartmentDetails(dept, departmentEmployees, departmentJobs) : ""}
       </div>
     `
@@ -1708,7 +1864,7 @@ function renderDepartmentDetails(department, deptEmployees, deptJobs) {
             }
           </div>
         </div>
-        
+
         <div class="tab-section">
           <h5><i class="fas fa-briefcase"></i> Postes (${deptJobs.length})</h5>
           <div class="items-list">
@@ -1749,7 +1905,6 @@ function loadDepartmentsInSelect(selectId) {
   if (!select) return
 
   select.innerHTML = '<option value="">Sélectionner un département</option>'
-
   departments.forEach((dept) => {
     const option = document.createElement("option")
     option.value = dept.id
@@ -1764,7 +1919,6 @@ function loadEmployeesInSelect(selectId) {
   if (!select) return
 
   select.innerHTML = '<option value="">Aucun employé assigné</option>'
-
   employees.forEach((emp) => {
     const option = document.createElement("option")
     option.value = emp.id
@@ -1775,7 +1929,6 @@ function loadEmployeesInSelect(selectId) {
 
 function viewEmployeeProfile(employeeId) {
   const employee = employees.find((e) => e.id === employeeId)
-
   if (!employee) {
     showNotification("Employé introuvable", "error")
     return
@@ -1805,7 +1958,6 @@ function generateReport() {
 // ==================== FONCTION DE RECHERCHE CORRIGÉE ====================
 function filterDepartments() {
   console.log("🔍 FRONTEND: Filtrage départements")
-
   const searchInput = document.getElementById("searchInput")
   if (!searchInput) {
     console.error("❌ FRONTEND: Input de recherche non trouvé")
@@ -1831,13 +1983,10 @@ function filterDepartments() {
   filteredDepartments = departments.filter((dept) => {
     const name = (dept.name || "").toLowerCase()
     const description = (dept.description || "").toLowerCase()
-
     const matches = name.includes(searchTerm) || description.includes(searchTerm)
-
     if (matches) {
       console.log(`✅ FRONTEND: Département "${dept.name}" correspond à la recherche`)
     }
-
     return matches
   })
 
@@ -1850,12 +1999,10 @@ function filterDepartments() {
 // Fonction pour effacer la recherche
 function clearSearch() {
   console.log("🔍 FRONTEND: Effacement de la recherche")
-
   const searchInput = document.getElementById("searchInput")
   if (searchInput) {
     searchInput.value = ""
   }
-
   isSearchActive = false
   filteredDepartments = []
   displayDepartments()
@@ -1864,11 +2011,9 @@ function clearSearch() {
 // Charger les employés depuis l'API
 async function loadEmployees() {
   console.log("👥 FRONTEND: Chargement des employés")
-
   try {
     const response = await fetch("/api/employees")
     const result = await response.json()
-
     if (result.success) {
       employees = result.employees || []
       console.log(`✅ FRONTEND: ${employees.length} employés chargés`)
@@ -1880,16 +2025,6 @@ async function loadEmployees() {
     console.error("❌ Erreur réseau chargement employés:", error)
     employees = []
   }
-}
-
-// Fonctions utilitaires pour les candidatures
-function getInitials(name) {
-  if (!name) return "??"
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
 }
 
 function getFilterText(filter) {
@@ -1943,30 +2078,22 @@ function viewJobDetails(jobId) {
   window.location.href = `/job-details?id=${jobId}`
 }
 
-function filterApplications(status) {
-  console.log("🔍 FRONTEND: Filtrage candidatures:", status)
-  renderApplications(status)
-}
-
 function filterApplicationByName() {
   const input = document.getElementById("applicationSearchInput")
   if (!input) return
 
   const searchTerm = input.value.toLowerCase().trim()
-
-  const filtered = applications.filter((app) => {
+  const filtered = window.applications.filter((app) => {
     return (
       (app.candidate_name || "").toLowerCase().includes(searchTerm) ||
       (app.candidate_email || "").toLowerCase().includes(searchTerm)
     )
   })
-
   renderApplicationsList(filtered)
 }
 
 function renderApplicationsList(list) {
   const container = document.getElementById("applicationsContainer")
-
   if (!container) return
 
   if (list.length === 0) {
@@ -2001,7 +2128,7 @@ function renderApplicationsList(list) {
             ${app.is_recommended && app.recommendation_priority !== "normal" ? `<span class="priority-badge ${app.recommendation_priority}">${app.recommendation_priority.toUpperCase()}</span>` : ""}
           </div>
         </div>
-        
+
         <div class="application-job">
           <div class="job-info">
             <div class="job-title">${app.job_title}</div>
@@ -2014,7 +2141,7 @@ function renderApplicationsList(list) {
             ${app.recommendation_date ? `<br><small class="recommendation-date">Recommandé le ${formatDate(app.recommendation_date)}</small>` : ""}
           </div>
         </div>
-        
+
         ${
           app.recommendation_comment
             ? `
@@ -2026,7 +2153,7 @@ function renderApplicationsList(list) {
         `
             : ""
         }
-        
+
         <div class="application-actions">
           <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
             <i class="fas fa-user"></i> Voir Profil
@@ -2087,12 +2214,10 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("DOMContentLoaded", () => {
   const colorInput = document.getElementById("departmentColor")
   const colorPreview = document.querySelector(".color-preview")
-
   if (colorInput && colorPreview) {
     colorInput.addEventListener("change", function () {
       colorPreview.style.backgroundColor = this.value
     })
-
     // Initialiser la couleur preview
     colorPreview.style.backgroundColor = colorInput.value
   }
@@ -2172,7 +2297,7 @@ function showNotification(message, type = "info") {
           transform: translateX(0);
         }
       }
-      
+
       @keyframes slideOutRight {
         from {
           opacity: 1;
@@ -2206,7 +2331,6 @@ function showNotification(message, type = "info") {
 // Fonction utilitaire pour afficher le loading
 function showLoading(message) {
   console.log("⏳ Affichage loading:", message)
-
   const loadingHTML = `
     <div class="loading-overlay" style="
       position: fixed;
@@ -2246,4 +2370,4 @@ function hideLoading() {
   }
 }
 
-console.log("✅ FRONTEND: Script de recommandation corrigé et fonctionnel")
+console.log("✅ FRONTEND: Dashboard Core script chargé et fonctionnel")
