@@ -93,7 +93,7 @@ class Department(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(Text)
-    manager_name = Column(String(255))
+    manager_id = Column(Integer)
     color = Column(String(7), default='#e74c3c')
     budget = Column(DECIMAL(15,2))
     is_active = Column(Boolean, default=True)
@@ -240,3 +240,23 @@ class ActivityLog(Base):
     # Relations
     company = relationship("Company")
     admin = relationship("HRAdmin")
+class AdminPermissions(Base):
+    __tablename__ = "admin_permissions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    can_add_department = Column(Boolean, default=False)
+    can_manage_applications = Column(Boolean, default=False)
+    can_recommend_candidates = Column(Boolean, default=False)
+    # Relations
+    admin = relationship("HRAdmin")
+    
+class AdminDepartments(Base):
+    __tablename__ = "admin_departments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
+    # Relations
+    admin = relationship("HRAdmin")
+    department = relationship("Department")
