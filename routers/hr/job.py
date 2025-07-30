@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from databasehr.database import SessionLocal
+from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin
 # Ajout de l'import de Company
 from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, Company, JobSkill
 from databasehr.session_manager import current_user_session
@@ -254,6 +255,7 @@ async def get_job_details(job_id: int):
                     Employee.id == job.assigned_employee_id
                 ).first()
             
+            # CORRECTION: Récupérer les candidatures avec les informations de recommandation
             applications = db.query(Application).filter(
                 Application.job_id == job_id
             ).all()
@@ -264,6 +266,13 @@ async def get_job_details(job_id: int):
                     ProfileCandidat.id == app.candidate_profile_id
                 ).first()
                 
+                # Récupérer les informations de l'admin qui a recommandé
+                recommended_by_admin = None
+                if app.recommended_by_admin_id:
+                    recommended_by_admin = db.query(HRAdmin).filter(
+                        HRAdmin.id == app.recommended_by_admin_id
+                    ).first()
+                
                 if candidate:
                     applications_list.append({
                         "id": app.id,
@@ -273,7 +282,13 @@ async def get_job_details(job_id: int):
                         "application_date": app.application_date.isoformat() if app.application_date else None,
                         "hr_rating": float(app.hr_rating) if app.hr_rating else None,
                         "hr_notes": app.hr_notes,
-                        "candidate_id": candidate.id
+                        "candidate_id": candidate.id,
+                        # AJOUT: Informations de recommandation
+                        "is_recommended": app.is_recommended or False,
+                        "recommendation_priority": app.recommendation_priority,
+                        "recommendation_comment": app.recommendation_comment,
+                        "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
+                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None
                     })
             
             days_remaining = None

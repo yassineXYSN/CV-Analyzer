@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum,TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from databasehr.database import Base
@@ -42,7 +42,7 @@ class HRAdmin(Base):
     password_hash = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    role = Column(Enum('super_admin', 'hr_admin', 'hr_manager'), default='hr_admin')
+    role = Column(Enum('super_admin', 'recruiter', 'department_head'), default='recruiter')
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
@@ -85,6 +85,8 @@ class AdminCompanyAccess(Base):
     access_level = Column(Enum('owner', 'admin', 'viewer'), default='admin')
     granted_at = Column(DateTime, default=func.now())
     granted_by = Column(Integer, ForeignKey("hr_admins.id"))
+    
+
 
 class Department(Base):
     __tablename__ = "departments"
@@ -206,10 +208,23 @@ class Application(Base):
     decision_date = Column(DateTime)
     decision_reason = Column(Text)
     
+    # NOUVEAUX CHAMPS DE RECOMMANDATION
+    is_recommended = Column(Boolean, default=False)
+    recommended_by_admin_id = Column(Integer, ForeignKey("hr_admins.id"))
+    recommendation_comment = Column(Text)
+    recommendation_priority = Column(Enum('normal', 'high', 'urgent'), default='normal')
+    recommendation_date = Column(DateTime)
+    
     # Métadonnées
     source = Column(String(100))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relations
+    job = relationship("Job")
+    candidate_profile = relationship("ProfileCandidat")
+    reviewed_by_admin = relationship("HRAdmin", foreign_keys=[reviewed_by])
+    recommended_by_admin = relationship("HRAdmin", foreign_keys=[recommended_by_admin_id])
 
     # Relationships
     job = relationship("Job")
@@ -240,6 +255,7 @@ class ActivityLog(Base):
     # Relations
     company = relationship("Company")
     admin = relationship("HRAdmin")
+
 class AdminPermissions(Base):
     __tablename__ = "admin_permissions"
     
@@ -260,3 +276,4 @@ class AdminDepartments(Base):
     # Relations
     admin = relationship("HRAdmin")
     department = relationship("Department")
+

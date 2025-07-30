@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query, Depends
 from databasehr.database import SessionLocal
+from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments
 from databasehr.models import Application, Job, ProfileCandidat, Contact, Department, JobSkill, Company
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
@@ -8,6 +9,8 @@ from sqlalchemy import desc, and_
 from datetime import datetime, date
 import json
 from typing import Optional
+from pydantic import BaseModel
+
 
 router = APIRouter()
 
@@ -57,6 +60,10 @@ def calculate_skill_compatibility(candidate_skills, job_skills):
     
     return round(compatibility_percentage)
 
+class RecommendationRequest(BaseModel):
+    comment: Optional[str] = ""
+    priority: str = "normal"
+
 @router.get("/api/applications")
 async def get_applications(
     status_filter: Optional[str] = Query("all"),
@@ -67,14 +74,19 @@ async def get_applications(
         user_id = current_user_session.get('user_id')
         if not user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
-        
+
         company = get_user_company(user_id)
         if not company:
             return {"success": False, "message": "Aucune entreprise associée"}
-        
+
+        # Récupérer l'utilisateur actuel pour vérifier son rôle
+        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not current_admin:
+            return {"success": False, "message": "Utilisateur non trouvé"}
+
         print(f"🔍 BACKEND: Loading applications for company {company.id}")
-        
-        # Base query with all necessary joins
+
+        # Construire la requête de base
         query = db.query(Application).join(
             Job, Application.job_id == Job.id
         ).join(
@@ -89,27 +101,96 @@ async def get_applications(
             joinedload(Application.job).joinedload(Job.department),
             joinedload(Application.candidate_profile).joinedload(ProfileCandidat.contact)
         )
-        
-        # Apply status filter
+
+        # Si c'est un chef de département, filtrer par ses départements assignés
+        if current_admin.role == 'department_head':
+            print(f"🔒 Chef de département - Filtrage des candidatures pour: {current_admin.first_name} {current_admin.last_name}")
+
+            assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                AdminDepartments.admin_id == user_id
+            ).subquery()
+
+            query = query.filter(Department.id.in_(assigned_dept_ids))
+            print("📋 Filtrage appliqué pour les départements assignés")
+        else:
+            print(f"👑 Admin/Recruteur - Accès à toutes les candidatures: {current_admin.role}")
+
+        # Appliquer le filtre de statut
         if status_filter and status_filter != "all":
             query = query.filter(Application.status == status_filter)
-        
+
         applications = query.order_by(Application.application_date.desc()).all()
         print(f"📊 BACKEND: Found {len(applications)} applications")
-        
+
         applications_list = []
         for app in applications:
-            # Get job skills for compatibility calculation
-            job_skills = db.query(JobSkill).filter(JobSkill.job_id == app.job_id).all()
-            print(f"🎯 BACKEND: Job {app.job_id} has {len(job_skills)} skills: {[s.skill_name for s in job_skills]}")
-            
-            # Calculate compatibility
-            candidate_skills = app.candidate_profile.skills if app.candidate_profile else None
-            print(f"👤 BACKEND: Candidate skills: {candidate_skills}")
-            
+            job = app.job
+            department = job.department if job else None
+            candidate = app.candidate_profile
+            contact = candidate.contact if candidate else None
+
+            # Récupérer les compétences du job pour le calcul de compatibilité
+            job_skills = db.query(JobSkill).filter(JobSkill.job_id == job.id).all()
+            candidate_skills = candidate.skills if candidate else None
             compatibility_percentage = calculate_skill_compatibility(candidate_skills, job_skills)
-            print(f"📈 BACKEND: Compatibility calculated: {compatibility_percentage}%")
-            
+
+            # Appliquer filtre de compatibilité si précisé
+            if compatibility_filter != "all":
+                try:
+                    threshold = int(compatibility_filter)
+                    if compatibility_percentage < threshold:
+                        continue
+                except ValueError:
+                    pass  # Ignore invalid threshold input
+
+            # Récupérer les informations de recommandation
+            recommended_by_admin = None
+            if app.recommended_by_admin_id:
+                recommended_by_admin = db.query(HRAdmin).filter(
+                    HRAdmin.id == app.recommended_by_admin_id
+                ).first()
+
+            days_since_application = (datetime.now() - app.application_date).days if app.application_date else 0
+
+            applications_list.append({
+                "id": app.id,
+                "job_id": job.id,
+                "job_title": job.title,
+                "department_name": department.name if department else "N/A",
+                "candidate_id": candidate.id if candidate else None,
+                "candidate_name": candidate.name if candidate else "N/A",
+                "candidate_title": candidate.title if candidate else "N/A",
+                "candidate_email": contact.email if contact else "N/A",
+                "status": app.status,
+                "application_date": app.application_date.isoformat() if app.application_date else None,
+                "days_since_application": days_since_application,
+                "hr_rating": float(app.hr_rating) if app.hr_rating else None,
+                "hr_notes": app.hr_notes,
+                "priority": job.priority,
+                "reviewed_by": app.reviewed_by,
+                "reviewed_at": app.reviewed_at.isoformat() if app.reviewed_at else None,
+                "is_recommended": app.is_recommended or False,
+                "recommendation_priority": app.recommendation_priority,
+                "recommendation_comment": app.recommendation_comment,
+                "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
+                "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None,
+                "compatibility": compatibility_percentage
+            })
+
+        print(f"✅ {len(applications_list)} candidatures récupérées pour l'utilisateur {current_admin.role}")
+        return {
+            "success": True,
+            "applications": applications_list,
+            "total": len(applications_list)
+        }
+
+    except Exception as e:
+        print(f"❌ Erreur interne: {str(e)}")
+        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+
+
+@router.post("/api/applications/{application_id}/recommend")
+async def recommend_application(application_id: int, recommendation_data: RecommendationRequest):
             # Calculate days since application
             days_since = 0
             if app.application_date:
@@ -193,42 +274,55 @@ async def get_application_compatibility_details(application_id: int, db: Session
         user_id = current_user_session.get('user_id')
         if not user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
-        
+
+        # Vérifier l'utilisateur et ses rôles
+        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not current_admin:
+            return {"success": False, "message": "Utilisateur non trouvé"}
+
         company = get_user_company(user_id)
         if not company:
             return {"success": False, "message": "Aucune entreprise associée"}
-        
-        # Get application with related data
+
+        # Vérifier que la candidature appartient à l'entreprise
         application = db.query(Application).join(
             Job, Application.job_id == Job.id
+        ).join(
+            Department, Job.department_id == Department.id
         ).filter(
             Application.id == application_id,
             Job.company_id == company.id
         ).first()
-        
+
         if not application:
             return {"success": False, "message": "Candidature non trouvée"}
-        
-        # Get job skills
+
+        # Si chef de département, vérifier l'accès au département
+        if current_admin.role == 'department_head':
+            assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                AdminDepartments.admin_id == user_id
+            ).all()
+            dept_ids = [d.department_id for d in assigned_dept_ids]
+            job = db.query(Job).filter(Job.id == application.job_id).first()
+            if job.department_id not in dept_ids:
+                return {"success": False, "message": "Vous n'avez pas accès à ce département"}
+
+        # Récupérer les compétences du poste
         job_skills = db.query(JobSkill).filter(JobSkill.job_id == application.job_id).all()
-        
-        # Get candidate skills
+
+        # Récupérer le candidat
         candidate = db.query(ProfileCandidat).filter(
             ProfileCandidat.id == application.candidate_profile_id
         ).first()
-        
+
         if not candidate:
             return {"success": False, "message": "Candidat non trouvé"}
-        
-        # Parse candidate skills
+
+        # Parser les compétences du candidat
         candidate_skills_list = []
         if candidate.skills:
             try:
-                if isinstance(candidate.skills, str):
-                    parsed_skills = json.loads(candidate.skills)
-                else:
-                    parsed_skills = candidate.skills
-                    
+                parsed_skills = json.loads(candidate.skills) if isinstance(candidate.skills, str) else candidate.skills
                 if isinstance(parsed_skills, list):
                     for skill in parsed_skills:
                         if isinstance(skill, str) and skill:
@@ -238,25 +332,25 @@ async def get_application_compatibility_details(application_id: int, db: Session
                                 candidate_skills_list.append(skill.strip())
             except (json.JSONDecodeError, Exception):
                 candidate_skills_list = []
-        
-        # Categorize skills
+
+        # Analyser les correspondances
         matched_skills = []
         missing_skills = []
-        
+
         for job_skill in job_skills:
             skill_match = {
                 "skill_name": job_skill.skill_name,
                 "skill_level": job_skill.skill_level,
                 "is_required": job_skill.is_required
             }
-            
+
             if job_skill.skill_name.lower().strip() in [s.lower() for s in candidate_skills_list]:
                 matched_skills.append(skill_match)
             else:
                 missing_skills.append(skill_match)
-        
+
         compatibility_percentage = calculate_skill_compatibility(candidate.skills, job_skills)
-        
+
         return {
             "success": True,
             "compatibility_percentage": compatibility_percentage,
@@ -267,10 +361,11 @@ async def get_application_compatibility_details(application_id: int, db: Session
             "matched_count": len(matched_skills),
             "missing_count": len(missing_skills)
         }
-        
+
     except Exception as e:
         print(f"❌ BACKEND: Erreur lors de la récupération des détails de compatibilité: {str(e)}")
         return {"success": False, "message": f"Erreur: {str(e)}"}
+
 
 @router.post("/api/applications/{application_id}/update-status")
 async def update_application_status(application_id: int, status_data: dict):
@@ -278,58 +373,171 @@ async def update_application_status(application_id: int, status_data: dict):
         user_id = current_user_session.get('user_id')
         if not user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
-        
+
         company = get_user_company(user_id)
         if not company:
             return {"success": False, "message": "Aucune entreprise associée"}
-        
+
         db = SessionLocal()
         try:
-            application = db.query(Application).join(
+            current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+            if not current_admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+
+            if current_admin.role == 'department_head':
+                return {
+                    "success": False,
+                    "message": "Les chefs de département utilisent la fonction 'Recommander' et ne peuvent pas changer le statut directement"
+                }
+
+            query = db.query(Application).join(
                 Job, Application.job_id == Job.id
+            ).join(
+                Department, Job.department_id == Department.id
             ).filter(
                 Application.id == application_id,
                 Job.company_id == company.id
-            ).first()
-            
+            )
+
+            application = query.first()
             if not application:
-                return {"success": False, "message": "Candidature non trouvée"}
-            
+                return {"success": False, "message": "Candidature non trouvée ou accès non autorisé"}
+
             new_status = status_data.get('status')
             if not new_status:
                 return {"success": False, "message": "Statut manquant"}
-            
-            # Store old status for comparison
-            old_status = application.status
-            
-            # Update application status
-            application.status = new_status
-            application.reviewed_by = user_id
-            application.reviewed_at = datetime.now()
-            
-            if status_data.get('hr_notes'):
-                application.hr_notes = status_data['hr_notes']
-            if status_data.get('hr_rating'):
-                application.hr_rating = float(status_data['hr_rating'])
-            
-            db.commit()
-            
-            return {
-                "success": True,
-                "message": f"Candidature mise à jour vers '{new_status}'",
-                "application": {
-                    "id": application.id,
-                    "status": application.status,
-                    "reviewed_at": application.reviewed_at.isoformat() if application.reviewed_at else None
+
+            # Accepté → créer employé, mettre à jour le poste et rejeter les autres
+            if new_status == 'accepted' and current_admin.role in ['recruiter', 'super_admin']:
+                candidate = db.query(ProfileCandidat).filter(ProfileCandidat.id == application.candidate_profile_id).first()
+                job = db.query(Job).filter(Job.id == application.job_id).first()
+                contact = db.query(Contact).filter(Contact.id == candidate.contact_id).first() if candidate else None
+
+                if candidate and job and contact:
+                    try:
+                        employee_id = f"EMP{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                        salary = (
+                            (job.salary_min + job.salary_max) / 2
+                            if job.salary_min and job.salary_max else
+                            job.salary_min or job.salary_max or 0
+                        )
+
+                        new_employee = Employee(
+                            employee_id=employee_id,
+                            first_name=candidate.first_name,
+                            last_name=candidate.last_name,
+                            email=candidate.email,
+                            department_id=job.department_id,
+                            company_id=job.company_id,
+                            position=job.title,
+                            employment_type=job.employment_type,
+                            hire_date=datetime.utcnow().date(),
+                            status="active",
+                            candidate_profile_id=candidate.id,
+                            salary=salary
+                        )
+
+                        db.add(new_employee)
+                        db.flush()
+
+                        # Mettre à jour le job
+                        job.status = 'filled'
+                        job.assigned_employee_id = new_employee.id
+
+                        # Mettre à jour la candidature
+                        application.status = new_status
+                        application.reviewed_by = user_id
+                        application.reviewed_at = datetime.now()
+                        application.decision_date = datetime.now()
+                        application.decision_reason = f"Candidature acceptée - Embauché comme {job.title}"
+
+                        if status_data.get('hr_notes'):
+                            application.hr_notes = status_data['hr_notes']
+                        if status_data.get('hr_rating'):
+                            application.hr_rating = float(status_data['hr_rating'])
+
+                        # Rejeter les autres candidatures
+                        other_applications = db.query(Application).filter(
+                            Application.job_id == job.id,
+                            Application.id != application.id,
+                            Application.status.in_(['pending', 'reviewed', 'interview_scheduled'])
+                        ).all()
+
+                        for other_app in other_applications:
+                            other_app.status = 'rejected'
+                            other_app.decision_reason = f"Poste pourvu par {candidate.name}"
+                            other_app.decision_date = datetime.now()
+                            other_app.reviewed_by = user_id
+                            other_app.reviewed_at = datetime.now()
+
+                        db.commit()
+
+                        return {
+                            "success": True,
+                            "message": f"Candidature acceptée ! {candidate.name} a été ajouté comme employé.",
+                            "application": {
+                                "id": application.id,
+                                "status": application.status,
+                                "reviewed_at": application.reviewed_at.isoformat() if application.reviewed_at else None
+                            },
+                            "employee_created": {
+                                "id": new_employee.id,
+                                "employee_id": new_employee.employee_id,
+                                "name": f"{new_employee.first_name} {new_employee.last_name}",
+                                "position": new_employee.position,
+                                "department_id": new_employee.department_id
+                            }
+                        }
+
+                    except Exception as e:
+                        db.rollback()
+                        # fallback: mise à jour du statut uniquement
+                        application.status = new_status
+                        application.reviewed_by = user_id
+                        application.reviewed_at = datetime.now()
+                        db.commit()
+                        return {
+                            "success": True,
+                            "message": f"Candidature mise à jour vers '{new_status}' (création employé échouée: {str(e)})",
+                            "application": {
+                                "id": application.id,
+                                "status": application.status,
+                                "reviewed_at": application.reviewed_at.isoformat() if application.reviewed_at else None
+                            }
+                        }
+
+            # Autres statuts
+            else:
+                application.status = new_status
+                application.reviewed_by = user_id
+                application.reviewed_at = datetime.now()
+
+                if status_data.get('hr_notes'):
+                    application.hr_notes = status_data['hr_notes']
+                if status_data.get('hr_rating'):
+                    application.hr_rating = float(status_data['hr_rating'])
+
+                db.commit()
+
+                return {
+                    "success": True,
+                    "message": f"Candidature mise à jour vers '{new_status}'",
+                    "application": {
+                        "id": application.id,
+                        "status": application.status,
+                        "reviewed_at": application.reviewed_at.isoformat() if application.reviewed_at else None
+                    }
                 }
-            }
+
         except Exception as e:
             db.rollback()
             return {"success": False, "message": f"Erreur lors de la mise à jour: {str(e)}"}
         finally:
             db.close()
+
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+
 
 @router.post("/api/applications/create-demo")
 async def create_demo_applications():
@@ -344,10 +552,28 @@ async def create_demo_applications():
         
         db = SessionLocal()
         try:
-            jobs = db.query(Job).filter(
+            # Récupérer l'utilisateur actuel pour vérifier son rôle
+            current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+            if not current_admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+            
+            # Construire la requête pour les jobs selon le rôle
+            jobs_query = db.query(Job).join(
+                Department, Job.department_id == Department.id
+            ).filter(
                 Job.company_id == company.id,
                 Job.status.in_(['active', 'draft'])
-            ).limit(3).all()
+            )
+            
+            # Si c'est un chef de département, filtrer par ses départements assignés
+            if current_admin.role == 'department_head':
+                assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                    AdminDepartments.admin_id == user_id
+                ).subquery()
+                
+                jobs_query = jobs_query.filter(Department.id.in_(assigned_dept_ids))
+            
+            jobs = jobs_query.limit(3).all()
             
             if not jobs:
                 return {"success": False, "message": "Aucun poste disponible"}
@@ -378,7 +604,8 @@ async def create_demo_applications():
                             application_date=datetime.now(),
                             hr_rating=4.2 if status == 'reviewed' else None,
                             hr_notes=f"Candidature intéressante pour le poste de {job.title}" if status == 'reviewed' else None,
-                            source="Site web"
+                            source="Site web",
+                            is_recommended=False
                         )
                         
                         db.add(new_application)
@@ -411,9 +638,25 @@ def accept_application(application_id: int):
         if not user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
         
-        application = db.query(Application).filter(Application.id == application_id).first()
+        # Récupérer l'utilisateur actuel pour vérifier son rôle
+        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not current_admin:
+            return {"success": False, "message": "Utilisateur non trouvé"}
+        
+        # RESTRICTION: Les chefs de département ne peuvent pas accepter directement
+        if current_admin.role == 'department_head':
+            return {"success": False, "message": "Les chefs de département ne peuvent pas accepter directement les candidatures. Veuillez utiliser la fonction 'Recommander'."}
+        
+        # Construire la requête avec vérification des permissions
+        application_query = db.query(Application).join(
+            Job, Application.job_id == Job.id
+        ).join(
+            Department, Job.department_id == Department.id
+        ).filter(Application.id == application_id)
+        
+        application = application_query.first()
         if not application:
-            return {"success": False, "message": "Candidature non trouvée"}
+            return {"success": False, "message": "Candidature non trouvée ou accès non autorisé"}
         
         application.status = "accepted"
         application.decision_date = datetime.now()

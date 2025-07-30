@@ -200,14 +200,24 @@
                 </div>
                 {% endif %}
 
-                <!-- Utilisateurs -->
+                <!-- Section Utilisateurs avec contrôle des permissions -->
                 <div class="info-section">
                     <div class="section-header">
                         <h2><i class="fas fa-users"></i> Utilisateurs ({{ company_admins|length }})</h2>
-                        <button class="btn-add" onclick="openAddUserModal()">
-                            <i class="fas fa-user-plus"></i>
-                            Ajouter utilisateur
-                        </button>
+                        
+                        <!-- MODIFICATION 1: Affichage conditionnel des boutons SANS message pour non-super admins -->
+                        {% if is_super_admin %}
+                            <div class="header-actions">
+                                <button class="btn-add" onclick="openAddRecruiterModal()">
+                                    <i class="fas fa-user-plus"></i>
+                                    Ajouter Recruteur
+                                </button>
+                                <button class="btn-add" onclick="openAddDepartmentHeadModal()">
+                                    <i class="fas fa-user-tie"></i>
+                                    Ajouter Chef Département
+                                </button>
+                            </div>
+                        {% endif %}
                     </div>
                     
                     <div class="users-grid">
@@ -232,6 +242,20 @@
                                 </div>
                                 {% endif %}
                             </div>
+                            
+                            <!-- Actions utilisateur (optionnel - seulement pour super admins) -->
+                            {% if is_super_admin %}
+                            <div class="user-actions">
+                                <button class="btn-icon-small" onclick="editUser({{ admin.id }})" title="Modifier l'utilisateur">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% if admin.role != 'super_admin' %}
+                                <button class="btn-icon-small btn-danger" onclick="deactivateUser({{ admin.id }})" title="Désactiver l'utilisateur">
+                                    <i class="fas fa-user-slash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -255,70 +279,135 @@
         </div>
     </div>
 
-    <!-- Modal Ajouter Utilisateur -->
-    <div class="modal-overlay" id="addUserModal">
+    <!-- Modals affichés seulement pour les super admins -->
+    {% if is_super_admin %}
+    <!-- Modal Ajouter Recruteur -->
+    <div class="modal-overlay" id="addRecruiterModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-user-plus"></i> Ajouter un utilisateur</h3>
-                <button class="modal-close" onclick="closeAddUserModal()">
+                <h3><i class="fas fa-user-plus"></i> Ajouter un recruteur</h3>
+                <button class="modal-close" onclick="closeAddRecruiterModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
-            <form id="addUserForm" class="modal-form">
+            <form id="addRecruiterForm" class="modal-form">
+                <!-- Champs utilisateur de base -->
                 <div class="form-group">
-                    <label for="userEmail"><i class="fas fa-envelope"></i> Email *</label>
-                    <input type="email" id="userEmail" name="email" required placeholder="exemple@email.com">
+                    <label for="recruiterEmail"><i class="fas fa-envelope"></i> Email *</label>
+                    <input type="email" id="recruiterEmail" name="email" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="userPassword"><i class="fas fa-lock"></i> Mot de passe *</label>
-                    <input type="password" id="userPassword" name="password" required placeholder="Mot de passe sécurisé">
+                    <label for="recruiterPassword"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <input type="password" id="recruiterPassword" name="password" required>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="userFirstName"><i class="fas fa-user"></i> Prénom *</label>
-                        <input type="text" id="userFirstName" name="first_name" required placeholder="Prénom">
+                        <label for="recruiterFirstName"><i class="fas fa-user"></i> Prénom *</label>
+                        <input type="text" id="recruiterFirstName" name="first_name" required>
                     </div>
                     <div class="form-group">
-                        <label for="userLastName"><i class="fas fa-user"></i> Nom *</label>
-                        <input type="text" id="userLastName" name="last_name" required placeholder="Nom">
+                        <label for="recruiterLastName"><i class="fas fa-user"></i> Nom *</label>
+                        <input type="text" id="recruiterLastName" name="last_name" required>
                     </div>
+                    <input type="hidden" name="role" value="recruiter">
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="userRole"><i class="fas fa-user-tag"></i> Rôle</label>
-                        <select id="userRole" name="role">
-                            <option value="hr_admin">HR Admin</option>
-                            <option value="hr_manager">HR Manager</option>
-                            <option value="super_admin">Super Admin</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="userAccess"><i class="fas fa-key"></i> Niveau d'accès</label>
-                        <select id="userAccess" name="access_level">
-                            <option value="admin">Admin</option>
-                            <option value="viewer">Viewer</option>
-                            <option value="owner">Owner</option>
-                        </select>
+                <!-- Permissions spécifiques aux recruteurs -->
+                <div class="form-group">
+                    <h4><i class="fas fa-tasks"></i> Permissions</h4>
+                    <div class="permissions-grid">
+                        <label class="permission-item">
+                            <input type="checkbox" name="can_manage_applications" checked>
+                            <span>Gérer les candidatures</span>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" name="can_recommend_candidates" checked>
+                            <span>Recommander des candidats</span>
+                        </label>
                     </div>
                 </div>
                 
                 <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeAddUserModal()">
-                        <i class="fas fa-times"></i>
-                        Annuler
-                    </button>
-                    <button type="submit" class="btn-create">
-                        <i class="fas fa-user-plus"></i>
-                        Créer utilisateur
-                    </button>
+                    <button type="button" class="btn-cancel" onclick="closeAddRecruiterModal()">Annuler</button>
+                    <button type="submit" class="btn-create">Créer recruteur</button>
                 </div>
             </form>
         </div>
     </div>
+
+    <!-- Modal Ajouter Chef Département -->
+    <div class="modal-overlay" id="addDepartmentHeadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-tie"></i> Ajouter un chef de département</h3>
+                <button class="modal-close" onclick="closeAddDepartmentHeadModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="addDepartmentHeadForm" class="modal-form">
+                <!-- Champs utilisateur de base -->
+                <div class="form-group">
+                    <label for="headEmail"><i class="fas fa-envelope"></i> Email *</label>
+                    <input type="email" id="headEmail" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="headPassword"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <input type="password" id="headPassword" name="password" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="headFirstName"><i class="fas fa-user"></i> Prénom *</label>
+                        <input type="text" id="headFirstName" name="first_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="headLastName"><i class="fas fa-user"></i> Nom *</label>
+                        <input type="text" id="headLastName" name="last_name" required>
+                    </div>
+                    <input type="hidden" name="role" value="department_head">
+                </div>
+                
+                <!-- Permissions spécifiques aux chefs de département -->
+                <div class="form-group">
+                    <h4><i class="fas fa-tasks"></i> Permissions</h4>
+                    <div class="permissions-grid">
+                        <label class="permission-item">
+                            <input type="checkbox" name="can_add_department" checked>
+                            <span>Ajouter des départements</span>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" name="can_manage_applications" checked>
+                            <span>Gérer les candidatures</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Attribution des départements -->
+                <div class="form-group">
+                    <h4><i class="fas fa-building"></i> Départements assignés</h4>
+                    <div class="departments-grid">
+                        {% for department in departments %}
+                        <label class="department-item">
+                            <input type="checkbox" name="departments" value="{{ department.id }}">
+                            <span>{{ department.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddDepartmentHeadModal()">Annuler</button>
+                    <button type="submit" class="btn-create">Créer chef département</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Modal Upload Logo -->
     <div class="modal-overlay" id="logoModal">
@@ -412,400 +501,64 @@
         </div>
     </div>
 
+    <script src="/static/company-profile/company-profile.js"></script>
     <script>
-        let selectedLogoFile = null;
-        let isUploading = false;
-        
-        function editCompany() {
-            window.location.href = '/company-setup';
-        }
-        
-        function goToDashboard() {
-            window.location.href = '/dashboard';
-        }
-        
-        function goToSetup() {
-            window.location.href = '/company-setup';
-        }
-        
-        // Gestion du logo
-        function openLogoModal() {
-            document.getElementById('logoModal').classList.add('show');
-            resetLogoModal();
-        }
-        
-        function closeLogoModal() {
-            if (isUploading) {
-                if (!confirm('Un upload est en cours. Êtes-vous sûr de vouloir fermer ?')) {
-                    return;
-                }
-            }
-            document.getElementById('logoModal').classList.remove('show');
-            resetLogoModal();
-        }
-        
-        function resetLogoModal() {
-            selectedLogoFile = null;
-            isUploading = false;
-            document.getElementById('logoUploadSection').style.display = 'block';
-            document.getElementById('logoPreviewSection').style.display = 'none';
-            document.getElementById('saveLogoBtn').disabled = true;
-            document.getElementById('saveButtonText').textContent = 'Enregistrer le logo';
-            document.getElementById('logoFileInput').value = '';
-            
-            // Reset upload area state
-            const uploadArea = document.getElementById('logoUploadArea');
-            uploadArea.classList.remove('dragover', 'uploading');
-        }
-        
-        function changeLogo() {
-            document.getElementById('logoFileInput').click();
-        }
-        
-        function removeLogo() {
-            if (confirm('Êtes-vous sûr de vouloir supprimer le logo de l\'entreprise ?')) {
-                removeCompanyLogo();
-            }
-        }
-        
-        // Gestion de l'upload de fichier
+        // Initialisation spécifique à la page
         document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si l'utilisateur est super admin
+            const isSuperAdmin = {{ 'true' if is_super_admin else 'false' }};
+            
+            // Si ce n'est pas un super admin, s'assurer que les modals sont bien cachés
+            if (!isSuperAdmin) {
+                const recruiterModal = document.getElementById('addRecruiterModal');
+                const deptHeadModal = document.getElementById('addDepartmentHeadModal');
+                
+                if (recruiterModal) recruiterModal.style.display = 'none';
+                if (deptHeadModal) deptHeadModal.style.display = 'none';
+            }
+            
+            // Initialisation du logo
             const uploadArea = document.getElementById('logoUploadArea');
             const fileInput = document.getElementById('logoFileInput');
             
-            // Click sur la zone d'upload
-            uploadArea.addEventListener('click', function() {
-                if (!isUploading) {
-                    fileInput.click();
-                }
-            });
-            
-            // Drag & Drop
-            uploadArea.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                if (!isUploading) {
-                    uploadArea.classList.add('dragover');
-                }
-            });
-            
-            uploadArea.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-            });
-            
-            uploadArea.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                
-                if (!isUploading && e.dataTransfer.files.length > 0) {
-                    handleFileSelect(e.dataTransfer.files[0]);
-                }
-            });
-            
-            // Sélection de fichier
-            fileInput.addEventListener('change', function(e) {
-                if (!isUploading && e.target.files.length > 0) {
-                    handleFileSelect(e.target.files[0]);
-                }
-            });
-        });
-        
-        function handleFileSelect(file) {
-            console.log('📁 Fichier sélectionné:', file.name, file.type, file.size);
-            
-            // Vérifier le type de fichier
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml'];
-            if (!allowedTypes.includes(file.type)) {
-                showNotification('Format de fichier non supporté. Utilisez PNG, JPG, GIF ou SVG.', 'error');
-                return;
-            }
-            
-            // Vérifier la taille (5MB max)
-            const maxSize = 5 * 1024 * 1024; // 5MB
-            if (file.size > maxSize) {
-                showNotification('Le fichier est trop volumineux. Taille maximum: 5MB', 'error');
-                return;
-            }
-            
-            selectedLogoFile = file;
-            
-            // Afficher l'aperçu
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                showLogoPreview(e.target.result, file);
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        function showLogoPreview(imageSrc, file) {
-            console.log('👁️ Affichage aperçu pour:', file.name);
-            
-            // Masquer la zone d'upload et afficher l'aperçu
-            document.getElementById('logoUploadSection').style.display = 'none';
-            document.getElementById('logoPreviewSection').style.display = 'block';
-            
-            // Mettre à jour les images d'aperçu
-            document.getElementById('previewImage').src = imageSrc;
-            document.getElementById('previewSmall').src = imageSrc;
-            document.getElementById('previewMedium').src = imageSrc;
-            
-            // Mettre à jour les informations du fichier
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('fileSize').textContent = formatFileSize(file.size);
-            
-            // Obtenir les dimensions de l'image
-            const img = new Image();
-            img.onload = function() {
-                document.getElementById('fileDimensions').textContent = `${this.width}x${this.height}px`;
-            };
-            img.src = imageSrc;
-            
-            // Activer le bouton de sauvegarde
-            document.getElementById('saveLogoBtn').disabled = false;
-        }
-        
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-        
-        async function saveLogo() {
-            if (!selectedLogoFile || isUploading) {
-                console.log('❌ Pas de fichier sélectionné ou upload en cours');
-                return;
-            }
-            
-            console.log('📤 Début upload logo:', selectedLogoFile.name);
-            
-            isUploading = true;
-            const saveBtn = document.getElementById('saveLogoBtn');
-            const saveText = document.getElementById('saveButtonText');
-            
-            // Mettre à jour l'interface
-            saveBtn.disabled = true;
-            saveText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Upload en cours...';
-            
-            const formData = new FormData();
-            formData.append('logo', selectedLogoFile);
-            
-            try {
-                showNotification('Upload du logo en cours...', 'info');
-                
-                console.log('🌐 Envoi requête vers /api/upload-logo');
-                
-                const response = await fetch('/api/upload-logo', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                console.log('📡 Réponse reçue:', response.status, response.statusText);
-                
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status} ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                console.log('📋 Résultat:', result);
-                
-                if (result.success) {
-                    showNotification('Logo mis à jour avec succès !', 'success');
-                    
-                    // Mettre à jour l'affichage du logo dans la page
-                    updateLogoDisplay(result.logo_url);
-                    
-                    // Fermer le modal après un délai
-                    setTimeout(() => {
-                        closeLogoModal();
-                    }, 1500);
-                } else {
-                    throw new Error(result.message || 'Erreur lors de l\'upload');
-                }
-                
-            } catch (error) {
-                console.error('❌ Erreur upload logo:', error);
-                showNotification('Erreur lors de l\'upload: ' + error.message, 'error');
-                
-                // Réinitialiser l'interface
-                saveBtn.disabled = false;
-                saveText.innerHTML = '<i class="fas fa-save"></i> Enregistrer le logo';
-            } finally {
-                isUploading = false;
-            }
-        }
-        
-        async function removeCompanyLogo() {
-            try {
-                console.log('🗑️ Début suppression logo');
-                showNotification('Suppression du logo...', 'info');
-                
-                const response = await fetch('/api/remove-logo', {
-                    method: 'DELETE'
-                });
-                
-                console.log('📡 Réponse suppression:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status} ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                console.log('📋 Résultat suppression:', result);
-                
-                if (result.success) {
-                    showNotification('Logo supprimé avec succès !', 'success');
-                    
-                    // Mettre à jour l'affichage
-                    updateLogoDisplay(null);
-                    closeLogoModal();
-                } else {
-                    throw new Error(result.message || 'Erreur lors de la suppression');
-                }
-                
-            } catch (error) {
-                console.error('❌ Erreur suppression logo:', error);
-                showNotification('Erreur lors de la suppression: ' + error.message, 'error');
-            }
-        }
-        
-        function updateLogoDisplay(logoUrl) {
-            console.log('🔄 Mise à jour affichage logo:', logoUrl);
-            const logoContainer = document.querySelector('.company-logo');
-            
-            if (logoUrl) {
-                logoContainer.innerHTML = `
-                    <img src="${logoUrl}" alt="Logo entreprise" id="companyLogoImg">
-                    <div class="logo-overlay">
-                        <i class="fas fa-camera"></i>
-                        <span>Changer</span>
-                    </div>
-                `;
-            } else {
-                logoContainer.innerHTML = `
-                    <i class="fas fa-building" id="companyLogoIcon"></i>
-                    <div class="logo-overlay">
-                        <i class="fas fa-camera"></i>
-                        <span>Ajouter</span>
-                    </div>
-                `;
-            }
-        }
-        
-        // Gestion des utilisateurs
-        function openAddUserModal() {
-            document.getElementById('addUserModal').classList.add('show');
-        }
-        
-        function closeAddUserModal() {
-            document.getElementById('addUserModal').classList.remove('show');
-            document.getElementById('addUserForm').reset();
-        }
-        
-        // Gestion du formulaire utilisateur
-        document.getElementById('addUserForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const userData = {};
-            
-            for (let [key, value] of formData.entries()) {
-                userData[key] = value.trim();
-            }
-            
-            {% if company %}
-            userData.company_id = {{ company.id }};
-            {% endif %}
-            
-            try {
-                console.log('👤 Création utilisateur:', userData.email);
-                
-                const response = await fetch('/api/create-user', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(userData)
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                console.log('📋 Résultat création utilisateur:', result);
-                
-                if (result.success) {
-                    showNotification('Utilisateur créé avec succès !', 'success');
-                    closeAddUserModal();
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    showNotification('Erreur: ' + result.message, 'error');
-                }
-                
-            } catch (error) {
-                console.error('❌ Erreur création utilisateur:', error);
-                showNotification('Erreur de connexion au serveur', 'error');
-            }
-        });
-        
-        // Fermer modal en cliquant à l'extérieur
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('modal-overlay')) {
-                if (e.target.id === 'logoModal') {
-                    closeLogoModal();
-                } else if (e.target.id === 'addUserModal') {
-                    closeAddUserModal();
-                }
-            }
-        });
-
-        // Système de notifications amélioré
-        function showNotification(message, type = 'info') {
-            console.log(`🔔 Notification ${type}:`, message);
-            
-            // Supprimer les notifications existantes
-            const existingNotifications = document.querySelectorAll('.notification');
-            existingNotifications.forEach(notif => notif.remove());
-
-            // Créer la nouvelle notification
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <div class="notification-content">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
-                    <span>${message}</span>
-                </div>
-                <button class="notification-close" onclick="this.parentElement.remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-
-            // Ajouter au DOM
-            document.body.appendChild(notification);
-
-            // Animation d'entrée
-            setTimeout(() => {
-                notification.classList.add('show');
-            }, 100);
-
-            // Suppression automatique après 5 secondes (sauf pour les erreurs)
-            if (type !== 'error') {
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.classList.remove('show');
-                        setTimeout(() => {
-                            if (notification.parentElement) {
-                                notification.remove();
-                            }
-                        }, 300);
+            if (uploadArea && fileInput) {
+                // Click sur la zone d'upload
+                uploadArea.addEventListener('click', function() {
+                    if (!isUploading) {
+                        fileInput.click();
                     }
-                }, 5000);
+                });
+                
+                // Drag & Drop
+                uploadArea.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    if (!isUploading) {
+                        uploadArea.classList.add('dragover');
+                    }
+                });
+                
+                uploadArea.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    
+                    if (!isUploading && e.dataTransfer.files.length > 0) {
+                        handleFileSelect(e.dataTransfer.files[0]);
+                    }
+                });
+                
+                // Sélection de fichier
+                fileInput.addEventListener('change', function(e) {
+                    if (!isUploading && e.target.files.length > 0) {
+                        handleFileSelect(e.target.files[0]);
+                    }
+                });
             }
-        }
+        });
     </script>
 </body>
 </html>

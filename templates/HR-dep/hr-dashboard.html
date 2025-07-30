@@ -25,14 +25,15 @@
         <header class="dashboard-header">
             <div class="logo">
                 <h1><i class="fas fa-chart-line"></i> CV Analyzer Pro</h1>
-                <span>Tableau de Bord RH - Gestion des Départements</span>
             </div>
             <div class="user-info">
                 <button class="profile-btn" onclick="openCompanyProfile()" title="Profil de l'entreprise">
                     <i class="fas fa-building"></i>
                 </button>
-                <span>Bienvenue, Admin</span>
-                <div class="avatar">AD</div>
+                <span id="welcomeMessage">Bienvenue, User</span>
+                <div class="user-role" id="userRoleDisplay"></div>
+                <div class="avatar" id="userAvatar">SJ</div>
+
                 <button class="logout-btn" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
@@ -105,14 +106,14 @@
                         <h2><i class="fas fa-bolt"></i> Actions Rapides</h2>
                     </div>
                     <div class="quick-actions-grid">
-                        <button class="quick-action-card" onclick="openDepartmentModal()">
+                        <button class="quick-action-card" onclick="openDepartmentModal()" id="createDeptAction">
                             <div class="action-icon"><i class="fas fa-building"></i></div>
                             <div class="action-info">
                                 <h3>Nouveau Département</h3>
                                 <p>Créer un nouveau département</p>
                             </div>
                         </button>
-                        <button class="quick-action-card" onclick="openJobModal()">
+                        <button class="quick-action-card" onclick="openJobModal()" id="createJobAction">
                             <div class="action-icon"><i class="fas fa-briefcase"></i></div>
                             <div class="action-info">
                                 <h3>Nouveau Poste</h3>
@@ -151,6 +152,7 @@
                                 <option value="accepted">Acceptées</option>
                                 <option value="rejected">Rejetées</option>
                             </select>
+
                             <select class="compatibility-filter-select" onchange="filterApplicationsByCompatibility(this.value)">
                                 <option value="all">Toutes compatibilités</option>
                                 <option value="high">Élevée (75%+)</option>
@@ -200,122 +202,342 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Modal Département -->
-        <div id="departmentModal" class="modal-overlay" style="z-index: 10000;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3><i class="fas fa-building"></i> Nouveau Département</h3>
-                    <button class="modal-close" onclick="closeDepartmentModal()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form id="departmentForm">
+    <!-- Modal Département AMÉLIORÉ -->
+    <div id="departmentModal" class="modal-overlay" style="z-index: 10000;">
+        <div class="modal-content department-modal-enhanced">
+            <div class="modal-header">
+                <h3><i class="fas fa-building"></i> Création d'un nouveau département</h3>
+                <button class="modal-close" onclick="closeDepartmentModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="departmentForm">
+                    <!-- Section Département -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-info-circle"></i> Informations générales</h4>
+                        
                         <div class="form-group">
                             <label class="form-label">
-                                <i class="fas fa-building"></i>
-                                Nom du département
+                                <i class="fas fa-tag"></i>
+                                Nom du département *
+
                             </label>
                             <input 
                                 type="text" 
                                 id="departmentName" 
                                 class="form-input" 
-                                placeholder="ex: Ressources Humaines"
+                                placeholder="ex: Ressources Humaines, Développement, Marketing..."
                                 required
                             >
                         </div>
+                        
                         <div class="form-group">
                             <label class="form-label">
-                                <i class="fas fa-info-circle"></i>
-                                Description
+                                <i class="fas fa-align-left"></i>
+                                Description du département
                             </label>
                             <textarea 
                                 id="departmentDescription" 
                                 class="form-textarea" 
-                                placeholder="Description du département et de ses responsabilités..."
+                                placeholder="Décrivez les missions, objectifs et responsabilités de ce département..."
+                                rows="4"
                             ></textarea>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-user-tie"></i>
-                                Responsable du département
-                            </label>
-                            <input 
-                                type="text" 
-                                id="departmentManager" 
-                                class="form-input" 
-                                placeholder="Nom du responsable"
-                            >
-                        </div>
+                        
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-palette"></i>
-                                Couleur du département
+                                Couleur d'identification
                             </label>
-                            <div class="color-picker">
-                                <input type="color" id="departmentColor" value="#e74c3c">
-                                <span class="color-preview"></span>
+                            <div class="color-picker-enhanced">
+                                <input type="color" id="departmentColor" value="#3b82f6" class="color-input">
+                                <div class="color-preview"></div>
+                                <div class="color-info">
+                                    <span class="color-label">Couleur sélectionnée</span>
+                                    <small>Cette couleur sera utilisée pour identifier visuellement le département dans l'interface</small>
+                                </div>
                             </div>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-secondary" onclick="closeDepartmentModal()">Annuler</button>
-                    <button class="btn-primary" onclick="createDepartment()">
-                        <i class="fas fa-plus"></i> Créer le département
-                    </button>
-                </div>
+                    </div>
+
+                    <!-- Section Chef de Département PROFESSIONNALISÉE -->
+                    <div class="form-section manager-section-enhanced">
+                        <div class="section-header-professional">
+                            <div class="section-title">
+                                <h4><i class="fas fa-user-tie"></i> Direction et responsabilité</h4>
+                                <p class="section-subtitle">Définissez qui dirigera ce département et ses responsabilités</p>
+                            </div>
+                            <div class="toggle-switch-professional">
+                                <input type="checkbox" id="assignManagerToggle" onchange="toggleManagerAssignment()">
+                                <label for="assignManagerToggle" class="toggle-label-pro">
+                                    <span class="toggle-slider-pro"></span>
+                                    <span class="toggle-text">Assigner un responsable</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="managerAssignmentSection" class="manager-assignment-pro" style="display: none;">
+                            <!-- Sélection du type d'assignation -->
+                            <div class="assignment-type-selector">
+                                <div class="form-group">
+                                    <label class="form-label-pro">
+                                        <i class="fas fa-route"></i>
+                                        Mode d'assignation du responsable
+                                    </label>
+                                    <div class="radio-cards">
+                                        <label class="radio-card" for="existingManagerRadio">
+                                            <input type="radio" name="managerType" value="existing" id="existingManagerRadio" onchange="toggleManagerType()">
+                                            <div class="radio-card-content">
+                                                <div class="radio-card-icon">
+                                                    <i class="fas fa-users"></i>
+                                                </div>
+                                                <div class="radio-card-info">
+                                                    <h5>Responsable existant</h5>
+                                                    <p>Assigner un chef de département déjà présent dans l'organisation</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="radio-card" for="newManagerRadio">
+                                            <input type="radio" name="managerType" value="new" id="newManagerRadio" onchange="toggleManagerType()">
+                                            <div class="radio-card-content">
+                                                <div class="radio-card-icon">
+                                                    <i class="fas fa-user-plus"></i>
+                                                </div>
+                                                <div class="radio-card-info">
+                                                    <h5>Nouveau responsable</h5>
+                                                    <p>Créer un nouveau compte pour le chef de département</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section Chef Existant -->
+                            <div id="existingManagerSection" class="manager-subsection-pro" style="display: none;">
+                                <div class="subsection-header">
+                                    <h5><i class="fas fa-search"></i> Sélection du responsable</h5>
+                                    <p>Choisissez parmi les chefs de département disponibles</p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-pro">
+                                        <i class="fas fa-user-check"></i>
+                                        Responsable disponible
+                                    </label>
+                                    <select id="existingManagerSelect" class="form-select-pro">
+                                        <option value="">Chargement des responsables disponibles...</option>
+                                    </select>
+                                    <div class="form-help-pro">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Seuls les utilisateurs avec le rôle "Chef de département" non assignés sont affichés</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section Nouveau Chef -->
+                            <div id="newManagerSection" class="manager-subsection-pro" style="display: none;">
+                                <div class="subsection-header">
+                                    <h5><i class="fas fa-user-plus"></i> Création du nouveau responsable</h5>
+                                    <p>Renseignez les informations du futur chef de département</p>
+                                </div>
+                                
+                                <!-- Informations personnelles -->
+                                <div class="info-group">
+                                    <h6><i class="fas fa-id-card"></i> Informations personnelles</h6>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label-pro">
+                                                <i class="fas fa-user"></i>
+                                                Prénom *
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                id="managerFirstName" 
+                                                class="form-input-pro" 
+                                                placeholder="Prénom du responsable"
+                                            >
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label-pro">
+                                                <i class="fas fa-user"></i>
+                                                Nom de famille *
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                id="managerLastName" 
+                                                class="form-input-pro" 
+                                                placeholder="Nom de famille"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Informations de connexion -->
+                                <div class="info-group">
+                                    <h6><i class="fas fa-key"></i> Accès et sécurité</h6>
+                                    <div class="form-group">
+                                        <label class="form-label-pro">
+                                            <i class="fas fa-envelope"></i>
+                                            Adresse email professionnelle *
+                                        </label>
+                                        <input 
+                                            type="email" 
+                                            id="managerEmail" 
+                                            class="form-input-pro" 
+                                            placeholder="prenom.nom@entreprise.com"
+                                        >
+                                        <div class="form-help-pro">
+                                            <i class="fas fa-shield-alt"></i>
+                                            <span>Cette adresse servira d'identifiant de connexion</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label class="form-label-pro">
+                                            <i class="fas fa-lock"></i>
+                                            Mot de passe temporaire *
+                                        </label>
+                                        <div class="password-input-group">
+                                            <input 
+                                                type="password" 
+                                                id="managerPassword" 
+                                                class="form-input-pro" 
+                                                placeholder="Mot de passe sécurisé (min. 8 caractères)"
+                                            >
+                                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('managerPassword')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-help-pro">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span>Le responsable pourra modifier ce mot de passe lors de sa première connexion</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Permissions et autorisations -->
+                                <div class="info-group">
+                                    <h6><i class="fas fa-shield-alt"></i> Permissions et autorisations</h6>
+                                    <div class="permissions-grid-pro">
+                                        <div class="permission-card">
+                                            <div class="permission-header">
+                                                <input type="checkbox" id="canAddDepartment" checked>
+                                                <label for="canAddDepartment" class="permission-title">
+                                                    <i class="fas fa-building"></i>
+                                                    Gestion des départements
+                                                </label>
+                                            </div>
+                                            <p class="permission-description">Autoriser la création et modification de nouveaux départements</p>
+                                        </div>
+                                        <div class="permission-card">
+                                            <div class="permission-header">
+                                                <input type="checkbox" id="canManageApplications" checked>
+                                                <label for="canManageApplications" class="permission-title">
+                                                    <i class="fas fa-file-alt"></i>
+                                                    Gestion des candidatures
+                                                </label>
+                                            </div>
+                                            <p class="permission-description">Gérer les candidatures, recommandations et processus de recrutement</p>
+                                        </div>
+                                        <div class="permission-card">
+                                            <div class="permission-header">
+                                                <input type="checkbox" id="canManageTeam" checked>
+                                                <label for="canManageTeam" class="permission-title">
+                                                    <i class="fas fa-users-cog"></i>
+                                                    Gestion d'équipe
+                                                </label>
+                                            </div>
+                                            <p class="permission-description">Superviser et gérer les membres de son département</p>
+                                        </div>
+                                        <div class="permission-card">
+                                            <div class="permission-header">
+                                                <input type="checkbox" id="canViewReports">
+                                                <label for="canViewReports" class="permission-title">
+                                                    <i class="fas fa-chart-bar"></i>
+                                                    Rapports et analyses
+                                                </label>
+                                            </div>
+                                            <p class="permission-description">Accéder aux rapports et statistiques du département</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDepartmentModal()">
+                    <i class="fas fa-times"></i>
+                    Annuler
+                </button>
+                <button class="btn-primary" onclick="createDepartment()">
+                    <i class="fas fa-plus"></i>
+                    Créer le département
+                </button>
             </div>
         </div>
+    </div>
 
-        <!-- Modal Job -->
-        <div id="jobModal" class="modal-overlay" style="z-index: 10001;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3><i class="fas fa-briefcase"></i> Nouveau Poste</h3>
-                    <button class="modal-close" onclick="closeJobModal()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form id="jobForm">
+    <!-- Modal Job AMÉLIORÉ -->
+    <div id="jobModal" class="modal-overlay" style="z-index: 10001;">
+        <div class="modal-content job-modal-enhanced">
+            <div class="modal-header">
+                <h3><i class="fas fa-briefcase"></i> Création d'un nouveau poste</h3>
+                <button class="modal-close" onclick="closeJobModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="jobForm">
+                    <!-- Section Informations de base -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-info-circle"></i> Informations générales du poste</h4>
+                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-briefcase"></i>
-                                    Titre du poste
+                                    Titre du poste *
                                 </label>
                                 <input 
                                     type="text" 
                                     id="jobTitle" 
                                     class="form-input" 
-                                    placeholder="ex: Développeur Full-Stack Senior"
+                                    placeholder="ex: Développeur Full-Stack Senior, Chef de Projet Marketing..."
                                     required
                                 >
                             </div>
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-building"></i>
-                                    Département
+                                    Département *
                                 </label>
                                 <select id="jobDepartment" class="form-select" required>
                                     <option value="">Sélectionner un département</option>
                                 </select>
                             </div>
                         </div>
+                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-flag"></i>
-                                    Priorité
+                                    Niveau de priorité
                                 </label>
                                 <select id="jobPriority" class="form-select" required>
-                                    <option value="normal">Normal</option>
-                                    <option value="urgent">Urgent</option>
-                                    <option value="low">Faible</option>
+                                    <option value="normal">📋 Normal - Recrutement standard</option>
+                                    <option value="urgent">🔥 Urgent - Besoin immédiat</option>
+                                    <option value="low">⏳ Faible - Pas de rush</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-calendar"></i>
-                                    Date limite
+                                    Date limite de candidature
                                 </label>
                                 <input 
                                     type="date" 
@@ -324,44 +546,99 @@
                                 >
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Section Contrat et Rémunération -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-handshake"></i> Contrat et rémunération</h4>
+                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-clock"></i>
-                                    Type de contrat
+                                    Type de contrat *
                                 </label>
                                 <select id="jobType" class="form-select" required>
-                                    <option value="">Type de contrat</option>
-                                    <option value="CDI">CDI</option>
-                                    <option value="CDD">CDD</option>
-                                    <option value="Stage">Stage</option>
-                                    <option value="Freelance">Freelance</option>
+                                    <option value="">Sélectionner le type de contrat</option>
+                                    <option value="CDI">💼 CDI - Contrat à durée indéterminée</option>
+                                    <option value="CDD">📅 CDD - Contrat à durée déterminée</option>
+                                    <option value="Stage">🎓 Stage - Formation professionnelle</option>
+                                    <option value="Freelance">💻 Freelance - Mission indépendante</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-euro-sign"></i>
-                                    Salaire (€/an)
+                                    Fourchette salariale (€/an)
                                 </label>
                                 <div class="salary-range">
                                     <input 
                                         type="number" 
                                         id="jobSalaryMin" 
                                         class="form-input" 
-                                        placeholder="Min"
-                                        style="width: 48%; display: inline-block;"
+                                        placeholder="Salaire minimum"
+                                        min="0"
+                                        step="1000"
                                     >
-                                    <span style="margin: 0 2%;">-</span>
+                                    <span>à</span>
                                     <input 
                                         type="number" 
                                         id="jobSalaryMax" 
                                         class="form-input" 
-                                        placeholder="Max"
-                                        style="width: 48%; display: inline-block;"
+                                        placeholder="Salaire maximum"
+                                        min="0"
+                                        step="1000"
                                     >
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Section Description détaillée -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-file-text"></i> Description détaillée du poste</h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-info-circle"></i>
+                                Description générale du poste *
+                            </label>
+                            <textarea 
+                                id="jobDescription" 
+                                class="form-textarea" 
+                                placeholder="Décrivez le poste, l'environnement de travail, les objectifs principaux..."
+                                rows="4"
+                                required
+
+                            ></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+<!-- Inside job creation modal -->
+<label class="form-label">
+    <i class="fas fa-list-check"></i>
+    Compétences et qualifications requises
+</label>
+<textarea id="jobRequirements" class="form-textarea" ...></textarea>
+
+<label class="form-label">
+    <i class="fas fa-tasks"></i>
+    Responsabilités principales
+</label>
+<textarea id="jobResponsibilities" class="form-textarea" ...></textarea>
+
+<!-- Assignation section -->
+<h4><i class="fas fa-user-check"></i> Assignation (optionnel)</h4>
+<select id="jobEmployee" class="form-select">...</select>
+
+<!-- Job modal footer -->
+<button class="btn-secondary" onclick="closeJobModal()">Annuler</button>
+<button class="btn-primary" onclick="createJob()">Créer le poste</button>
+
+<!-- Starts employee modal -->
+<div id="employeeModal" class="modal-overlay" ...>
+
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-info-circle"></i>

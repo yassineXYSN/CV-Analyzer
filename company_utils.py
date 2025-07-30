@@ -184,13 +184,15 @@ def add_user_to_company(company_id: int, admin_id: int, access_level: str = 'adm
     try:
         # Vérifier si l'accès existe déjà
         existing_access = db.query(models.AdminCompanyAccess).filter(
-            models.AdminCompanyAccess.admin_id == admin_id,
-            models.AdminCompanyAccess.company_id == company_id
-        ).first()
+        models.AdminCompanyAccess.admin_id == admin_id,
+        models.AdminCompanyAccess.company_id == company_id
+    ).first()
         
         if existing_access:
-            print(f"⚠️ COMPANY_UTILS: Accès existe déjà")
-            return True, "Accès existe déjà"
+            existing_access.access_level = access_level
+            existing_access.granted_by = granted_by
+            db.commit()
+            return True, "Accès mis à jour"
         
         # Créer l'accès
         new_access = models.AdminCompanyAccess(
@@ -236,5 +238,15 @@ def get_user_company(user_id: int):
         ).first()
         
         return company
+    finally:
+        db.close()
+        
+def get_company_departments(company_id: int):
+    db = SessionLocal()
+    try:
+        departments = db.query(models.Department).filter(
+            models.Department.company_id == company_id
+        ).all()
+        return departments
     finally:
         db.close()
