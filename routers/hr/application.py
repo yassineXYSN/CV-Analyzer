@@ -23,8 +23,13 @@ def get_db():
 
 def calculate_skill_compatibility(candidate_skills, job_skills):
     """Calculate compatibility percentage between candidate and job skills"""
+    print(f"🔍 BACKEND: Starting compatibility calculation")
+    print(f"📊 BACKEND: Job skills count: {len(job_skills) if job_skills else 0}")
+    print(f"📊 BACKEND: Candidate skills: {candidate_skills}")
+    
     if not job_skills:
-        return 0
+        print("⚠️ BACKEND: No job skills found, returning 0%")
+        return 0, 0, len(job_skills) if job_skills else 0
     
     # Parse candidate skills if they're stored as JSON string
     candidate_skills_list = []
@@ -40,25 +45,45 @@ def calculate_skill_compatibility(candidate_skills, job_skills):
                     if isinstance(skill, str) and skill:
                         # Handle "Skill: Percentage" format
                         if ':' in skill:
-                            candidate_skills_list.append(skill.split(':')[0].strip().lower())
+                            skill_name = skill.split(':')[0].strip().lower()
+                            candidate_skills_list.append(skill_name)
                         else:
                             candidate_skills_list.append(skill.strip().lower())
-        except (json.JSONDecodeError, Exception):
+                    elif isinstance(skill, dict) and 'name' in skill:
+                        # Handle object format
+                        candidate_skills_list.append(skill['name'].strip().lower())
+        except (json.JSONDecodeError, Exception) as e:
+            print(f"❌ BACKEND: Error parsing candidate skills: {e}")
             candidate_skills_list = []
+    
+    print(f"📋 BACKEND: Parsed candidate skills: {candidate_skills_list}")
     
     # Count matching skills
     matched_skills = 0
     total_job_skills = len(job_skills)
+    matched_skill_names = []
     
     for job_skill in job_skills:
         job_skill_name = job_skill.skill_name.lower().strip()
+        print(f"🔍 BACKEND: Checking job skill: '{job_skill_name}'")
+        
         if job_skill_name in candidate_skills_list:
             matched_skills += 1
+            matched_skill_names.append(job_skill.skill_name)
+            print(f"✅ BACKEND: Match found for: '{job_skill.skill_name}'")
+        else:
+            print(f"❌ BACKEND: No match for: '{job_skill.skill_name}'")
     
     # Calculate percentage
     compatibility_percentage = (matched_skills / total_job_skills) * 100 if total_job_skills > 0 else 0
     
-    return round(compatibility_percentage)
+    print(f"📊 BACKEND: Final calculation:")
+    print(f"   - Matched skills: {matched_skills}")
+    print(f"   - Total job skills: {total_job_skills}")
+    print(f"   - Compatibility: {compatibility_percentage}%")
+    print(f"   - Matched skill names: {matched_skill_names}")
+    
+    return round(compatibility_percentage), matched_skills, total_job_skills
 
 class RecommendationRequest(BaseModel):
     comment: Optional[str] = ""
@@ -85,8 +110,9 @@ async def get_applications(
             return {"success": False, "message": "Utilisateur non trouvé"}
 
         print(f"🔍 BACKEND: Loading applications for company {company.id}")
+        print(f"👤 BACKEND: Current user: {current_admin.first_name} {current_admin.last_name} ({current_admin.role})")
 
-        # Construire la requête de base
+        # Construire la requête de base avec eager loading
         query = db.query(Application).join(
             Job, Application.job_id == Job.id
         ).join(
@@ -129,16 +155,33 @@ async def get_applications(
             candidate = app.candidate_profile
             contact = candidate.contact if candidate else None
 
-            # Récupérer les compétences du job pour le calcul de compatibilité
-            job_skills = db.query(JobSkill).filter(JobSkill.job_id == job.id).all()
+            print(f"\n🔍 BACKEND: Processing application {app.id}")
+            print(f"   - Job: {job.title if job else 'N/A'}")
+            print(f"   - Candidate: {candidate.name if candidate else 'N/A'}")
+
+            # CORRECTION: Récupérer les compétences du job pour le calcul de compatibilité
+            job_skills = db.query(JobSkill).filter(JobSkill.job_id == job.id).all() if job else []
             candidate_skills = candidate.skills if candidate else None
-            compatibility_percentage = calculate_skill_compatibility(candidate_skills, job_skills)
+            
+            print(f"   - Job skills found: {len(job_skills)}")
+            print(f"   - Job skills: {[skill.skill_name for skill in job_skills]}")
+            print(f"   - Candidate skills raw: {candidate_skills}")
+            
+            # CORRECTION: Utiliser la fonction améliorée qui retourne plus d'informations
+            compatibility_percentage, matched_skills_count, total_job_skills = calculate_skill_compatibility(candidate_skills, job_skills)
+            
+            print(f"   - Compatibility result: {compatibility_percentage}% ({matched_skills_count}/{total_job_skills})")
 
             # Appliquer filtre de compatibilité si précisé
             if compatibility_filter != "all":
                 try:
-                    threshold = int(compatibility_filter)
-                    if compatibility_percentage < threshold:
+                    if compatibility_filter == "high" and compatibility_percentage < 75:
+                        continue
+                    elif compatibility_filter == "medium" and not (50 <= compatibility_percentage < 75):
+                        continue
+                    elif compatibility_filter == "low" and not (25 <= compatibility_percentage < 50):
+                        continue
+                    elif compatibility_filter == "very_low" and compatibility_percentage >= 25:
                         continue
                 except ValueError:
                     pass  # Ignore invalid threshold input
@@ -174,10 +217,18 @@ async def get_applications(
                 "recommendation_comment": app.recommendation_comment,
                 "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
                 "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None,
-                "compatibility": compatibility_percentage
+                # CORRECTION: Utiliser les valeurs calculées correctement
+                "compatibility_percentage": compatibility_percentage,
+                "matched_skills_count": matched_skills_count,
+                "total_job_skills": total_job_skills
             })
 
-        print(f"✅ {len(applications_list)} candidatures récupérées pour l'utilisateur {current_admin.role}")
+        print(f"✅ BACKEND: {len(applications_list)} candidatures récupérées pour l'utilisateur {current_admin.role}")
+        
+        # Log des scores de compatibilité pour debug
+        for app in applications_list:
+            print(f"📊 BACKEND: App {app['id']}: {app['compatibility_percentage']}% ({app['matched_skills_count']}/{app['total_job_skills']})")
+        
         return {
             "success": True,
             "applications": applications_list,
@@ -185,9 +236,108 @@ async def get_applications(
         }
 
     except Exception as e:
-        print(f"❌ Erreur interne: {str(e)}")
+        import traceback
+        print(f"❌ BACKEND: Erreur interne: {str(e)}")
+        print(f"❌ BACKEND: Traceback: {traceback.format_exc()}")
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
+@router.get("/api/application/{application_id}/compatibility")
+async def get_application_compatibility_details(application_id: int, db: Session = Depends(get_db)):
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        # Vérifier l'utilisateur et ses rôles
+        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not current_admin:
+            return {"success": False, "message": "Utilisateur non trouvé"}
+
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
+
+        # Vérifier que la candidature appartient à l'entreprise
+        application = db.query(Application).join(
+            Job, Application.job_id == Job.id
+        ).join(
+            Department, Job.department_id == Department.id
+        ).filter(
+            Application.id == application_id,
+            Job.company_id == company.id
+        ).first()
+
+        if not application:
+            return {"success": False, "message": "Candidature non trouvée"}
+
+        # Si chef de département, vérifier l'accès au département
+        if current_admin.role == 'department_head':
+            assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                AdminDepartments.admin_id == user_id
+            ).all()
+            dept_ids = [d.department_id for d in assigned_dept_ids]
+            job = db.query(Job).filter(Job.id == application.job_id).first()
+            if job.department_id not in dept_ids:
+                return {"success": False, "message": "Vous n'avez pas accès à ce département"}
+
+        # Récupérer les compétences du poste
+        job_skills = db.query(JobSkill).filter(JobSkill.job_id == application.job_id).all()
+
+        # Récupérer le candidat
+        candidate = db.query(ProfileCandidat).filter(
+            ProfileCandidat.id == application.candidate_profile_id
+        ).first()
+
+        if not candidate:
+            return {"success": False, "message": "Candidat non trouvé"}
+
+        # Parser les compétences du candidat
+        candidate_skills_list = []
+        if candidate.skills:
+            try:
+                parsed_skills = json.loads(candidate.skills) if isinstance(candidate.skills, str) else candidate.skills
+                if isinstance(parsed_skills, list):
+                    for skill in parsed_skills:
+                        if isinstance(skill, str) and skill:
+                            if ':' in skill:
+                                candidate_skills_list.append(skill.split(':')[0].strip())
+                            else:
+                                candidate_skills_list.append(skill.strip())
+            except (json.JSONDecodeError, Exception):
+                candidate_skills_list = []
+
+        # Analyser les correspondances
+        matched_skills = []
+        missing_skills = []
+
+        for job_skill in job_skills:
+            skill_match = {
+                "skill_name": job_skill.skill_name,
+                "skill_level": job_skill.skill_level,
+                "is_required": job_skill.is_required
+            }
+
+            if job_skill.skill_name.lower().strip() in [s.lower() for s in candidate_skills_list]:
+                matched_skills.append(skill_match)
+            else:
+                missing_skills.append(skill_match)
+
+        compatibility_percentage, matched_count, total_skills = calculate_skill_compatibility(candidate.skills, job_skills)
+
+        return {
+            "success": True,
+            "compatibility_percentage": compatibility_percentage,
+            "matched_skills": matched_skills,
+            "missing_skills": missing_skills,
+            "candidate_skills": candidate_skills_list,
+            "total_job_skills": len(job_skills),
+            "matched_count": len(matched_skills),
+            "missing_count": len(missing_skills)
+        }
+
+    except Exception as e:
+        print(f"❌ BACKEND: Erreur lors de la récupération des détails de compatibilité: {str(e)}")
+        return {"success": False, "message": f"Erreur: {str(e)}"}
 
 @router.post("/api/applications/{application_id}/recommend")
 async def recommend_application(
@@ -279,105 +429,6 @@ async def recommend_application(
         import traceback
         traceback.print_exc()
         return {"success": False, "message": f"Erreur lors de la récupération des candidatures: {str(e)}"}
-
-@router.get("/api/application/{application_id}/compatibility")
-async def get_application_compatibility_details(application_id: int, db: Session = Depends(get_db)):
-    try:
-        user_id = current_user_session.get('user_id')
-        if not user_id:
-            return {"success": False, "message": "Utilisateur non connecté"}
-
-        # Vérifier l'utilisateur et ses rôles
-        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
-        if not current_admin:
-            return {"success": False, "message": "Utilisateur non trouvé"}
-
-        company = get_user_company(user_id)
-        if not company:
-            return {"success": False, "message": "Aucune entreprise associée"}
-
-        # Vérifier que la candidature appartient à l'entreprise
-        application = db.query(Application).join(
-            Job, Application.job_id == Job.id
-        ).join(
-            Department, Job.department_id == Department.id
-        ).filter(
-            Application.id == application_id,
-            Job.company_id == company.id
-        ).first()
-
-        if not application:
-            return {"success": False, "message": "Candidature non trouvée"}
-
-        # Si chef de département, vérifier l'accès au département
-        if current_admin.role == 'department_head':
-            assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
-                AdminDepartments.admin_id == user_id
-            ).all()
-            dept_ids = [d.department_id for d in assigned_dept_ids]
-            job = db.query(Job).filter(Job.id == application.job_id).first()
-            if job.department_id not in dept_ids:
-                return {"success": False, "message": "Vous n'avez pas accès à ce département"}
-
-        # Récupérer les compétences du poste
-        job_skills = db.query(JobSkill).filter(JobSkill.job_id == application.job_id).all()
-
-        # Récupérer le candidat
-        candidate = db.query(ProfileCandidat).filter(
-            ProfileCandidat.id == application.candidate_profile_id
-        ).first()
-
-        if not candidate:
-            return {"success": False, "message": "Candidat non trouvé"}
-
-        # Parser les compétences du candidat
-        candidate_skills_list = []
-        if candidate.skills:
-            try:
-                parsed_skills = json.loads(candidate.skills) if isinstance(candidate.skills, str) else candidate.skills
-                if isinstance(parsed_skills, list):
-                    for skill in parsed_skills:
-                        if isinstance(skill, str) and skill:
-                            if ':' in skill:
-                                candidate_skills_list.append(skill.split(':')[0].strip())
-                            else:
-                                candidate_skills_list.append(skill.strip())
-            except (json.JSONDecodeError, Exception):
-                candidate_skills_list = []
-
-        # Analyser les correspondances
-        matched_skills = []
-        missing_skills = []
-
-        for job_skill in job_skills:
-            skill_match = {
-                "skill_name": job_skill.skill_name,
-                "skill_level": job_skill.skill_level,
-                "is_required": job_skill.is_required
-            }
-
-            if job_skill.skill_name.lower().strip() in [s.lower() for s in candidate_skills_list]:
-                matched_skills.append(skill_match)
-            else:
-                missing_skills.append(skill_match)
-
-        compatibility_percentage = calculate_skill_compatibility(candidate.skills, job_skills)
-
-        return {
-            "success": True,
-            "compatibility_percentage": compatibility_percentage,
-            "matched_skills": matched_skills,
-            "missing_skills": missing_skills,
-            "candidate_skills": candidate_skills_list,
-            "total_job_skills": len(job_skills),
-            "matched_count": len(matched_skills),
-            "missing_count": len(missing_skills)
-        }
-
-    except Exception as e:
-        print(f"❌ BACKEND: Erreur lors de la récupération des détails de compatibilité: {str(e)}")
-        return {"success": False, "message": f"Erreur: {str(e)}"}
-
 
 @router.post("/api/applications/{application_id}/update-status")
 async def update_application_status(application_id: int, status_data: dict):

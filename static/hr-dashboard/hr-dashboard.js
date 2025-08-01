@@ -279,11 +279,6 @@ function renderApplications(filter = "all") {
             </span>
             <span>Total: ${app.total_job_skills || 0} compétences</span>
           </div>
-          <div class="compatibility-actions">
-            <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
-              <i class="fas fa-search"></i> Détails compatibilité
-            </button>
-          </div>
         </div>
       `
         : ""
@@ -523,12 +518,6 @@ function renderApplicationActionButtons(app) {
   ${
     app.status === "interview_completed" || app.status === "reviewed"
       ? `
-      <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
-        <i class="fas fa-thumbs-up"></i> Accepter
-      </button>
-      <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
-        <i class="fas fa-thumbs-down"></i> Rejeter
-      </button>
     `
       : ""
   }

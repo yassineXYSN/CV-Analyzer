@@ -91,6 +91,13 @@
                       <p>Jours restants</p>
                   </div>
               </div>
+              <div class="stat-item">
+                  <div class="stat-icon"><i class="fas fa-chart-pie"></i></div>
+                  <div class="stat-info">
+                      <h3 id="averageCompatibility">--</h3>
+                      <p>Compatibilité moyenne</p>
+                  </div>
+              </div>
           </div>
       </section>
 
@@ -134,18 +141,26 @@
       <!-- Applications et Candidats disponibles -->
       <div class="job-section applications-section">
           <div class="section-header">
-              <h3><i class="fas fa-users"></i> Gestion des Candidatures</h3>
+              <h3><i class="fas fa-users"></i> Gestion des Candidatures avec Analyse de Compatibilité</h3>
               <div class="filter-buttons">
                   <button class="filter-btn active" onclick="filterApplications('all')">Toutes</button>
                   <button class="filter-btn" onclick="filterApplications('pending')">En attente</button>
                   <button class="filter-btn" onclick="filterApplications('reviewed')">Examinées</button>
                   <button class="filter-btn" onclick="filterApplications('accepted')">Acceptées</button>
+                  
+                  <select class="compatibility-filter-select" onchange="filterApplicationsByCompatibility(this.value)">
+                      <option value="all">Toutes compatibilités</option>
+                      <option value="75">Élevée (75%+)</option>
+                      <option value="50">Moyenne (50%+)</option>
+                      <option value="25">Faible (25%+)</option>
+                      <option value="0">Très faible (0%+)</option>
+                  </select>
               </div>
           </div>
           
           <!-- Candidatures existantes -->
           <div class="applications-list" id="applicationsList">
-              <!-- Sample applications -->
+              <!-- Sample applications - these will be replaced by JavaScript -->
               <div class="application-item-detailed has-recommendation">
                   <div class="candidate-info">
                       <div class="candidate-avatar">JD</div>
@@ -166,6 +181,43 @@
                           </div>
                       </div>
                   </div>
+
+                  <!-- Sample Compatibility Section -->
+                  <div class="application-compatibility-section">
+                      <div class="compatibility-header">
+                          <div class="compatibility-title">
+                              <i class="fas fa-chart-pie"></i>
+                              Compatibilité des compétences
+                          </div>
+                          <div class="compatibility-percentage high">
+                              85%
+                              <i class="fas fa-star"></i>
+                          </div>
+                      </div>
+                      
+                      <div class="compatibility-progress">
+                          <div class="compatibility-progress-bar high" style="width: 85%"></div>
+                      </div>
+                      
+                      <div class="compatibility-details">
+                          <span class="skill-stat matched">
+                              <i class="fas fa-check-circle"></i>
+                              6 compétences correspondantes
+                          </span>
+                          <span class="skill-stat missing">
+                              <i class="fas fa-times-circle"></i>
+                              1 manquante
+                          </span>
+                          <span>Total: 7 compétences requises</span>
+                      </div>
+                      
+                      <div class="compatibility-actions">
+                          <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(1)">
+                              <i class="fas fa-search"></i> Détails compatibilité
+                          </button>
+                      </div>
+                  </div>
+
                   <div class="application-status-section">
                       <div class="status-badge pending">
                           EN ATTENTE
@@ -203,6 +255,43 @@
                           </div>
                       </div>
                   </div>
+
+                  <!-- Sample Compatibility Section -->
+                  <div class="application-compatibility-section">
+                      <div class="compatibility-header">
+                          <div class="compatibility-title">
+                              <i class="fas fa-chart-pie"></i>
+                              Compatibilité des compétences
+                          </div>
+                          <div class="compatibility-percentage medium">
+                              65%
+                              <i class="fas fa-star-half-alt"></i>
+                          </div>
+                      </div>
+                      
+                      <div class="compatibility-progress">
+                          <div class="compatibility-progress-bar medium" style="width: 65%"></div>
+                      </div>
+                      
+                      <div class="compatibility-details">
+                          <span class="skill-stat matched">
+                              <i class="fas fa-check-circle"></i>
+                              4 compétences correspondantes
+                          </span>
+                          <span class="skill-stat missing">
+                              <i class="fas fa-times-circle"></i>
+                              3 manquantes
+                          </span>
+                          <span>Total: 7 compétences requises</span>
+                      </div>
+                      
+                      <div class="compatibility-actions">
+                          <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(2)">
+                              <i class="fas fa-search"></i> Détails compatibilité
+                          </button>
+                      </div>
+                  </div>
+
                   <div class="application-status-section">
                       <div class="status-badge reviewed">EXAMINÉE</div>
                       <div class="application-actions">
@@ -230,6 +319,43 @@
                           </div>
                       </div>
                   </div>
+
+                  <!-- Sample Compatibility Section -->
+                  <div class="application-compatibility-section">
+                      <div class="compatibility-header">
+                          <div class="compatibility-title">
+                              <i class="fas fa-chart-pie"></i>
+                              Compatibilité des compétences
+                          </div>
+                          <div class="compatibility-percentage low">
+                              35%
+                              <i class="fas fa-exclamation-triangle"></i>
+                          </div>
+                      </div>
+                      
+                      <div class="compatibility-progress">
+                          <div class="compatibility-progress-bar low" style="width: 35%"></div>
+                      </div>
+                      
+                      <div class="compatibility-details">
+                          <span class="skill-stat matched">
+                              <i class="fas fa-check-circle"></i>
+                              2 compétences correspondantes
+                          </span>
+                          <span class="skill-stat missing">
+                              <i class="fas fa-times-circle"></i>
+                              5 manquantes
+                          </span>
+                          <span>Total: 7 compétences requises</span>
+                      </div>
+                      
+                      <div class="compatibility-actions">
+                          <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(3)">
+                              <i class="fas fa-search"></i> Détails compatibilité
+                          </button>
+                      </div>
+                  </div>
+
                   <div class="application-status-section">
                       <div class="status-badge accepted">ACCEPTÉE</div>
                       <div class="application-actions">

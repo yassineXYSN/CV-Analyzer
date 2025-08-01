@@ -524,6 +524,7 @@ body {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .filter-btn {
@@ -541,6 +542,23 @@ body {
 .filter-btn.active {
   background: var(--primary-blue);
   color: white;
+  border-color: var(--primary-blue);
+}
+
+/* Compatibility Filter */
+.compatibility-filter-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition-standard);
+  font-size: 0.9rem;
+  margin-left: 1rem;
+}
+
+.compatibility-filter-select:hover {
   border-color: var(--primary-blue);
 }
 
@@ -640,6 +658,153 @@ body {
   flex-wrap: wrap;
 }
 
+/* Compatibility Section Styles */
+.application-compatibility-section {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(59, 130, 246, 0.03));
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: var(--border-radius-md);
+  padding: 1.5rem;
+  margin: 1rem 0;
+  backdrop-filter: blur(10px);
+}
+
+.compatibility-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.compatibility-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.compatibility-title i {
+  color: var(--primary-blue);
+}
+
+.compatibility-percentage {
+  font-size: 1.5rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 2px solid;
+}
+
+.compatibility-percentage.high {
+  color: var(--success-green);
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.compatibility-percentage.medium {
+  color: var(--warning-orange);
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.compatibility-percentage.low {
+  color: var(--error-red);
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.compatibility-percentage.very-low {
+  color: #6b7280;
+  background: rgba(156, 163, 175, 0.1);
+  border-color: rgba(156, 163, 175, 0.3);
+}
+
+.compatibility-progress {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.compatibility-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
+
+.compatibility-progress-bar.high {
+  background: linear-gradient(90deg, var(--success-green), var(--success-green-dark));
+}
+
+.compatibility-progress-bar.medium {
+  background: linear-gradient(90deg, var(--warning-orange), var(--warning-orange-dark));
+}
+
+.compatibility-progress-bar.low {
+  background: linear-gradient(90deg, var(--error-red), var(--error-red-dark));
+}
+
+.compatibility-progress-bar.very-low {
+  background: linear-gradient(90deg, #6b7280, #4b5563);
+}
+
+.compatibility-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.skill-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.skill-stat.matched i {
+  color: var(--success-green);
+}
+
+.skill-stat.missing i {
+  color: var(--error-red);
+}
+
+.compatibility-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-compatibility-details {
+  padding: 0.5rem 1rem;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary-blue);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition-standard);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.btn-compatibility-details:hover {
+  background: rgba(37, 99, 235, 0.2);
+  transform: translateY(-1px);
+}
+
 /* Boutons d'action */
 .btn-action {
   padding: 0.5rem 1rem;
@@ -706,6 +871,17 @@ body {
 
 .btn-action.info:hover {
   background: rgba(156, 163, 175, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-action.recommend {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning-orange);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.btn-action.recommend:hover {
+  background: rgba(245, 158, 11, 0.2);
   transform: translateY(-1px);
 }
 
@@ -840,108 +1016,97 @@ body {
   }
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .job-header-info {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .job-status {
-    align-items: flex-start;
-  }
+/* Job Skills Section */
+.job-skills-section {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-standard);
 }
 
-@media (max-width: 768px) {
-  .job-container {
-    padding: 0.5rem;
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-
-  .header-actions {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .job-section {
-    padding: 1.5rem;
-  }
-
-  .job-card {
-    padding: 1.5rem;
-  }
-
-  .job-title-section h2 {
-    font-size: 1.5rem;
-  }
-
-  .job-meta {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .quick-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .job-details-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .filter-buttons {
-    flex-wrap: wrap;
-  }
-
-  .application-status-section {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .application-actions {
-    justify-content: center;
-  }
-
-  .candidate-info {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .candidate-name {
-    justify-content: center;
-  }
+.job-skills-section:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
-@media (max-width: 480px) {
-  .job-header h1 {
-    font-size: 1.5rem;
-  }
-
-  .action-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-  }
-
-  .job-section {
-    padding: 1rem;
-  }
-
-  .application-actions {
-    flex-direction: column;
-  }
-
-  .btn-action {
-    width: 100%;
-    justify-content: center;
-  }
+.job-skills-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-blue), var(--primary-blue-light));
 }
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.skill-item {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: var(--transition-standard);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, 0.5);
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.skill-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.skill-level {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
+.skill-required-badge,
+.skill-optional-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 15px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.skill-required-badge {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--success-green);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.skill-optional-badge {
+  background: rgba(156, 163, 175, 0.1);
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
 /* Enhanced Modal Styles for Recommendation System */
-
-/* Modal Overlay Base */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -962,7 +1127,6 @@ body {
   animation: modalFadeOut 0.3s ease forwards;
 }
 
-/* Confirmation Modal Container */
 .confirmation-modal {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
   backdrop-filter: blur(20px);
@@ -981,13 +1145,11 @@ body {
   animation: modalSlideOut 0.3s ease forwards;
 }
 
-/* Modal Content Structure */
 .modal-content {
   padding: 0;
   position: relative;
 }
 
-/* Modal Header */
 .modal-header {
   text-align: center;
   padding: 2rem 2rem 1rem;
@@ -1049,7 +1211,6 @@ body {
   margin: 0;
 }
 
-/* Candidate Modal Info */
 .candidate-modal-info {
   display: flex;
   align-items: center;
@@ -1088,7 +1249,6 @@ body {
   margin: 0;
 }
 
-/* Modal Body */
 .modal-body {
   padding: 1rem 2rem 2rem;
 }
@@ -1099,7 +1259,6 @@ body {
   margin-bottom: 1rem;
 }
 
-/* Confirmation Details */
 .confirmation-details {
   background: rgba(37, 99, 235, 0.05);
   border-radius: 12px;
@@ -1129,7 +1288,6 @@ body {
   text-align: center;
 }
 
-/* Warning Note */
 .warning-note {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%);
   border: 1px solid rgba(245, 158, 11, 0.2);
@@ -1154,7 +1312,6 @@ body {
   font-style: italic;
 }
 
-/* Recommendation Form */
 .recommendation-form {
   margin-top: 1.5rem;
 }
@@ -1207,7 +1364,6 @@ body {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-/* Modal Actions */
 .modal-actions {
   display: flex;
   gap: 1rem;
@@ -1302,17 +1458,6 @@ body {
   transform: translateY(-1px);
 }
 
-/* Success Modal Specific Styles */
-.success-modal .modal-header {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.02) 100%);
-}
-
-.success-modal .candidate-modal-info {
-  background: rgba(16, 185, 129, 0.05);
-  border-color: rgba(16, 185, 129, 0.1);
-}
-
-/* Animations */
 @keyframes modalFadeIn {
   from {
     opacity: 0;
@@ -1363,7 +1508,89 @@ body {
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .job-header-info {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .job-status {
+    align-items: flex-start;
+  }
+}
+
 @media (max-width: 768px) {
+  .job-container {
+    padding: 0.5rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .header-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .job-section {
+    padding: 1.5rem;
+  }
+
+  .job-card {
+    padding: 1.5rem;
+  }
+
+  .job-title-section h2 {
+    font-size: 1.5rem;
+  }
+
+  .job-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .quick-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .job-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-buttons {
+    flex-wrap: wrap;
+  }
+
+  .application-status-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .application-actions {
+    justify-content: center;
+  }
+
+  .candidate-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .candidate-name {
+    justify-content: center;
+  }
+
+  .skills-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .compatibility-details {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .confirmation-modal {
     width: 95%;
     margin: 1rem;
@@ -1401,6 +1628,28 @@ body {
 }
 
 @media (max-width: 480px) {
+  .job-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .action-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .job-section {
+    padding: 1rem;
+  }
+
+  .application-actions {
+    flex-direction: column;
+  }
+
+  .btn-action {
+    width: 100%;
+    justify-content: center;
+  }
+
   .modal-header h3 {
     font-size: 1.25rem;
   }
@@ -1424,7 +1673,6 @@ body {
   }
 }
 
-/* Custom Scrollbar for Modal */
 .confirmation-modal::-webkit-scrollbar {
   width: 6px;
 }
@@ -1443,7 +1691,6 @@ body {
   background: linear-gradient(135deg, var(--primary-blue-dark), var(--primary-blue));
 }
 
-/* Loading State for Modal Buttons */
 .btn-confirm.loading {
   pointer-events: none;
   opacity: 0.7;
@@ -1466,102 +1713,5 @@ body {
   }
   100% {
     transform: rotate(360deg);
-  }
-}
-
-/* Job Skills Section */
-.job-skills-section {
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  padding: 2rem;
-  margin-bottom: 2rem;
-  position: relative;
-  overflow: hidden;
-  transition: var(--transition-standard);
-}
-
-.job-skills-section:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.job-skills-section::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary-blue), var(--primary-blue-light));
-}
-
-.skills-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
-.skill-item {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  transition: var(--transition-standard);
-  backdrop-filter: blur(10px);
-  position: relative;
-  overflow: hidden;
-}
-
-.skill-item:hover {
-  transform: translateY(-2px);
-  border-color: rgba(37, 99, 235, 0.5);
-  background: rgba(37, 99, 235, 0.05);
-}
-
-.skill-name {
-  font-weight: 700;
-  color: var(--text-primary);
-  font-size: 1.1rem;
-}
-
-.skill-level {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  text-transform: capitalize;
-}
-
-.skill-required-badge,
-.skill-optional-badge {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 15px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.skill-required-badge {
-  background: rgba(16, 185, 129, 0.2);
-  color: var(--success-green);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.skill-optional-badge {
-  background: rgba(156, 163, 175, 0.1);
-  color: #9ca3af;
-  border: 1px solid rgba(156, 163, 175, 0.3);
-}
-
-/* Responsive adjustments for skills section */
-@media (max-width: 768px) {
-  .skills-grid {
-    grid-template-columns: 1fr;
   }
 }
