@@ -190,80 +190,92 @@ async def get_applications(
 
 
 @router.post("/api/applications/{application_id}/recommend")
-async def recommend_application(application_id: int, recommendation_data: RecommendationRequest):
-            # Calculate days since application
-            days_since = 0
-            if app.application_date:
-                days_since = (datetime.now().date() - app.application_date.date()).days
-            
-            # Count matched skills for detailed info
-            matched_skills_count = 0
-            if candidate_skills and job_skills:
-                try:
-                    if isinstance(candidate_skills, str):
-                        parsed_skills = json.loads(candidate_skills)
-                    else:
-                        parsed_skills = candidate_skills
-                        
-                    if isinstance(parsed_skills, list):
-                        candidate_skills_lower = []
-                        for skill in parsed_skills:
-                            if isinstance(skill, str) and skill:
-                                if ':' in skill:
-                                    candidate_skills_lower.append(skill.split(':')[0].strip().lower())
-                                else:
-                                    candidate_skills_lower.append(skill.strip().lower())
-                        
-                        for job_skill in job_skills:
-                            if job_skill.skill_name.lower().strip() in candidate_skills_lower:
-                                matched_skills_count += 1
-                except:
-                    matched_skills_count = 0
-            
-            app_data = {
-                "id": app.id,
-                "candidate_id": app.candidate_profile_id,
-                "candidate_name": app.candidate_profile.name if app.candidate_profile else "N/A",
-                "candidate_email": app.candidate_profile.contact.email if app.candidate_profile and app.candidate_profile.contact else "N/A",
-                "job_id": app.job_id,
-                "job_title": app.job.title if app.job else "N/A",
-                "department_name": app.job.department.name if app.job and app.job.department else "N/A",
-                "status": app.status,
-                "priority": app.job.priority if app.job else "normal",
-                "application_date": app.application_date.isoformat() if app.application_date else None,
-                "days_since_application": days_since,
-                "hr_rating": float(app.hr_rating) if app.hr_rating else None,
-                "hr_notes": app.hr_notes,
-                "compatibility_percentage": compatibility_percentage,
-                "matched_skills_count": matched_skills_count,
-                "total_job_skills": len(job_skills)
-            }
-            
-            applications_list.append(app_data)
-        
-        # Apply compatibility filter
-        if compatibility_filter and compatibility_filter != "all":
-            original_count = len(applications_list)
-            if compatibility_filter == "high":  # 75%+
-                applications_list = [app for app in applications_list if app["compatibility_percentage"] >= 75]
-            elif compatibility_filter == "medium":  # 50-74%
-                applications_list = [app for app in applications_list if 50 <= app["compatibility_percentage"] < 75]
-            elif compatibility_filter == "low":  # 25-49%
-                applications_list = [app for app in applications_list if 25 <= app["compatibility_percentage"] < 50]
-            elif compatibility_filter == "very_low":  # 0-24%
-                applications_list = [app for app in applications_list if app["compatibility_percentage"] < 25]
-            
-            print(f"🔍 BACKEND: Compatibility filter '{compatibility_filter}' reduced {original_count} to {len(applications_list)} applications")
-        
-        print(f"✅ BACKEND: Returning {len(applications_list)} applications with compatibility data")
-        return {
-            "success": True,
-            "applications": applications_list,
-            "total_count": len(applications_list)
+async def recommend_application(
+    application_id: int, 
+    recommendation_data: RecommendationRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Fetch the application
+        app = db.query(Application).filter(Application.id == application_id).first()
+        if not app:
+            return {"success": False, "message": "Application not found"}
+
+        # Fetch job and candidate data
+        job_skills = app.job.skills if app.job else []
+        candidate_skills = app.candidate_profile.skills if app.candidate_profile else []
+
+        # Compute compatibility (placeholder logic)
+        compatibility_percentage = 0
+        matched_skills_count = 0
+
+        if candidate_skills and job_skills:
+            try:
+                if isinstance(candidate_skills, str):
+                    parsed_skills = json.loads(candidate_skills)
+                else:
+                    parsed_skills = candidate_skills
+
+                if isinstance(parsed_skills, list):
+                    candidate_skills_lower = []
+                    for skill in parsed_skills:
+                        if isinstance(skill, str) and skill:
+                            if ':' in skill:
+                                candidate_skills_lower.append(skill.split(':')[0].strip().lower())
+                            else:
+                                candidate_skills_lower.append(skill.strip().lower())
+
+                    for job_skill in job_skills:
+                        if job_skill.skill_name.lower().strip() in candidate_skills_lower:
+                            matched_skills_count += 1
+
+                    if job_skills:
+                        compatibility_percentage = round((matched_skills_count / len(job_skills)) * 100, 2)
+            except:
+                matched_skills_count = 0
+                compatibility_percentage = 0
+
+        days_since = (datetime.now().date() - app.application_date.date()).days if app.application_date else 0
+
+        app_data = {
+            "id": app.id,
+            "candidate_id": app.candidate_profile_id,
+            "candidate_name": app.candidate_profile.name if app.candidate_profile else "N/A",
+            "candidate_email": app.candidate_profile.contact.email if app.candidate_profile and app.candidate_profile.contact else "N/A",
+            "job_id": app.job_id,
+            "job_title": app.job.title if app.job else "N/A",
+            "department_name": app.job.department.name if app.job and app.job.department else "N/A",
+            "status": app.status,
+            "priority": app.job.priority if app.job else "normal",
+            "application_date": app.application_date.isoformat() if app.application_date else None,
+            "days_since_application": days_since,
+            "hr_rating": float(app.hr_rating) if app.hr_rating else None,
+            "hr_notes": app.hr_notes,
+            "compatibility_percentage": compatibility_percentage,
+            "matched_skills_count": matched_skills_count,
+            "total_job_skills": len(job_skills)
         }
-        
+
+        # Apply filter if needed
+        compatibility_filter = recommendation_data.compatibility_filter
+        passes_filter = True
+
+        if compatibility_filter and compatibility_filter != "all":
+            if compatibility_filter == "high" and compatibility_percentage < 75:
+                passes_filter = False
+            elif compatibility_filter == "medium" and not (50 <= compatibility_percentage < 75):
+                passes_filter = False
+            elif compatibility_filter == "low" and not (25 <= compatibility_percentage < 50):
+                passes_filter = False
+            elif compatibility_filter == "very_low" and compatibility_percentage >= 25:
+                passes_filter = False
+
+        if not passes_filter:
+            return {"success": True, "applications": [], "total_count": 0}
+
+        return {"success": True, "applications": [app_data], "total_count": 1}
+
     except Exception as e:
-        print(f"❌ BACKEND: Erreur lors de la récupération des candidatures: {str(e)}")
         import traceback
         traceback.print_exc()
         return {"success": False, "message": f"Erreur lors de la récupération des candidatures: {str(e)}"}

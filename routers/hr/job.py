@@ -1,9 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from databasehr.database import SessionLocal
-from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin
-# Ajout de l'import de Company
-from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, Company, JobSkill
+from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin, JobSkill
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
@@ -35,11 +33,11 @@ async def create_job(job_data: JobRequest):
     try:
         user_id = current_user_session.get('user_id')
         if not user_id:
-            return {"success": False, "message": "Utilisateur non connecté"}
+            raise HTTPException(status_code=401, detail="Utilisateur non connecté")
         
         company = get_user_company(user_id)
         if not company:
-            return {"success": False, "message": "Aucune entreprise associée"}
+            raise HTTPException(status_code=404, detail="Aucune entreprise associée")
         
         db = SessionLocal()
         try:
@@ -50,14 +48,14 @@ async def create_job(job_data: JobRequest):
             ).first()
             
             if not department:
-                return {"success": False, "message": "Département non trouvé"}
+                raise HTTPException(status_code=400, detail="Département non trouvé")
             
             deadline_obj = None
             if job_data.deadline:
                 try:
                     deadline_obj = datetime.strptime(job_data.deadline, "%Y-%m-%d").date()
                 except ValueError:
-                    pass
+                    raise HTTPException(status_code=400, detail="Format de date invalide")
             
             assigned_employee = None
             if job_data.assigned_employee_id:
@@ -152,6 +150,10 @@ async def create_job(job_data: JobRequest):
                 "skills_added": skills_added,
                 "skills_errors": skills_errors
             }
+        except HTTPException as http_ex:
+            db.rollback()
+            print(f"❌ BACKEND: Erreur HTTP: {str(http_ex.detail)}")
+            return {"success": False, "message": str(http_ex.detail)}
         except Exception as e:
             db.rollback()
             print(f"❌ BACKEND: Erreur création poste: {str(e)}")
@@ -192,6 +194,19 @@ async def get_jobs():
                         Employee.id == job.assigned_employee_id
                     ).first()
                 
+                # Get job skills
+                job_skills = db.query(JobSkill).filter(
+                    JobSkill.job_id == job.id
+                ).all()
+                
+                skills_list = []
+                for skill in job_skills:
+                    skills_list.append({
+                        "skill_name": skill.skill_name,
+                        "skill_level": skill.skill_level,
+                        "is_required": skill.is_required
+                    })
+                
                 jobs_list.append({
                     "id": job.id,
                     "title": job.title,
@@ -210,7 +225,8 @@ async def get_jobs():
                     "assigned_employee_name": f"{assigned_employee.first_name} {assigned_employee.last_name}" if assigned_employee else None,
                     "deadline": job.deadline.isoformat() if job.deadline else None,
                     "applications_count": job.applications_count,
-                    "created_at": job.created_at.isoformat() if job.created_at else None
+                    "created_at": job.created_at.isoformat() if job.created_at else None,
+                    "skills": skills_list
                 })
             
             return {
@@ -254,6 +270,19 @@ async def get_job_details(job_id: int):
                 assigned_employee = db.query(Employee).filter(
                     Employee.id == job.assigned_employee_id
                 ).first()
+            
+            # Get job skills
+            job_skills = db.query(JobSkill).filter(
+                JobSkill.job_id == job.id
+            ).all()
+            
+            skills_list = []
+            for skill in job_skills:
+                skills_list.append({
+                    "skill_name": skill.skill_name,
+                    "skill_level": skill.skill_level,
+                    "is_required": skill.is_required
+                })
             
             # CORRECTION: Récupérer les candidatures avec les informations de recommandation
             applications = db.query(Application).filter(
@@ -317,7 +346,8 @@ async def get_job_details(job_id: int):
                 "days_remaining": days_remaining,
                 "applications_count": len(applications_list),
                 "applications": applications_list,
-                "created_at": job.created_at.isoformat() if job.created_at else None
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "skills": skills_list
             }
             
             return {

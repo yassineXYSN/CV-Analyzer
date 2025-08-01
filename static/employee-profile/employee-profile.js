@@ -1,6 +1,7 @@
 // Variables globales
 let currentEmployee = null
 let notes = []
+let jobSkills = []
 
 // Charger les données du candidat au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
