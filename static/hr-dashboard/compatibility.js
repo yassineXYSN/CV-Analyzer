@@ -20,15 +20,28 @@ async function loadApplicationsWithFilters(statusFilter = "all", compatibilityFi
     console.log("📦 FRONTEND: API response:", result)
 
     if (result.success) {
-      // Update the global applications variable
       if (typeof window.applications !== "undefined") {
-        window.applications = result.applications || []
+        window.applications = (result.applications || []).map((app) => ({
+          ...app,
+          compatibility_percentage: typeof app.compatibility_percentage === "number" ? app.compatibility_percentage : 0,
+          matched_skills_count: typeof app.matched_skills_count === "number" ? app.matched_skills_count : 0,
+          total_job_skills: typeof app.total_job_skills === "number" ? app.total_job_skills : 0,
+        }))
+        console.log(
+          "🔍 FRONTEND: Processed applications with compatibility:",
+          window.applications.map((app) => ({
+            id: app.id,
+            compatibility_percentage: app.compatibility_percentage,
+            matched_skills_count: app.matched_skills_count,
+            total_job_skills: app.total_job_skills,
+          })),
+        )
       }
-      console.log(`✅ FRONTEND: ${result.applications?.length || 0} applications loaded with compatibility data`)
+      console.log(`✅ FRONTEND: ${window.applications.length} applications loaded with compatibility data`)
 
       // Log sample application data for debugging
-      if (result.applications && result.applications.length > 0) {
-        console.log("🔍 FRONTEND: Sample application data:", result.applications[0])
+      if (window.applications && window.applications.length > 0) {
+        console.log("🔍 FRONTEND: Sample application data:", window.applications[0])
       }
 
       renderApplicationsWithCompatibility()
@@ -68,129 +81,114 @@ function renderApplicationsWithCompatibility(filter = "all") {
 
   if (filteredApps.length === 0) {
     container.innerHTML = `
-            <div class="empty-applications">
-                <i class="fas fa-file-alt"></i>
-                <h4>Aucune candidature</h4>
-                <p>Aucune candidature ${getFilterText(filter)}</p>
-                <button class="empty-btn" onclick="createDemoApplications()">
-                    <i class="fas fa-plus"></i> Créer des candidatures de test
-                </button>
-            </div>
-        `
+          <div class="empty-applications">
+              <i class="fas fa-file-alt"></i>
+              <h4>Aucune candidature</h4>
+              <p>Aucune candidature ${getFilterText(filter)}</p>
+          </div>
+      `
     return
   }
 
   container.innerHTML = filteredApps
     .map((app) => {
+      console.log(
+        `🎯 FRONTEND: Rendering app ${app.id} with compatibility ${app.compatibility_percentage}% (matched: ${app.matched_skills_count}, total: ${app.total_job_skills})`,
+      )
       console.log(`🎯 FRONTEND: Rendering app ${app.id} with compatibility ${app.compatibility_percentage}%`)
       return `
-        <div class="application-card-enhanced ${app.status}">
-            <div class="application-header">
-                <div class="applicant-info">
-                    <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
-                    <div class="applicant-details">
-                        <h4>${app.candidate_name}</h4>
-                        <p>${app.candidate_email}</p>
-                        <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
-                    </div>
-                </div>
-                <div class="application-status ${app.status}">
-                    ${getStatusText(app.status)}
-                </div>
-            </div>
-            
-            <div class="application-job">
-                <div class="job-info">
-                    <div class="job-title">${app.job_title}</div>
-                    <div class="job-department">${app.department_name}</div>
-                    <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
-                </div>
-                <div class="application-date">
-                    Candidature envoyée le ${formatDate(app.application_date)}
-                    <br><small>Il y a ${app.days_since_application} jour(s)</small>
-                </div>
-            </div>
+      <div class="application-card-enhanced ${app.status}">
+          <div class="application-header">
+              <div class="applicant-info">
+                  <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
+                  <div class="applicant-details">
+                      <h4>${app.candidate_name}</h4>
+                      <p>${app.candidate_email}</p>
+                      <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
+                  </div>
+              </div>
+              <div class="application-status ${app.status}">
+                  ${getStatusText(app.status)}
+              </div>
+          </div>
+          
+          <div class="application-job">
+              <div class="job-info">
+                  <div class="job-title">${app.job_title}</div>
+                  <div class="job-department">${app.department_name}</div>
+                  <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
+              </div>
+              <div class="application-date">
+                  Candidature envoyée le ${formatDate(app.application_date)}
+                  <br><small>Il y a ${app.days_since_application} jour(s)</small>
+              </div>
+          </div>
 
-            <!-- Compatibility Section -->
-            <div class="application-compatibility-section">
-                <div class="compatibility-header">
-                    <div class="compatibility-title">
-                        <i class="fas fa-chart-pie"></i>
-                        Compatibilité des compétences
-                    </div>
-                    <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
-                        ${app.compatibility_percentage}%
-                        <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
-                    </div>
-                </div>
-                
-                <div class="compatibility-progress">
-                    <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage)}" 
-                         style="width: ${app.compatibility_percentage}%"></div>
-                </div>
-                
-                <div class="compatibility-details">
-                    <span class="skill-stat matched">
-                        <i class="fas fa-check-circle"></i>
-                        ${app.matched_skills_count} compétences correspondantes
-                    </span>
-                    <span class="skill-stat missing">
-                        <i class="fas fa-times-circle"></i>
-                        ${app.total_job_skills - app.matched_skills_count} manquantes
-                    </span>
-                    <span>Total: ${app.total_job_skills} compétences</span>
-                </div>
-                
-                <div class="compatibility-actions">
-                    <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
-                        <i class="fas fa-search"></i> Détails compatibilité
-                    </button>
-                </div>
-            </div>
-            
-            <div class="application-actions">
-                <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
-                    <i class="fas fa-user"></i> Voir Profil
-                </button>
-                <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
-                    <i class="fas fa-info-circle"></i> Détails Poste
-                </button>
-                <button class="app-btn review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-                    <i class="fas fa-eye"></i> Examiner
-                </button>
-                ${
-                  app.status === "pending" || app.status === "reviewed"
-                    ? `
-                    <button class="app-btn schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
-                        <i class="fas fa-calendar"></i> Programmer
-                    </button>
-                `
-                    : ""
-                }
-                ${
-                  app.status === "interview_scheduled"
-                    ? `
-                    <button class="app-btn complete" onclick="updateApplicationStatus(${app.id}, 'interview_completed')">
-                        <i class="fas fa-check"></i> Terminer
-                    </button>
-                `
-                    : ""
-                }
-                ${
-                  app.status === "interview_completed" || app.status === "reviewed"
-                    ? `
-                    <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
-                        <i class="fas fa-thumbs-up"></i> Accepter
-                    </button>
-                    <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
-                        <i class="fas fa-thumbs-down"></i> Rejeter
-                    </button>
-                `
-                    : ""
-                }
-            </div>
-        </div>
-    `
+          <!-- Compatibility Section -->
+          <div class="application-compatibility-section">
+              <div class="compatibility-header">
+                  <div class="compatibility-title">
+                      <i class="fas fa-chart-pie"></i>
+                      Compatibilité des compétences
+                  </div>
+                  <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
+                      ${app.compatibility_percentage !== undefined ? app.compatibility_percentage : "N/A"}%
+                      <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
+                  </div>
+              </div>
+              
+              <div class="compatibility-progress">
+                  <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage)}" 
+                       style="width: ${app.compatibility_percentage}%"></div>
+              </div>
+              
+              <div class="compatibility-details">
+                  <span class="skill-stat matched">
+                      <i class="fas fa-check-circle"></i>
+                      ${app.matched_skills_count} compétences correspondantes
+                  </span>
+                  <span class="skill-stat missing">
+                      <i class="fas fa-times-circle"></i>
+                      ${app.total_job_skills - app.matched_skills_count} manquantes
+                  </span>
+                  <span>Total: ${app.total_job_skills} compétences</span>
+              </div>
+          </div>
+          
+          <div class="application-actions">
+              <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
+                  <i class="fas fa-user"></i> Voir Profil
+              </button>
+              <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
+                  <i class="fas fa-info-circle"></i> Détails Poste
+              </button>
+              ${
+                app.status === "pending" || app.status === "reviewed"
+                  ? `
+              `
+                  : ""
+              }
+              ${
+                app.status === "interview_scheduled"
+                  ? `
+              `
+                  : ""
+              }
+              ${
+                app.status === "interview_completed" || app.status === "reviewed"
+                  ? `
+                  <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
+                      <i class="fas fa-thumbs-up"></i> Accepter
+                  </button>
+                  <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
+                      <i class="fas fa-thumbs-down"></i> Rejeter
+                  </button>
+              `
+                  : ""
+              }
+          </div>
+      </div>
+  `
     })
     .join("")
 
@@ -244,12 +242,12 @@ function renderFilteredApplications(filteredApps) {
 
   if (filteredApps.length === 0) {
     container.innerHTML = `
-            <div class="empty-applications">
-                <i class="fas fa-search"></i>
-                <h4>Aucun résultat</h4>
-                <p>Aucune candidature ne correspond à votre recherche</p>
-            </div>
-        `
+          <div class="empty-applications">
+              <i class="fas fa-search"></i>
+              <h4>Aucun résultat</h4>
+              <p>Aucune candidature ne correspond à votre recherche</p>
+          </div>
+      `
     return
   }
 
@@ -281,109 +279,110 @@ async function viewCompatibilityDetails(applicationId) {
 
 // Show compatibility modal
 function showCompatibilityModal(compatibilityData) {
+  console.log("🔍 FRONTEND: Compatibility data received by modal:", compatibilityData)
   const modal = document.createElement("div")
   modal.className = "modal-overlay"
   modal.style.display = "flex"
   modal.style.zIndex = "10003"
 
   modal.innerHTML = `
-        <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header">
-                <h3><i class="fas fa-chart-pie"></i> Détails de Compatibilité</h3>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="compatibility-overview">
-                    <div class="compatibility-score">
-                        <div class="score-circle ${getCompatibilityClass(compatibilityData.compatibility_percentage)}">
-                            <span class="score-number">${compatibilityData.compatibility_percentage}%</span>
-                            <span class="score-label">Compatibilité</span>
-                        </div>
-                    </div>
-                    
-                    <div class="compatibility-summary">
-                        <div class="summary-stat">
-                            <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                            <span>${compatibilityData.matched_count} compétences correspondantes</span>
-                        </div>
-                        <div class="summary-stat">
-                            <i class="fas fa-times-circle" style="color: #ef4444;"></i>
-                            <span>${compatibilityData.missing_count} compétences manquantes</span>
-                        </div>
-                        <div class="summary-stat">
-                            <i class="fas fa-list" style="color: #6b7280;"></i>
-                            <span>${compatibilityData.total_job_skills} compétences requises au total</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="skills-breakdown">
-                    <div class="skills-section">
-                        <div class="skills-breakdown-header">
-                            <h4 class="skills-breakdown-title">
-                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                                Compétences Correspondantes (${compatibilityData.matched_count})
-                            </h4>
-                        </div>
-                        <div class="skills-list">
-                            ${compatibilityData.matched_skills
-                              .map(
-                                (skill) => `
-                                <div class="skill-item matched">
-                                    <div class="skill-info">
-                                        <span class="skill-name">${skill.skill_name}</span>
-                                        <span class="skill-level ${skill.skill_level}">${getLevelText(skill.skill_level)}</span>
-                                        <span class="skill-required ${skill.is_required ? "required" : "optional"}">
-                                            ${skill.is_required ? "Requis" : "Optionnel"}
-                                        </span>
-                                    </div>
-                                    <div class="skill-status matched">
-                                        <i class="fas fa-check"></i>
-                                        Possédée
-                                    </div>
-                                </div>
-                            `,
-                              )
-                              .join("")}
-                        </div>
-                    </div>
-                    
-                    <div class="skills-section">
-                        <div class="skills-breakdown-header">
-                            <h4 class="skills-breakdown-title">
-                                <i class="fas fa-times-circle" style="color: #ef4444;"></i>
-                                Compétences Manquantes (${compatibilityData.missing_count})
-                            </h4>
-                        </div>
-                        <div class="skills-list">
-                            ${compatibilityData.missing_skills
-                              .map(
-                                (skill) => `
-                                <div class="skill-item missing">
-                                    <div class="skill-info">
-                                        <span class="skill-name">${skill.skill_name}</span>
-                                        <span class="skill-level ${skill.skill_level}">${getLevelText(skill.skill_level)}</span>
-                                        <span class="skill-required ${skill.is_required ? "required" : "optional"}">
-                                            ${skill.is_required ? "Requis" : "Optionnel"}
-                                        </span>
-                                    </div>
-                                    <div class="skill-status missing">
-                                        <i class="fas fa-times"></i>
-                                        Manquante
-                                    </div>
-                                </div>
-                            `,
-                              )
-                              .join("")}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Fermer</button>
-            </div>
-        </div>
-    `
+      <div class="modal-content" style="max-width: 800px;">
+          <div class="modal-header">
+              <h3><i class="fas fa-chart-pie"></i> Détails de Compatibilité</h3>
+              <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+          </div>
+          <div class="modal-body">
+              <div class="compatibility-overview">
+                  <div class="compatibility-score">
+                      <div class="score-circle ${getCompatibilityClass(compatibilityData.compatibility_percentage)}">
+                          <span class="score-number">${compatibilityData.compatibility_percentage}%</span>
+                          <span class="score-label">Compatibilité</span>
+                      </div>
+                  </div>
+                  
+                  <div class="compatibility-summary">
+                      <div class="summary-stat">
+                          <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                          <span>${compatibilityData.matched_count} compétences correspondantes</span>
+                      </div>
+                      <div class="summary-stat">
+                          <i class="fas fa-times-circle" style="color: #ef4444;"></i>
+                          <span>${compatibilityData.missing_count} compétences manquantes</span>
+                      </div>
+                      <div class="summary-stat">
+                          <i class="fas fa-list" style="color: #6b7280;"></i>
+                          <span>${compatibilityData.total_job_skills} compétences requises au total</span>
+                      </div>
+                  </div>
+              </div>
+              
+              <div class="skills-breakdown">
+                  <div class="skills-section">
+                      <div class="skills-breakdown-header">
+                          <h4 class="skills-breakdown-title">
+                              <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                              Compétences Correspondantes (${compatibilityData.matched_count})
+                          </h4>
+                      </div>
+                      <div class="skills-list">
+                          ${compatibilityData.matched_skills
+                            .map(
+                              (skill) => `
+                              <div class="skill-item matched">
+                                  <div class="skill-info">
+                                      <span class="skill-name">${skill.skill_name}</span>
+                                      <span class="skill-level ${skill.skill_level}">${getLevelText(skill.skill_level)}</span>
+                                      <span class="skill-required ${skill.is_required ? "required" : "optional"}">
+                                          ${skill.is_required ? "Requis" : "Optionnel"}
+                                      </span>
+                                  </div>
+                                  <div class="skill-status matched">
+                                      <i class="fas fa-check"></i>
+                                      Possédée
+                                  </div>
+                              </div>
+                          `,
+                            )
+                            .join("")}
+                      </div>
+                  </div>
+                  
+                  <div class="skills-section">
+                      <div class="skills-breakdown-header">
+                          <h4 class="skills-breakdown-title">
+                              <i class="fas fa-times-circle" style="color: #ef4444;"></i>
+                              Compétences Manquantes (${compatibilityData.missing_count})
+                          </h4>
+                      </div>
+                      <div class="skills-list">
+                          ${compatibilityData.missing_skills
+                            .map(
+                              (skill) => `
+                              <div class="skill-item missing">
+                                  <div class="skill-info">
+                                      <span class="skill-name">${skill.skill_name}</span>
+                                      <span class="skill-level ${skill.skill_level}">${getLevelText(skill.skill_level)}</span>
+                                      <span class="skill-required ${skill.is_required ? "required" : "optional"}">
+                                          ${skill.is_required ? "Requis" : "Optionnel"}
+                                      </span>
+                                  </div>
+                                  <div class="skill-status missing">
+                                      <i class="fas fa-times"></i>
+                                      Manquante
+                                  </div>
+                              </div>
+                          `,
+                            )
+                            .join("")}
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Fermer</button>
+          </div>
+      </div>
+  `
 
   document.body.appendChild(modal)
 }
@@ -429,32 +428,6 @@ function getLevelText(level) {
   return levelTexts[level] || level
 }
 
-// Create demo applications with compatibility data
-async function createDemoApplications() {
-  console.log("🎭 FRONTEND: Creating demo applications")
-
-  try {
-    const response = await fetch("/api/applications/create-demo", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-
-    const result = await response.json()
-
-    if (result.success) {
-      showNotification(`${result.applications.length} candidatures de démonstration créées`, "success")
-      loadApplicationsWithFilters()
-    } else {
-      showNotification("Erreur lors de la création des candidatures de test", "error")
-    }
-  } catch (error) {
-    console.error("❌ FRONTEND: Error creating demo applications:", error)
-    showNotification("Erreur de connexion", "error")
-  }
-}
-
 // Enhanced notification function with better styling
 function showNotification(message, type = "info") {
   const notification = document.createElement("div")
@@ -475,36 +448,36 @@ function showNotification(message, type = "info") {
   }
 
   notification.innerHTML = `
-        <div class="notification-icon">
-            <i class="fas ${icons[type]}"></i>
-        </div>
-        <div class="notification-content">
-            <span>${message}</span>
-        </div>
-        <button class="notification-close" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
-    `
+      <div class="notification-icon">
+          <i class="fas ${icons[type]}"></i>
+      </div>
+      <div class="notification-content">
+          <span>${message}</span>
+      </div>
+      <button class="notification-close" onclick="this.parentElement.remove()">
+          <i class="fas fa-times"></i>
+      </button>
+  `
 
   notification.style.cssText = `
-        position: fixed;
-        top: 2rem;
-        right: 2rem;
-        background: ${colors[type]};
-        color: white;
-        padding: 1rem;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        z-index: 20000;
-        backdrop-filter: blur(10px);
-        animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        min-width: 320px;
-        max-width: 450px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    `
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      background: ${colors[type]};
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      z-index: 20000;
+      backdrop-filter: blur(10px);
+      animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      min-width: 320px;
+      max-width: 450px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+  `
 
   document.body.appendChild(notification)
 
@@ -564,7 +537,6 @@ window.filterApplicationsByCompatibility = filterApplicationsByCompatibility
 window.filterApplicationByName = filterApplicationByName
 window.viewCompatibilityDetails = viewCompatibilityDetails
 window.updateApplicationStatus = updateApplicationStatus
-window.createDemoApplications = createDemoApplications
 window.getCompatibilityClass = getCompatibilityClass
 window.getCompatibilityIcon = getCompatibilityIcon
 
