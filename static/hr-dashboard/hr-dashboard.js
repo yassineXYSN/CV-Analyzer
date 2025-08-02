@@ -117,185 +117,264 @@ function renderApplications(filter = "all") {
 
   if (filteredApps.length === 0) {
     container.innerHTML = `
-  <div class="empty-applications">
-    <i class="fas fa-file-alt"></i>
-    <h4>Aucune candidature</h4>
-    <p>Aucune candidature ${getFilterText(filter)}</p>
-  </div>
+<div class="empty-applications">
+  <i class="fas fa-file-alt"></i>
+  <h4>Aucune candidature</h4>
+  <p>Aucune candidature ${getFilterText(filter)}</p>
+</div>
 `
     return
   }
 
   container.innerHTML = filteredApps
+    .slice(0, 2)
     .map((app) => {
       console.log(
         `🎯 FRONTEND: Fallback rendering app ${app.id} with compatibility ${app.compatibility_percentage}% (matched: ${app.matched_skills_count}, total: ${app.total_job_skills})`,
       )
       return `
-  <div class="application-card ${app.status}">
-    <div class="application-header">
-      <div class="applicant-info">
-        <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
-        <div class="applicant-details">
-          <h4>${app.candidate_name}
-            ${
-              app.is_recommended
-                ? `
-              <span class="recommendation-badge ${app.recommendation_priority}" 
-                    title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
-                <i class="fas fa-star"></i> 
-                ${app.recommendation_priority === "urgent" ? "URGENT" : app.recommendation_priority === "high" ? "PRIORITÉ HAUTE" : "RECOMMANDÉ"}
-              </span>
-            `
-                : ""
-            }
-          </h4>
-          <p>${app.candidate_email}</p>
-          <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
-        </div>
-      </div>
-      <div class="application-status ${app.status}">
-        ${getStatusText(app.status)}
-        ${
-          app.is_recommended && app.recommendation_priority !== "normal"
-            ? `<span class="priority-indicator ${app.recommendation_priority}">
-                ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
-              </span>`
-            : ""
-        }
-      </div>
-    </div>
-
-    ${
-      app.is_recommended
-        ? `
-        <div class="recommendation-info clickable" onclick="toggleRecommendationComment(${app.id})" style="
-          cursor: pointer;
-          transition: all 0.3s ease;
-          background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
-          border: 1px solid rgba(243, 156, 18, 0.3);
-          border-radius: 8px;
-          padding: 0.75rem;
-          margin: 0.75rem 0;
-          position: relative;
-        " onmouseover="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(230, 126, 34, 0.08))'" 
-           onmouseout="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05))'">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fas fa-user-tie" style="color: #f39c12;"></i>
-              <span style="color: #f39c12; font-weight: 500;">
-                Recommandé par: ${app.recommended_by || "N/A"} 
-                ${app.recommendation_date ? `le ${formatDate(app.recommendation_date)}` : ""}
-              </span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <small style="color: #cbd5e1; font-size: 0.8rem;">Voir le commentaire</small>
-              <i class="fas fa-chevron-down recommendation-chevron-${app.id}" style="
-                color: #f39c12; 
-                transition: transform 0.3s ease;
-                font-size: 0.9rem;
-              "></i>
-            </div>
-          </div>
-        </div>
-
-        ${
-          app.recommendation_comment
-            ? `
-            <div class="recommendation-comment recommendation-comment-${app.id}" style="
-              background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
-              border: 1px solid rgba(243, 156, 18, 0.3);
-              border-radius: 8px;
-              padding: 0;
-              margin: 0 0 1rem 0;
-              max-height: 0;
-              overflow: hidden;
-              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-              opacity: 0;
-            ">
-              <div style="padding: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                  <i class="fas fa-comment-alt" style="color: #f39c12;"></i>
-                  <strong style="color: #f8fafc;">Commentaire de recommandation:</strong>
-                </div>
-                <p style="
-                  font-style: italic;
-                  margin: 0.5rem 0;
-                  color: #e2e8f0;
-                  line-height: 1.5;
-                  background: rgba(0, 0, 0, 0.2);
-                  padding: 0.75rem;
-                  border-radius: 6px;
-                  border-left: 3px solid #f39c12;
-                ">"${app.recommendation_comment}"</p>
-                ${app.recommended_by ? `<small style="color: #cbd5e1; font-weight: 500;">— ${app.recommended_by}</small>` : ""}
-              </div>
-            </div>
+<div class="application-card ${app.status}">
+  <div class="application-header">
+    <div class="applicant-info">
+      <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
+      <div class="applicant-details">
+        <h4>${app.candidate_name}
+          ${
+            app.is_recommended
+              ? `
+            <span class="recommendation-badge ${app.recommendation_priority}" 
+                  title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
+              <i class="fas fa-star"></i> 
+              ${app.recommendation_priority === "urgent" ? "URGENT" : app.recommendation_priority === "high" ? "PRIORITÉ HAUTE" : "RECOMMANDÉ"}
+            </span>
           `
-            : ""
-        }
-      `
-        : ""
-    }
-
-    <div class="application-job">
-      <div class="job-info">
-        <div class="job-title">${app.job_title}</div>
-        <div class="job-department">${app.department_name}</div>
-        <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
-      </div>
-      <div class="application-date">
-        Candidature envoyée le ${formatDate(app.application_date)}
-        <br><small>Il y a ${app.days_since_application} jour(s)</small>
+              : ""
+          }
+        </h4>
+        <p>${app.candidate_email}</p>
+        <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
       </div>
     </div>
-
-    ${
-      app.compatibility_percentage !== undefined
-        ? `
-        <div class="application-compatibility-section">
-          <div class="compatibility-header">
-            <div class="compatibility-title">
-              <i class="fas fa-chart-pie"></i>
-              Compatibilité des compétences
-            </div>
-            <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
-              ${app.compatibility_percentage}%
-              <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
-            </div>
-          </div>
-          <div class="compatibility-progress">
-            <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage)}"
-                 style="width: ${app.compatibility_percentage}%"></div>
-          </div>
-          <div class="compatibility-details">
-            <span class="skill-stat matched">
-              <i class="fas fa-check-circle"></i>
-              ${app.matched_skills_count || 0} compétences correspondantes
-            </span>
-            <span class="skill-stat missing">
-              <i class="fas fa-times-circle"></i>
-              ${(app.total_job_skills || 0) - (app.matched_skills_count || 0)} manquantes
-            </span>
-            <span>Total: ${app.total_job_skills || 0} compétences</span>
-          </div>
-        </div>
-      `
-        : ""
-    }
-
-    <div class="application-actions">
-      <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-user"></i> Voir Profil
-      </button>
-      <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
-        <i class="fas fa-info-circle"></i> Détails du poste
-      </button>
+    <div class="application-status ${app.status}">
+      ${getStatusText(app.status)}
+      ${
+        app.is_recommended && app.recommendation_priority !== "normal"
+          ? `<span class="priority-indicator ${app.recommendation_priority}">
+              ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+            </span>`
+          : ""
+      }
     </div>
   </div>
+
+  ${
+    app.is_recommended
+      ? `
+      <div class="recommendation-info clickable" onclick="toggleRecommendationComment(${app.id})" style="
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+        border: 1px solid rgba(243, 156, 18, 0.3);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin: 0.75rem 0;
+        position: relative;
+      " onmouseover="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(230, 126, 34, 0.08))'" 
+         onmouseout="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05))'">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-user-tie" style="color: #f39c12;"></i>
+            <span style="color: #f39c12; font-weight: 500;">
+              Recommandé par: ${app.recommended_by || "N/A"} 
+              ${app.recommendation_date ? `le ${formatDate(app.recommendation_date)}` : ""}
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <small style="color: #cbd5e1; font-size: 0.8rem;">Voir le commentaire</small>
+            <i class="fas fa-chevron-down recommendation-chevron-${app.id}" style="
+              color: #f39c12; 
+              transition: transform 0.3s ease;
+              font-size: 0.9rem;
+            "></i>
+          </div>
+        </div>
+      </div>
+
+      ${
+        app.recommendation_comment
+          ? `
+          <div class="recommendation-comment recommendation-comment-${app.id}" style="
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            border-radius: 8px;
+            padding: 0;
+            margin: 0 0 1rem 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+          ">
+            <div style="padding: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <i class="fas fa-comment-alt" style="color: #f39c12;"></i>
+                <strong style="color: #f8fafc;">Commentaire de recommandation:</strong>
+              </div>
+              <p style="
+                font-style: italic;
+                margin: 0.5rem 0;
+                color: #e2e8f0;
+                line-height: 1.5;
+                background: rgba(0, 0, 0, 0.2);
+                padding: 0.75rem;
+                border-radius: 6px;
+                border-left: 3px solid #f39c12;
+              ">"${app.recommendation_comment}"</p>
+              ${app.recommended_by ? `<small style="color: #cbd5e1; font-weight: 500;">— ${app.recommended_by}</small>` : ""}
+            </div>
+          </div>
+        `
+          : ""
+      }
+    `
+      : ""
+  }
+
+  <div class="application-job">
+    <div class="job-info">
+      <div class="job-title">${app.job_title}</div>
+      <div class="job-department">${app.department_name}</div>
+      <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
+    </div>
+    <div class="application-date">
+      Candidature envoyée le ${formatDate(app.application_date)}
+      <br><small>Il y a ${app.days_since_application} jour(s)</small>
+    </div>
+  </div>
+
+  ${
+    app.compatibility_percentage !== undefined
+      ? `
+      <div class="application-compatibility-section">
+        <div class="compatibility-header">
+          <div class="compatibility-title">
+            <i class="fas fa-chart-pie"></i>
+            Compatibilité des compétences
+          </div>
+          <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
+            ${app.compatibility_percentage}%
+            <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
+          </div>
+        </div>
+        <div class="compatibility-progress">
+          <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage)}"
+               style="width: ${app.compatibility_percentage}%"></div>
+        </div>
+        <div class="compatibility-details">
+          <span class="skill-stat matched">
+            <i class="fas fa-check-circle"></i>
+            ${app.matched_skills_count || 0} compétences correspondantes
+          </span>
+          <span class="skill-stat missing">
+            <i class="fas fa-times-circle"></i>
+            ${(app.total_job_skills || 0) - (app.matched_skills_count || 0)} manquantes
+          </span>
+          <span>Total: ${app.total_job_skills || 0} compétences</span>
+        </div>
+      </div>
+    `
+      : ""
+  }
+
+  <div class="application-actions">
+    <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
+      <i class="fas fa-user"></i> Voir Profil
+    </button>
+    <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
+      <i class="fas fa-info-circle"></i> Détails du poste
+    </button>
+    ${renderApplicationActionButtons(app)}
+  </div>
+</div>
 `
     })
     .join("")
+}
+
+// FONCTION CORRIGÉE: Rendre les boutons d'action selon le rôle utilisateur
+function renderApplicationActionButtons(app) {
+  if (!currentUser) return ""
+
+  // Pour les chefs de département : seulement le bouton recommander
+  if (currentUser.role === "department_head") {
+    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
+      // Échapper les caractères spéciaux pour éviter les erreurs JavaScript
+      const safeCandidateName = app.candidate_name.replace(/'/g, "\\'").replace(/"/g, '\\"')
+      const safeJobTitle = app.job_title.replace(/'/g, "\\'").replace(/"/g, '\\"')
+      return `
+  <button class="app-btn recommend" onclick="showRecommendModal(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
+    <i class="fas fa-thumbs-up"></i> Recommander
+  </button>
+`
+    }
+    // Si déjà recommandé, afficher un indicateur
+    if (app.is_recommended) {
+      return `
+  <div class="recommendation-status">
+    <i class="fas fa-check-circle"></i> Déjà recommandé
+  </div>
+`
+    }
+    return "" // Pas de boutons pour les autres statuts
+  }
+
+  // Pour les recruteurs : boutons complets
+  if (currentUser.role === "recruiter") {
+    return `
+${
+  app.status === "pending" || app.status === "reviewed"
+    ? `
+  <button class="app-btn schedule" onclick="scheduleInterview(${app.id})">
+    <i class="fas fa-calendar"></i> Planifier Entretien
+  </button>
+  <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
+    <i class="fas fa-times"></i> Rejeter
+  </button>
+  `
+    : ""
+}
+${
+  app.status === "interview_scheduled"
+    ? `
+  <button class="app-btn complete" onclick="completeInterview(${app.id})">
+    <i class="fas fa-check"></i> Terminer Entretien
+  </button>
+  <button class="app-btn reschedule" onclick="rescheduleInterview(${app.id})">
+    <i class="fas fa-calendar-alt"></i> Reprogrammer
+  </button>
+  `
+    : ""
+}
+${
+  app.status === "interview_completed" || app.status === "reviewed"
+    ? `
+  <button class="app-btn accept" onclick="updateApplicationStatus(${app.id}, 'accepted')">
+    <i class="fas fa-check-circle"></i> Accepter
+  </button>
+  <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
+    <i class="fas fa-times"></i> Rejeter
+  </button>
+  `
+    : ""
+}
+`
+  }
+
+  // Pour les super admins : pas de boutons d'action
+  if (currentUser.role === "super_admin") {
+    return "" // Pas de boutons pour les super admins
+  }
+
+  return ""
 }
 
 // NOUVELLE FONCTION: Toggle du commentaire de recommandation
@@ -424,11 +503,11 @@ function renderSkillsList() {
 
   if (jobSkills.length === 0) {
     skillsList.innerHTML = `
-  <div class="skills-empty">
-    <i class="fas fa-cogs"></i>
-    <p>Aucune compétence ajoutée</p>
-    <small>Ajoutez des compétences requises pour ce poste</small>
-  </div>
+<div class="skills-empty">
+  <i class="fas fa-cogs"></i>
+  <p>Aucune compétence ajoutée</p>
+  <small>Ajoutez des compétences requises pour ce poste</small>
+</div>
 `
     return
   }
@@ -437,16 +516,16 @@ function renderSkillsList() {
     .map(
       (skill, index) => `
 <div class="skill-item">
-  <div class="skill-info">
-    <span class="skill-name">${skill.name}</span>
-    <span class="skill-level ${skill.level}">${getLevelText(skill.level)}</span>
-    <span class="skill-required ${skill.required ? "required" : "optional"}">
-      ${skill.required ? "Requis" : "Optionnel"}
-    </span>
-  </div>
-  <button class="btn-remove-skill" onclick="removeSkill(${index})">
-    <i class="fas fa-times"></i>
-  </button>
+<div class="skill-info">
+  <span class="skill-name">${skill.name}</span>
+  <span class="skill-level ${skill.level}">${getLevelText(skill.level)}</span>
+  <span class="skill-required ${skill.required ? "required" : "optional"}">
+    ${skill.required ? "Requis" : "Optionnel"}
+  </span>
+</div>
+<button class="btn-remove-skill" onclick="removeSkill(${index})">
+  <i class="fas fa-times"></i>
+</button>
 </div>
 `,
     )
@@ -471,65 +550,6 @@ function clearJobSkills() {
   jobSkills = []
   renderSkillsList()
   console.log("🧹 FRONTEND: All job skills cleared")
-}
-
-// FONCTION CORRIGÉE: Rendre les boutons d'action selon le rôle utilisateur
-function renderApplicationActionButtons(app) {
-  if (!currentUser) return ""
-
-  // Pour les chefs de département : seulement le bouton recommander
-  if (currentUser.role === "department_head") {
-    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
-      // Échapper les caractères spéciaux pour éviter les erreurs JavaScript
-      const safeCandidateName = app.candidate_name.replace(/'/g, "\\'").replace(/"/g, '\\"')
-      const safeJobTitle = app.job_title.replace(/'/g, "\\'").replace(/"/g, '\\"')
-      return `
-    <button class="app-btn recommend" onclick="showRecommendModal(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
-      <i class="fas fa-thumbs-up"></i> Recommander
-    </button>
-  `
-    }
-    // Si déjà recommandé, afficher un indicateur
-    if (app.is_recommended) {
-      return `
-    <div class="recommendation-status">
-      <i class="fas fa-check-circle"></i> Déjà recommandé
-    </div>
-  `
-    }
-    return "" // Pas de boutons pour les autres statuts
-  }
-
-  // Pour les recruteurs : boutons complets
-  if (currentUser.role === "recruiter") {
-    return `
-  ${
-    app.status === "pending" || app.status === "reviewed"
-      ? `
-    `
-      : ""
-  }
-  ${
-    app.status === "interview_scheduled"
-      ? `
-    `
-      : ""
-  }
-  ${
-    app.status === "interview_completed" || app.status === "reviewed"
-      ? `
-    `
-      : ""
-  }
-`
-  }
-
-  // Pour les super admins : pas de boutons d'action
-  if (currentUser.role === "super_admin") {
-    return "" // Pas de boutons pour les super admins
-  }
-
-  return ""
 }
 
 // FONCTION CORRIGÉE: Afficher la modal de recommandation
@@ -569,152 +589,112 @@ transition: opacity 0.3s ease;
 
   modal.innerHTML = `
 <div class="modal-content recommend-modal" style="
-  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-  border: 2px solid rgba(243, 156, 18, 0.4);
-  border-radius: 20px;
-  max-width: 550px;
-  width: 95%;
-  max-height: 85vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  transform: scale(0.95);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+border: 2px solid rgba(243, 156, 18, 0.4);
+border-radius: 20px;
+max-width: 550px;
+width: 95%;
+max-height: 85vh;
+overflow: hidden;
+display: flex;
+flex-direction: column;
+box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+transform: scale(0.95);
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 ">
-  <div class="modal-header" style="
-    flex-shrink: 0;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+<div class="modal-header" style="
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  border-bottom: none;
+  position: relative;
+  border-radius: 20px 20px 0 0;
+">
+  <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+    <i class="fas fa-thumbs-up" style="color: #f39c12;"></i> 
+    Recommander cette candidature
+  </h3>
+  <button class="modal-close" onclick="closeRecommendModal()" style="
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
-    padding: 1.5rem 2rem;
-    border-bottom: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    font-size: 1.2rem;
+  ">&times;</button>
+</div>
+
+<div class="modal-body" style="
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem;
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+">
+  <div class="candidate-info-modal" style="
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    border-radius: 16px;
+    margin-bottom: 2rem;
     position: relative;
-    border-radius: 20px 20px 0 0;
+    overflow: hidden;
   ">
-    <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
-      <i class="fas fa-thumbs-up" style="color: #f39c12;"></i> 
-      Recommander cette candidature
-    </h3>
-    <button class="modal-close" onclick="closeRecommendModal()" style="
-      position: absolute;
-      top: 1.5rem;
-      right: 1.5rem;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
+    <div class="candidate-avatar-modal" style="
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f39c12, #e67e22);
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-      font-size: 1.2rem;
-    ">&times;</button>
+      color: white;
+      font-weight: bold;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+    ">${getInitials(candidateName)}</div>
+    <div>
+      <h4 style="color: #f8fafc; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 700;">${candidateName}</h4>
+      <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Poste:</strong> ${jobTitle}</p>
+      <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Votre rôle:</strong> Chef de département</p>
+    </div>
   </div>
 
-  <div class="modal-body" style="
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 2rem;
-    background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
-  ">
-    <div class="candidate-info-modal" style="
+  <div class="form-group" style="margin-bottom: 2rem;">
+    <label class="form-label" style="
       display: flex;
       align-items: center;
-      gap: 1.5rem;
-      padding: 1.5rem;
-      background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
-      border: 1px solid rgba(243, 156, 18, 0.3);
-      border-radius: 16px;
-      margin-bottom: 2rem;
-      position: relative;
-      overflow: hidden;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      color: #f1f5f9;
+      font-weight: 600;
+      font-size: 0.95rem;
     ">
-      <div class="candidate-avatar-modal" style="
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #f39c12, #e67e22);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        font-size: 1.5rem;
-        flex-shrink: 0;
-        box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
-      ">${getInitials(candidateName)}</div>
-      <div>
-        <h4 style="color: #f8fafc; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 700;">${candidateName}</h4>
-        <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Poste:</strong> ${jobTitle}</p>
-        <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Votre rôle:</strong> Chef de département</p>
-      </div>
-    </div>
-
-    <div class="form-group" style="margin-bottom: 2rem;">
-      <label class="form-label" style="
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
-        color: #f1f5f9;
-        font-weight: 600;
-        font-size: 0.95rem;
-      ">
-        <i class="fas fa-comment" style="color: #f39c12;"></i>
-        Commentaire de recommandation *
-      </label>
-      <textarea 
-        id="recommendationComment"
-        class="form-textarea"
-        placeholder="Expliquez pourquoi vous recommandez ce candidat (compétences, expérience, adéquation au poste...)..."
-        rows="4"
-        required
-        style="
-          width: 100%;
-          padding: 1rem;
-          border: 2px solid rgba(203, 213, 225, 0.3);
-          border-radius: 12px;
-          font-size: 0.95rem;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          background: rgba(248, 250, 252, 0.95);
-          color: #1e293b;
-          font-weight: 500;
-          box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-          font-family: inherit;
-          resize: vertical;
-          line-height: 1.5;
-        "
-      ></textarea>
-      <small class="form-help" style="
-        color: #cbd5e1;
-        font-size: 0.85rem;
-        margin-top: 0.5rem;
-        font-style: italic;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      ">💡 Ce commentaire sera visible par les recruteurs et super admins</small>
-    </div>
-
-    <div class="form-group" style="margin-bottom: 2rem;">
-      <label class="form-label" style="
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
-        color: #f1f5f9;
-        font-weight: 600;
-        font-size: 0.95rem;
-      ">
-        <i class="fas fa-flag" style="color: #f39c12;"></i>
-        Niveau de priorité de votre recommandation
-      </label>
-      <select id="recommendationPriority" class="form-select" style="
+      <i class="fas fa-comment" style="color: #f39c12;"></i>
+      Commentaire de recommandation *
+    </label>
+    <textarea 
+      id="recommendationComment"
+      class="form-textarea"
+      placeholder="Expliquez pourquoi vous recommandez ce candidat (compétences, expérience, adéquation au poste...)..."
+      rows="4"
+      required
+      style="
         width: 100%;
         padding: 1rem;
         border: 2px solid rgba(203, 213, 225, 0.3);
@@ -725,137 +705,177 @@ transition: opacity 0.3s ease;
         color: #1e293b;
         font-weight: 500;
         box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-        cursor: pointer;
-      ">
-        <option value="normal">📋 Recommandation normale</option>
-        <option value="high">⭐ Recommandation forte</option>
-        <option value="urgent">🔥 Recommandation urgente</option>
-      </select>
-      <small class="form-help" style="
-        color: #cbd5e1;
-        font-size: 0.85rem;
-        margin-top: 0.5rem;
-        font-style: italic;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      ">💡 Choisissez le niveau selon l'adéquation du candidat</small>
-    </div>
-
-    <div class="recommendation-info" style="
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      border-radius: 16px;
-      padding: 1.5rem;
-      margin-top: 2rem;
-      position: relative;
-    ">
-      <h5 style="
-        margin: 0 0 1rem 0;
-        color: #f8fafc;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      ">
-        <i class="fas fa-info-circle" style="color: #3b82f6;"></i> 
-        Cette action va :
-      </h5>
-      <ul style="margin: 0; padding-left: 1.5rem; list-style: none;">
-        <li style="
-          margin: 0.75rem 0;
-          color: #cbd5e1;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        ">
-          <i class="fas fa-star" style="color: #f59e0b; width: 20px; font-size: 1rem;"></i>
-          Marquer la candidature comme recommandée
-        </li>
-        <li style="
-          margin: 0.75rem 0;
-          color: #cbd5e1;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        ">
-          <i class="fas fa-bell" style="color: #17a2b8; width: 20px; font-size: 1rem;"></i>
-          Notifier les recruteurs et super admins
-        </li>
-        <li style="
-          margin: 0.75rem 0;
-          color: #cbd5e1;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        ">
-          <i class="fas fa-arrow-up" style="color: #28a745; width: 20px; font-size: 1rem;"></i>
-          Donner une priorité élevée à cette candidature
-        </li>
-        <li style="
-          margin: 0.75rem 0;
-          color: #cbd5e1;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        ">
-          <i class="fas fa-user-tie" style="color: #007bff; width: 20px; font-size: 1rem;"></i>
-          Associer votre nom à cette recommandation
-        </li>
-      </ul>
-    </div>
+        font-family: inherit;
+        resize: vertical;
+        line-height: 1.5;
+      "
+    ></textarea>
+    <small class="form-help" style="
+      color: #cbd5e1;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    ">💡 Ce commentaire sera visible par les recruteurs et super admins</small>
   </div>
 
-  <div class="modal-footer" style="
-    flex-shrink: 0;
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    padding: 1.5rem 2rem;
-    border-top: 1px solid rgba(59, 130, 246, 0.2);
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-radius: 0 0 20px 20px;
+  <div class="form-group" style="margin-bottom: 2rem;">
+    <label class="form-label" style="
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      color: #f1f5f9;
+      font-weight: 600;
+      font-size: 0.95rem;
+    ">
+      <i class="fas fa-flag" style="color: #f39c12;"></i>
+      Niveau de priorité de votre recommandation
+    </label>
+    <select id="recommendationPriority" class="form-select" style="
+      width: 100%;
+      padding: 1rem;
+      border: 2px solid rgba(203, 213, 225, 0.3);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(248, 250, 252, 0.95);
+      color: #1e293b;
+      font-weight: 500;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+    ">
+      <option value="normal">📋 Recommandation normale</option>
+      <option value="high">⭐ Recommandation forte</option>
+      <option value="urgent">🔥 Recommandation urgente</option>
+    </select>
+    <small class="form-help" style="
+      color: #cbd5e1;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    ">💡 Choisissez le niveau selon l'adéquation du candidat</small>
+  </div>
+
+  <div class="recommendation-info" style="
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    position: relative;
   ">
-    <button class="btn-secondary" onclick="closeRecommendModal()" style="
-      padding: 0.875rem 1.75rem;
-      border: none;
-      border-radius: 12px;
+    <h5 style="
+      margin: 0 0 1rem 0;
+      color: #f8fafc;
       font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.95rem;
-      background: linear-gradient(135deg, #64748b, #475569);
-      color: white;
-      border: 1px solid rgba(100, 116, 139, 0.3);
     ">
-      <i class="fas fa-times"></i> Annuler
-    </button>
-    <button class="btn-primary recommend" onclick="confirmRecommendation(${applicationId})" style="
-      padding: 0.875rem 1.75rem;
-      border: none;
-      border-radius: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.95rem;
-      background: linear-gradient(135deg, #f39c12, #e67e22);
-      color: white;
-      border: 1px solid rgba(243, 156, 18, 0.3);
-      box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
-    ">
-      <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
-    </button>
+      <i class="fas fa-info-circle" style="color: #3b82f6;"></i> 
+      Cette action va :
+    </h5>
+    <ul style="margin: 0; padding-left: 1.5rem; list-style: none;">
+      <li style="
+        margin: 0.75rem 0;
+        color: #cbd5e1;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      ">
+        <i class="fas fa-star" style="color: #f59e0b; width: 20px; font-size: 1rem;"></i>
+        Marquer la candidature comme recommandée
+      </li>
+      <li style="
+        margin: 0.75rem 0;
+        color: #cbd5e1;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      ">
+        <i class="fas fa-bell" style="color: #17a2b8; width: 20px; font-size: 1rem;"></i>
+        Notifier les recruteurs et super admins
+      </li>
+      <li style="
+        margin: 0.75rem 0;
+        color: #cbd5e1;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      ">
+        <i class="fas fa-arrow-up" style="color: #28a745; width: 20px; font-size: 1rem;"></i>
+        Donner une priorité élevée à cette candidature
+      </li>
+      <li style="
+        margin: 0.75rem 0;
+        color: #cbd5e1;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      ">
+        <i class="fas fa-user-tie" style="color: #007bff; width: 20px; font-size: 1rem;"></i>
+        Associer votre nom à cette recommandation
+      </li>
+    </ul>
   </div>
+</div>
+
+<div class="modal-footer" style="
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid rgba(59, 130, 246, 0.2);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 0 0 20px 20px;
+">
+  <button class="btn-secondary" onclick="closeRecommendModal()" style="
+    padding: 0.875rem 1.75rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    background: linear-gradient(135deg, #64748b, #475569);
+    color: white;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+  ">
+    <i class="fas fa-times"></i> Annuler
+  </button>
+  <button class="btn-primary recommend" onclick="confirmRecommendation(${applicationId})" style="
+    padding: 0.875rem 1.75rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+  ">
+    <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
+  </button>
+</div>
 </div>
 `
 
@@ -1344,7 +1364,7 @@ async function loadAvailableManagers() {
       managers.forEach((manager) => {
         const option = document.createElement("option")
         option.value = manager.id
-        option.textContent = `${manager.first_name} ${manager.last_name} (${manager.email})`
+        option.textContent = `${manager.first_name || ""} ${manager.last_name || ""} (${manager.email || ""})`
         select.appendChild(option)
       })
 
@@ -1841,14 +1861,14 @@ function displayDepartments() {
 
   if (departments.length === 0) {
     departmentsList.innerHTML = `
-  <div class="empty-departments">
-    <div class="empty-icon"><i class="fas fa-building"></i></div>
-    <h4>Aucun département</h4>
-    <p>Commencez par créer votre premier département</p>
-    <button class="empty-btn" onclick="openDepartmentModal()">
-      <i class="fas fa-plus"></i> Créer Département
-    </button>
-  </div>
+<div class="empty-departments">
+  <div class="empty-icon"><i class="fas fa-building"></i></div>
+  <h4>Aucun département</h4>
+  <p>Commencez par créer votre premier département</p>
+  <button class="empty-btn" onclick="openDepartmentModal()">
+    <i class="fas fa-plus"></i> Créer Département
+  </button>
+</div>
 `
     return
   }
@@ -1866,14 +1886,14 @@ function displayFilteredDepartments(filteredDepts) {
 
   if (filteredDepts.length === 0) {
     departmentsList.innerHTML = `
-  <div class="empty-departments">
-    <div class="empty-icon"><i class="fas fa-search"></i></div>
-    <h4>Aucun résultat trouvé</h4>
-    <p>Aucun département ne correspond à votre recherche</p>
-    <button class="empty-btn" onclick="clearSearch()">
-      <i class="fas fa-times"></i> Effacer la recherche
-    </button>
-  </div>
+<div class="empty-departments">
+  <div class="empty-icon"><i class="fas fa-search"></i></div>
+  <h4>Aucun résultat trouvé</h4>
+  <p>Aucun département ne correspond à votre recherche</p>
+  <button class="empty-btn" onclick="clearSearch()">
+    <i class="fas fa-times"></i> Effacer la recherche
+  </button>
+</div>
 `
     return
   }
@@ -1892,42 +1912,42 @@ function renderDepartmentsList(deptList) {
     const departmentJobs = jobs.filter((job) => job.department_id === dept.id)
 
     html += `
-  <div class="department-card-enhanced" data-id="${dept.id}">
-    <div class="department-header">
-      <div class="department-info">
-        <h4 style="color: ${dept.color || "#3b82f6"}">${dept.name || "Département sans nom"}</h4>
-        <p>${dept.description || "Aucune description"}</p>
-        <div class="manager">
-          <i class="fas fa-user-tie"></i>
-          ${dept.manager_name || "Aucun responsable assigné"}
-        </div>
-      </div>
-      <div class="department-stats">
-        <div class="stat-badge employees">
-          <i class="fas fa-users"></i>
-          ${dept.employee_count || departmentEmployees.length} employé${(dept.employee_count || departmentEmployees.length) > 1 ? "s" : ""}
-        </div>
-        <div class="stat-badge jobs">
-          <i class="fas fa-briefcase"></i>
-          ${dept.job_count || departmentJobs.length} poste${(dept.job_count || departmentJobs.length) > 1 ? "s" : ""}
-        </div>
+<div class="department-card-enhanced" data-id="${dept.id}">
+  <div class="department-header">
+    <div class="department-info">
+      <h4 style="color: ${dept.color || "#3b82f6"}">${dept.name || "Département sans nom"}</h4>
+      <p>${dept.description || "Aucune description"}</p>
+      <div class="manager">
+        <i class="fas fa-user-tie"></i>
+        ${dept.manager_name || "Aucun responsable assigné"}
       </div>
     </div>
-
-    <div class="department-actions">
-      <button class="btn-expand ${isExpanded ? "expanded" : ""}"
-               onclick="toggleDepartmentExpansion(${dept.id})"
-               title="${isExpanded ? "Masquer" : "Voir"} les détails">
-        <i class="fas fa-chevron-${isExpanded ? "up" : "down"}"></i>
-        ${isExpanded ? "Masquer" : "Voir"} les détails
-      </button>
-      <button class="btn-add-job" onclick="openJobModal(${dept.id})" title="Créer un poste">
+    <div class="department-stats">
+      <div class="stat-badge employees">
+        <i class="fas fa-users"></i>
+        ${dept.employee_count || departmentEmployees.length} employé${(dept.employee_count || departmentEmployees.length) > 1 ? "s" : ""}
+      </div>
+      <div class="stat-badge jobs">
         <i class="fas fa-briefcase"></i>
-      </button>
+        ${dept.job_count || departmentJobs.length} poste${(dept.job_count || departmentJobs.length) > 1 ? "s" : ""}
+      </div>
     </div>
-
-    ${isExpanded ? renderDepartmentDetails(dept, departmentEmployees, departmentJobs) : ""}
   </div>
+
+  <div class="department-actions">
+    <button class="btn-expand ${isExpanded ? "expanded" : ""}"
+             onclick="toggleDepartmentExpansion(${dept.id})"
+             title="${isExpanded ? "Masquer" : "Voir"} les détails">
+      <i class="fas fa-chevron-${isExpanded ? "up" : "down"}"></i>
+      ${isExpanded ? "Masquer" : "Voir"} les détails
+    </button>
+    <button class="btn-add-job" onclick="openJobModal(${dept.id})" title="Créer un poste">
+      <i class="fas fa-briefcase"></i>
+    </button>
+  </div>
+
+  ${isExpanded ? renderDepartmentDetails(dept, departmentEmployees, departmentJobs) : ""}
+</div>
 `
   })
 
@@ -1938,67 +1958,67 @@ function renderDepartmentsList(deptList) {
 function renderDepartmentDetails(department, deptEmployees, deptJobs) {
   return `
 <div class="department-details">
-  <div class="details-tabs">
-    <div class="tab-section">
-      <h5><i class="fas fa-users"></i> Employés (${deptEmployees.length})</h5>
-      <div class="items-list">
-        ${
-          deptEmployees.length > 0
-            ? deptEmployees
-                .map(
-                  (emp) => `
-                  <div class="item-card">
-                    <div class="item-avatar">${emp.first_name ? emp.first_name[0] : ""}${emp.last_name ? emp.last_name[0] : ""}</div>
-                    <div class="item-info">
-                      <strong>${emp.first_name || ""} ${emp.last_name || ""}</strong>
-                      <span>${emp.position || "Poste non défini"}</span>
-                      <small>${emp.email || "Email non défini"}</small>
-                    </div>
-                    <div class="item-actions">
-                      <button class="btn-icon-small" onclick="viewEmployeeProfile(${emp.id})" title="Voir le profil">
-                        <i class="fas fa-eye"></i>
-                      </button>
-                    </div>
+<div class="details-tabs">
+  <div class="tab-section">
+    <h5><i class="fas fa-users"></i> Employés (${deptEmployees.length})</h5>
+    <div class="items-list">
+      ${
+        deptEmployees.length > 0
+          ? deptEmployees
+              .map(
+                (emp) => `
+                <div class="item-card">
+                  <div class="item-avatar">${emp.first_name ? emp.first_name[0] : ""}${emp.last_name ? emp.last_name[0] : ""}</div>
+                  <div class="item-info">
+                    <strong>${emp.first_name || ""} ${emp.last_name || ""}</strong>
+                    <span>${emp.position || "Poste non défini"}</span>
+                    <small>${emp.email || "Email non défini"}</small>
                   </div>
-                `,
-                )
-                .join("")
-            : '<div class="empty-message">Aucun employé dans ce département</div>'
-        }
-      </div>
-    </div>
-
-    <div class="tab-section">
-      <h5><i class="fas fa-briefcase"></i> Postes (${deptJobs.length})</h5>
-      <div class="items-list">
-        ${
-          deptJobs.length > 0
-            ? deptJobs
-                .map(
-                  (job) => `
-                  <div class="item-card">
-                    <div class="item-avatar"><i class="fas fa-briefcase"></i></div>
-                    <div class="item-info">
-                      <strong>${job.title || "Titre non défini"}</strong>
-                      <span>${job.employment_type || "Type non défini"} - ${job.salary_min && job.salary_max ? `${job.salary_min}€ - ${job.salary_max}€` : "Salaire non spécifié"}</span>
-                      <small class="priority-${job.priority || "normal"}">${getPriorityLabel(job.priority || "normal")}</small>
-                      ${job.assigned_employee_id ? '<span class="status-filled"><i class="fas fa-check"></i> Poste pourvu</span>' : ""}
-                      ${job.skills && job.skills.length > 0 ? `<small><i class="fas fa-cogs"></i> ${job.skills.length} compétence(s)</small>` : ""}
-                    </div>
-                    <div class="item-actions">
-                      <button class="btn-icon-small" onclick="viewJobDetails(${job.id})" title="Voir les détails">
-                        <i class="fas fa-eye"></i>
-                      </button>
-                    </div>
+                  <div class="item-actions">
+                    <button class="btn-icon-small" onclick="viewEmployeeProfile(${emp.id})" title="Voir le profil">
+                      <i class="fas fa-eye"></i>
+                    </button>
                   </div>
-                `,
-                )
-                .join("")
-            : '<div class="empty-message">Aucun poste dans ce département</div>'
-        }
-      </div>
+                </div>
+              `,
+              )
+              .join("")
+          : '<div class="empty-message">Aucun employé dans ce département</div>'
+      }
     </div>
   </div>
+
+  <div class="tab-section">
+    <h5><i class="fas fa-briefcase"></i> Postes (${deptJobs.length})</h5>
+    <div class="items-list">
+      ${
+        deptJobs.length > 0
+          ? deptJobs
+              .map(
+                (job) => `
+                <div class="item-card">
+                  <div class="item-avatar"><i class="fas fa-briefcase"></i></div>
+                  <div class="item-info">
+                    <strong>${job.title || "Titre non défini"}</strong>
+                    <span>${job.employment_type || "Type non défini"} - ${job.salary_min && job.salary_max ? `${job.salary_min}€ - ${job.salary_max}€` : "Salaire non spécifié"}</span>
+                    <small class="priority-${job.priority || "normal"}">${getPriorityLabel(job.priority || "normal")}</small>
+                    ${job.assigned_employee_id ? '<span class="status-filled"><i class="fas fa-check"></i> Poste pourvu</span>' : ""}
+                    ${job.skills && job.skills.length > 0 ? `<small><i class="fas fa-cogs"></i> ${job.skills.length} compétence(s)</small>` : ""}
+                  </div>
+                  <div class="item-actions">
+                    <button class="btn-icon-small" onclick="viewJobDetails(${job.id})" title="Voir les détails">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+              `,
+              )
+              .join("")
+          : '<div class="empty-message">Aucun poste dans ce département</div>'
+      }
+    </div>
+  </div>
+</div>
 </div>
 `
 }
@@ -2204,11 +2224,11 @@ function renderApplicationsList(list) {
 
   if (list.length === 0) {
     container.innerHTML = `
-  <div class="empty-applications">
-    <i class="fas fa-search"></i>
-    <h4>Aucun résultat</h4>
-    <p>Aucune candidature ne correspond à votre recherche</p>
-  </div>
+<div class="empty-applications">
+  <i class="fas fa-search"></i>
+  <h4>Aucun résultat</h4>
+  <p>Aucune candidature ne correspond à votre recherche</p>
+</div>
 `
     return
   }
@@ -2216,59 +2236,59 @@ function renderApplicationsList(list) {
   container.innerHTML = list
     .map(
       (app) => `
-  <div class="application-card ${app.status}">
-    <div class="application-header">
-      <div class="applicant-info">
-        <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
-        <div class="applicant-details">
-          <h4>${app.candidate_name}
-              ${app.is_recommended ? '<span class="recommendation-badge" title="Candidat recommandé par un chef de département"><i class="fas fa-star"></i> Recommandé</span>' : ""}
-          </h4>
-          <p>${app.candidate_email}</p>
-          <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
-          ${app.is_recommended && app.recommended_by ? `<small class="recommendation-info"><i class="fas fa-user-tie"></i> Recommandé par ${app.recommended_by}</small>` : ""}
-        </div>
-      </div>
-      <div class="application-status ${app.status}">
-        ${getStatusText(app.status)}
-        ${app.is_recommended && app.recommendation_priority !== "normal" ? `<span class="priority-badge ${app.recommendation_priority}">${app.recommendation_priority.toUpperCase()}</span>` : ""}
+<div class="application-card ${app.status}">
+  <div class="application-header">
+    <div class="applicant-info">
+      <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
+      <div class="applicant-details">
+        <h4>${app.candidate_name}
+            ${app.is_recommended ? '<span class="recommendation-badge" title="Candidat recommandé par un chef de département"><i class="fas fa-star"></i> Recommandé</span>' : ""}
+        </h4>
+        <p>${app.candidate_email}</p>
+        <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
+        ${app.is_recommended && app.recommended_by ? `<small class="recommendation-info"><i class="fas fa-user-tie"></i> Recommandé par ${app.recommended_by}</small>` : ""}
       </div>
     </div>
-    
-    <div class="application-job">
-      <div class="job-info">
-        <div class="job-title">${app.job_title}</div>
-        <div class="job-department">${app.department_name}</div>
-        <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
-      </div>
-      <div class="application-date">
-        Candidature envoyée le ${formatDate(app.application_date)}
-        <br><small>Il y a ${app.days_since_application} jour(s)</small>
-        ${app.recommendation_date ? `<br><small class="recommendation-date">Recommandé le ${formatDate(app.recommendation_date)}</small>` : ""}
-      </div>
-    </div>
-    
-    ${
-      app.recommendation_comment
-        ? `
-    <div class="recommendation-comment">
-      <i class="fas fa-comment"></i>
-      <strong>Commentaire de recommandation:</strong>
-      <p>${app.recommendation_comment}</p>
-    </div>
-    `
-        : ""
-    }
-    
-    <div class="application-actions">
-      <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-user"></i> Voir Profil
-      </button>
-      <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
-        <i class="fas fa-info-circle"></i> Détails
-      </button>
+    <div class="application-status ${app.status}">
+      ${getStatusText(app.status)}
+      ${app.is_recommended && app.recommendation_priority !== "normal" ? `<span class="priority-badge ${app.recommendation_priority}">${app.recommendation_priority.toUpperCase()}</span>` : ""}
     </div>
   </div>
+  
+  <div class="application-job">
+    <div class="job-info">
+      <div class="job-title">${app.job_title}</div>
+      <div class="job-department">${app.department_name}</div>
+      <div class="job-priority priority-${app.priority || "normal"}">${(app.priority || "normal").toUpperCase()}</div>
+    </div>
+    <div class="application-date">
+      Candidature envoyée le ${formatDate(app.application_date)}
+      <br><small>Il y a ${app.days_since_application} jour(s)</small>
+      ${app.recommendation_date ? `<br><small class="recommendation-date">Recommandé le ${formatDate(app.recommendation_date)}</small>` : ""}
+    </div>
+  </div>
+  
+  ${
+    app.recommendation_comment
+      ? `
+  <div class="recommendation-comment">
+    <i class="fas fa-comment"></i>
+    <strong>Commentaire de recommandation:</strong>
+    <p>${app.recommendation_comment}</p>
+  </div>
+  `
+      : ""
+  }
+  
+  <div class="application-actions">
+    <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
+      <i class="fas fa-user"></i> Voir Profil
+    </button>
+    <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
+      <i class="fas fa-info-circle"></i> Détails
+    </button>
+  </div>
+</div>
 `,
     )
     .join("")
@@ -2367,23 +2387,23 @@ color: white;
 
   notification.innerHTML = `
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-  <span style="flex: 1; font-weight: 500;">${message}</span>
-  <button onclick="this.parentElement.parentElement.remove()" style="
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-  ">
-    <i class="fas fa-times"></i>
-  </button>
+<span style="flex: 1; font-weight: 500;">${message}</span>
+<button onclick="this.parentElement.parentElement.remove()" style="
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+">
+  <i class="fas fa-times"></i>
+</button>
 </div>
 `
 
@@ -2392,27 +2412,27 @@ color: white;
     const styles = document.createElement("style")
     styles.id = "notificationStyles"
     styles.textContent = `
-  @keyframes slideInRight {
-    from {
-      opacity: 0;
-      transform: translateX(100%);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
   }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 
-  @keyframes slideOutRight {
-    from {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    to {
-      opacity: 0;
-      transform: translateX(100%);
-    }
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
   }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
 `
     document.head.appendChild(styles)
   }
@@ -2438,30 +2458,30 @@ function showLoading(message) {
   console.log("⏳ Affichage loading:", message)
   const loadingHTML = `
 <div class="loading-overlay" style="
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 28000;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0,0,0,0.7);
+backdrop-filter: blur(5px);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 28000;
 ">
-  <div class="loading-content" style="
-    background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-    padding: 2rem;
-    border-radius: 12px;
-    text-align: center;
-    color: white;
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  ">
-    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #3b82f6;"></i>
-    <p style="margin: 0; font-weight: 500;">${message}</p>
-  </div>
+<div class="loading-content" style="
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  color: white;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+">
+  <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #3b82f6;"></i>
+  <p style="margin: 0; font-weight: 500;">${message}</p>
+</div>
 </div>
 `
   document.body.insertAdjacentHTML("beforeend", loadingHTML)
