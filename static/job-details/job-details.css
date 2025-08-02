@@ -377,13 +377,25 @@ body {
   gap: 1rem;
 }
 
+.candidate-name-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.application-status-section {
+  margin-left: auto; /* Pousse le statut vers la droite */
+  padding-left: 1rem; /* Ajoute un espace entre le nom et le statut */
+}
+
 .status-badge {
   padding: 0.5rem 1rem;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
-  float: right; 
+  /* Retirez le float: right qui peut causer des problèmes de layout */
 }
 
 .status-badge.active {
