@@ -382,38 +382,40 @@ function renderApplicationsWithCompatibility(filter = "all") {
             .map((n) => n[0])
             .join("")}</div>
           <div class="candidate-details">
-            <div class="candidate-name">
-              ${app.name}
-              ${
-                app.is_recommended
-                  ? `
-                <span class="recommendation-badge ${app.recommendation_priority || "normal"}" 
-                       title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
-                  <i class="fas fa-star"></i> 
-                  ${
-                    app.recommendation_priority === "urgent"
-                      ? "URGENT"
-                      : app.recommendation_priority === "high"
-                        ? "PRIORITÉ HAUTE"
-                        : "RECOMMANDÉ"
-                  }
-                </span>
-              `
-                  : ""
-              }
+            <div class="candidate-name-section">
+              <div class="candidate-name">
+                ${app.name}
+                ${
+                  app.is_recommended
+                    ? `
+                  <span class="recommendation-badge ${app.recommendation_priority || "normal"}" 
+                         title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
+                    <i class="fas fa-star"></i> 
+                    ${
+                      app.recommendation_priority === "urgent"
+                        ? "URGENT"
+                        : app.recommendation_priority === "high"
+                          ? "PRIORITÉ HAUTE"
+                          : "RECOMMANDÉ"
+                    }
+                  </span>
+                `
+                    : ""
+                }
+              </div>
+              
               <div class="application-status-section">
-          <div class="status-badge ${app.status}">
-            ${getStatusText(app.status)}
-            ${
-              app.is_recommended && app.recommendation_priority !== "normal"
-                ? `<span class="priority-indicator ${app.recommendation_priority}">
-                ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
-              </span>`
-                : ""
-            }
-          </div>
-          
-        </div>
+                <div class="status-badge ${app.status}">
+                  ${getStatusText(app.status)}
+                  ${
+                    app.is_recommended && app.recommendation_priority !== "normal"
+                      ? `<span class="priority-indicator ${app.recommendation_priority}">
+                      ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+                    </span>`
+                      : ""
+                  }
+                </div>
+              </div>
             </div>
             
             <div class="candidate-title">${app.title || "Candidat"}</div>
