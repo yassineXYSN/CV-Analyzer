@@ -401,7 +401,21 @@ function renderApplicationsWithCompatibility(filter = "all") {
               `
                   : ""
               }
+              <div class="application-status-section">
+          <div class="status-badge ${app.status}">
+            ${getStatusText(app.status)}
+            ${
+              app.is_recommended && app.recommendation_priority !== "normal"
+                ? `<span class="priority-indicator ${app.recommendation_priority}">
+                ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+              </span>`
+                : ""
+            }
+          </div>
+          
+        </div>
             </div>
+            
             <div class="candidate-title">${app.title || "Candidat"}</div>
             <div class="candidate-meta">
               <span class="application-date">
@@ -459,21 +473,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
           </div>
         </div>
 
-        <div class="application-status-section">
-          <div class="status-badge ${app.status}">
-            ${getStatusText(app.status)}
-            ${
-              app.is_recommended && app.recommendation_priority !== "normal"
-                ? `<span class="priority-indicator ${app.recommendation_priority}">
-                ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
-              </span>`
-                : ""
-            }
-          </div>
-          <div class="application-actions">
-            ${renderCandidateActions(app)}
-          </div>
-        </div>
+        
         ${
           app.is_recommended && app.recommendation_comment
             ? `
@@ -486,7 +486,11 @@ function renderApplicationsWithCompatibility(filter = "all") {
         `
             : ""
         }
+        <div class="application-actions">
+            ${renderCandidateActions(app)}
+          </div>
       </div>
+      
     `
     })
     .join("")
