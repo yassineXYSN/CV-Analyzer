@@ -41,32 +41,7 @@ async def create_job(job_data: JobRequest):
         
         db = SessionLocal()
         try:
-            department = db.query(Department).filter(
-                Department.id == job_data.department_id,
-                Department.company_id == company.id,
-                Department.is_active == True
-            ).first()
-            
-            if not department:
-                raise HTTPException(status_code=400, detail="Département non trouvé")
-            
-            deadline_obj = None
-            if job_data.deadline:
-                try:
-                    deadline_obj = datetime.strptime(job_data.deadline, "%Y-%m-%d").date()
-                except ValueError:
-                    raise HTTPException(status_code=400, detail="Format de date invalide")
-            
-            assigned_employee = None
-            if job_data.assigned_employee_id:
-                assigned_employee = db.query(Employee).filter(
-                    Employee.id == job_data.assigned_employee_id,
-                    Employee.company_id == company.id,
-                    Employee.status == 'active'
-                ).first()
-                if not assigned_employee:
-                    job_data.assigned_employee_id = None
-            
+            # Créer le job
             new_job = Job(
                 company_id=company.id,
                 department_id=job_data.department_id,
@@ -81,7 +56,7 @@ async def create_job(job_data: JobRequest):
                 priority=job_data.priority,
                 status='active',
                 assigned_employee_id=job_data.assigned_employee_id,
-                deadline=deadline_obj,
+                deadline=datetime.strptime(job_data.deadline, "%Y-%m-%d").date() if job_data.deadline else None,
                 applications_count=0
             )
             
@@ -89,7 +64,7 @@ async def create_job(job_data: JobRequest):
             db.commit()
             db.refresh(new_job)
 
-            # Add skills to the job
+            # Ajouter les compétences via JobSkill
             skills_added = 0
             skills_errors = []
 
@@ -98,7 +73,7 @@ async def create_job(job_data: JobRequest):
                 
                 for i, skill_data in enumerate(job_data.skills):
                     try:
-                        # Validate skill data
+                        # Valider les données de compétence
                         if not skill_data.skill_name or not skill_data.skill_name.strip():
                             skills_errors.append(f"Compétence {i+1}: Nom manquant")
                             continue
@@ -107,7 +82,7 @@ async def create_job(job_data: JobRequest):
                             skills_errors.append(f"Compétence {skill_data.skill_name}: Niveau invalide")
                             continue
                         
-                        # Check for duplicate skills
+                        # Vérifier les doublons
                         existing_skill = db.query(JobSkill).filter(
                             JobSkill.job_id == new_job.id,
                             JobSkill.skill_name.ilike(skill_data.skill_name.strip())
@@ -133,15 +108,15 @@ async def create_job(job_data: JobRequest):
                         skills_errors.append(error_msg)
                         print(f"❌ BACKEND: {error_msg}")
 
-            # Commit all changes including skills
+            # Commit toutes les modifications
             db.commit()
 
-            # Prepare response message
+            # Préparer le message de réponse
             message = f"Poste '{job_data.title}' créé avec succès"
             if skills_added > 0:
                 message += f" avec {skills_added} compétence(s)"
             if skills_errors:
-                message += f". Erreurs: {'; '.join(skills_errors[:3])}"  # Show first 3 errors
+                message += f". Erreurs: {'; '.join(skills_errors[:3])}"
 
             return {
                 "success": True,
@@ -150,10 +125,6 @@ async def create_job(job_data: JobRequest):
                 "skills_added": skills_added,
                 "skills_errors": skills_errors
             }
-        except HTTPException as http_ex:
-            db.rollback()
-            print(f"❌ BACKEND: Erreur HTTP: {str(http_ex.detail)}")
-            return {"success": False, "message": str(http_ex.detail)}
         except Exception as e:
             db.rollback()
             print(f"❌ BACKEND: Erreur création poste: {str(e)}")
@@ -163,7 +134,7 @@ async def create_job(job_data: JobRequest):
     except Exception as e:
         print(f"❌ BACKEND: Erreur interne: {str(e)}")
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
-
+    
 @router.get("/api/jobs")
 async def get_jobs():
     try:
@@ -271,7 +242,7 @@ async def get_job_details(job_id: int):
                     Employee.id == job.assigned_employee_id
                 ).first()
             
-            # Get job skills
+            # CORRECTION: Récupérer les compétences du job via JobSkill
             job_skills = db.query(JobSkill).filter(
                 JobSkill.job_id == job.id
             ).all()
@@ -284,7 +255,7 @@ async def get_job_details(job_id: int):
                     "is_required": skill.is_required
                 })
             
-            # CORRECTION: Récupérer les candidatures avec les informations de recommandation
+            # Récupérer les candidatures avec les informations de recommandation
             applications = db.query(Application).filter(
                 Application.job_id == job_id
             ).all()
@@ -312,7 +283,7 @@ async def get_job_details(job_id: int):
                         "hr_rating": float(app.hr_rating) if app.hr_rating else None,
                         "hr_notes": app.hr_notes,
                         "candidate_id": candidate.id,
-                        # AJOUT: Informations de recommandation
+                        # Informations de recommandation
                         "is_recommended": app.is_recommended or False,
                         "recommendation_priority": app.recommendation_priority,
                         "recommendation_comment": app.recommendation_comment,
@@ -347,7 +318,7 @@ async def get_job_details(job_id: int):
                 "applications_count": len(applications_list),
                 "applications": applications_list,
                 "created_at": job.created_at.isoformat() if job.created_at else None,
-                "skills": skills_list
+                "skills": skills_list  # Utiliser la liste des compétences récupérées
             }
             
             return {
@@ -360,3 +331,4 @@ async def get_job_details(job_id: int):
             db.close()
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+

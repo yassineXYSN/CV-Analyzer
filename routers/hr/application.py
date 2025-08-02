@@ -159,6 +159,161 @@ async def get_applications(
             print(f"   - Job: {job.title if job else 'N/A'}")
             print(f"   - Candidate: {candidate.name if candidate else 'N/A'}")
 
+            # CORRECTION: Récupérer les compétences du job via la relation JobSkill
+            job_skills = []
+            if job:
+                job_skills = db.query(JobSkill).filter(JobSkill.job_id == job.id).all()
+            
+            candidate_skills = candidate.skills if candidate else None
+            
+            print(f"   - Job skills found: {len(job_skills)}")
+            print(f"   - Job skills: {[skill.skill_name for skill in job_skills]}")
+            print(f"   - Candidate skills raw: {candidate_skills}")
+            
+            # Utiliser la fonction de calcul de compatibilité
+            compatibility_percentage, matched_skills_count, total_job_skills = calculate_skill_compatibility(candidate_skills, job_skills)
+            
+            print(f"   - Compatibility result: {compatibility_percentage}% ({matched_skills_count}/{total_job_skills})")
+
+            # Appliquer filtre de compatibilité si précisé
+            if compatibility_filter != "all":
+                try:
+                    if compatibility_filter == "high" and compatibility_percentage < 75:
+                        continue
+                    elif compatibility_filter == "medium" and not (50 <= compatibility_percentage < 75):
+                        continue
+                    elif compatibility_filter == "low" and not (25 <= compatibility_percentage < 50):
+                        continue
+                    elif compatibility_filter == "very_low" and compatibility_percentage >= 25:
+                        continue
+                except ValueError:
+                    pass  # Ignore invalid threshold input
+
+            # Récupérer les informations de recommandation
+            recommended_by_admin = None
+            if app.recommended_by_admin_id:
+                recommended_by_admin = db.query(HRAdmin).filter(
+                    HRAdmin.id == app.recommended_by_admin_id
+                ).first()
+
+            days_since_application = (datetime.now() - app.application_date).days if app.application_date else 0
+
+            applications_list.append({
+                "id": app.id,
+                "job_id": job.id,
+                "job_title": job.title,
+                "department_name": department.name if department else "N/A",
+                "candidate_id": candidate.id if candidate else None,
+                "candidate_name": candidate.name if candidate else "N/A",
+                "candidate_title": candidate.title if candidate else "N/A",
+                "candidate_email": contact.email if contact else "N/A",
+                "status": app.status,
+                "application_date": app.application_date.isoformat() if app.application_date else None,
+                "days_since_application": days_since_application,
+                "hr_rating": float(app.hr_rating) if app.hr_rating else None,
+                "hr_notes": app.hr_notes,
+                "priority": job.priority,
+                "reviewed_by": app.reviewed_by,
+                "reviewed_at": app.reviewed_at.isoformat() if app.reviewed_at else None,
+                "is_recommended": app.is_recommended or False,
+                "recommendation_priority": app.recommendation_priority,
+                "recommendation_comment": app.recommendation_comment,
+                "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
+                "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None,
+                # Utiliser les valeurs calculées correctement
+                "compatibility_percentage": compatibility_percentage,
+                "matched_skills_count": matched_skills_count,
+                "total_job_skills": total_job_skills
+            })
+
+        print(f"✅ BACKEND: {len(applications_list)} candidatures récupérées pour l'utilisateur {current_admin.role}")
+        
+        # Log des scores de compatibilité pour debug
+        for app in applications_list:
+            print(f"📊 BACKEND: App {app['id']}: {app['compatibility_percentage']}% ({app['matched_skills_count']}/{app['total_job_skills']})")
+        
+        return {
+            "success": True,
+            "applications": applications_list,
+            "total": len(applications_list)
+        }
+
+    except Exception as e:
+        import traceback
+        print(f"❌ BACKEND: Erreur interne: {str(e)}")
+        print(f"❌ BACKEND: Traceback: {traceback.format_exc()}")
+        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+
+@router.get("/api/applications")
+async def get_applications(
+    status_filter: Optional[str] = Query("all"),
+    compatibility_filter: Optional[str] = Query("all"),
+    db: Session = Depends(get_db)
+):
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
+
+        # Récupérer l'utilisateur actuel pour vérifier son rôle
+        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not current_admin:
+            return {"success": False, "message": "Utilisateur non trouvé"}
+
+        print(f"🔍 BACKEND: Loading applications for company {company.id}")
+        print(f"👤 BACKEND: Current user: {current_admin.first_name} {current_admin.last_name} ({current_admin.role})")
+
+        # Construire la requête de base avec eager loading
+        query = db.query(Application).join(
+            Job, Application.job_id == Job.id
+        ).join(
+            ProfileCandidat, Application.candidate_profile_id == ProfileCandidat.id
+        ).join(
+            Contact, ProfileCandidat.contact_id == Contact.id
+        ).join(
+            Department, Job.department_id == Department.id
+        ).filter(
+            Job.company_id == company.id
+        ).options(
+            joinedload(Application.job).joinedload(Job.department),
+            joinedload(Application.candidate_profile).joinedload(ProfileCandidat.contact)
+        )
+
+        # Si c'est un chef de département, filtrer par ses départements assignés
+        if current_admin.role == 'department_head':
+            print(f"🔒 Chef de département - Filtrage des candidatures pour: {current_admin.first_name} {current_admin.last_name}")
+
+            assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                AdminDepartments.admin_id == user_id
+            ).subquery()
+
+            query = query.filter(Department.id.in_(assigned_dept_ids))
+            print("📋 Filtrage appliqué pour les départements assignés")
+        else:
+            print(f"👑 Admin/Recruteur - Accès à toutes les candidatures: {current_admin.role}")
+
+        # Appliquer le filtre de statut
+        if status_filter and status_filter != "all":
+            query = query.filter(Application.status == status_filter)
+
+        applications = query.order_by(Application.application_date.desc()).all()
+        print(f"📊 BACKEND: Found {len(applications)} applications")
+
+        applications_list = []
+        for app in applications:
+            job = app.job
+            department = job.department if job else None
+            candidate = app.candidate_profile
+            contact = candidate.contact if candidate else None
+
+            print(f"\n🔍 BACKEND: Processing application {app.id}")
+            print(f"   - Job: {job.title if job else 'N/A'}")
+            print(f"   - Candidate: {candidate.name if candidate else 'N/A'}")
+
             # CORRECTION: Récupérer les compétences du job pour le calcul de compatibilité
             job_skills = db.query(JobSkill).filter(JobSkill.job_id == job.id).all() if job else []
             candidate_skills = candidate.skills if candidate else None
@@ -280,7 +435,7 @@ async def get_application_compatibility_details(application_id: int, db: Session
             if job.department_id not in dept_ids:
                 return {"success": False, "message": "Vous n'avez pas accès à ce département"}
 
-        # Récupérer les compétences du poste
+        # CORRECTION: Récupérer les compétences du poste via JobSkill
         job_skills = db.query(JobSkill).filter(JobSkill.job_id == application.job_id).all()
 
         # Récupérer le candidat
@@ -346,90 +501,58 @@ async def recommend_application(
     db: Session = Depends(get_db)
 ):
     try:
-        # Fetch the application
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        # Vérifier que l'utilisateur est un chef de département
+        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not current_admin or current_admin.role != 'department_head':
+            return {"success": False, "message": "Seuls les chefs de département peuvent recommander des candidatures"}
+
+        # Récupérer la candidature
         app = db.query(Application).filter(Application.id == application_id).first()
         if not app:
-            return {"success": False, "message": "Application not found"}
+            return {"success": False, "message": "Candidature non trouvée"}
 
-        # Fetch job and candidate data
-        job_skills = app.job.skills if app.job else []
-        candidate_skills = app.candidate_profile.skills if app.candidate_profile else []
+        # Vérifier que la candidature appartient à un département géré par ce chef
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
 
-        # Compute compatibility (placeholder logic)
-        compatibility_percentage = 0
-        matched_skills_count = 0
+        # Vérifier l'accès au département
+        job = db.query(Job).filter(Job.id == app.job_id).first()
+        if not job or job.company_id != company.id:
+            return {"success": False, "message": "Candidature non trouvée dans votre entreprise"}
 
-        if candidate_skills and job_skills:
-            try:
-                if isinstance(candidate_skills, str):
-                    parsed_skills = json.loads(candidate_skills)
-                else:
-                    parsed_skills = candidate_skills
+        assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+            AdminDepartments.admin_id == user_id
+        ).all()
+        dept_ids = [d.department_id for d in assigned_dept_ids]
+        
+        if job.department_id not in dept_ids:
+            return {"success": False, "message": "Vous n'avez pas accès à ce département"}
 
-                if isinstance(parsed_skills, list):
-                    candidate_skills_lower = []
-                    for skill in parsed_skills:
-                        if isinstance(skill, str) and skill:
-                            if ':' in skill:
-                                candidate_skills_lower.append(skill.split(':')[0].strip().lower())
-                            else:
-                                candidate_skills_lower.append(skill.strip().lower())
+        # Mettre à jour la candidature avec la recommandation
+        app.is_recommended = True
+        app.recommended_by_admin_id = user_id
+        app.recommendation_comment = recommendation_data.comment
+        app.recommendation_priority = recommendation_data.priority
+        app.recommendation_date = datetime.now()
 
-                    for job_skill in job_skills:
-                        if job_skill.skill_name.lower().strip() in candidate_skills_lower:
-                            matched_skills_count += 1
+        db.commit()
 
-                    if job_skills:
-                        compatibility_percentage = round((matched_skills_count / len(job_skills)) * 100, 2)
-            except:
-                matched_skills_count = 0
-                compatibility_percentage = 0
-
-        days_since = (datetime.now().date() - app.application_date.date()).days if app.application_date else 0
-
-        app_data = {
-            "id": app.id,
-            "candidate_id": app.candidate_profile_id,
-            "candidate_name": app.candidate_profile.name if app.candidate_profile else "N/A",
-            "candidate_email": app.candidate_profile.contact.email if app.candidate_profile and app.candidate_profile.contact else "N/A",
-            "job_id": app.job_id,
-            "job_title": app.job.title if app.job else "N/A",
-            "department_name": app.job.department.name if app.job and app.job.department else "N/A",
-            "status": app.status,
-            "priority": app.job.priority if app.job else "normal",
-            "application_date": app.application_date.isoformat() if app.application_date else None,
-            "days_since_application": days_since,
-            "hr_rating": float(app.hr_rating) if app.hr_rating else None,
-            "hr_notes": app.hr_notes,
-            "compatibility_percentage": compatibility_percentage,
-            "matched_skills_count": matched_skills_count,
-            "total_job_skills": len(job_skills)
+        return {
+            "success": True,
+            "message": f"Candidature recommandée avec succès (priorité: {recommendation_data.priority})"
         }
 
-        # Apply filter if needed
-        compatibility_filter = recommendation_data.compatibility_filter
-        passes_filter = True
-
-        if compatibility_filter and compatibility_filter != "all":
-            if compatibility_filter == "high" and compatibility_percentage < 75:
-                passes_filter = False
-            elif compatibility_filter == "medium" and not (50 <= compatibility_percentage < 75):
-                passes_filter = False
-            elif compatibility_filter == "low" and not (25 <= compatibility_percentage < 50):
-                passes_filter = False
-            elif compatibility_filter == "very_low" and compatibility_percentage >= 25:
-                passes_filter = False
-
-        if not passes_filter:
-            return {"success": True, "applications": [], "total_count": 0}
-
-        return {"success": True, "applications": [app_data], "total_count": 1}
-
     except Exception as e:
+        db.rollback()
         import traceback
-        traceback.print_exc()
-        return {"success": False, "message": f"Erreur lors de la récupération des candidatures: {str(e)}"}
-
+        print(f"❌ BACKEND: Erreur recommandation: {str(e)}")
+        print(f"❌ BACKEND: Traceback: {traceback.format_exc()}")
+        return {"success": False, "message": f"Erreur lors de la recommandation: {str(e)}"}
 @router.post("/api/applications/{application_id}/update-status")
 async def update_application_status(application_id: int, status_data: dict):
     try:
