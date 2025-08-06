@@ -157,9 +157,9 @@ def parse_category_scores(categorie_scores_raw: str) -> dict:
     cleaned = categorie_scores_raw.strip()
     
     # Remove markdown code blocks if present
-    if cleaned.startswith("\`\`\`json") and cleaned.endswith("\`\`\`"):
+    if cleaned.startswith("```json") and cleaned.endswith("```"):
         cleaned = cleaned[7:-3].strip()
-    elif cleaned.startswith("\`\`\`") and cleaned.endswith("\`\`\`"):
+    elif cleaned.startswith("```") and cleaned.endswith("```"):
         cleaned = cleaned[3:-3].strip()
     
     # Extract JSON substring between curly braces
