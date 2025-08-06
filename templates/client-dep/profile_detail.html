@@ -475,7 +475,111 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             background: rgba(51, 65, 85, 0.8);
         }
+        /* ===== QUIZ-RELATED CSS STYLES START ===== */
+        /* Quiz History Styles */
+        .quiz-history-container {
+            position: relative;
+        }
 
+        .quiz-history-loading {
+            text-align: center;
+            padding: 2rem;
+            color: #cbd5e1;
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(102, 126, 234, 0.1);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .quiz-history-empty {
+            text-align: center;
+            padding: 2rem;
+            color: #cbd5e1;
+        }
+
+        .quiz-history-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .quiz-history-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .quiz-history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .quiz-history-title {
+            font-weight: 600;
+            color: #f8fafc;
+            font-size: 0.95rem;
+        }
+
+        .quiz-history-date {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .quiz-history-score {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .performance-comment {
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid;
+        }
+
+        .performance-fail {
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
+            border-color: rgba(255, 71, 87, 0.3);
+        }
+
+        .performance-passable {
+            background: rgba(255, 165, 2, 0.1);
+            color: #ffa502;
+            border-color: rgba(255, 165, 2, 0.3);
+        }
+
+        .performance-good {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .performance-excellent {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+        /* ===== QUIZ-RELATED CSS STYLES END ===== */
         /* Stats Cards */
         .stats-grid {
             display: grid;
@@ -890,6 +994,31 @@
                         </div>
                     </div>
                     {% endif %}
+                                   <!-- ===== QUIZ-RELATED HTML SECTION START ===== -->
+                    <!-- Quiz History -->
+                    <div class="info-card" id="quiz-history-card">
+                        <div class="card-header">
+                            <span class="card-icon">📊</span>
+                            <h3 class="card-title">Historique des QCMs</h3>
+                        </div>
+                        <div class="quiz-history-container">
+                            <div class="quiz-history-loading" id="quiz-history-loading">
+                                <div class="loading-spinner"></div>
+                                <p>Chargement de l'historique...</p>
+                            </div>
+                            <div class="quiz-history-content" id="quiz-history-content" style="display: none;">
+                                <!-- Quiz history will be loaded here -->
+                            </div>
+                            <div class="quiz-history-empty" id="quiz-history-empty" style="display: none;">
+                                <p>Aucun QCM effectué pour le moment.</p>
+                                <a href="/take-quiz/{{ profile.id }}" class="btn-compact btn-primary-compact">
+                                    <span>🎯</span>
+                                    Passer un QCM
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ===== QUIZ-RELATED HTML SECTION END ===== -->
                 </div>
             </div>
         </div>
@@ -915,6 +1044,7 @@
             last_name: "{{ current_user.last_name or '' }}",
             name: "{{ (current_user.first_name + ' ' + current_user.last_name).strip() if current_user.first_name else current_user.email }}",
             is_active: {{ 'true' if current_user.is_active else 'false' }}
+            is_active: {% if current_user.is_active %}true{% else %}false{% endif %}
         };
         {% else %}
         window.currentUser = null;
@@ -992,6 +1122,80 @@
                 ? `Voir plus (${hiddenCount} autres)`
                 : 'Voir moins';
         }
+            // ===== QUIZ-RELATED JAVASCRIPT FUNCTIONS START =====
+        // Load quiz history
+        async function loadQuizHistory() {
+            const candidateId = {{ profile.id }};
+            const loadingEl = document.getElementById('quiz-history-loading');
+            const contentEl = document.getElementById('quiz-history-content');
+            const emptyEl = document.getElementById('quiz-history-empty');
+
+            try {
+                const response = await fetch(`/quiz-history/${candidateId}`);
+                const data = await response.json();
+
+                loadingEl.style.display = 'none';
+
+                if (data.success && data.history && data.history.length > 0) {
+                    contentEl.style.display = 'block';
+                    contentEl.innerHTML = data.history.map(quiz => {
+                        const score = quiz.total_score || 0;
+                        let performanceClass = '';
+                        let performanceComment = '';
+
+                        if (score < 50) {
+                            performanceClass = 'performance-fail';
+                            performanceComment = '❌ Échec';
+                        } else if (score < 60) {
+                            performanceClass = 'performance-fail';
+                            performanceComment = '⚠️ Insuffisant';
+                        } else if (score < 70) {
+                            performanceClass = 'performance-passable';
+                            performanceComment = '🟡 Passable';
+                        } else if (score < 80) {
+                            performanceClass = 'performance-good';
+                            performanceComment = '🟢 Bon';
+                        } else if (score < 90) {
+                            performanceClass = 'performance-good';
+                            performanceComment = '🔵 Très Bon';
+                        } else {
+                            performanceClass = 'performance-excellent';
+                            performanceComment = '⭐ Excellent';
+                        }
+
+                        const date = new Date(quiz.created_at).toLocaleDateString('fr-FR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+
+                        return `
+                            <div class="quiz-history-item">
+                                <div class="quiz-history-header">
+                                    <div class="quiz-history-title">${quiz.quiz_title}</div>
+                                    <div class="quiz-history-date">${date}</div>
+                                </div>
+                                <div class="quiz-history-score">${score.toFixed(1)}%</div>
+                                <div class="performance-comment ${performanceClass}">${performanceComment}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    emptyEl.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading quiz history:', error);
+                loadingEl.style.display = 'none';
+                emptyEl.style.display = 'block';
+                emptyEl.innerHTML = '<p>Erreur lors du chargement de l\'historique.</p>';
+            }
+        }
+
+        // Load quiz history when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadQuizHistory();
+        });
+        // ===== QUIZ-RELATED JAVASCRIPT FUNCTIONS END =====
     </script>
 </body>
 </html>
