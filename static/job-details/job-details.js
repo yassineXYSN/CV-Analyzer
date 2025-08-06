@@ -6,7 +6,7 @@ let currentUser = null
 
 // Charger les données du job au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 Page job-details chargée")
+  console.log("🚀 Page job-details chargée avec compatibilité")
   loadCurrentUser()
   loadJobData()
   loadAllCandidates()
@@ -87,7 +87,7 @@ function loadJobData() {
         currentJob = JSON.parse(jobData)
         console.log("✅ Données chargées depuis localStorage:", currentJob)
         displayJobInfo()
-        renderApplications()
+        renderApplicationsWithCompatibility()
       } catch (error) {
         console.error("❌ Erreur parsing localStorage:", error)
         showError("Erreur lors du chargement des données du poste")
@@ -99,7 +99,7 @@ function loadJobData() {
   }
 }
 
-// FONCTION CORRIGÉE: Charger le job depuis l'API avec meilleur debugging
+// FONCTION AMÉLIORÉE: Charger le job depuis l'API avec calcul de compatibilité
 async function loadJobFromAPI(jobId) {
   try {
     console.log(`🔄 Chargement job ID: ${jobId}`)
@@ -119,21 +119,13 @@ async function loadJobFromAPI(jobId) {
         console.log("✅ Job chargé:", currentJob.title)
         console.log("👥 Candidatures:", applications.length)
 
-        // AJOUT: Log détaillé des candidatures pour debugging
-        applications.forEach((app, index) => {
-          console.log(`📋 Candidature ${index + 1}:`, {
-            id: app.id,
-            name: app.name,
-            status: app.status,
-            is_recommended: app.is_recommended,
-            recommendation_priority: app.recommendation_priority,
-            recommended_by: app.recommended_by,
-          })
-        })
+        // NOUVEAU: Calculer la compatibilité pour chaque candidature
+        await calculateCompatibilityForApplications()
 
         hideLoading()
         displayJobInfo()
-        renderApplications()
+        renderApplicationsWithCompatibility()
+        updateCompatibilityStats()
       } else {
         console.error("❌ Erreur API:", result.message)
         showError(result.message || "Erreur lors du chargement du poste")
@@ -146,6 +138,63 @@ async function loadJobFromAPI(jobId) {
     console.error("❌ Erreur critique:", error)
     showError("Erreur lors du chargement des données")
   }
+}
+
+// NOUVELLE FONCTION: Calculer la compatibilité pour toutes les candidatures
+async function calculateCompatibilityForApplications() {
+  console.log("🧮 Calcul de compatibilité pour toutes les candidatures")
+
+  for (let i = 0; i < applications.length; i++) {
+    const app = applications[i]
+    try {
+      console.log(`📊 Calcul compatibilité pour ${app.name}`)
+      const response = await fetch(`/api/application/${app.id}/compatibility`)
+      const result = await response.json()
+
+      if (result.success) {
+        applications[i].compatibility_percentage = result.compatibility_percentage || 0
+        applications[i].matched_skills_count = result.matched_count || 0
+        applications[i].missing_skills_count = result.missing_count || 0
+        applications[i].total_job_skills = result.total_job_skills || 0
+        applications[i].matched_skills = result.matched_skills || []
+        applications[i].missing_skills = result.missing_skills || []
+
+        console.log(`✅ Compatibilité calculée pour ${app.name}: ${applications[i].compatibility_percentage}%`)
+      } else {
+        console.warn(`⚠️ Erreur calcul compatibilité pour ${app.name}:`, result.message)
+        applications[i].compatibility_percentage = 0
+        applications[i].matched_skills_count = 0
+        applications[i].missing_skills_count = 0
+        applications[i].total_job_skills = 0
+      }
+    } catch (error) {
+      console.error(`❌ Erreur réseau compatibilité pour ${app.name}:`, error)
+      applications[i].compatibility_percentage = 0
+      applications[i].matched_skills_count = 0
+      applications[i].missing_skills_count = 0
+      applications[i].total_job_skills = 0
+    }
+  }
+
+  console.log("✅ Calcul de compatibilité terminé pour toutes les candidatures")
+}
+
+// NOUVELLE FONCTION: Mettre à jour les statistiques de compatibilité
+function updateCompatibilityStats() {
+  if (applications.length === 0) {
+    document.getElementById("averageCompatibility").textContent = "--"
+    return
+  }
+
+  const totalCompatibility = applications.reduce((sum, app) => sum + (app.compatibility_percentage || 0), 0)
+  const averageCompatibility = Math.round(totalCompatibility / applications.length)
+
+  const avgElement = document.getElementById("averageCompatibility")
+  if (avgElement) {
+    avgElement.textContent = `${averageCompatibility}%`
+  }
+
+  console.log(`📊 Compatibilité moyenne: ${averageCompatibility}%`)
 }
 
 // Afficher les informations du job
@@ -241,6 +290,9 @@ function displayJobInfo() {
       }
     }
 
+    console.log("📦 Skills data received:", currentJob.skills)
+    renderJobSkills()
+
     console.log("✅ Informations affichées avec succès")
   } catch (error) {
     console.error("❌ Erreur lors de l'affichage:", error)
@@ -248,9 +300,51 @@ function displayJobInfo() {
   }
 }
 
-// FONCTION CORRIGÉE: Rendre les candidatures avec informations de recommandation
-function renderApplications(filter = "all") {
-  console.log(`👥 Rendu des candidatures (filtre: ${filter})`)
+// Fonction pour afficher les compétences requises
+function renderJobSkills() {
+  console.log("🛠️ Affichage des compétences requises")
+  const skillsContainer = document.getElementById("jobSkillsContainer")
+  if (!skillsContainer) {
+    console.error("❌ Container jobSkillsContainer non trouvé")
+    return
+  }
+
+  if (!currentJob.skills || currentJob.skills.length === 0) {
+    skillsContainer.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-tools"></i>
+          <h4>Aucune compétence spécifiée</h4>
+          <p>Ce poste ne liste pas de compétences spécifiques pour le moment.</p>
+        </div>
+      `
+    return
+  }
+
+  skillsContainer.innerHTML = `
+      <div class="skills-grid">
+        ${currentJob.skills
+          .map(
+            (skill) => `
+          <div class="skill-item">
+            <div class="skill-name">${skill.skill_name}</div>
+            <div class="skill-level">${skill.skill_level.charAt(0).toUpperCase() + skill.skill_level.slice(1)}</div>
+            ${
+              skill.is_required
+                ? `<span class="skill-required-badge">Requis</span>`
+                : `<span class="skill-optional-badge">Optionnel</span>`
+            }
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+    `
+  console.log(`✅ ${currentJob.skills.length} compétences affichées`)
+}
+
+// FONCTION AMÉLIORÉE: Rendre les candidatures avec compatibilité
+function renderApplicationsWithCompatibility(filter = "all") {
+  console.log(`👥 Rendu des candidatures avec compatibilité (filtre: ${filter})`)
 
   const container = document.getElementById("applicationsList")
   if (!container) {
@@ -267,31 +361,28 @@ function renderApplications(filter = "all") {
 
   if (filteredApplications.length === 0) {
     container.innerHTML = `
-      <div class="empty-state">
-        <i class="fas fa-inbox"></i>
-        <h4>Aucune candidature ${filter === "all" ? "" : filter}</h4>
-        <p>Les candidatures apparaîtront ici une fois soumises.</p>
-      </div>
-    `
+    <div class="empty-state">
+      <i class="fas fa-inbox"></i>
+      <h4>Aucune candidature ${filter === "all" ? "" : filter}</h4>
+      <p>Les candidatures apparaîtront ici une fois soumises.</p>
+    </div>
+  `
     return
   }
 
   container.innerHTML = filteredApplications
     .map((app) => {
-      console.log(`🔍 Rendu candidature ${app.name}:`, {
-        is_recommended: app.is_recommended,
-        recommendation_priority: app.recommendation_priority,
-        recommended_by: app.recommended_by,
-      })
+      console.log(`🔍 Rendu candidature ${app.name} avec compatibilité ${app.compatibility_percentage}%`)
 
       return `
-        <div class="application-item-detailed ${app.is_recommended ? "has-recommendation" : ""}">
-          <div class="candidate-info">
-            <div class="candidate-avatar">${app.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}</div>
-            <div class="candidate-details">
+      <div class="application-item-detailed ${app.is_recommended ? "has-recommendation" : ""}">
+        <div class="candidate-info">
+          <div class="candidate-avatar">${app.name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")}</div>
+          <div class="candidate-details">
+            <div class="candidate-name-section">
               <div class="candidate-name">
                 ${app.name}
                 ${
@@ -312,56 +403,532 @@ function renderApplications(filter = "all") {
                     : ""
                 }
               </div>
-              <div class="candidate-title">${app.title || "Candidat"}</div>
-              <div class="candidate-meta">
-                <span class="application-date">
-                  Candidature: ${new Date(app.application_date).toLocaleDateString("fr-FR")}
-                </span>
-                ${app.hr_rating ? `<span class="hr-rating">Note HR: ${app.hr_rating}/5 ⭐</span>` : ""}
-                ${
-                  app.is_recommended && app.recommended_by
-                    ? `
-                  <span class="recommendation-info">
-                    <i class="fas fa-user-tie"></i> Recommandé par ${app.recommended_by}
-                    ${app.recommendation_date ? ` le ${new Date(app.recommendation_date).toLocaleDateString("fr-FR")}` : ""}
-                  </span>
-                `
-                    : ""
-                }
+              
+              <div class="application-status-section">
+                <div class="status-badge ${app.status}">
+                  ${getStatusText(app.status)}
+                  ${
+                    app.is_recommended && app.recommendation_priority !== "normal"
+                      ? `<span class="priority-indicator ${app.recommendation_priority}">
+                      ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+                    </span>`
+                      : ""
+                  }
+                </div>
               </div>
             </div>
-          </div>
-          <div class="application-status-section">
-            <div class="status-badge ${app.status}">
-              ${getStatusText(app.status)}
+            
+            <div class="candidate-title">${app.title || "Candidat"}</div>
+            <div class="candidate-meta">
+              <span class="application-date">
+                Candidature: ${new Date(app.application_date).toLocaleDateString("fr-FR")}
+              </span>
+              ${app.hr_rating ? `<span class="hr-rating">Note HR: ${app.hr_rating}/5 ⭐</span>` : ""}
               ${
-                app.is_recommended && app.recommendation_priority !== "normal"
-                  ? `<span class="priority-indicator ${app.recommendation_priority}">
-                  ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
-                </span>`
+                app.is_recommended && app.recommended_by
+                  ? `
+                <span class="recommendation-info">
+                  <i class="fas fa-user-tie"></i> Recommandé par ${app.recommended_by}
+                  ${app.recommendation_date ? ` le ${new Date(app.recommendation_date).toLocaleDateString("fr-FR")}` : ""}
+                </span>
+              `
                   : ""
               }
             </div>
-            <div class="application-actions">
-              ${renderCandidateActions(app)}
+          </div>
+        </div>
+
+        <!-- NOUVELLE SECTION: Compatibilité des compétences -->
+        <div class="application-compatibility-section">
+          <div class="compatibility-header">
+            <div class="compatibility-title">
+              <i class="fas fa-chart-pie"></i>
+              Compatibilité des compétences
+            </div>
+            <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage || 0)}">
+              ${app.compatibility_percentage || 0}%
+              <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage || 0)}"></i>
             </div>
           </div>
-          ${
-            app.is_recommended && app.recommendation_comment
-              ? `
-            <div class="recommendation-comment">
-              <i class="fas fa-comment-alt"></i>
-              <strong style="color:black">Commentaire de recommandation:</strong>
-              <p>"${app.recommendation_comment}"</p>
-              ${app.recommended_by ? `<small>— ${app.recommended_by}</small>` : ""}
-            </div>
-          `
-              : ""
-          }
+          
+          <div class="compatibility-progress">
+            <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage || 0)}" 
+                 style="width: ${app.compatibility_percentage || 0}%"></div>
+          </div>
+          
+          <div class="compatibility-details">
+            <span class="skill-stat matched">
+              <i class="fas fa-check-circle"></i>
+              ${app.matched_skills_count || 0} compétences correspondantes
+            </span>
+            <span class="skill-stat missing">
+              <i class="fas fa-times-circle"></i>
+              ${(app.total_job_skills || 0) - (app.matched_skills_count || 0)} manquantes
+            </span>
+            <span>Total: ${app.total_job_skills || 0} compétences</span>
+          </div>
+          
+          <div class="compatibility-actions">
+            <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
+              <i class="fas fa-search"></i> Détails compatibilité
+            </button>
+          </div>
         </div>
-      `
+
+        
+        ${
+          app.is_recommended && app.recommendation_comment
+            ? `
+          <div class="recommendation-comment">
+            <i class="fas fa-comment-alt"></i>
+            <strong style="color:black">Commentaire de recommandation:</strong>
+            <p>"${app.recommendation_comment}"</p>
+            ${app.recommended_by ? `<small>— ${app.recommended_by}</small>` : ""}
+          </div>
+        `
+            : ""
+        }
+        <div class="application-actions">
+            ${renderCandidateActions(app)}
+          </div>
+      </div>
+      
+    `
     })
     .join("")
+}
+
+// NOUVELLES FONCTIONS: Helpers pour la compatibilité
+function getCompatibilityClass(percentage) {
+  if (percentage >= 75) return "high"
+  if (percentage >= 50) return "medium"
+  if (percentage >= 25) return "low"
+  return "very-low"
+}
+
+function getCompatibilityIcon(percentage) {
+  if (percentage >= 75) return "star"
+  if (percentage >= 50) return "star-half-alt"
+  if (percentage >= 25) return "exclamation-triangle"
+  return "times-circle"
+}
+
+// NOUVELLE FONCTION: Filtrer par compatibilité
+function filterApplicationsByCompatibility(minCompatibility) {
+  console.log("🔍 Filtrage par compatibilité:", minCompatibility)
+
+  if (minCompatibility === "all") {
+    renderApplicationsWithCompatibility()
+    return
+  }
+
+  const threshold = Number.parseInt(minCompatibility)
+  const filteredApps = applications.filter((app) => (app.compatibility_percentage || 0) >= threshold)
+
+  const container = document.getElementById("applicationsList")
+  if (!container) return
+
+  if (filteredApps.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-chart-pie"></i>
+        <h4>Aucune candidature avec ${threshold}%+ de compatibilité</h4>
+        <p>Aucune candidature ne correspond au niveau de compatibilité sélectionné.</p>
+      </div>
+    `
+    return
+  }
+
+  // Utiliser la même logique de rendu mais avec les candidatures filtrées
+  const originalApplications = applications
+  applications = filteredApps
+  renderApplicationsWithCompatibility()
+  applications = originalApplications
+}
+
+// NOUVELLE FONCTION: Voir les détails de compatibilité avec thème sombre
+async function viewCompatibilityDetails(applicationId) {
+  console.log("🔍 Affichage détails compatibilité pour candidature:", applicationId)
+
+  try {
+    showLoading("Chargement des détails de compatibilité...")
+
+    const response = await fetch(`/api/application/${applicationId}/compatibility`)
+    const result = await response.json()
+
+    hideLoading()
+
+    if (result.success) {
+      showDarkCompatibilityModal(result)
+    } else {
+      showNotification("Erreur lors du chargement des détails de compatibilité", "error")
+    }
+  } catch (error) {
+    hideLoading()
+    console.error("❌ Erreur chargement détails compatibilité:", error)
+    showNotification("Erreur de connexion", "error")
+  }
+}
+
+// NOUVELLE FONCTION: Afficher la modal de détails de compatibilité avec thème sombre
+function showDarkCompatibilityModal(compatibilityData) {
+  console.log("🔍 Affichage modal compatibilité sombre:", compatibilityData)
+
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay compatibility-modal-overlay"
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 25000;
+    padding: 2rem;
+  `
+
+  modal.innerHTML = `
+    <div class="modal-content" style="
+      max-width: 900px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 20px;
+      border: 2px solid rgba(59, 130, 246, 0.4);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    ">
+      <div class="modal-header" style="
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px 20px 0 0;
+        border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+      ">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 1rem; font-size: 1.5rem;">
+          <i class="fas fa-chart-pie" style="color: #3b82f6;"></i> 
+          Analyse Détaillée de Compatibilité
+        </h3>
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()" style="
+          position: absolute;
+          top: 2rem;
+          right: 2rem;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: white;
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 1.2rem;
+        ">&times;</button>
+      </div>
+      
+      <div class="modal-body" style="padding: 2rem; background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);">
+        <div class="compatibility-overview" style="
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 2rem;
+          align-items: center;
+          margin-bottom: 2rem;
+          padding: 2rem;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          border-radius: 16px;
+        ">
+          <div class="compatibility-score">
+            <div class="score-circle ${getCompatibilityClass(compatibilityData.compatibility_percentage)}" style="
+              width: 120px;
+              height: 120px;
+              border-radius: 50%;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              background: conic-gradient(
+                ${
+                  compatibilityData.compatibility_percentage >= 75
+                    ? "#10b981"
+                    : compatibilityData.compatibility_percentage >= 50
+                      ? "#f59e0b"
+                      : compatibilityData.compatibility_percentage >= 25
+                        ? "#ef4444"
+                        : "#6b7280"
+                } 
+                ${compatibilityData.compatibility_percentage * 3.6}deg,
+                rgba(255, 255, 255, 0.1) 0deg
+              );
+              position: relative;
+            ">
+              <div style="
+                position: absolute;
+                inset: 8px;
+                background: linear-gradient(145deg, #0f172a, #1e293b);
+                border-radius: 50%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+              ">
+                <span class="score-number" style="
+                  font-size: 2rem;
+                  font-weight: bold;
+                  color: white;
+                ">${compatibilityData.compatibility_percentage}%</span>
+                <span class="score-label" style="
+                  font-size: 0.8rem;
+                  color: #cbd5e1;
+                  text-transform: uppercase;
+                  letter-spacing: 1px;
+                ">Compatibilité</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="compatibility-summary">
+            <div class="summary-stat" style="
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+              margin: 1rem 0;
+              padding: 1rem;
+              background: rgba(16, 185, 129, 0.1);
+              border: 1px solid rgba(16, 185, 129, 0.3);
+              border-radius: 12px;
+            ">
+              <i class="fas fa-check-circle" style="color: #10b981; font-size: 1.5rem;"></i>
+              <span style="color: #f8fafc; font-weight: 500; font-size: 1.1rem;">
+                ${compatibilityData.matched_count} compétences correspondantes
+              </span>
+            </div>
+            <div class="summary-stat" style="
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+              margin: 1rem 0;
+              padding: 1rem;
+              background: rgba(239, 68, 68, 0.1);
+              border: 1px solid rgba(239, 68, 68, 0.3);
+              border-radius: 12px;
+            ">
+              <i class="fas fa-times-circle" style="color: #ef4444; font-size: 1.5rem;"></i>
+              <span style="color: #f8fafc; font-weight: 500; font-size: 1.1rem;">
+                ${compatibilityData.missing_count} compétences manquantes
+              </span>
+            </div>
+            <div class="summary-stat" style="
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+              margin: 1rem 0;
+              padding: 1rem;
+              background: rgba(107, 114, 128, 0.1);
+              border: 1px solid rgba(107, 114, 128, 0.3);
+              border-radius: 12px;
+            ">
+              <i class="fas fa-list" style="color: #6b7280; font-size: 1.5rem;"></i>
+              <span style="color: #f8fafc; font-weight: 500; font-size: 1.1rem;">
+                ${compatibilityData.total_job_skills} compétences requises au total
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="skills-breakdown" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+          <div class="skills-section">
+            <div class="skills-breakdown-header" style="
+              margin-bottom: 1.5rem;
+              padding: 1rem;
+              background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+              border: 1px solid rgba(16, 185, 129, 0.3);
+              border-radius: 12px;
+            ">
+              <h4 class="skills-breakdown-title" style="
+                margin: 0;
+                color: #f8fafc;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-size: 1.2rem;
+              ">
+                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                Compétences Correspondantes (${compatibilityData.matched_count})
+              </h4>
+            </div>
+            <div class="skills-list">
+              ${compatibilityData.matched_skills
+                .map(
+                  (skill) => `
+                <div class="skill-item matched" style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding: 1rem;
+                  margin: 0.5rem 0;
+                  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+                  border: 1px solid rgba(16, 185, 129, 0.3);
+                  border-radius: 12px;
+                ">
+                  <div class="skill-info">
+                    <span class="skill-name" style="
+                      color: #f8fafc;
+                      font-weight: 600;
+                      display: block;
+                      margin-bottom: 0.25rem;
+                    ">${skill.skill_name}</span>
+                    <span class="skill-level ${skill.skill_level}" style="
+                      color: #cbd5e1;
+                      font-size: 0.9rem;
+                      margin-right: 0.5rem;
+                    ">${getLevelText(skill.skill_level)}</span>
+                    <span class="skill-required ${skill.is_required ? "required" : "optional"}" style="
+                      color: ${skill.is_required ? "#f59e0b" : "#6b7280"};
+                      font-size: 0.8rem;
+                      font-weight: 500;
+                    ">
+                      ${skill.is_required ? "Requis" : "Optionnel"}
+                    </span>
+                  </div>
+                  <div class="skill-status matched" style="
+                    color: #10b981;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                  ">
+                    <i class="fas fa-check"></i>
+                    Possédée
+                  </div>
+                </div>
+              `,
+                )
+                .join("")}
+            </div>
+          </div>
+          
+          <div class="skills-section">
+            <div class="skills-breakdown-header" style="
+              margin-bottom: 1.5rem;
+              padding: 1rem;
+              background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+              border: 1px solid rgba(239, 68, 68, 0.3);
+              border-radius: 12px;
+            ">
+              <h4 class="skills-breakdown-title" style="
+                margin: 0;
+                color: #f8fafc;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-size: 1.2rem;
+              ">
+                <i class="fas fa-times-circle" style="color: #ef4444;"></i>
+                Compétences Manquantes (${compatibilityData.missing_count})
+              </h4>
+            </div>
+            <div class="skills-list">
+              ${compatibilityData.missing_skills
+                .map(
+                  (skill) => `
+                <div class="skill-item missing" style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding: 1rem;
+                  margin: 0.5rem 0;
+                  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+                  border: 1px solid rgba(239, 68, 68, 0.3);
+                  border-radius: 12px;
+                ">
+                  <div class="skill-info">
+                    <span class="skill-name" style="
+                      color: #f8fafc;
+                      font-weight: 600;
+                      display: block;
+                      margin-bottom: 0.25rem;
+                    ">${skill.skill_name}</span>
+                    <span class="skill-level ${skill.skill_level}" style="
+                      color: #cbd5e1;
+                      font-size: 0.9rem;
+                      margin-right: 0.5rem;
+                    ">${getLevelText(skill.skill_level)}</span>
+                    <span class="skill-required ${skill.is_required ? "required" : "optional"}" style="
+                      color: ${skill.is_required ? "#f59e0b" : "#6b7280"};
+                      font-size: 0.8rem;
+                      font-weight: 500;
+                    ">
+                      ${skill.is_required ? "Requis" : "Optionnel"}
+                    </span>
+                  </div>
+                  <div class="skill-status missing" style="
+                    color: #ef4444;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                  ">
+                    <i class="fas fa-times"></i>
+                    Manquante
+                  </div>
+                </div>
+              `,
+                )
+                .join("")}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer" style="
+        padding: 1.5rem 2rem;
+        border-top: 1px solid rgba(59, 130, 246, 0.2);
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 0 0 20px 20px;
+        display: flex;
+        justify-content: flex-end;
+      ">
+        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()" style="
+          padding: 0.875rem 1.75rem;
+          border: none;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          background: linear-gradient(135deg, #64748b, #475569);
+          color: white;
+          border: 1px solid rgba(100, 116, 139, 0.3);
+        ">
+          Fermer
+        </button>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  // Close modal when clicking outside
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.remove()
+    }
+  })
+}
+
+// Helper function pour les niveaux de compétences
+function getLevelText(level) {
+  const levelTexts = {
+    beginner: "Débutant",
+    intermediate: "Intermédiaire",
+    advanced: "Avancé",
+    expert: "Expert",
+  }
+  return levelTexts[level] || level
 }
 
 // FONCTION CORRIGÉE: Rendre les actions pour chaque candidat selon le rôle
@@ -375,91 +942,110 @@ function renderCandidateActions(app) {
   if (currentUser && currentUser.role === "department_head") {
     console.log("🏢 Mode chef de département")
 
-    // CORRECTION: Vérifier explicitement si la candidature est recommandée
     if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
       const safeCandidateName = app.name.replace(/'/g, "\\'").replace(/"/g, '\\"')
       const safeJobTitle = currentJob.title.replace(/'/g, "\\'").replace(/"/g, '\\"')
 
       console.log("✅ Affichage bouton recommander")
       return `
-        <button class="btn-action recommend" onclick="showRecommendConfirmation(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
-          <i class="fas fa-thumbs-up"></i> Recommander
-        </button>
-        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-          <i class="fas fa-info-circle"></i> Voir profil
-        </button>
-      `
+      <button class="btn-action recommend" onclick="showRecommendConfirmation(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
+        <i class="fas fa-thumbs-up"></i> Recommander
+      </button>
+      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+        <i class="fas fa-info-circle"></i> Voir profil
+      </button>
+    `
     } else if (app.is_recommended) {
       console.log("✅ Affichage statut recommandé")
       return `
-
-        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-          <i class="fas fa-info-circle"></i> Voir profil
-        </button>
-      `
+      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+        <i class="fas fa-info-circle"></i> Voir profil
+      </button>
+    `
     } else {
       console.log("ℹ️ Candidature non éligible pour recommandation")
       return `
-        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-          <i class="fas fa-info-circle"></i> Voir profil
-        </button>
-        <small style="color: #6b7280; font-style: italic;">
-          ${
-            app.status === "accepted"
-              ? "Candidature déjà acceptée"
-              : app.status === "rejected"
-                ? "Candidature rejetée"
-                : "Statut: " + getStatusText(app.status)
-          }
-        </small>
-      `
+      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+        <i class="fas fa-info-circle"></i> Voir profil
+      </button>
+      <small style="color: #6b7280; font-style: italic;">
+        ${
+          app.status === "accepted"
+            ? "Candidature déjà acceptée"
+            : app.status === "rejected"
+              ? "Candidature rejetée"
+              : "Statut: " + getStatusText(app.status)
+        }
+      </small>
+    `
     }
   }
 
   // Pour les autres rôles (recruteur, super_admin) : boutons complets
   if (app.status === "pending") {
     return `
-      <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-        <i class="fas fa-eye"></i> Examiner
-      </button>
-      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
-        <i class="fas fa-check"></i> Accepter
-      </button>
-      <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
-        <i class="fas fa-times"></i> Rejeter
-      </button>
-    `
+    <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+      <i class="fas fa-eye"></i> Examiner
+    </button>
+    <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+      <i class="fas fa-check"></i> Accepter
+    </button>
+    <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+      <i class="fas fa-times"></i> Rejeter
+    </button>
+  `
   } else if (app.status === "reviewed") {
     return `
-      <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
-        <i class="fas fa-calendar"></i> Programmer entretien
-      </button>
-      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
-        <i class="fas fa-check-circle"></i> Accepter
-      </button>
-      <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
-        <i class="fas fa-times"></i> Rejeter
-      </button>
-    `
+    <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
+      <i class="fas fa-calendar"></i> Programmer entretien
+    </button>
+    <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+      <i class="fas fa-check-circle"></i> Accepter
+    </button>
+    <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+      <i class="fas fa-times"></i> Rejeter
+    </button>
+  `
   } else if (app.status === "interview_scheduled") {
     return `
-      <button class="btn-action complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-        <i class="fas fa-check-double"></i> Entretien terminé
-      </button>
-      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
-        <i class="fas fa-user-check"></i> Accepter
-      </button>
-      <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
-        <i class="fas fa-times"></i> Rejeter
-      </button>
-    `
+    <button class="btn-action complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+      <i class="fas fa-check-double"></i> Entretien terminé
+    </button>
+    <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+      <i class="fas fa-user-check"></i> Accepter
+    </button>
+    <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+      <i class="fas fa-times"></i> Rejeter
+    </button>
+  `
   } else {
     return `
-      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-info-circle"></i> Voir profil
-      </button>
-    `
+    <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+      <i class="fas fa-info-circle"></i> Voir profil
+    </button>
+  `
   }
+}
+
+// Fonction pour retourner au dashboard
+function goBackToDashboard() {
+  console.log("🔙 Retour au dashboard")
+  window.location.href = "/dashboard"
+}
+
+// Obtenir le texte du statut
+function getStatusText(status) {
+  const statusTexts = {
+    pending: "En attente",
+    reviewed: "Examinée",
+    interview_scheduled: "Entretien programmé",
+    interview_completed: "Entretien terminé",
+    accepted: "Acceptée",
+    rejected: "Rejetée",
+    withdrawn: "Retirée",
+    recommended: "Recommandée",
+  }
+  return statusTexts[status] || status
 }
 
 // FONCTION CORRIGÉE: Afficher la modal de confirmation de recommandation
@@ -479,62 +1065,62 @@ function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
   modal.style.opacity = "1"
 
   modal.innerHTML = `
-    <div class="confirmation-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <div class="confirmation-icon recommend">
-            <i class="fas fa-thumbs-up"></i>
-          </div>
-          <h3>Recommander cette candidature</h3>
-          <p>Recommander <strong>${candidateName}</strong> pour le poste</p>
+  <div class="confirmation-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="confirmation-icon recommend">
+          <i class="fas fa-thumbs-up"></i>
         </div>
-        
-        <div class="candidate-modal-info">
-          <div class="candidate-modal-avatar">${candidateName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")}</div>
-          <div class="candidate-modal-details">
-            <h4>${candidateName}</h4>
-            <p>Poste: ${jobTitle}</p>
-          </div>
-        </div>
-        
-        <div class="modal-body">
-          <p><strong>En tant que chef de département, vous pouvez recommander cette candidature :</strong></p>
-          <div class="confirmation-details">
-            <ul class="confirmation-list">
-              <li><i class="fas fa-star"></i> Marquer la candidature comme recommandée</li>
-              <li><i class="fas fa-bell"></i> Notifier les recruteurs et super admins</li>
-              <li><i class="fas fa-comment"></i> Ajouter vos commentaires de recommandation</li>
-              <li><i class="fas fa-priority-high"></i> Donner une priorité élevée à cette candidature</li>
-            </ul>
-          </div>
-          
-          <div class="recommendation-form">
-            <label for="recommendationComment">Commentaire de recommandation :</label>
-            <textarea id="recommendationComment" placeholder="Expliquez pourquoi vous recommandez ce candidat..." rows="3" required></textarea>
-            
-            <label for="recommendationPriority">Niveau de recommandation :</label>
-            <select id="recommendationPriority">
-              <option value="normal">Recommandation normale</option>
-              <option value="high">Recommandation forte</option>
-              <option value="urgent">Recommandation urgente</option>
-            </select>
-          </div>
-        </div>
-        
-        <div class="modal-actions">
-          <button class="btn-confirm recommend" onclick="confirmRecommendApplication(${applicationId})">
-            <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
-          </button>
-          <button class="btn-cancel" onclick="closeConfirmationModal()">
-            <i class="fas fa-times"></i> Annuler
-          </button>
+        <h3>Recommander cette candidature</h3>
+        <p>Recommander <strong>${candidateName}</strong> pour le poste</p>
+      </div>
+      
+      <div class="candidate-modal-info">
+        <div class="candidate-modal-avatar">${candidateName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")}</div>
+        <div class="candidate-modal-details">
+          <h4>${candidateName}</h4>
+          <p>Poste: ${jobTitle}</p>
         </div>
       </div>
+      
+      <div class="modal-body">
+        <p><strong>En tant que chef de département, vous pouvez recommander cette candidature :</strong></p>
+        <div class="confirmation-details">
+          <ul class="confirmation-list">
+            <li><i class="fas fa-star"></i> Marquer la candidature comme recommandée</li>
+            <li><i class="fas fa-bell"></i> Notifier les recruteurs et super admins</li>
+            <li><i class="fas fa-comment"></i> Ajouter vos commentaires de recommandation</li>
+            <li><i class="fas fa-priority-high"></i> Donner une priorité élevée à cette candidature</li>
+          </ul>
+        </div>
+        
+        <div class="recommendation-form">
+          <label for="recommendationComment">Commentaire de recommandation :</label>
+          <textarea id="recommendationComment" placeholder="Expliquez pourquoi vous recommandez ce candidat..." rows="3" required></textarea>
+          
+          <label for="recommendationPriority">Niveau de recommandation :</label>
+          <select id="recommendationPriority">
+            <option value="normal">Recommandation normale</option>
+            <option value="high">Recommandation forte</option>
+            <option value="urgent">Recommandation urgente</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-confirm recommend" onclick="confirmRecommendApplication(${applicationId})">
+          <i class="fas fa-thumbs-up"></i> Confirmer la recommandation
+        </button>
+        <button class="btn-cancel" onclick="closeConfirmationModal()">
+          <i class="fas fa-times"></i> Annuler
+        </button>
+      </div>
     </div>
-  `
+  </div>
+`
 
   document.body.appendChild(modal)
 
@@ -596,7 +1182,6 @@ async function confirmRecommendApplication(applicationId) {
       console.log("👍 Candidature recommandée avec succès")
       showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
 
-      // CORRECTION: Attendre un peu avant de recharger pour que la base de données soit mise à jour
       setTimeout(async () => {
         console.log("🔄 Rechargement des données après recommandation...")
         if (currentJob && currentJob.id) {
@@ -618,27 +1203,6 @@ async function confirmRecommendApplication(applicationId) {
   }
 }
 
-// Fonction pour retourner au dashboard
-function goBackToDashboard() {
-  console.log("🔙 Retour au dashboard")
-  window.location.href = "/dashboard"
-}
-
-// Obtenir le texte du statut
-function getStatusText(status) {
-  const statusTexts = {
-    pending: "En attente",
-    reviewed: "Examinée",
-    interview_scheduled: "Entretien programmé",
-    interview_completed: "Entretien terminé",
-    accepted: "Acceptée",
-    rejected: "Rejetée",
-    withdrawn: "Retirée",
-    recommended: "Recommandée",
-  }
-  return statusTexts[status] || status
-}
-
 // Fonction pour afficher la modal de confirmation d'acceptation
 function showAcceptConfirmation(applicationId, candidateName, jobTitle, departmentName) {
   console.log(`🎉 Affichage confirmation acceptation pour ${candidateName}`)
@@ -648,56 +1212,56 @@ function showAcceptConfirmation(applicationId, candidateName, jobTitle, departme
   modal.style.opacity = "1"
 
   modal.innerHTML = `
-    <div class="confirmation-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <div class="confirmation-icon accept">
-            <i class="fas fa-user-check"></i>
-          </div>
-          <h3>Confirmer l'acceptation</h3>
-          <p>Accepter la candidature de <strong>${candidateName}</strong></p>
+  <div class="confirmation-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="confirmation-icon accept">
+          <i class="fas fa-user-check"></i>
         </div>
-        
-        <div class="candidate-modal-info">
-          <div class="candidate-modal-avatar">${candidateName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")}</div>
-          <div class="candidate-modal-details">
-            <h4>${candidateName}</h4>
-            <p>Poste: ${jobTitle} - ${departmentName}</p>
-          </div>
-        </div>
-        
-        <div class="modal-body">
-          <p><strong>Actions automatiques qui seront effectuées :</strong></p>
-          <div class="confirmation-details">
-            <ul class="confirmation-list">
-              <li><i class="fas fa-user-plus"></i> Création automatique de l'employé dans le système</li>
-              <li><i class="fas fa-briefcase"></i> Attribution du poste "${jobTitle}" à l'employé</li>
-              <li><i class="fas fa-building"></i> Assignation au département "${departmentName}"</li>
-              <li><i class="fas fa-check-circle"></i> Marquage du poste comme pourvu</li>
-              <li><i class="fas fa-times-circle"></i> Rejet automatique des autres candidatures</li>
-              <li><i class="fas fa-calendar-check"></i> Date d'embauche fixée à aujourd'hui</li>
-            </ul>
-          </div>
-          <div class="warning-note">
-            <i class="fas fa-exclamation-triangle"></i>
-            <p>Cette action est irréversible et modifiera définitivement le statut du poste.</p>
-          </div>
-        </div>
-        
-        <div class="modal-actions">
-          <button class="btn-confirm" onclick="confirmAcceptApplication(${applicationId})">
-            <i class="fas fa-check"></i> Confirmer l'acceptation
-          </button>
-          <button class="btn-cancel" onclick="closeConfirmationModal()">
-            <i class="fas fa-times"></i> Annuler
-          </button>
+        <h3>Confirmer l'acceptation</h3>
+        <p>Accepter la candidature de <strong>${candidateName}</strong></p>
+      </div>
+      
+      <div class="candidate-modal-info">
+        <div class="candidate-modal-avatar">${candidateName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")}</div>
+        <div class="candidate-modal-details">
+          <h4>${candidateName}</h4>
+          <p>Poste: ${jobTitle} - ${departmentName}</p>
         </div>
       </div>
+      
+      <div class="modal-body">
+        <p><strong>Actions automatiques qui seront effectuées :</strong></p>
+        <div class="confirmation-details">
+          <ul class="confirmation-list">
+            <li><i class="fas fa-user-plus"></i> Création automatique de l'employé dans le système</li>
+            <li><i class="fas fa-briefcase"></i> Attribution du poste "${jobTitle}" à l'employé</li>
+            <li><i class="fas fa-building"></i> Assignation au département "${departmentName}"</li>
+            <li><i class="fas fa-check-circle"></i> Marquage du poste comme pourvu</li>
+            <li><i class="fas fa-times-circle"></i> Rejet automatique des autres candidatures</li>
+            <li><i class="fas fa-calendar-check"></i> Date d'embauche fixée à aujourd'hui</li>
+          </ul>
+        </div>
+        <div class="warning-note">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>Cette action est irréversible et modifiera définitivement le statut du poste.</p>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-confirm" onclick="confirmAcceptApplication(${applicationId})">
+          <i class="fas fa-check"></i> Confirmer l'acceptation
+        </button>
+        <button class="btn-cancel" onclick="closeConfirmationModal()">
+          <i class="fas fa-times"></i> Annuler
+        </button>
+      </div>
     </div>
-  `
+  </div>
+`
 
   document.body.appendChild(modal)
 
@@ -719,54 +1283,54 @@ function showRejectConfirmation(applicationId, candidateName, jobTitle) {
   modal.style.opacity = "1"
 
   modal.innerHTML = `
-    <div class="confirmation-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <div class="confirmation-icon reject">
-            <i class="fas fa-user-times"></i>
-          </div>
-          <h3>Confirmer le rejet</h3>
-          <p>Rejeter la candidature de <strong>${candidateName}</strong></p>
+  <div class="confirmation-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="confirmation-icon reject">
+          <i class="fas fa-user-times"></i>
         </div>
-        
-        <div class="candidate-modal-info">
-          <div class="candidate-modal-avatar">${candidateName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")}</div>
-          <div class="candidate-modal-details">
-            <h4>${candidateName}</h4>
-            <p>Poste: ${jobTitle}</p>
-          </div>
-        </div>
-        
-        <div class="modal-body">
-          <p><strong>Conséquences du rejet :</strong></p>
-          <div class="confirmation-details">
-            <ul class="confirmation-list">
-              <li><i class="fas fa-times-circle"></i> La candidature sera marquée comme rejetée</li>
-              <li><i class="fas fa-envelope"></i> Le candidat sera notifié automatiquement</li>
-              <li><i class="fas fa-archive"></i> Le dossier sera archivé dans l'historique</li>
-              <li><i class="fas fa-ban"></i> Le candidat ne pourra plus postuler pour ce poste</li>
-            </ul>
-          </div>
-          <div class="warning-note">
-            <i class="fas fa-exclamation-triangle"></i>
-            <p>Cette action est définitive. Le candidat sera informé du rejet de sa candidature.</p>
-          </div>
-        </div>
-        
-        <div class="modal-actions">
-          <button class="btn-confirm reject" onclick="confirmRejectApplication(${applicationId})">
-            <i class="fas fa-times"></i> Confirmer le rejet
-          </button>
-          <button class="btn-cancel" onclick="closeConfirmationModal()">
-            <i class="fas fa-arrow-left"></i> Annuler
-          </button>
+        <h3>Confirmer le rejet</h3>
+        <p>Rejeter la candidature de <strong>${candidateName}</strong></p>
+      </div>
+      
+      <div class="candidate-modal-info">
+        <div class="candidate-modal-avatar">${candidateName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")}</div>
+        <div class="candidate-modal-details">
+          <h4>${candidateName}</h4>
+          <p>Poste: ${jobTitle}</p>
         </div>
       </div>
+      
+      <div class="modal-body">
+        <p><strong>Conséquences du rejet :</strong></p>
+        <div class="confirmation-details">
+          <ul class="confirmation-list">
+            <li><i class="fas fa-times-circle"></i> La candidature sera marquée comme rejetée</li>
+            <li><i class="fas fa-envelope"></i> Le candidat sera notifié automatiquement</li>
+            <li><i class="fas fa-archive"></i> Le dossier sera archivé dans l'historique</li>
+            <li><i class="fas fa-ban"></i> Le candidat ne pourra plus postuler pour ce poste</li>
+          </ul>
+        </div>
+        <div class="warning-note">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>Cette action est définitive. Le candidat sera informé du rejet de sa candidature.</p>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-confirm reject" onclick="confirmRejectApplication(${applicationId})">
+          <i class="fas fa-times"></i> Confirmer le rejet
+        </button>
+        <button class="btn-cancel" onclick="closeConfirmationModal()">
+          <i class="fas fa-arrow-left"></i> Annuler
+        </button>
+      </div>
     </div>
-  `
+  </div>
+`
 
   document.body.appendChild(modal)
 
@@ -925,7 +1489,7 @@ function filterApplications(filter) {
     clickedBtn.classList.add("active")
   }
 
-  renderApplications(filter)
+  renderApplicationsWithCompatibility(filter)
 }
 
 // Fonctions pour les actions
@@ -990,13 +1554,13 @@ function showLoading(message) {
   hideLoading()
 
   const loadingHTML = `
-    <div class="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 25000;">
-      <div class="loading-content" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)); backdrop-filter: blur(20px); padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);">
-        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #3498db;"></i>
-        <p style="margin: 0; font-weight: 500; color: #374151;">${message}</p>
-      </div>
+  <div class="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 25000;">
+    <div class="loading-content" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)); backdrop-filter: blur(20px); padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);">
+      <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #3498db;"></i>
+      <p style="margin: 0; font-weight: 500; color: #374151;">${message}</p>
     </div>
-  `
+  </div>
+`
   document.body.insertAdjacentHTML("beforeend", loadingHTML)
 }
 
@@ -1011,17 +1575,17 @@ function showError(message) {
   console.log("❌ Affichage erreur:", message)
 
   const errorHTML = `
-    <div class="error-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 25000;">
-      <div class="error-content" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)); backdrop-filter: blur(20px); padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25); max-width: 400px;">
-        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ef4444; margin-bottom: 1rem;"></i>
-        <h2 style="color: #374151; margin-bottom: 1rem;">Erreur</h2>
-        <p style="color: #6b7280; margin-bottom: 2rem;">${message}</p>
-        <button onclick="goBackToDashboard()" class="btn-primary" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 500; cursor: pointer;">
-          <i class="fas fa-arrow-left"></i> Retour au Dashboard
-        </button>
-      </div>
+  <div class="error-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 25000;">
+    <div class="error-content" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)); backdrop-filter: blur(20px); padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25); max-width: 400px;">
+      <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ef4444; margin-bottom: 1rem;"></i>
+      <h2 style="color: #374151; margin-bottom: 1rem;">Erreur</h2>
+      <p style="color: #6b7280; margin-bottom: 2rem;">${message}</p>
+      <button onclick="goBackToDashboard()" class="btn-primary" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 500; cursor: pointer;">
+        <i class="fas fa-arrow-left"></i> Retour au Dashboard
+      </button>
     </div>
-  `
+  </div>
+`
   document.body.innerHTML = errorHTML
 }
 
@@ -1047,32 +1611,32 @@ function showNotification(message, type = "info") {
   }
 
   notification.innerHTML = `
-    <i class="fas ${icons[type]}"></i>
-    <span>${message}</span>
-    <button class="notification-close" onclick="this.parentElement.remove()">
-      <i class="fas fa-times"></i>
-    </button>
-  `
+  <i class="fas ${icons[type]}"></i>
+  <span>${message}</span>
+  <button class="notification-close" onclick="this.parentElement.remove()">
+    <i class="fas fa-times"></i>
+  </button>
+`
 
   notification.style.cssText = `
-    position: fixed;
-    top: 2rem;
-    right: 2rem;
-    background: ${colors[type]};
-    color: white;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    z-index: 20000;
-    backdrop-filter: blur(10px);
-    animation: slideInRight 0.3s ease;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    min-width: 300px;
-    max-width: 400px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  `
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  background: ${colors[type]};
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 20000;
+  backdrop-filter: blur(10px);
+  animation: slideInRight 0.3s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  min-width: 300px;
+  max-width: 400px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+`
 
   document.body.appendChild(notification)
 
@@ -1103,28 +1667,28 @@ document.addEventListener("click", (e) => {
 // Ajouter les animations CSS
 const style = document.createElement("style")
 style.textContent = `
-  @keyframes slideInRight {
-    from {
-      opacity: 0;
-      transform: translateX(100px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
   }
-  
-  @keyframes slideOutRight {
-    from {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    to {
-      opacity: 0;
-      transform: translateX(100px);
-    }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+}
 `
 document.head.appendChild(style)
 
-console.log("✅ Script job-details.js chargé complètement")
+console.log("✅ Script job-details-enhanced.js chargé complètement avec compatibilité et modal sombre")

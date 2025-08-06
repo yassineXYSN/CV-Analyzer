@@ -111,6 +111,11 @@
                     <a href="/profile/{{ candidate_id }}" style="flex: 1; min-width: 200px; max-width: 250px; text-align: center; padding: 1.25rem 2rem; background: var(--accent-gradient); color: #000; border: none; border-radius: 16px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);">
                         👁️ Voir le profil détaillé
                     </a>
+                     <!-- ===== QUIZ FUNCTIONALITY INTEGRATION START ===== -->
+                     <a href="/take-quiz/{{ candidate_id }}" style="flex: 1; min-width: 200px; max-width: 250px; text-align: center; padding: 1.25rem 2rem; background: linear-gradient(135deg, #00ff88, #00d4ff); color: #000; border: none; border-radius: 16px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);">
+                        🧠 Passer le QCM
+                    </a>
+                    <!-- ===== QUIZ FUNCTIONALITY INTEGRATION END ===== -->
                     <button onclick="downloadCV()" style="background: transparent; color: var(--text-primary); border: 2px solid var(--border-color); padding: 1.25rem 2rem; border-radius: 16px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.75rem; min-width: 200px;">
                         📄 Télécharger CV
                     </button>
@@ -216,7 +221,7 @@
     <script>
         // Pass data from backend to frontend
         window.analysisData = {
-            pdf_text: {{ pdf_text|tojson }},
+            pdf_text: {{ pdf_text|tojson|safe }},
             score: {{ score }}
         };
 
@@ -228,7 +233,7 @@
             first_name: "{{ current_user.first_name or '' }}",
             last_name: "{{ current_user.last_name or '' }}",
             name: "{{ (current_user.first_name + ' ' + current_user.last_name).strip() if current_user.first_name else current_user.email }}",
-            is_active: {{ 'true' if current_user.is_active else 'false' }}
+            is_active: {% if current_user.is_active %}true{% else %}false{% endif %}
         };
         {% else %}
         window.currentUser = null;

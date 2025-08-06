@@ -276,3 +276,4 @@ class AdminDepartments(Base):
     # Relations
     admin = relationship("HRAdmin")
     department = relationship("Department")
+

@@ -618,7 +618,7 @@ html {
 /* ===== APPLICATIONS CONTAINER AMÉLIORÉ ===== */
 .applications-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  grid-template-columns: repeat(2, 1fr); /* Changed this line */
   gap: 1.5rem;
   max-height: 600px;
   overflow-y: auto;

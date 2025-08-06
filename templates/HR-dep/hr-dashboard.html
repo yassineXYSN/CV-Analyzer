@@ -33,6 +33,7 @@
                 <span id="welcomeMessage">Bienvenue, User</span>
                 <div class="user-role" id="userRoleDisplay"></div>
                 <div class="avatar" id="userAvatar">SJ</div>
+
                 <button class="logout-btn" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
@@ -151,6 +152,7 @@
                                 <option value="accepted">Acceptées</option>
                                 <option value="rejected">Rejetées</option>
                             </select>
+
                             <select class="compatibility-filter-select" onchange="filterApplicationsByCompatibility(this.value)">
                                 <option value="all">Toutes compatibilités</option>
                                 <option value="high">Élevée (75%+)</option>
@@ -165,9 +167,7 @@
                             <i class="fas fa-file-alt"></i>
                             <h4>Aucune candidature</h4>
                             <p>Aucune candidature en attente pour le moment</p>
-                            <button class="empty-btn" onclick="createDemoApplications()">
-                                <i class="fas fa-plus"></i> Créer des candidatures de test
-                            </button>
+
                         </div>
                     </div>
                 </section>
@@ -202,7 +202,7 @@
         </div>
     </div>
 
-    <!-- Modal Département -->
+    <!-- Modal Département AMÉLIORÉ -->
     <div id="departmentModal" class="modal-overlay" style="z-index: 10000;">
         <div class="modal-content department-modal-enhanced">
             <div class="modal-header">
@@ -221,6 +221,7 @@
                             <label class="form-label">
                                 <i class="fas fa-tag"></i>
                                 Nom du département *
+
                             </label>
                             <input 
                                 type="text" 
@@ -260,7 +261,7 @@
                         </div>
                     </div>
 
-                    <!-- Section Chef de Département -->
+                    <!-- Section Chef de Département PROFESSIONNALISÉE -->
                     <div class="form-section manager-section-enhanced">
                         <div class="section-header-professional">
                             <div class="section-title">
@@ -479,361 +480,346 @@
         </div>
     </div>
 
-    <!-- Modal Job -->
+    <!-- Modal Job AMÉLIORÉ -->
     <div id="jobModal" class="modal-overlay" style="z-index: 10001;">
-        <div class="modal-content job-modal-enhanced">
-            <div class="modal-header">
-                <h3><i class="fas fa-briefcase"></i> Création d'un nouveau poste</h3>
-                <button class="modal-close" onclick="closeJobModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="jobForm">
-                    <!-- Section Informations de base -->
-                    <div class="form-section">
-                        <h4><i class="fas fa-info-circle"></i> Informations générales du poste</h4>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-briefcase"></i>
-                                    Titre du poste *
-                                </label>
-                                <input 
-                                    type="text" 
-                                    id="jobTitle" 
-                                    class="form-input" 
-                                    placeholder="ex: Développeur Full-Stack Senior, Chef de Projet Marketing..."
-                                    required
-                                >
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-building"></i>
-                                    Département *
-                                </label>
-                                <select id="jobDepartment" class="form-select" required>
-                                    <option value="">Sélectionner un département</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-flag"></i>
-                                    Niveau de priorité
-                                </label>
-                                <select id="jobPriority" class="form-select" required>
-                                    <option value="normal">📋 Normal - Recrutement standard</option>
-                                    <option value="urgent">🔥 Urgent - Besoin immédiat</option>
-                                    <option value="low">⏳ Faible - Pas de rush</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-calendar"></i>
-                                    Date limite de candidature
-                                </label>
-                                <input 
-                                    type="date" 
-                                    id="jobDeadline" 
-                                    class="form-input"
-                                >
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section Contrat et Rémunération -->
-                    <div class="form-section">
-                        <h4><i class="fas fa-handshake"></i> Contrat et rémunération</h4>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-clock"></i>
-                                    Type de contrat *
-                                </label>
-                                <select id="jobType" class="form-select" required>
-                                    <option value="">Sélectionner le type de contrat</option>
-                                    <option value="CDI">💼 CDI - Contrat à durée indéterminée</option>
-                                    <option value="CDD">📅 CDD - Contrat à durée déterminée</option>
-                                    <option value="Stage">🎓 Stage - Formation professionnelle</option>
-                                    <option value="Freelance">💻 Freelance - Mission indépendante</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-euro-sign"></i>
-                                    Fourchette salariale (€/an)
-                                </label>
-                                <div class="salary-range">
-                                    <input 
-                                        type="number" 
-                                        id="jobSalaryMin" 
-                                        class="form-input" 
-                                        placeholder="Salaire minimum"
-                                        min="0"
-                                        step="1000"
-                                    >
-                                    <span>à</span>
-                                    <input 
-                                        type="number" 
-                                        id="jobSalaryMax" 
-                                        class="form-input" 
-                                        placeholder="Salaire maximum"
-                                        min="0"
-                                        step="1000"
-                                    >
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section Description détaillée -->
-                    <div class="form-section">
-                        <h4><i class="fas fa-file-text"></i> Description détaillée du poste</h4>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-info-circle"></i>
-                                Description générale du poste *
-                            </label>
-                            <textarea 
-                                id="jobDescription" 
-                                class="form-textarea" 
-                                placeholder="Décrivez le poste, l'environnement de travail, les objectifs principaux..."
-                                rows="4"
-                                required
-                            ></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-list-check"></i>
-                                Compétences et qualifications requises
-                            </label>
-                            <textarea 
-                                id="jobRequirements" 
-                                class="form-textarea" 
-                                placeholder="Listez les compétences techniques, diplômes, expériences requises..."
-                                rows="3"
-                            ></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-tasks"></i>
-                                Responsabilités principales
-                            </label>
-                            <textarea 
-                                id="jobResponsibilities" 
-                                class="form-textarea" 
-                                placeholder="Détaillez les missions quotidiennes, projets à mener, équipes à gérer..."
-                                rows="3"
-                            ></textarea>
-                        </div>
-                    </div>
-
-                    <!-- Section Compétences requises -->
-                    <div class="form-section">
-                        <h4><i class="fas fa-cogs"></i> Compétences requises</h4>
-                        <div class="form-group">
-                            <div class="skills-container">
-                                <div class="skills-input-section">
-                                    <div class="skill-input-row">
-                                        <input 
-                                            type="text" 
-                                            id="skillNameInput" 
-                                            class="form-input" 
-                                            placeholder="Nom de la compétence (ex: Python, JavaScript...)"
-                                            style="flex: 1; margin-right: 10px;"
-                                        >
-                                        <select id="skillLevelInput" class="form-select" style="width: 150px; margin-right: 10px;">
-                                            <option value="beginner">Débutant</option>
-                                            <option value="intermediate" selected>Intermédiaire</option>
-                                            <option value="advanced">Avancé</option>
-                                            <option value="expert">Expert</option>
-                                        </select>
-                                        <label class="skill-required-label">
-                                            <input type="checkbox" id="skillRequiredInput" checked> Requis
-                                        </label>
-                                        <button type="button" class="btn-add-skill" onclick="addSkill()">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="skills-list" id="skillsList">
-                                    <!-- Les compétences ajoutées apparaîtront ici -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section Assignation optionnelle -->
-                    <div class="form-section">
-                        <h4><i class="fas fa-user-check"></i> Assignation (optionnel)</h4>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-user"></i>
-                                Employé déjà identifié pour ce poste
-                            </label>
-                            <select id="jobEmployee" class="form-select">
-                                <option value="">Aucun employé pré-assigné</option>
-                            </select>
-                            <small class="form-help">Si vous avez déjà un candidat en tête, vous pouvez l'assigner directement</small>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeJobModal()">
-                    <i class="fas fa-times"></i>
-                    Annuler
-                </button>
-                <button class="btn-primary" onclick="createJob()">
-                    <i class="fas fa-plus"></i>
-                    Créer le poste
-                </button>
-            </div>
+    <div class="modal-content job-modal-enhanced">
+        <div class="modal-header">
+            <h3><i class="fas fa-briefcase"></i> Création d'un nouveau poste</h3>
+            <button class="modal-close" onclick="closeJobModal()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
-    </div>
-
-    <!-- Modal Employé -->
-    <div id="employeeModal" class="modal-overlay" style="z-index: 10002;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-user-plus"></i> Nouvel Employé</h3>
-                <button class="modal-close" onclick="closeEmployeeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="employeeForm">
+        <div class="modal-body">
+            <form id="jobForm">
+                <!-- Section Informations de base -->
+                <div class="form-section">
+                    <h4><i class="fas fa-info-circle"></i> Informations générales du poste</h4>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">
-                                <i class="fas fa-user"></i>
-                                Prénom
+                                <i class="fas fa-briefcase"></i>
+                                Titre du poste *
                             </label>
                             <input 
                                 type="text" 
-                                id="employeeFirstName" 
+                                id="jobTitle" 
                                 class="form-input" 
-                                placeholder="Prénom"
-                                required
-                            >
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-user"></i>
-                                Nom
-                            </label>
-                            <input 
-                                type="text" 
-                                id="employeeLastName" 
-                                class="form-input" 
-                                placeholder="Nom"
-                                required
-                            >
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-envelope"></i>
-                                Email
-                            </label>
-                            <input 
-                                type="email" 
-                                id="employeeEmail" 
-                                class="form-input" 
-                                placeholder="email@entreprise.com"
+                                placeholder="ex: Développeur Full-Stack Senior, Chef de Projet Marketing..."
                                 required
                             >
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-building"></i>
-                                Département
+                                Département *
                             </label>
-                            <select id="employeeDepartment" class="form-select" required>
+                            <select id="jobDepartment" class="form-select" required>
                                 <option value="">Sélectionner un département</option>
                             </select>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-briefcase"></i>
-                            Poste
-                        </label>
-                        <input 
-                            type="text" 
-                            id="employeePosition" 
-                            class="form-input" 
-                            placeholder="Titre du poste"
-                            required
-                        >
-                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">
-                                <i class="fas fa-phone"></i>
-                                Téléphone
+                                <i class="fas fa-flag"></i>
+                                Niveau de priorité
                             </label>
-                            <input 
-                                type="tel" 
-                                id="employeePhone" 
-                                class="form-input" 
-                                placeholder="+33 1 23 45 67 89"
-                            >
+                            <select id="jobPriority" class="form-select" required>
+                                <option value="normal">📋 Normal - Recrutement standard</option>
+                                <option value="urgent">🔥 Urgent - Besoin immédiat</option>
+                                <option value="low">⏳ Faible - Pas de rush</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-calendar"></i>
-                                Date d'embauche
+                                Date limite de candidature
                             </label>
                             <input 
                                 type="date" 
-                                id="employeeHireDate" 
+                                id="jobDeadline" 
                                 class="form-input"
                             >
                         </div>
                     </div>
+                </div>
+
+                <!-- Section Contrat et Rémunération -->
+                <div class="form-section">
+                    <h4><i class="fas fa-handshake"></i> Contrat et rémunération</h4>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">
-                                <i class="fas fa-euro-sign"></i>
-                                Salaire (€/an)
+                                <i class="fas fa-clock"></i>
+                                Type de contrat *
                             </label>
-                            <input 
-                                type="number" 
-                                id="employeeSalary" 
-                                class="form-input" 
-                                placeholder="45000"
-                            >
+                            <select id="jobType" class="form-select" required>
+                                <option value="">Sélectionner le type de contrat</option>
+                                <option value="CDI">💼 CDI - Contrat à durée indéterminée</option>
+                                <option value="CDD">📅 CDD - Contrat à durée déterminée</option>
+                                <option value="Stage">🎓 Stage - Formation professionnelle</option>
+                                <option value="Freelance">💻 Freelance - Mission indépendante</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <i class="fas fa-clock"></i>
-                                Type de contrat
+                                <i class="fas fa-euro-sign"></i>
+                                Fourchette salariale (€/an)
                             </label>
-                            <select id="employeeType" class="form-select">
-                                <option value="CDI">CDI</option>
-                                <option value="CDD">CDD</option>
-                                <option value="Stage">Stage</option>
-                                <option value="Freelance">Freelance</option>
-                                <option value="Consultant">Consultant</option>
-                            </select>
+                            <div class="salary-range">
+                                <input 
+                                    type="number" 
+                                    id="jobSalaryMin" 
+                                    class="form-input" 
+                                    placeholder="Salaire minimum"
+                                    min="0"
+                                    step="1000"
+                                >
+                                <span>à</span>
+                                <input 
+                                    type="number" 
+                                    id="jobSalaryMax" 
+                                    class="form-input" 
+                                    placeholder="Salaire maximum"
+                                    min="0"
+                                    step="1000"
+                                >
+                            </div>
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeEmployeeModal()">Annuler</button>
-                <button class="btn-primary" onclick="createEmployee()">
-                    <i class="fas fa-user-plus"></i> Ajouter l'employé
+                </div>
+
+                <!-- Section Description détaillée -->
+                <div class="form-section">
+                    <h4><i class="fas fa-file-text"></i> Description détaillée du poste</h4>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-info-circle"></i>
+                            Description générale du poste *
+                        </label>
+                        <textarea 
+                            id="jobDescription" 
+                            class="form-textarea" 
+                            placeholder="Décrivez le poste, l'environnement de travail, les objectifs principaux..."
+                            rows="4"
+                            required
+                        ></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-list"></i>
+                            Exigences
+                        </label>
+                        <textarea 
+                            id="jobRequirements" 
+                            class="form-textarea" 
+                            placeholder="Compétences et qualifications requises..."
+                        ></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tasks"></i>
+                            Responsabilités
+                        </label>
+                        <textarea 
+                            id="jobResponsibilities" 
+                            class="form-textarea" 
+                            placeholder="Principales responsabilités du poste..."
+                        ></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user"></i>
+                            Employé assigné (optionnel)
+                        </label>
+                        <select id="jobEmployee" class="form-select">
+                            <option value="">Aucun employé assigné</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-cogs"></i>
+                            Compétences requises
+                        </label>
+                        <div class="skills-container">
+                            <div class="skills-input-section">
+                                <div class="skill-input-row">
+                                    <input 
+                                        type="text" 
+                                        id="skillNameInput" 
+                                        class="form-input" 
+                                        placeholder="Nom de la compétence (ex: Python, JavaScript...)"
+                                        style="flex: 1; margin-right: 10px;"
+                                    >
+                                    <select id="skillLevelInput" class="form-select" style="width: 150px; margin-right: 10px;">
+                                        <option value="beginner">Débutant</option>
+                                        <option value="intermediate" selected>Intermédiaire</option>
+                                        <option value="advanced">Avancé</option>
+                                        <option value="expert">Expert</option>
+                                    </select>
+                                    <label class="skill-required-label">
+                                        <input type="checkbox" id="skillRequiredInput" checked> Requis
+                                    </label>
+                                    <button type="button" class="btn-add-skill" onclick="addSkill()">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="skills-list" id="skillsList">
+                                <!-- Les compétences ajoutées apparaîtront ici -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Fixed footer with buttons on their own line -->
+        <div class="modal-footer" style="display: block; border-top: 1px solid #eee; padding-top: 15px; margin-top: 10px;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-secondary" onclick="closeJobModal()" style="margin: 0;">Annuler</button>
+                <button class="btn-primary" onclick="createJob()" style="margin: 0;">
+                    <i class="fas fa-plus"></i> Créer le poste
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- Modal Employé -->
+        <div id="employeeModal" class="modal-overlay" style="z-index: 10002;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-user-plus"></i> Nouvel Employé</h3>
+                    <button class="modal-close" onclick="closeEmployeeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="employeeForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-user"></i>
+                                    Prénom
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="employeeFirstName" 
+                                    class="form-input" 
+                                    placeholder="Prénom"
+                                    required
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-user"></i>
+                                    Nom
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="employeeLastName" 
+                                    class="form-input" 
+                                    placeholder="Nom"
+                                    required
+                                >
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-envelope"></i>
+                                    Email
+                                </label>
+                                <input 
+                                    type="email" 
+                                    id="employeeEmail" 
+                                    class="form-input" 
+                                    placeholder="email@entreprise.com"
+                                    required
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-building"></i>
+                                    Département
+                                </label>
+                                <select id="employeeDepartment" class="form-select" required>
+                                    <option value="">Sélectionner un département</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-briefcase"></i>
+                                Poste
+                            </label>
+                            <input 
+                                type="text" 
+                                id="employeePosition" 
+                                class="form-input" 
+                                placeholder="Titre du poste"
+                                required
+                            >
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-phone"></i>
+                                    Téléphone
+                                </label>
+                                <input 
+                                    type="tel" 
+                                    id="employeePhone" 
+                                    class="form-input" 
+                                    placeholder="+33 1 23 45 67 89"
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-calendar"></i>
+                                    Date d'embauche
+                                </label>
+                                <input 
+                                    type="date" 
+                                    id="employeeHireDate" 
+                                    class="form-input"
+                                >
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-euro-sign"></i>
+                                    Salaire (€/an)
+                                </label>
+                                <input 
+                                    type="number" 
+                                    id="employeeSalary" 
+                                    class="form-input" 
+                                    placeholder="45000"
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-clock"></i>
+                                    Type de contrat
+                                </label>
+                                <select id="employeeType" class="form-select">
+                                    <option value="CDI">CDI</option>
+                                    <option value="CDD">CDD</option>
+                                    <option value="Stage">Stage</option>
+                                    <option value="Freelance">Freelance</option>
+                                    <option value="Consultant">Consultant</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeEmployeeModal()">Annuler</button>
+                    <button class="btn-primary" onclick="createEmployee()">
+                        <i class="fas fa-user-plus"></i> Ajouter l'employé
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats QCM Multiples | CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/client-dep/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Results-specific styles */
+        .results-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 3rem 2rem;
+            background: var(--card-bg);
+            border-radius: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(12px);
+            border: 1.5px solid var(--border-color);
+            position: relative;
+            z-index: 10;
+        }
+
+        .results-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(0, 255, 136, 0.05) 100%);
+            border-radius: 2rem;
+            z-index: -1;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .results-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .candidate-info {
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            text-align: center;
+        }
+
+        .candidate-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 0.5rem;
+        }
+
+        .candidate-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .overall-score {
+            background: var(--accent-gradient);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.2);
+        }
+
+        .overall-score-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 0.5rem;
+        }
+
+        .overall-score-value {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #000;
+            letter-spacing: 1px;
+        }
+
+        .performance-comment {
+            margin-top: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.8rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-align: center;
+            border: 2px solid;
+        }
+
+        .performance-fail {
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
+            border-color: rgba(255, 71, 87, 0.3);
+        }
+
+        .performance-passable {
+            background: rgba(255, 165, 2, 0.1);
+            color: #ffa502;
+            border-color: rgba(255, 165, 2, 0.3);
+        }
+
+        .performance-good {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .performance-excellent {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        .quiz-block {
+            margin-bottom: 3rem;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quiz-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-gradient);
+        }
+
+        .quiz-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quiz-icon {
+            font-size: 1.2rem;
+        }
+
+        .score-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.1) 100%);
+            z-index: -1;
+        }
+
+        .final-score {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .category-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .category-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(0, 212, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .category-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .category-score {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+
+        .detailed-results {
+            margin-top: 2rem;
+        }
+
+        .detailed-results h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .question-result {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .question-result:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 212, 255, 0.2);
+        }
+
+        .question-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .answer-status {
+            padding: 0.5rem 1rem;
+            border-radius: 0.8rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .correct {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .incorrect {
+            background: rgba(255, 71, 87, 0.2);
+            color: #ff4757;
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .question-text {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .options-list {
+            margin-bottom: 1rem;
+        }
+
+        .option-row {
+            padding: 0.8rem 1rem;
+            border-radius: 0.8rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .option-row.correct-answer {
+            background: rgba(0, 255, 136, 0.15);
+            font-weight: bold;
+            border: 1px solid #00ff88;
+        }
+
+        .option-row.user-answer {
+            border: 2px solid #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .option-row.correct-answer.user-answer {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+        }
+
+        .explanation {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            background: rgba(0, 212, 255, 0.07);
+            border-left: 3px solid #00d4ff;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn {
+            padding: 1.2rem 2rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(.4,0,.2,1);
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .results-container {
+                margin: 1rem;
+                padding: 2rem 1.5rem;
+            }
+
+            .results-title {
+                font-size: 2rem;
+            }
+
+            .overall-score-value {
+                font-size: 2.5rem;
+            }
+
+            .quiz-block {
+                padding: 1.5rem;
+            }
+
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Navigation -->
+    <div id="header-component"></div>
+
+    <div class="main-container">
+        <div class="results-container">
+            <div class="results-header">
+                <h1 class="results-title">🎉 QCMs Terminés !</h1>
+                
+                {% if candidate_name %}
+                <div class="candidate-info">
+                    <div class="candidate-name">👤 {{ candidate_name }}</div>
+                    <div class="candidate-subtitle">Résultats de l'évaluation des compétences</div>
+                </div>
+                {% endif %}
+
+                {% set avg_score = (evaluations|map(attribute='total_score')|sum) / (evaluations|length) if evaluations else 0 %}
+                
+                {% if avg_score < 50 %}
+                    {% set performance_class = "performance-fail" %}
+                    {% set performance_comment = "❌ Échec - Des efforts supplémentaires sont nécessaires pour maîtriser ces compétences." %}
+                {% elif avg_score < 60 %}
+                    {% set performance_class = "performance-fail" %}
+                    {% set performance_comment = "⚠️ Insuffisant - Des révisions approfondies sont recommandées." %}
+                {% elif avg_score < 70 %}
+                    {% set performance_class = "performance-passable" %}
+                    {% set performance_comment = "🟡 Passable - Niveau acceptable mais des améliorations sont possibles." %}
+                {% elif avg_score < 80 %}
+                    {% set performance_class = "performance-good" %}
+                    {% set performance_comment = "🟢 Bon - Bon niveau de compétence démontré." %}
+                {% elif avg_score < 90 %}
+                    {% set performance_class = "performance-good" %}
+                    {% set performance_comment = "🔵 Très Bon - Excellente maîtrise des compétences évaluées." %}
+                {% else %}
+                    {% set performance_class = "performance-excellent" %}
+                    {% set performance_comment = "⭐ Excellent - Maîtrise exceptionnelle des compétences !" %}
+                {% endif %}
+                
+                <div class="overall-score">
+                    <div class="overall-score-label">Score Moyen Global</div>
+                    <div class="overall-score-value">{{ "%.1f"|format(avg_score) }}%</div>
+                    <div class="performance-comment {{ performance_class }}">
+                        {{ performance_comment }}
+                    </div>
+                </div>
+            </div>
+
+            {% for evaluation in evaluations %}
+            <div class="quiz-block">
+                <div class="quiz-title">
+                    <span class="quiz-icon">💼</span>
+                    {{ evaluation.quiz_title }}
+                </div>
+                
+                {% if evaluation.total_score < 50 %}
+                    {% set quiz_performance_class = "performance-fail" %}
+                    {% set quiz_performance_comment = "❌ Échec - Des efforts supplémentaires sont nécessaires." %}
+                {% elif evaluation.total_score < 60 %}
+                    {% set quiz_performance_class = "performance-fail" %}
+                    {% set quiz_performance_comment = "⚠️ Insuffisant - Des révisions approfondies sont recommandées." %}
+                {% elif evaluation.total_score < 70 %}
+                    {% set quiz_performance_class = "performance-passable" %}
+                    {% set quiz_performance_comment = "🟡 Passable - Niveau acceptable mais des améliorations sont possibles." %}
+                {% elif evaluation.total_score < 80 %}
+                    {% set quiz_performance_class = "performance-good" %}
+                    {% set quiz_performance_comment = "🟢 Bon - Bon niveau de compétence démontré." %}
+                {% elif evaluation.total_score < 90 %}
+                    {% set quiz_performance_class = "performance-good" %}
+                    {% set quiz_performance_comment = "🔵 Très Bon - Excellente maîtrise des compétences." %}
+                {% else %}
+                    {% set quiz_performance_class = "performance-excellent" %}
+                    {% set quiz_performance_comment = "⭐ Excellent - Maîtrise exceptionnelle !" %}
+                {% endif %}
+                
+                <div class="score-card">
+                    <div class="final-score">{{ "%.1f"|format(evaluation.total_score) }}%</div>
+                    <div class="performance-comment {{ quiz_performance_class }}" style="margin-bottom: 1.5rem;">
+                        {{ quiz_performance_comment }}
+                    </div>
+                    <div class="category-grid">
+                        {% for category, score in evaluation.category_scores.items() %}
+                        <div class="category-card">
+                            <div class="category-name">{{ category }}</div>
+                            <div class="category-score">{{ "%.1f"|format(score) }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="detailed-results">
+                    <h2>
+                        <span>📋</span>
+                        Détail des réponses
+                    </h2>
+                    {% for result in evaluation.detailed_results %}
+                    <div class="question-result">
+                        <div class="question-header">
+                            <span class="answer-status {% if result.is_correct %}correct{% else %}incorrect{% endif %}">
+                                {% if result.is_correct %}✅ Correct{% else %}❌ Incorrect{% endif %}
+                            </span>
+                            <span style="font-weight:600; color:var(--text-primary);">Question {{ loop.index }}</span>
+                        </div>
+                        
+                        <div class="question-text">{{ result.question }}</div>
+                        
+                        <div class="options-list">
+                            {% for key, text in result.options.items() %}
+                            <div class="option-row{% if key == result.correct_answer %} correct-answer{% endif %}{% if key == result.user_answer %} user-answer{% endif %}">
+                                <span style="font-weight:600;">{{ key }}.</span> {{ text }}
+                                {% if key == result.correct_answer %}<span style="color:#00ff88; font-weight:600; margin-left:8px;">(Réponse correcte)</span>{% endif %}
+                                {% if key == result.user_answer %}<span style="color:#00d4ff; font-weight:600; margin-left:8px;">(Votre réponse)</span>{% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div style="margin-top:1rem;">
+                            <span style="color:#00ff88; font-weight:600;">✅ Bonne réponse : {{ result.correct_answer }}. {{ result.options[result.correct_answer] }}</span>
+                            {% if result.explanation %}
+                                <div class="explanation">
+                                    <span style="font-weight:600; color:#00d4ff;">💡 Explication :</span> {{ result.explanation }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="actions">
+                <a href="/profile/{{ candidate_id }}" class="btn btn-primary">
+                    <span>👁️</span>
+                    Voir le profil complet
+                </a>
+                <a href="/take-quiz/{{ candidate_id }}" class="btn btn-secondary">
+                    <span>🔄</span>
+                    Nouveau QCM
+                </a>
+                <button onclick="window.print()" class="btn btn-secondary">
+                    <span>🖨️</span>
+                    Imprimer les résultats
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>CV Analyzer Pro</h3>
+                <p>La solution d'analyse de CV la plus avancée du marché. Propulsée par l'intelligence artificielle pour des résultats précis et exploitables.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Navigation</h3>
+                <p><a href="/">Accueil</a></p>
+                <p><a href="/#features">Fonctionnalités</a></p>
+                <p><a href="/#how-it-works">Comment ça marche</a></p>
+                <p><a href="/analyze">Analyser un CV</a></p>
+                <p><a href="/jobs">Offres d'emploi</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <p><a href="#contact">Centre d'aide</a></p>
+                <p><a href="#contact">Documentation</a></p>
+                <p><a href="#contact">Contact</a></p>
+                <p><a href="#contact">FAQ</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Légal</h3>
+                <p><a href="#legal">Politique de confidentialité</a></p>
+                <p><a href="#legal">Conditions d'utilisation</a></p>
+                <p><a href="#legal">RGPD</a></p>
+                <p><a href="#legal">Sécurité</a></p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 CV Analyzer Pro. Tous droits réservés. Fait avec ❤️ pour les professionnels.</p>
+        </div>
+    </footer>
+
+    <script src="/static/client-dep/js/header.js"></script>
+    <script>
+        // Load header component
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/static/client-dep/components/header.html');
+                if (response.ok) {
+                    const headerHTML = await response.text();
+                    const container = document.getElementById('header-component');
+                    container.innerHTML = headerHTML;
+                    
+                    // Execute scripts from the loaded HTML
+                    const scripts = container.querySelectorAll('script');
+                    scripts.forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        newScript.textContent = oldScript.textContent;
+                        oldScript.parentNode.removeChild(oldScript);
+                        document.body.appendChild(newScript);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load header component:', error);
+            }
+        });
+
+        // Add print styles
+        const printStyles = `
+            @media print {
+                .background-effects, .footer, .actions { display: none !important; }
+                .results-container { 
+                    box-shadow: none !important; 
+                    background: white !important; 
+                    color: black !important;
+                }
+                .results-title, .candidate-name, .quiz-title { color: #333 !important; }
+                .final-score, .overall-score-value { color: #00d4ff !important; }
+                body { background: white !important; }
+            }
+        `;
+        
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = printStyles;
+        document.head.appendChild(styleSheet);
+    </script>
+</body>
+</html> 
