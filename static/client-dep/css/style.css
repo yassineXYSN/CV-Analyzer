@@ -589,6 +589,10 @@ body {
   background: rgba(0, 0, 0, 0.4) !important;
 }
 
+.form-input::placeholder {
+  color: var(--text-muted) !important;
+}
+
 .submit-btn {
   width: 100% !important;
   padding: 1.25rem !important;
@@ -1039,12 +1043,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  grid-column: 1;
 }
 
 .results-sidebar {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  grid-column: 2;
 }
 
 .results-card {

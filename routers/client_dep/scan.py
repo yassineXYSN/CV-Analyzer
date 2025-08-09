@@ -1,30 +1,148 @@
+from __future__ import annotations
+
+import os
+import json
+from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
+
+import httpx
 from fastapi import APIRouter, Request, UploadFile, File, Form, Depends
 from fastapi.responses import HTMLResponse
-from database import SessionLocal
-from routers.client_dep.dependencies import get_db, get_current_user
-import extract_information_cv.text_extractor as text_extractor
-import extract_information_cv.textcleaner as textcleaner
-import cv_analyzer.data_generator as data_generator
-from cv_analyzer.information_analyzer import compute_similarity
-from databaseclient.insert_to_db import insert_candidate_data
-import os
-from pydantic import BaseModel
-import cv_analyzer.description_generator as generate_job_description
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from routers.client_dep.dependencies import get_db, get_current_user
+from databaseclient.insert_to_db import insert_candidate_data
+
 router = APIRouter()
-# Templates
+
+# Resolve templates directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-
-# Chemin vers le dossier templates
 templates_dir = os.path.join(BASE_DIR, "templates")
-
 templates = Jinja2Templates(directory=templates_dir)
 
+# n8n webhook URL (set N8N_WEBHOOK_URL in env to override)
+N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")
 
-class TopicRequest(BaseModel):
-    topic: str
+# Optional polling endpoint if your n8n exposes one (leave empty if not used)
+N8N_RESULT_URL = os.getenv("N8N_RESULT_URL")
+
+
+def add_query_params(url: str, params: Dict[str, str]) -> str:
+    parsed = urlparse(url)
+    q = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    q.update(params)
+    new_query = urlencode(q)
+    return urlunparse(parsed._replace(query=new_query))
+
+
+def to_prod_webhook(url: str) -> str:
+    return url.replace("/webhook-test/", "/webhook/")
+
+
+def compute_overall_score_from_categories(scores: Dict[str, Any]) -> int:
+    numeric_values: List[float] = []
+    for v in scores.values():
+        try:
+            numeric_values.append(float(v))
+        except Exception:
+            continue
+    if not numeric_values:
+        return 0
+    return int(round(sum(numeric_values) / len(numeric_values)))
+
+
+def normalize_improvements(improvements: Any) -> List[Dict[str, str]]:
+    """
+    Normalize improvements into a list of dicts: [{ category: str, action: str }]
+    Supports inputs like:
+      - ["String tip", ...]
+      - [{"improvement": "..."}, ...]
+      - [{"category": "Education", "action": "..."} , ...]
+      - "single string"
+    """
+    result: List[Dict[str, str]] = []
+    if not improvements:
+        return result
+
+    def push(cat: str, act: str):
+        act = str(act).strip()
+        if act:
+            result.append({"category": str(cat or "General"), "action": act})
+
+    if isinstance(improvements, list):
+        for item in improvements:
+            if isinstance(item, dict):
+                # accept several common keys
+                category = item.get("category") or item.get("type") or "General"
+                action = item.get("action") or item.get("improvement") or item.get("text") or ""
+                push(category, action)
+            else:
+                push("General", str(item))
+    elif isinstance(improvements, dict):
+        category = improvements.get("category") or "General"
+        action = improvements.get("action") or improvements.get("improvement") or ""
+        push(category, action)
+    else:
+        push("General", str(improvements))
+
+    return result
+
+
+def first_item_if_list(data: Any) -> Any:
+    if isinstance(data, list) and data:
+        return data[0]
+    return data
+
+
+async def post_to_n8n_wait_for_json(
+    url: str,
+    file_name: str,
+    file_bytes: bytes,
+    content_type: Optional[str],
+    selected_profiles: str,
+    timeout_seconds: int = 180,
+) -> Optional[dict]:
+    """
+    Post to n8n webhook and wait for JSON:
+    - Adds wait=true to query string
+    - Long timeout
+    - Tries both test and prod paths
+    """
+    wait_url = add_query_params(url, {"wait": "true"})
+    alt_wait_url = add_query_params(to_prod_webhook(url), {"wait": "true"})
+
+    async with httpx.AsyncClient(timeout=timeout_seconds) as client:
+        for target_url in (wait_url, alt_wait_url):
+            try:
+                files = {
+                    "CV": (file_name, file_bytes, content_type or "application/pdf")
+                }
+                data = {"selectedProfiles": selected_profiles}
+                resp = await client.post(target_url, files=files, data=data)
+
+                if resp.status_code >= 400:
+                    continue
+
+                ctype = (resp.headers.get("content-type") or "").lower()
+                text = resp.text or ""
+                if "application/json" in ctype:
+                    try:
+                        print(f"Received JSON response from n8n: {resp.text}")
+                        return resp.json()
+                    except Exception:
+                        pass
+
+                if text.strip().startswith("{") or text.strip().startswith("["):
+                    try:
+                        return json.loads(text)
+                    except Exception:
+                        pass
+            except httpx.HTTPError:
+                continue
+
+    return None
+
 
 @router.get("/analyze", response_class=HTMLResponse)
 def analyze_page(request: Request, db: Session = Depends(get_db)):
@@ -34,6 +152,7 @@ def analyze_page(request: Request, db: Session = Depends(get_db)):
         "current_user": current_user
     })
 
+
 @router.post("/scan", response_class=HTMLResponse)
 async def scan_file(
     request: Request,
@@ -41,173 +160,133 @@ async def scan_file(
     selectedProfiles: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    """
+    Unified route:
+    - Forwards the CV to n8n and waits for JSON
+    - Builds all data (including detailed analysis) server-side
+    - Renders result page with detailed analysis already populated
+    """
     current_user = get_current_user(request, db)
-    
-    # Créer le dossier uploads s'il n'existe pas
+
+    # Save uploaded file
     os.makedirs("uploads", exist_ok=True)
-    
     file_location = f"uploads/{filetoscan.filename}"
-    print(selectedProfiles)
-
-    # Save file to disk temporarily
+    file_bytes = await filetoscan.read()
     with open(file_location, "wb") as f:
-        f.write(await filetoscan.read())
-    
-    
-    # Process the file
-    print("Extracting text from the file...")
-    pdf_text, images_text = text_extractor.process_file(file_location)
-    print("Text extraction completed.")
+        f.write(file_bytes)
 
-    # Clean up
-    print("Cleaning up the extracted text...")
-    pdf_text = textcleaner.cleantext(pdf_text)
-    print("Cleaned up the extracted text.")
-    # Generate summary.
-    print("Generating summary ...")
-    summary = data_generator.generate_summary(pdf_text, images_text)
-    print("Summary generation completed.")
-    print("Generating structured data ...")
-    data_json = data_generator.generate_json(pdf_text)
-    print(data_json)
-    
-    jobs_description = generate_job_description.generate_job_description(selectedProfiles)
+    # 1) Wait for n8n JSON
+    n8n_data = [{"name":"Zied Ameur","title":"Développeur Intégrateur WordPress","yearsOfExperience":"4","contact":{"email":"ziedameur02@gmail.com","phone":"+216 26 925 917","linkedin":"","address":"1145 mhamdia ben arous Tunisie, Rue ibn elmokafaa cité enazeha"},"profile":"","education":[{"institution":"ISI KEF","degree":"Master Professionnel en administration et sécurité des réseaux informatiques","years":"2015-2019"},{"institution":"ISET JENDOUBA","degree":"Licence Appliqué en Développement des Systèmes d’informations","years":"2012-2014"},{"institution":"CIFOP","degree":"Formation PHP7/Symfony4","years":"2020"},{"institution":"CIFOP","degree":"Formation Développement web","years":"2019"}],"languages":["Arabe","Français","Anglais"],"certificates":["Apprenez à créer votre site web avec OpenClassrooms","Introduction à jQuery - OpenClassrooms","Écrivez du JavaScript pour le web – OpenClassrooms","Programmez-en Orienté Objet - OpenClassrooms","HTML5 et CSS3 – OpenClassrooms"],"skills":["HTML5","CSS3","JavaScript","jQuery","Bootstrap","PHP","WordPress","Elementor","Prestashop","Symfony4","MySQL","PostgreSQL","UML","SEO","WordPress plugins configuration","Website optimization","Content management system configuration","Responsive web design","Technical support","User training","ERP MS setup","Problem-solving","Website maintenance"],"strong_points":[],"weak_points":["Lack of hands-on experience with modern frameworks beyond Symfony4","No mention of certifications or formal education in web development","Limited experience with popular content management systems aside from WordPress","No specialization in specific industry applications or roles","Outdated skills in some areas such as basic PHP and frontend technologies","Lack of information on collaborative or team projects","Insufficient details on any leadership or management roles","Missing current and relevant programming methodologies or practices","Absence of soft skills or interpersonal skills highlighted","No evidence of staying updated with recent trends in web development"],"scores":{"Work Experience":80,"Skills & Technical Expertise":90,"Education":70,"Certifications & Training":75,"Soft Skills & Leadership":65,"Overall Structure & Presentation":60},"key_improvements":["Gain hands-on experience with modern frameworks like React.js, Vue.js, or Angular and include them in the CV.","Pursue and obtain relevant certifications in web development or related technologies and add them to the CV to enhance credibility.","Broaden experience by working with a wider range of content management systems like Drupal or Joomla, and list this experience on the CV.","Identify a specific industry or niche such as e-commerce, education, or healthcare, and prepare projects that demonstrate expertise in this area.","Update knowledge on basic PHP and frontend technologies by taking current courses or tutorials, and reflect these in an updated skills list.","Participate in group projects or team collaborations and include specific roles and contributions to demonstrate teamwork skills.","Seek leadership opportunities within projects or organizations and highlight these experiences to showcase management capabilities.","Incorporate current programming methodologies such as Agile, Scrum, or DevOps practices in the CV to show familiarity with modern development processes.","Highlight soft skills such as communication, teamwork, and problem-solving abilities to create a more balanced skill set.","Engage with web development communities or continuous learning platforms to stay updated with the latest trends and technologies, and add recent workshops or webinars attended to the CV."],"summary":"The candidate has a foundational understanding of web development technologies, particularly in HTML, CSS, JavaScript, and Symfony4, which are their strongest points. However, they lack practical experience with modern frameworks and have outdated skills in areas like basic PHP and frontend technologies. There is no formal education or certifications in web development, which raises concerns about their professional credibility. The absence of hands-on experience with various content management systems aside from WordPress and a lack of specialization limit their employability in niche roles. Furthermore, the CV fails to highlight collaborative projects, leadership experience, or soft skills, suggesting a gap in interpersonal capabilities and current industry practices. Overall, while the candidate has the basics, they are not equipped to meet the demands of a rapidly evolving web development landscape."}]
+    n8n_data = await post_to_n8n_wait_for_json(
+        N8N_WEBHOOK_URL,
+        filetoscan.filename,
+        file_bytes,
+        filetoscan.content_type,
+        selectedProfiles,
+        timeout_seconds=180,
+    )
 
-    # Compute matching score
-    score = compute_similarity(summary, jobs_description)
-    
-    skills_titles = [skill.split(":")[0] for skill in data_json["skills"]]
-    skills_titles_str = ", ".join(skills_titles)
+    # 2) Optional: single poll on a result endpoint (if configured)
+    if n8n_data is None and N8N_RESULT_URL:
+        try:
+            poll_url = add_query_params(N8N_RESULT_URL, {"filename": filetoscan.filename})
+            async with httpx.AsyncClient(timeout=60) as client:
+                r = await client.get(poll_url)
+                if r.status_code < 400 and r.text.strip():
+                    if "application/json" in (r.headers.get("content-type", "").lower()):
+                        n8n_data = r.json()
+                    elif r.text.strip().startswith("{") or r.text.strip().startswith("["):
+                        n8n_data = json.loads(r.text)
+        except Exception:
+            n8n_data = None
 
+    # If no JSON, render with a friendly error
+    if n8n_data is None:
+        return templates.TemplateResponse("client-dep/result.html", {
+            "request": request,
+            "filename": filetoscan.filename,
+            "pdf_text": "",
+            "images_text": "",
+            "summary": "Aucune réponse JSON reçue depuis n8n. Veuillez vérifier le workflow (mode de réponse, Respond to Webhook).",
+            "score": 0,
+            "user_info": {
+                "name": "",
+                "title": "",
+                "yearsOfExperience": "0",
+                "contact": {"email": "", "phone": "", "linkedin": "", "address": ""},
+                "profile": "",
+                "education": [],
+                "languages": [],
+                "certificates": [],
+                "skills": [],
+                "strong_points": [],
+                "weak_points": [],
+                "scores": {}
+            },
+            "skills_titles": "",
+            "candidate_id": None,
+            "current_user": current_user,
+            "detailed_analysis": {
+                "success": False,
+                "categorie_scores": {},
+                "good_points": [],
+                "weak_points": [],
+                "improvements": []
+            }
+        })
 
-    
+    n8n_data = first_item_if_list(n8n_data)
+    if not isinstance(n8n_data, dict):
+        n8n_data = {}
 
-    # Insérer les données en base et lier au user si connecté
-    candidate_id = insert_candidate_data(data_json, summary, current_user.id if current_user else None)
+    summary: str = n8n_data.get("summary", "") or ""
+    user_info: Dict[str, Any] = {
+        "name": n8n_data.get("name", "") or "",
+        "title": n8n_data.get("title", "") or "",
+        "yearsOfExperience": n8n_data.get("yearsOfExperience", "0") or "0",
+        "contact": n8n_data.get("contact", {}) or {"email": "", "phone": "", "linkedin": "", "address": ""},
+        "profile": n8n_data.get("profile", "") or "",
+        "education": n8n_data.get("education", []) or [],
+        "languages": n8n_data.get("languages", []) or [],
+        "certificates": n8n_data.get("certificates", []) or [],
+        "skills": n8n_data.get("skills", []) or [],
+        "strong_points": n8n_data.get("strong_points", []) or [],
+        "weak_points": n8n_data.get("weak_points", []) or [],
+        "scores": n8n_data.get("scores", {}) or {},
+        # Accept both key_improvements and improvements keys from n8n
+        "key_improvements": n8n_data.get("key_improvements", n8n_data.get("improvements", [])) or [],
+    }
 
-    # Ensuite on affiche la page avec les résultats
+    scores_map = user_info.get("scores", {}) or {}
+    overall_score = compute_overall_score_from_categories(scores_map)
+
+    skills_list: List[str] = user_info.get("skills", []) or []
+    cleaned_skills = [(s.split(":")[0] if isinstance(s, str) else str(s)) for s in skills_list]
+    skills_titles_str = ", ".join(cleaned_skills)
+
+    # Persist candidate (link to user if present)
+    candidate_id = insert_candidate_data(user_info, summary, current_user.id if current_user else None)
+
+    # Build the detailed analysis payload for direct rendering
+    detailed_analysis = {
+        "success": True,
+        "categorie_scores": scores_map,
+        "good_points": user_info.get("strong_points", []),
+        "weak_points": user_info.get("weak_points", []),
+        "improvements": normalize_improvements(user_info.get("key_improvements", [])),
+    }
+
+    # Render the results with detailed analysis data embedded
     return templates.TemplateResponse("client-dep/result.html", {
         "request": request,
         "filename": filetoscan.filename,
-        "pdf_text": pdf_text,
-        "images_text": images_text,
+        "pdf_text": "",
+        "images_text": "",
         "summary": summary,
-        "score": score,
-        "user_info": data_json,
+        "score": overall_score,
+        "user_info": user_info,
         "skills_titles": skills_titles_str,
         "candidate_id": candidate_id,
-        "current_user": current_user
+        "current_user": current_user,
+        "detailed_analysis": detailed_analysis
     })
-
-@router.post("/create-detailed-analysis")
-async def create_detailed_analysis(request: Request):
-    try:
-        data = await request.json()
-        pdf_text = data.get('pdf_text')
-        
-        print("Hello from create_detailed_analysis")
-        print("PDF text length:", len(pdf_text) if pdf_text else 0)
-        
-        print("Generating categorie scores...")
-        categorie_scores_raw = data_generator.generate_categorie_scores(pdf_text)
-        print("Categorie scores generated:", categorie_scores_raw[:200] + "..." if len(categorie_scores_raw) > 200 else categorie_scores_raw)
-        
-        print("Generating good points...")
-        good_points_raw = data_generator.generate_good_points(pdf_text)
-        print("Good points generated:", good_points_raw[:200] + "..." if len(good_points_raw) > 200 else good_points_raw)
-        
-        print("Generating weak points...")
-        weak_points_raw = data_generator.generate_weak_points(pdf_text)
-        print("Weak points generated:", weak_points_raw[:200] + "..." if len(weak_points_raw) > 200 else weak_points_raw)
-        
-        print("Generating improvements...")
-        improvements_raw = data_generator.generate_improvements(pdf_text, good_points_raw, weak_points_raw, categorie_scores_raw)
-        print("Improvements generated:", improvements_raw[:200] + "..." if len(improvements_raw) > 200 else improvements_raw)
-        
-        # Parse the results
-        categorie_scores = parse_category_scores(categorie_scores_raw)
-        good_points = parse_bullet_points(good_points_raw)
-        weak_points = parse_bullet_points(weak_points_raw)
-        improvements = parse_bullet_points(improvements_raw)
-
-        # Add this return statement
-        return {
-            "success": True,
-            "categorie_scores": categorie_scores,
-            "good_points": good_points,
-            "weak_points": weak_points,
-            "improvements": improvements
-        }
-        
-    except Exception as e:
-        print(f"Error in create_detailed_analysis: {str(e)}")
-        return {"success": False, "error": str(e)}
-    
-
-
-
-import json
-
-def parse_category_scores(categorie_scores_raw: str) -> dict:
-    """
-    Parses category scores JSON string into a dictionary.
-    Handles common formatting issues like extra text or code blocks.
-    """
-    # Clean the string by removing common non-JSON elements
-    cleaned = categorie_scores_raw.strip()
-    
-    # Remove markdown code blocks if present
-    if cleaned.startswith("```json") and cleaned.endswith("```"):
-        cleaned = cleaned[7:-3].strip()
-    elif cleaned.startswith("```") and cleaned.endswith("```"):
-        cleaned = cleaned[3:-3].strip()
-    
-    # Extract JSON substring between curly braces
-    start_idx = cleaned.find('{')
-    end_idx = cleaned.rfind('}')
-    
-    if start_idx == -1 or end_idx == -1:
-        return {}
-    
-    json_str = cleaned[start_idx:end_idx+1]
-    
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        return {}
-
-
-def parse_bullet_points(text: str) -> list[str]:
-    """
-    Parses bullet point text into a clean list of strings.
-    Handles various bullet styles and cleans extra formatting.
-    """
-    lines = text.splitlines()
-    bullet_points = []
-    bullet_indicators = ('-', '*', '•', '→')
-    
-    for line in lines:
-        stripped = line.strip()
-        
-        # Skip empty lines
-        if not stripped:
-            continue
-            
-        # Remove numeric prefixes (1., 2.) if present
-        if stripped[:2].replace('.', '').isdigit():
-            stripped = stripped[2:].lstrip()
-        
-        # Check for bullet indicators
-        if any(stripped.startswith(indicator) for indicator in bullet_indicators):
-            # Remove the bullet symbol and any following space
-            content = stripped[1:].lstrip()
-            bullet_points.append(content)
-        else:
-            # Capture lines without bullets if they're part of continuous text
-            if bullet_points and not bullet_points[-1].endswith(('.', '!', '?')):
-                bullet_points[-1] += " " + stripped
-            else:
-                bullet_points.append(stripped)
-    
-    # Remove any markdown formatting artifacts
-    return [point.replace("**", "").replace("__", "") for point in bullet_points]
