@@ -159,7 +159,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
       ${
         app.is_recommended && app.recommendation_priority !== "normal"
           ? `<span class="priority-indicator ${app.recommendation_priority}">
-              ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+              ${app.recommendation_priority === "urgent" ? "🔥" : ""}
             </span>`
           : ""
       }
@@ -1165,7 +1165,7 @@ function updateUserDisplay() {
     const userName = `${currentUser.first_name} ${currentUser.last_name}`
     const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
     const roleTranslations = {
-      super_admin: "Super Admin",
+      super_admin: "Admin",
       recruiter: "Recruteur",
       department_head: "Chef de Département",
     }
@@ -2254,7 +2254,7 @@ function renderApplicationsList(list) {
       ${
         app.is_recommended && app.recommendation_priority !== "normal"
           ? `<span class="priority-indicator ${app.recommendation_priority}">
-              ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+              ${app.recommendation_priority === "urgent" ? "🔥" : ""}
             </span>`
           : ""
       }
