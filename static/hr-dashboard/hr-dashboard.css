@@ -3073,3 +3073,31 @@ html {
     min-width: auto;
   }
 }
+/* Ajout de styles pour améliorer l'affichage des candidats recommandés */
+.recommended-card {
+  border-left: 4px solid #f39c12 !important;
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.1) !important;
+}
+
+.recommendation-section {
+  border-top: 1px solid rgba(203, 213, 225, 0.2);
+  padding-top: 1rem;
+}
+
+.compatibility-section {
+  border-top: 1px solid rgba(203, 213, 225, 0.2);
+  padding-top: 1rem;
+}
+
+.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.2);
+}
+
+.toggle-hint {
+  transition: color 0.3s ease;
+}
+
+.recommendation-info:hover .toggle-hint {
+  color: #f39c12 !important;
+}

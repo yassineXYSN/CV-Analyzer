@@ -82,26 +82,26 @@ async function loadApplications() {
         if (typeof window.renderApplicationsWithCompatibility === "function") {
           window.renderApplicationsWithCompatibility()
         } else {
-          renderApplications()
+          renderApplicationsWithCompatibility()
         }
       } else {
         console.log("📋 FRONTEND: No compatibility data, using basic rendering")
-        renderApplications()
+        renderApplicationsWithCompatibility()
       }
     } else {
       console.error("❌ FRONTEND: Erreur chargement candidatures:", result.message)
       window.applications = []
-      renderApplications()
+      renderApplicationsWithCompatibility()
     }
   } catch (error) {
     console.error("❌ FRONTEND: Erreur réseau chargement candidatures:", error)
     window.applications = []
-    renderApplications()
+    renderApplicationsWithCompatibility()
   }
 }
 
 // FONCTION MISE À JOUR: Rendu des candidatures avec témoin de recommandation et compatibilité
-function renderApplications(filter = "all") {
+function renderApplicationsWithCompatibility(filter = "all") {
   console.log("📋 FRONTEND: Rendu des candidatures combiné, filtre:", filter)
 
   const container = document.getElementById("applicationsContainer")
@@ -127,7 +127,6 @@ function renderApplications(filter = "all") {
   }
 
   container.innerHTML = filteredApps
-    .slice(0, 2)
     .map((app) => {
       console.log(
         `🎯 FRONTEND: Fallback rendering app ${app.id} with compatibility ${app.compatibility_percentage}% (matched: ${app.matched_skills_count}, total: ${app.total_job_skills})`,
@@ -228,7 +227,7 @@ function renderApplications(filter = "all") {
                 padding: 0.75rem;
                 border-radius: 6px;
                 border-left: 3px solid #f39c12;
-              ">"${app.recommendation_comment}"</p>
+              ">${app.recommendation_comment}</p>
               ${app.recommended_by ? `<small style="color: #cbd5e1; font-weight: 500;">— ${app.recommended_by}</small>` : ""}
             </div>
           </div>
@@ -330,18 +329,7 @@ function renderApplicationActionButtons(app) {
   // Pour les recruteurs : boutons complets
   if (currentUser.role === "recruiter") {
     return `
-${
-  app.status === "pending" || app.status === "reviewed"
-    ? `
-  <button class="app-btn schedule" onclick="scheduleInterview(${app.id})">
-    <i class="fas fa-calendar"></i> Planifier Entretien
-  </button>
-  <button class="app-btn reject" onclick="updateApplicationStatus(${app.id}, 'rejected')">
-    <i class="fas fa-times"></i> Rejeter
-  </button>
-  `
-    : ""
-}
+
 ${
   app.status === "interview_scheduled"
     ? `
@@ -1027,7 +1015,7 @@ function filterApplications(status) {
   if (typeof window.renderApplicationsWithCompatibility === "function") {
     window.renderApplicationsWithCompatibility(status)
   } else {
-    renderApplications(status)
+    renderApplicationsWithCompatibility(status)
   }
 }
 
@@ -2234,27 +2222,117 @@ function renderApplicationsList(list) {
   }
 
   container.innerHTML = list
-    .map(
-      (app) => `
+    .map((app) => {
+      console.log(
+        `🎯 FRONTEND: Search rendering app ${app.id} with compatibility ${app.compatibility_percentage}% (matched: ${app.matched_skills_count}, total: ${app.total_job_skills})`,
+      )
+      return `
 <div class="application-card ${app.status}">
   <div class="application-header">
     <div class="applicant-info">
       <div class="applicant-avatar">${getInitials(app.candidate_name)}</div>
       <div class="applicant-details">
         <h4>${app.candidate_name}
-            ${app.is_recommended ? '<span class="recommendation-badge" title="Candidat recommandé par un chef de département"><i class="fas fa-star"></i> Recommandé</span>' : ""}
+          ${
+            app.is_recommended
+              ? `
+            <span class="recommendation-badge ${app.recommendation_priority}" 
+                  title="Candidat recommandé par ${app.recommended_by || "un chef de département"}">
+              <i class="fas fa-star"></i> 
+              ${app.recommendation_priority === "urgent" ? "URGENT" : app.recommendation_priority === "high" ? "PRIORITÉ HAUTE" : "RECOMMANDÉ"}
+            </span>
+          `
+              : ""
+          }
         </h4>
         <p>${app.candidate_email}</p>
         <small><i class="fas fa-briefcase"></i> ${app.job_title}</small>
-        ${app.is_recommended && app.recommended_by ? `<small class="recommendation-info"><i class="fas fa-user-tie"></i> Recommandé par ${app.recommended_by}</small>` : ""}
       </div>
     </div>
     <div class="application-status ${app.status}">
       ${getStatusText(app.status)}
-      ${app.is_recommended && app.recommendation_priority !== "normal" ? `<span class="priority-badge ${app.recommendation_priority}">${app.recommendation_priority.toUpperCase()}</span>` : ""}
+      ${
+        app.is_recommended && app.recommendation_priority !== "normal"
+          ? `<span class="priority-indicator ${app.recommendation_priority}">
+              ${app.recommendation_priority === "urgent" ? "🔥" : "⭐"}
+            </span>`
+          : ""
+      }
     </div>
   </div>
-  
+
+  ${
+    app.is_recommended
+      ? `
+      <div class="recommendation-info clickable" onclick="toggleRecommendationComment(${app.id})" style="
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+        border: 1px solid rgba(243, 156, 18, 0.3);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin: 0.75rem 0;
+        position: relative;
+      " onmouseover="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(230, 126, 34, 0.08))'" 
+         onmouseout="this.style.background='linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05))'">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-user-tie" style="color: #f39c12;"></i>
+            <span style="color: #f39c12; font-weight: 500;">
+              Recommandé par: ${app.recommended_by || "N/A"} 
+              ${app.recommendation_date ? `le ${formatDate(app.recommendation_date)}` : ""}
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <small style="color: #cbd5e1; font-size: 0.8rem;">Voir le commentaire</small>
+            <i class="fas fa-chevron-down recommendation-chevron-${app.id}" style="
+              color: #f39c12; 
+              transition: transform 0.3s ease;
+              font-size: 0.9rem;
+            "></i>
+          </div>
+        </div>
+      </div>
+
+      ${
+        app.recommendation_comment
+          ? `
+          <div class="recommendation-comment recommendation-comment-${app.id}" style="
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            border-radius: 8px;
+            padding: 0;
+            margin: 0 0 1rem 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+          ">
+            <div style="padding: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <i class="fas fa-comment-alt" style="color: #f39c12;"></i>
+                <strong style="color: #f8fafc;">Commentaire de recommandation:</strong>
+              </div>
+              <p style="
+                font-style: italic;
+                margin: 0.5rem 0;
+                color: #e2e8f0;
+                line-height: 1.5;
+                background: rgba(0, 0, 0, 0.2);
+                padding: 0.75rem;
+                border-radius: 6px;
+                border-left: 3px solid #f39c12;
+              ">${app.recommendation_comment}</p>
+              ${app.recommended_by ? `<small style="color: #cbd5e1; font-weight: 500;">— ${app.recommended_by}</small>` : ""}
+            </div>
+          </div>
+        `
+          : ""
+      }
+    `
+      : ""
+  }
+
   <div class="application-job">
     <div class="job-info">
       <div class="job-title">${app.job_title}</div>
@@ -2264,33 +2342,57 @@ function renderApplicationsList(list) {
     <div class="application-date">
       Candidature envoyée le ${formatDate(app.application_date)}
       <br><small>Il y a ${app.days_since_application} jour(s)</small>
-      ${app.recommendation_date ? `<br><small class="recommendation-date">Recommandé le ${formatDate(app.recommendation_date)}</small>` : ""}
     </div>
   </div>
-  
+
   ${
-    app.recommendation_comment
+    app.compatibility_percentage !== undefined
       ? `
-  <div class="recommendation-comment">
-    <i class="fas fa-comment"></i>
-    <strong>Commentaire de recommandation:</strong>
-    <p>${app.recommendation_comment}</p>
-  </div>
-  `
+      <div class="application-compatibility-section">
+        <div class="compatibility-header">
+          <div class="compatibility-title">
+            <i class="fas fa-chart-pie"></i>
+            Compatibilité des compétences
+          </div>
+          <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
+            ${app.compatibility_percentage}%
+            <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
+          </div>
+        </div>
+        <div class="compatibility-progress">
+          <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage)}"
+               style="width: ${app.compatibility_percentage}%"></div>
+        </div>
+        <div class="compatibility-details">
+          <span class="skill-stat matched">
+            <i class="fas fa-check-circle"></i>
+            ${app.matched_skills_count || 0} compétences correspondantes
+          </span>
+          <span class="skill-stat missing">
+            <i class="fas fa-times-circle"></i>
+            ${(app.total_job_skills || 0) - (app.matched_skills_count || 0)} manquantes
+          </span>
+          <span>Total: ${app.total_job_skills || 0} compétences</span>
+        </div>
+      </div>
+    `
       : ""
   }
-  
-  <div class="application-actions">
+
+    <div class="application-actions">
     <button class="app-btn view" onclick="viewCandidateProfile(${app.candidate_id})">
       <i class="fas fa-user"></i> Voir Profil
     </button>
     <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
-      <i class="fas fa-info-circle"></i> Détails
+      <i class="fas fa-info-circle"></i> Détails du poste
     </button>
+    ${renderApplicationActionButtons(app)}
+  </div>
+
   </div>
 </div>
-`,
-    )
+`
+    })
     .join("")
 }
 
@@ -2350,11 +2452,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // FONCTION DE NOTIFICATION AMÉLIORÉE
 function showNotification(message, type = "info") {
-  console.log(`📢 NOTIFICATION [${type.toUpperCase()}]: ${message}`)
+  console.log(`📢 NOTIFICATION [$type.toUpperCase()]: $message`)
 
   // Créer l'élément de notification
   const notification = document.createElement("div")
-  notification.className = `notification notification-${type}`
+  notification.className = `notification notification-$type`
   notification.style.cssText = `
 position: fixed;
 top: 20px;

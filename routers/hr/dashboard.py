@@ -212,3 +212,112 @@ async def get_current_user():
             status_code=500,
             content={"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
         )
+
+@router.get("/api/applications")
+async def get_applications():
+    """
+    Récupère toutes les candidatures avec leurs détails de compatibilité
+    """
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content={"success": False, "message": "Utilisateur non connecté"}
+            )
+        
+        company = get_user_company(user_id)
+        if not company:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "message": "Aucune entreprise associée"}
+            )
+        
+        db = SessionLocal()
+        try:
+            applications = db.query(
+                Application.id,
+                Application.status,
+                Application.application_date,
+                Application.candidate_profile_id,
+                Application.job_id,
+                Application.is_recommended,
+                Application.recommendation_priority,
+                Application.recommended_by,
+                Application.recommendation_comment,
+                Application.recommendation_date,
+                Application.compatibility_percentage,
+                Application.matched_skills_count,
+                Application.total_job_skills,
+                ProfileCandidat.name.label("candidate_name"),
+                Contact.email.label("candidate_email"),
+                Job.title.label("job_title"),
+                Job.priority,
+                Department.name.label("department_name")
+            ).join(
+                Job, Application.job_id == Job.id
+            ).join(
+                Department, Job.department_id == Department.id
+            ).join(
+                ProfileCandidat, Application.candidate_profile_id == ProfileCandidat.id
+            ).join(
+                Contact, ProfileCandidat.contact_id == Contact.id
+            ).filter(
+                Job.company_id == company.id
+            ).order_by(
+                Application.application_date.desc()
+            ).all()
+            
+            applications_list = []
+            for app in applications:
+                # Calcul des jours depuis la candidature
+                days_since = 0
+                if app.application_date:
+                    days_since = (date.today() - app.application_date).days
+                
+                applications_list.append({
+                    "id": app.id,
+                    "candidate_id": app.candidate_profile_id,
+                    "candidate_name": app.candidate_name,
+                    "candidate_email": app.candidate_email,
+                    "job_id": app.job_id,
+                    "job_title": app.job_title,
+                    "department_name": app.department_name,
+                    "status": app.status,
+                    "priority": app.priority,
+                    "application_date": app.application_date.strftime("%Y-%m-%d") if app.application_date else None,
+                    "days_since_application": days_since,
+                    "is_recommended": app.is_recommended or False,
+                    "recommendation_priority": app.recommendation_priority,
+                    "recommended_by": app.recommended_by,
+                    "recommendation_comment": app.recommendation_comment,
+                    "recommendation_date": app.recommendation_date.strftime("%Y-%m-%d") if app.recommendation_date else None,
+                    "compatibility_percentage": app.compatibility_percentage or 0,
+                    "matched_skills_count": app.matched_skills_count or 0,
+                    "total_job_skills": app.total_job_skills or 0
+                })
+            
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True, 
+                    "applications": applications_list,
+                    "total": len(applications_list)
+                }
+            )
+            
+        except Exception as e:
+            print(f"Erreur lors de la récupération des candidatures: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "message": f"Erreur lors de la récupération des candidatures: {str(e)}"}
+            )
+        finally:
+            db.close()
+            
+    except Exception as e:
+        print(f"Erreur interne: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+        )
