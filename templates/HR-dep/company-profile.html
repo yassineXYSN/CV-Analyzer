@@ -226,8 +226,13 @@
                                 <h4>{{ admin.first_name }} {{ admin.last_name }}</h4>
                                 <div class="user-email">{{ admin.email }}</div>
                                 <div class="user-meta">
-                                    <span class="user-role">{{ admin.role|title }}</span>
-                                    <span class="user-access">{{ admin.access_level|title }}</span>
+                                    <span class="user-role">
+                                    {% if admin.role == "super_admin" %}
+                                        Admin
+                                    {% else %}
+                                        {{ admin.role|title }}
+                                    {% endif %}
+                                    </span>
                                     <span class="user-status {{ 'active' if admin.is_active else 'inactive' }}">
                                         {{ 'Actif' if admin.is_active else 'Inactif' }}
                                     </span>

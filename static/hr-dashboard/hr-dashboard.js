@@ -1165,7 +1165,7 @@ function updateUserDisplay() {
     const userName = `${currentUser.first_name} ${currentUser.last_name}`
     const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
     const roleTranslations = {
-      super_admin: "Super Admin",
+      super_admin: "Admin",
       recruiter: "Recruteur",
       department_head: "Chef de Département",
     }
