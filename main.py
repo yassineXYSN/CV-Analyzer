@@ -14,11 +14,12 @@ import databasehr.models as models
 from routers.hr import (
     authhr, company, department, 
     employee, job, application, candidate, 
-    dashboard
+    dashboard,admin_router
 )
 from database import engine
 import databaseclient.models as models
 from routers.client_dep import auth, jobs, profiles, scan, general, notifications
+
 
 from models import QuizAttempt
 import re
@@ -61,6 +62,8 @@ app.include_router(job.router)
 app.include_router(application.router)
 app.include_router(candidate.router)
 app.include_router(dashboard.router)
+app.include_router(admin_router.router)
+
 
 # Quiz endpoints
 quiz_service = QuizService()
