@@ -310,7 +310,18 @@ async def scan_file(
     }
 
     scores_map = user_info.get("scores", {}) or {}
-    overall_score = compute_overall_score_from_categories(scores_map, job_data)
+    
+    profile_score = n8n_data.get("profile_score")
+    if profile_score is not None:
+        try:
+            overall_score = int(profile_score)
+            print(f"[v0] Using profile_score from n8n: {overall_score}")
+        except (ValueError, TypeError):
+            overall_score = compute_overall_score_from_categories(scores_map, job_data)
+            print(f"[v0] Invalid profile_score, using computed score: {overall_score}")
+    else:
+        overall_score = compute_overall_score_from_categories(scores_map, job_data)
+        print(f"[v0] No profile_score in n8n response, using computed score: {overall_score}")
 
     skills_list: List[str] = user_info.get("skills", []) or []
     cleaned_skills = [(s.split(":")[0] if isinstance(s, str) else str(s)) for s in skills_list]
