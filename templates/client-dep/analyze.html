@@ -369,8 +369,9 @@
             profilesGrid.innerHTML = profiles.map(profile => `
                 <div class="profile-card ${selectedJobProfiles.includes(profile.id.toString()) ? 'selected' : ''}" 
                      data-profile="${profile.id}" 
-                     data-job-data='${JSON.stringify(profile)}'
-                     onclick="selectProfile('${profile.id}', ${JSON.stringify(profile).replace(/'/g, '&apos;')})">
+                     data-job-title="${profile.title}"
+                     data-job-company="${profile.company}"
+                     data-job-department="${profile.department}">
                     <div class="profile-icon">💼</div>
                     <div class="profile-name">${profile.title}</div>
                     <div class="profile-company">${profile.company} - ${profile.department}</div>
@@ -381,6 +382,14 @@
                     </div>
                 </div>
             `).join('');
+            
+            profilesGrid.querySelectorAll('.profile-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const profileId = this.dataset.profile;
+                    const jobData = profiles.find(p => p.id.toString() === profileId);
+                    selectProfile(profileId, jobData);
+                });
+            });
         }
 
         // Show fallback profiles if database loading fails
@@ -390,24 +399,28 @@
             
             loadingMessage.textContent = '⚠️ Utilisation des profils par défaut';
             
-            // Keep original hardcoded profiles as fallback
-            profilesGrid.innerHTML = `
-                <div class="profile-card" data-profile="cybersecurity" onclick="selectProfile('cybersecurity')">
-                    <div class="profile-icon">🔒</div>
-                    <div class="profile-name">Expert en Cybersécurité</div>
-                    <div class="profile-description">Sécurité informatique, audit, protection des données</div>
+            const fallbackProfiles = [
+                { id: 'cybersecurity', title: 'Expert en Cybersécurité', description: 'Sécurité informatique, audit, protection des données', company: 'Entreprise', department: 'IT', skills: ['Cybersécurité', 'Audit', 'Protection données'] },
+                { id: 'webdev', title: 'Développeur Full-Stack', description: 'Développement web, frontend, backend', company: 'Entreprise', department: 'IT', skills: ['JavaScript', 'React', 'Node.js'] },
+                { id: 'datascientist', title: 'Data Scientist', description: 'Analyse de données, machine learning, IA', company: 'Entreprise', department: 'Data', skills: ['Python', 'Machine Learning', 'IA'] }
+            ];
+            
+            profilesGrid.innerHTML = fallbackProfiles.map(profile => `
+                <div class="profile-card" data-profile="${profile.id}">
+                    <div class="profile-icon">💼</div>
+                    <div class="profile-name">${profile.title}</div>
+                    <div class="profile-description">${profile.description}</div>
                 </div>
-                <div class="profile-card" data-profile="webdev" onclick="selectProfile('webdev')">
-                    <div class="profile-icon">💻</div>
-                    <div class="profile-name">Développeur Full-Stack</div>
-                    <div class="profile-description">Développement web, frontend, backend</div>
-                </div>
-                <div class="profile-card" data-profile="datascientist" onclick="selectProfile('datascientist')">
-                    <div class="profile-icon">📊</div>
-                    <div class="profile-name">Data Scientist</div>
-                    <div class="profile-description">Analyse de données, machine learning, IA</div>
-                </div>
-            `;
+            `).join('');
+            
+            profilesGrid.querySelectorAll('.profile-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const profileId = this.dataset.profile;
+                    const jobData = fallbackProfiles.find(p => p.id === profileId);
+                    selectProfile(profileId, jobData);
+                });
+            });
+            
             profilesGrid.style.display = 'grid';
         }
 
@@ -417,7 +430,39 @@
             document.getElementById('profileSelectorBtn').addEventListener('click', openProfileModal);
             document.getElementById('closeProfileModal').addEventListener('click', closeProfileModal);
             document.getElementById('cancelProfileModal').addEventListener('click', closeProfileModal);
-            document.getElementById('confirmProfileModal').addEventListener('click', closeProfileModal);
+            
+            document.getElementById('confirmProfileModal').addEventListener('click', function() {
+                if (selectedJobProfiles.length === 0) {
+                    // Show error message if no profiles selected
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-message';
+                    errorDiv.style.cssText = 'color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 8px; margin-top: 1rem; text-align: center;';
+                    errorDiv.textContent = '⚠️ Veuillez sélectionner au moins une offre d\'emploi';
+                    
+                    // Remove existing error message if any
+                    const existingError = document.querySelector('.error-message');
+                    if (existingError) {
+                        existingError.remove();
+                    }
+                    
+                    // Add error message to modal footer
+                    const modalFooter = document.querySelector('.modal-footer');
+                    modalFooter.insertBefore(errorDiv, modalFooter.firstChild);
+                    
+                    // Remove error message after 3 seconds
+                    setTimeout(() => {
+                        if (errorDiv.parentNode) {
+                            errorDiv.remove();
+                        }
+                    }, 3000);
+                    
+                    return; // Don't close modal
+                }
+                
+                // Close modal if profiles are selected
+                closeProfileModal();
+            });
+
             document.getElementById('addCustomBtn').addEventListener('click', addCustomProfile);
             
             // Search functionality
@@ -465,6 +510,13 @@
         });
 
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            // Check if profiles are selected
+            if (selectedJobProfiles.length === 0) {
+                e.preventDefault();
+                alert('Veuillez sélectionner au moins un profil d\'emploi avant de continuer.');
+                return false;
+            }
+            
             // Prepare job data for submission
             const selectedJobsData = selectedJobProfiles.map(profile => {
                 const jobData = availableJobProfiles.find(job => job.id == profile) || {};

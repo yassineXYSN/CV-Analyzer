@@ -42,7 +42,7 @@ def to_prod_webhook(url: str) -> str:
 
 def compute_overall_score_from_categories(scores: Dict[str, Any], job_data: List[Dict] = None) -> int:
     """
-    Compute overall score with optional job-specific weighting
+    Compute overall score with job-specific weighting and enhanced matching logic
     """
     numeric_values: List[float] = []
     for v in scores.values():
@@ -55,18 +55,27 @@ def compute_overall_score_from_categories(scores: Dict[str, Any], job_data: List
     
     base_score = sum(numeric_values) / len(numeric_values)
     
-    # If job data is provided, apply job-specific adjustments
     if job_data and len(job_data) > 0:
-        # This is a simplified example - you can make this more sophisticated
         job_bonus = 0
-        for job in job_data:
-            # Add bonus points for matching job requirements
-            if job.get('skills'):
-                job_bonus += 2  # Small bonus for each job with defined skills
+        total_weight = 0
         
-        # Cap the bonus at 10 points
-        job_bonus = min(job_bonus, 10)
-        base_score = min(base_score + job_bonus, 100)
+        for job in job_data:
+            # Weight based on job requirements complexity
+            job_weight = len(job.get('skills', [])) + len(job.get('requirements', '').split()) / 10
+            total_weight += job_weight
+            
+            # Bonus for matching job requirements
+            if job.get('skills'):
+                job_bonus += job_weight * 1.5
+            if job.get('experience_level'):
+                job_bonus += job_weight * 1.0
+            if job.get('requirements'):
+                job_bonus += job_weight * 0.5
+        
+        # Normalize bonus based on total weight
+        if total_weight > 0:
+            normalized_bonus = (job_bonus / total_weight) * 5  # Max 5 point bonus
+            base_score = min(base_score + normalized_bonus, 100)
     
     return int(round(base_score))
 
@@ -141,30 +150,40 @@ async def post_to_n8n_wait_for_json(
                 }
                 data = {
                     "selectedProfiles": selected_profiles,
-                    "jobData": job_data or "[]"  # Include job data
+                    "jobData": job_data or "[]",
+                    "includeJobAnalysis": "true"  # Flag for n8n to include job-specific analysis
                 }
+                
+                print(f"[v0] Sending to n8n: {target_url}")
+                print(f"[v0] Job data being sent: {job_data}")
+                
                 resp = await client.post(target_url, files=files, data=data)
 
                 if resp.status_code >= 400:
+                    print(f"[v0] HTTP error {resp.status_code} for {target_url}")
                     continue
 
                 ctype = (resp.headers.get("content-type") or "").lower()
                 text = resp.text or ""
                 if "application/json" in ctype:
                     try:
-                        print(f"Received JSON response from n8n: {resp.text}")
+                        print(f"[v0] Received JSON response from n8n: {resp.text}")
                         return resp.json()
-                    except Exception:
+                    except Exception as e:
+                        print(f"[v0] JSON parse error: {e}")
                         pass
 
                 if text.strip().startswith("{") or text.strip().startswith("["):
                     try:
                         return json.loads(text)
-                    except Exception:
+                    except Exception as e:
+                        print(f"[v0] JSON parse error on text: {e}")
                         pass
-            except httpx.HTTPError:
+            except httpx.HTTPError as e:
+                print(f"[v0] HTTP error for {target_url}: {e}")
                 continue
 
+    print("[v0] No valid response received from n8n")
     return None
 
 
@@ -328,39 +347,100 @@ async def scan_file(
 
 def generate_job_match_analysis(user_info: Dict[str, Any], job_data: List[Dict]) -> Dict[str, Any]:
     """
-    Generate job-specific matching analysis
+    Generate comprehensive job-specific matching analysis with enhanced metrics
     """
     if not job_data:
         return {}
     
-    user_skills = set(skill.lower() for skill in user_info.get("skills", []))
+    user_skills = set(skill.lower().strip() for skill in user_info.get("skills", []))
+    user_experience = user_info.get("yearsOfExperience", "0")
+    
+    try:
+        user_exp_years = int(user_experience)
+    except (ValueError, TypeError):
+        user_exp_years = 0
     
     job_matches = []
     for job in job_data:
-        job_skills = set(skill.lower() for skill in job.get("skills", []))
+        job_skills = set(skill.lower().strip() for skill in job.get("skills", []))
         
         # Calculate skill match percentage
         if job_skills:
             matching_skills = user_skills.intersection(job_skills)
-            match_percentage = (len(matching_skills) / len(job_skills)) * 100
+            skill_match = (len(matching_skills) / len(job_skills)) * 100
         else:
-            match_percentage = 0
+            skill_match = 0
+        
+        # Experience level matching
+        job_exp_req = job.get("experience_level", "").lower()
+        exp_match = 100  # Default full match
+        if "junior" in job_exp_req and user_exp_years > 3:
+            exp_match = 80
+        elif "senior" in job_exp_req and user_exp_years < 5:
+            exp_match = 60
+        elif "lead" in job_exp_req and user_exp_years < 7:
+            exp_match = 40
+        
+        # Overall match calculation (weighted average)
+        overall_match = (skill_match * 0.7) + (exp_match * 0.3)
+        
+        # Generate recommendations
+        recommendations = []
+        missing_skills = list(job_skills - user_skills)
+        if missing_skills:
+            recommendations.append(f"Develop skills in: {', '.join(missing_skills[:3])}")
+        if exp_match < 100:
+            recommendations.append("Gain more relevant experience")
         
         job_matches.append({
             "job_title": job.get("title", ""),
             "company": job.get("company", ""),
-            "match_percentage": round(match_percentage, 1),
+            "match_percentage": round(overall_match, 1),
+            "skill_match": round(skill_match, 1),
+            "experience_match": round(exp_match, 1),
             "matching_skills": list(user_skills.intersection(job_skills)),
-            "missing_skills": list(job_skills - user_skills),
-            "requirements_summary": job.get("requirements", "")[:200] + "..." if len(job.get("requirements", "")) > 200 else job.get("requirements", "")
+            "missing_skills": missing_skills,
+            "requirements_summary": job.get("requirements", "")[:200] + "..." if len(job.get("requirements", "")) > 200 else job.get("requirements", ""),
+            "recommendations": recommendations
         })
     
-    # Sort by match percentage
+    # Sort by overall match percentage
     job_matches.sort(key=lambda x: x["match_percentage"], reverse=True)
     
     return {
         "total_jobs_analyzed": len(job_data),
         "best_match": job_matches[0] if job_matches else None,
         "job_matches": job_matches,
-        "average_match": round(sum(job["match_percentage"] for job in job_matches) / len(job_matches), 1) if job_matches else 0
+        "average_match": round(sum(job["match_percentage"] for job in job_matches) / len(job_matches), 1) if job_matches else 0,
+        "top_missing_skills": get_top_missing_skills(job_matches),
+        "match_distribution": get_match_distribution(job_matches)
     }
+
+
+def get_top_missing_skills(job_matches: List[Dict]) -> List[str]:
+    """Get the most commonly missing skills across all jobs"""
+    skill_count = {}
+    for match in job_matches:
+        for skill in match.get("missing_skills", []):
+            skill_count[skill] = skill_count.get(skill, 0) + 1
+    
+    # Return top 5 most common missing skills
+    return sorted(skill_count.keys(), key=skill_count.get, reverse=True)[:5]
+
+
+def get_match_distribution(job_matches: List[Dict]) -> Dict[str, int]:
+    """Get distribution of match percentages"""
+    distribution = {"excellent": 0, "good": 0, "fair": 0, "poor": 0}
+    
+    for match in job_matches:
+        percentage = match["match_percentage"]
+        if percentage >= 80:
+            distribution["excellent"] += 1
+        elif percentage >= 60:
+            distribution["good"] += 1
+        elif percentage >= 40:
+            distribution["fair"] += 1
+        else:
+            distribution["poor"] += 1
+    
+    return distribution
