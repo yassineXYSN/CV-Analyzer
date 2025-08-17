@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analyser votre CV - CV Analyzer Pro</title>
     <link rel="stylesheet" href="/static/client-dep/css/style.css">
+    <!-- Added analyze.css for dedicated styling -->
+    <link rel="stylesheet" href="/static/client-dep/css/analyze.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,69 +23,42 @@
     </div>
 
     <!-- Navigation -->
- <div id="header-component"></div>
+    <div id="header-component"></div>
 
     <!-- Profile Selection Modal -->
     <div id="profileSelectionModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>✨ Créer un profil personnalisé</h3>
+                <h3>✨ Sélectionner des offres d'emploi</h3>
                 <button class="modal-close" id="closeProfileModal">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="search-section">
                     <div class="form-group">
-                        <label for="profileSearch" class="form-label">🔍 Rechercher des profils</label>
+                        <label for="profileSearch" class="form-label">🔍 Rechercher des offres</label>
                         <input 
                             type="text" 
                             id="profileSearch" 
                             class="form-input search-input"
-                            placeholder="Tapez pour rechercher des profils..."
+                            placeholder="Tapez pour rechercher des offres d'emploi..."
                         >
                     </div>
                 </div>
 
                 <div class="profiles-section">
-                    <div class="section-title">📋 Profils disponibles</div>
-                    <div class="profiles-grid" id="profilesGrid">
-                        <!-- Profils prédéfinis -->
-                        <div class="profile-card" data-profile="cybersecurity">
-                            <div class="profile-icon">🔒</div>
-                            <div class="profile-name">Expert en Cybersécurité</div>
-                            <div class="profile-description">Sécurité informatique, audit, protection des données</div>
-                        </div>
-                        <div class="profile-card" data-profile="webdev">
-                            <div class="profile-icon">💻</div>
-                            <div class="profile-name">Développeur Full-Stack</div>
-                            <div class="profile-description">Développement web, frontend, backend</div>
-                        </div>
-                        <div class="profile-card" data-profile="datascientist">
-                            <div class="profile-icon">📊</div>
-                            <div class="profile-name">Data Scientist</div>
-                            <div class="profile-description">Analyse de données, machine learning, IA</div>
-                        </div>
-                        <div class="profile-card" data-profile="marketing">
-                            <div class="profile-icon">📈</div>
-                            <div class="profile-name">Responsable Marketing Digital</div>
-                            <div class="profile-description">Marketing digital, SEO, réseaux sociaux</div>
-                        </div>
-                        <div class="profile-card" data-profile="projectmanager">
-                            <div class="profile-icon">🎯</div>
-                            <div class="profile-name">Chef de Projet</div>
-                            <div class="profile-description">Gestion de projet, coordination, planning</div>
-                        </div>
-                        <div class="profile-card" data-profile="devops">
-                            <div class="profile-icon">⚙️</div>
-                            <div class="profile-name">Ingénieur DevOps</div>
-                            <div class="profile-description">CI/CD, infrastructure, automatisation</div>
-                        </div>
+                    <div class="section-title">💼 Offres d'emploi disponibles</div>
+                    <div class="loading-message" id="loadingProfiles" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        🔄 Chargement des offres d'emploi...
+                    </div>
+                    <div class="profiles-grid" id="profilesGrid" style="display: none;">
+                        <!-- Job profiles will be loaded dynamically from database -->
                     </div>
                 </div>
 
                 <div class="selected-section">
-                    <div class="section-title">✅ Profils sélectionnés (<span id="selectedCount">0</span>)</div>
+                    <div class="section-title">✅ Offres sélectionnées (<span id="selectedCount">0</span>)</div>
                     <div class="selected-profiles" id="selectedProfiles">
-                        <div class="no-selection">Aucun profil sélectionné</div>
+                        <div class="no-selection">Aucune offre sélectionnée</div>
                     </div>
                 </div>
 
@@ -162,18 +137,20 @@
 
                     <!-- Profile Selection Button -->
                     <div class="form-group">
-                        <label class="form-label">💼 Profils recherchés</label>
+                        <label class="form-label">💼 Offres d'emploi ciblées</label>
                         <button type="button" class="profile-selector-btn" id="profileSelectorBtn">
                             <div class="selector-content">
                                 <div class="selector-icon">✨</div>
                                 <div class="selector-text">
-                                    <div class="selector-title">Sélectionner des profils</div>
-                                    <div class="selector-subtitle" id="profileSelectorSubtitle">Cliquez pour choisir un ou plusieurs profils</div>
+                                    <div class="selector-title">Sélectionner des offres d'emploi</div>
+                                    <div class="selector-subtitle" id="profileSelectorSubtitle">Cliquez pour choisir une ou plusieurs offres d'emploi</div>
                                 </div>
                                 <div class="selector-arrow">▼</div>
                             </div>
                         </button>
+                        <!-- Added hidden inputs for job details -->
                         <input type="hidden" id="selectedProfilesInput" name="selectedProfiles" required>
+                        <input type="hidden" id="selectedJobsData" name="selectedJobsData">
                     </div>
 
                     <!-- Submit Button -->
@@ -246,28 +223,263 @@
         window.currentUser = null;
         {% endif %}
 
-        // Load header component
-        document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const response = await fetch('/static/client-dep/components/header.html');
-            if (response.ok) {
-                const headerHTML = await response.text();
-                const container = document.getElementById('header-component');
-                container.innerHTML = headerHTML;
-                
-                // Execute scripts from the loaded HTML
-                const scripts = container.querySelectorAll('script');
-                scripts.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    newScript.textContent = oldScript.textContent;
-                    oldScript.parentNode.removeChild(oldScript);
-                    document.body.appendChild(newScript);
-                });
-            }
-        } catch (error) {
-            console.error('Failed to load header component:', error);
+        let availableJobProfiles = [];
+        let selectedJobProfiles = [];
+
+        // Modal functionality
+        function openProfileModal() {
+            const modal = document.getElementById('profileSelectionModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
         }
-    });
+
+        function closeProfileModal() {
+            const modal = document.getElementById('profileSelectionModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Profile selection functionality
+        function selectProfile(profileId, jobData = null) {
+            if (!selectedJobProfiles.includes(profileId)) {
+                selectedJobProfiles.push(profileId);
+                updateSelectedProfilesDisplay();
+                updateProfileSelectorButton();
+                
+                // Mark profile as selected in grid
+                const profileCard = document.querySelector(`[data-profile="${profileId}"]`);
+                if (profileCard) {
+                    profileCard.classList.add('selected');
+                }
+            }
+        }
+
+        function removeProfile(profileId) {
+            selectedJobProfiles = selectedJobProfiles.filter(id => id !== profileId);
+            updateSelectedProfilesDisplay();
+            updateProfileSelectorButton();
+            
+            // Remove selected class from profile card
+            const profileCard = document.querySelector(`[data-profile="${profileId}"]`);
+            if (profileCard) {
+                profileCard.classList.remove('selected');
+            }
+        }
+
+        function updateSelectedProfilesDisplay() {
+            const container = document.getElementById('selectedProfiles');
+            const countElement = document.getElementById('selectedCount');
+            
+            countElement.textContent = selectedJobProfiles.length;
+            
+            if (selectedJobProfiles.length === 0) {
+                container.innerHTML = '<div class="no-selection">Aucune offre sélectionnée</div>';
+            } else {
+                container.innerHTML = selectedJobProfiles.map(profileId => {
+                    const jobData = availableJobProfiles.find(job => job.id == profileId);
+                    const profileName = jobData ? jobData.title : profileId;
+                    const companyInfo = jobData ? `${jobData.company} - ${jobData.department}` : '';
+                    
+                    return `
+                        <div class="selected-profile-item">
+                            <div class="selected-profile-info">
+                                <div class="profile-icon">💼</div>
+                                <div>
+                                    <div class="profile-name">${profileName}</div>
+                                    ${companyInfo ? `<div class="profile-company">${companyInfo}</div>` : ''}
+                                </div>
+                            </div>
+                            <button class="remove-profile-btn" onclick="removeProfile('${profileId}')">✕</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function updateProfileSelectorButton() {
+            const subtitle = document.getElementById('profileSelectorSubtitle');
+            const hiddenInput = document.getElementById('selectedProfilesInput');
+            
+            if (selectedJobProfiles.length === 0) {
+                subtitle.textContent = 'Cliquez pour choisir une ou plusieurs offres d\'emploi';
+            } else if (selectedJobProfiles.length === 1) {
+                subtitle.textContent = '1 offre sélectionnée';
+            } else {
+                subtitle.textContent = `${selectedJobProfiles.length} offres sélectionnées`;
+            }
+            
+            hiddenInput.value = selectedJobProfiles.join(',');
+        }
+
+        // Custom profile functionality
+        function fillCustomExample(profileName) {
+            document.getElementById('customProfileInput').value = profileName;
+        }
+
+        function addCustomProfile() {
+            const input = document.getElementById('customProfileInput');
+            const profileName = input.value.trim();
+            
+            if (profileName && !selectedJobProfiles.includes(profileName)) {
+                selectedJobProfiles.push(profileName);
+                updateSelectedProfilesDisplay();
+                updateProfileSelectorButton();
+                input.value = '';
+            }
+        }
+
+        // Search functionality
+        function filterProfiles(searchTerm) {
+            const filteredProfiles = availableJobProfiles.filter(profile => 
+                profile.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                profile.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                profile.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                profile.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
+            );
+            renderJobProfiles(filteredProfiles);
+        }
+
+        // Load job profiles from database
+        async function loadJobProfiles() {
+            try {
+                const response = await fetch('/api/job-profiles');
+                const data = await response.json();
+                
+                if (data.success) {
+                    availableJobProfiles = data.profiles;
+                    renderJobProfiles(availableJobProfiles);
+                } else {
+                    console.error('Failed to load job profiles:', data.error);
+                    showFallbackProfiles();
+                }
+            } catch (error) {
+                console.error('Error loading job profiles:', error);
+                showFallbackProfiles();
+            }
+        }
+
+        // Render job profiles in the modal
+        function renderJobProfiles(profiles) {
+            const profilesGrid = document.getElementById('profilesGrid');
+            const loadingMessage = document.getElementById('loadingProfiles');
+            
+            loadingMessage.style.display = 'none';
+            profilesGrid.style.display = 'grid';
+            
+            profilesGrid.innerHTML = profiles.map(profile => `
+                <div class="profile-card ${selectedJobProfiles.includes(profile.id.toString()) ? 'selected' : ''}" 
+                     data-profile="${profile.id}" 
+                     data-job-data='${JSON.stringify(profile)}'
+                     onclick="selectProfile('${profile.id}', ${JSON.stringify(profile).replace(/'/g, '&apos;')})">
+                    <div class="profile-icon">💼</div>
+                    <div class="profile-name">${profile.title}</div>
+                    <div class="profile-company">${profile.company} - ${profile.department}</div>
+                    <div class="profile-description">${profile.description}</div>
+                    <div class="profile-skills">
+                        ${profile.skills.slice(0, 3).map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                        ${profile.skills.length > 3 ? `<span class="skill-more">+${profile.skills.length - 3}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show fallback profiles if database loading fails
+        function showFallbackProfiles() {
+            const profilesGrid = document.getElementById('profilesGrid');
+            const loadingMessage = document.getElementById('loadingProfiles');
+            
+            loadingMessage.textContent = '⚠️ Utilisation des profils par défaut';
+            
+            // Keep original hardcoded profiles as fallback
+            profilesGrid.innerHTML = `
+                <div class="profile-card" data-profile="cybersecurity" onclick="selectProfile('cybersecurity')">
+                    <div class="profile-icon">🔒</div>
+                    <div class="profile-name">Expert en Cybersécurité</div>
+                    <div class="profile-description">Sécurité informatique, audit, protection des données</div>
+                </div>
+                <div class="profile-card" data-profile="webdev" onclick="selectProfile('webdev')">
+                    <div class="profile-icon">💻</div>
+                    <div class="profile-name">Développeur Full-Stack</div>
+                    <div class="profile-description">Développement web, frontend, backend</div>
+                </div>
+                <div class="profile-card" data-profile="datascientist" onclick="selectProfile('datascientist')">
+                    <div class="profile-icon">📊</div>
+                    <div class="profile-name">Data Scientist</div>
+                    <div class="profile-description">Analyse de données, machine learning, IA</div>
+                </div>
+            `;
+            profilesGrid.style.display = 'grid';
+        }
+
+        // Load header component and job profiles
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Event listeners
+            document.getElementById('profileSelectorBtn').addEventListener('click', openProfileModal);
+            document.getElementById('closeProfileModal').addEventListener('click', closeProfileModal);
+            document.getElementById('cancelProfileModal').addEventListener('click', closeProfileModal);
+            document.getElementById('confirmProfileModal').addEventListener('click', closeProfileModal);
+            document.getElementById('addCustomBtn').addEventListener('click', addCustomProfile);
+            
+            // Search functionality
+            document.getElementById('profileSearch').addEventListener('input', (e) => {
+                filterProfiles(e.target.value);
+            });
+            
+            // Custom profile input enter key
+            document.getElementById('customProfileInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addCustomProfile();
+                }
+            });
+            
+            // Close modal on overlay click
+            document.getElementById('profileSelectionModal').addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    closeProfileModal();
+                }
+            });
+
+            // Load header component
+            try {
+                const response = await fetch('/static/client-dep/components/header.html');
+                if (response.ok) {
+                    const headerHTML = await response.text();
+                    const container = document.getElementById('header-component');
+                    container.innerHTML = headerHTML;
+                    
+                    // Execute scripts from the loaded HTML
+                    const scripts = container.querySelectorAll('script');
+                    scripts.forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        newScript.textContent = oldScript.textContent;
+                        oldScript.parentNode.removeChild(oldScript);
+                        document.body.appendChild(newScript);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load header component:', error);
+            }
+
+            // Load job profiles
+            await loadJobProfiles();
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            // Prepare job data for submission
+            const selectedJobsData = selectedJobProfiles.map(profile => {
+                const jobData = availableJobProfiles.find(job => job.id == profile) || {};
+                return {
+                    id: profile,
+                    title: jobData.title || profile,
+                    requirements: jobData.requirements || '',
+                    skills: jobData.skills || [],
+                    company: jobData.company || '',
+                    department: jobData.department || ''
+                };
+            });
+            
+            document.getElementById('selectedJobsData').value = JSON.stringify(selectedJobsData);
+        });
     </script>
 </body>
 </html>
