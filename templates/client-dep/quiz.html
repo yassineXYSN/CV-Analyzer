@@ -726,40 +726,62 @@
             }
 
             try {
-                // Submit each quiz's answers
-                let allResults = [];
-                let attemptIds = [];
+                // Check if this is a job-based quiz assignment
+                const urlParams = new URLSearchParams(window.location.search);
+                const assignmentId = urlParams.get('assignment_id');
                 
-                for (const quizId in answers) {
-                    const response = await fetch('/submit-quiz', {
+                if (assignmentId) {
+                    // Job-based quiz submission
+                    const response = await fetch(`/api/submit-quiz/${assignmentId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            quiz_id: quizId,
-                            candidate_id: '{{ candidate_id }}',
-                            answers: answers[quizId]
+                            answers: answers
                         })
                     });
                     const result = await response.json();
-                    allResults.push(result);
-                    if (result.success && result.evaluation && result.evaluation.attempt_id) {
-                        attemptIds.push(result.evaluation.attempt_id);
+                    
+                    if (result.success && result.redirect_url) {
+                        window.location.href = result.redirect_url;
+                    } else {
+                        throw new Error(result.message || 'Erreur lors de la soumission');
                     }
-                }
-
-                // Redirect to multi-quiz results page for all attempts
-                if (attemptIds.length > 0) {
-                    window.location.href = `/multi-quiz-results?attempt_ids=${attemptIds.join(',')}`;
                 } else {
-                    // fallback: show error or completion message
-                    document.getElementById('quizResults').style.display = 'block';
-                    document.getElementById('quizResults').innerHTML = `
-                        <div class='quiz-complete'>
-                            <h2>✅ QCM(s) soumis !</h2>
-                            <p>Merci d'avoir complété tous les QCM. Vos résultats sont en cours de traitement.</p>
-                        </div>
-                    `;
-                    form.style.display = 'none';
+                    // Original CV-based quiz submission
+                    let allResults = [];
+                    let attemptIds = [];
+                    
+                    for (const quizId in answers) {
+                        const response = await fetch('/submit-quiz', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                quiz_id: quizId,
+                                candidate_id: '{{ candidate_id }}',
+                                answers: answers[quizId]
+                            })
+                        });
+                        const result = await response.json();
+                        allResults.push(result);
+                        if (result.success && result.evaluation && result.evaluation.attempt_id) {
+                            attemptIds.push(result.evaluation.attempt_id);
+                        }
+                    }
+
+                    // Redirect to multi-quiz results page for all attempts
+                    if (attemptIds.length > 0) {
+                        window.location.href = `/multi-quiz-results?attempt_ids=${attemptIds.join(',')}`;
+                    } else {
+                        // fallback: show error or completion message
+                        document.getElementById('quizResults').style.display = 'block';
+                        document.getElementById('quizResults').innerHTML = `
+                            <div class='quiz-complete'>
+                                <h2>✅ QCM(s) soumis !</h2>
+                                <p>Merci d'avoir complété tous les QCM. Vos résultats sont en cours de traitement.</p>
+                            </div>
+                        `;
+                        form.style.display = 'none';
+                    }
                 }
             } catch (error) {
                 console.error('Error submitting quiz:', error);

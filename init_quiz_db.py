@@ -3,22 +3,19 @@
 Initialize database with quiz tables
 """
 
-from database import engine
-from models import Base
+from database import engine, Base
+from models import QuizAttempt, JobQuizAssignment
 
 def init_quiz_database():
-    """Create all database tables including quiz tables"""
-    try:
-        print("🔧 Creating database tables...")
-        Base.metadata.create_all(bind=engine)
-        print("✅ Database tables created successfully!")
-        print("📋 Created tables:")
-        print("  - contact")
-        print("  - analyse_candidat") 
-        print("  - profile_candidat")
-        print("  - quiz_attempts")
-    except Exception as e:
-        print(f"❌ Error creating database tables: {e}")
+    """Initialize the quiz database tables"""
+    print("Creating quiz database tables...")
+    
+    # Create all tables
+    Base.metadata.create_all(bind=engine)
+    
+    print("✅ Quiz database tables created successfully!")
+    print("   - quiz_attempts")
+    print("   - job_quiz_assignments")
 
 if __name__ == "__main__":
     init_quiz_database() 

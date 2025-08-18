@@ -1,0 +1,21 @@
+{
+  "quiz_title": "QCM - Senior Python Developer",
+  "job_title": "Senior Python Developer",
+  "questions": [
+    {
+      "id": 1,
+      "question": "Question placeholder pour Senior Python Developer",
+      "options": {
+        "A": "Option D",
+        "B": "Option B",
+        "C": "Option A",
+        "D": "Option C"
+      },
+      "correct_answer": "C",
+      "explanation": "Question générée automatiquement en raison d'une erreur de génération.",
+      "category": "technique",
+      "skill_related": "Senior Python Developer"
+    }
+  ],
+  "warning": "Le QCM généré contient seulement 1 question(s) sur 5 demandées."
+}

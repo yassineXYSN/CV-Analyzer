@@ -26,6 +26,36 @@
                     </a>
                 </li>
                 
+                <!-- Quiz Button - Shown when authenticated -->
+                <li class="nav-item quiz-button-container" id="quizButtonContainer" style="display: none;">
+                    <div class="quiz-button-trigger" id="quizButtonTrigger">
+                        <div class="quiz-button">
+                            <i class="fas fa-question-circle"></i>
+                            <span class="notification-count" id="quizBadge" style="display: none;">0</span>
+                        </div>
+                    </div>
+
+                    <div class="quiz-dropdown" id="quizDropdown">
+                        <div class="quiz-dropdown-header">
+                            <h4>Quiz assignés</h4>
+                        </div>
+                        
+                        <div class="quiz-dropdown-content" id="quizDropdownContent">
+                            <div class="quiz-loading" id="quizLoading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Chargement...</span>
+                            </div>
+                        </div>
+                        
+                        <div class="quiz-dropdown-footer">
+                            <a href="/my-applications" class="view-all-quizzes">
+                                <i class="fas fa-eye"></i>
+                                Voir tous mes quiz
+                            </a>
+                        </div>
+                    </div>
+                </li>
+                
                 <!-- Notification Bell - Shown when authenticated -->
                 <li class="nav-item notification-bell-container" id="notificationBellContainer" style="display: none;">
                     <div class="notification-bell-trigger" id="notificationBellTrigger">
@@ -210,6 +240,219 @@
         color: var(--text-primary, #ffffff) !important;
     }
 
+    /* Quiz Button Styles */
+    .quiz-button-container {
+        position: relative;
+    }
+
+    .quiz-button-trigger {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        padding: 0.5rem;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .quiz-button-trigger:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .quiz-button {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        color: var(--text-secondary, #a0a0a0);
+        font-size: 1.2rem;
+        transition: color 0.3s ease;
+    }
+
+    .quiz-button-trigger:hover .quiz-button {
+        color: var(--text-primary, #ffffff);
+    }
+
+    .quiz-count {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        min-width: 20px;
+        animation: pulse-quiz 2s infinite;
+    }
+
+    @keyframes pulse-quiz {
+        0% {
+            box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(0, 212, 255, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(0, 212, 255, 0);
+        }
+    }
+
+    /* Quiz Dropdown Styles */
+    .quiz-dropdown {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        width: 380px;
+        max-height: 500px;
+        background: rgba(110, 110, 110);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(20px);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1002;
+        overflow: hidden;
+    }
+
+    .quiz-dropdown.active,
+    .quiz-dropdown.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .quiz-dropdown-header {
+        padding: 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .quiz-dropdown-header h4 {
+        margin: 0;
+        color: var(--text-primary, #ffffff);
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .quiz-dropdown-content {
+        max-height: 200px !important;
+        overflow-y: scroll !important;
+        overflow-x: hidden !important;
+        scroll-behavior: smooth !important;
+        padding-right: 8px !important;
+    }
+
+    .quiz-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        color: var(--text-secondary, #a0a0a0);
+        gap: 0.5rem;
+    }
+
+    .quiz-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+    }
+
+    .quiz-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .quiz-item:last-child {
+        border-bottom: none;
+    }
+
+    .quiz-item-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        color: white;
+        font-size: 1.1rem;
+    }
+
+    .quiz-item-content {
+        flex: 1;
+    }
+
+    .quiz-item-title {
+        color: var(--text-primary, #ffffff);
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .quiz-item-job {
+        color: var(--text-secondary, #a0a0a0);
+        font-size: 0.8rem;
+    }
+
+    .quiz-item-action {
+        background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .quiz-item-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+    }
+
+    .quiz-dropdown-footer {
+        padding: 0.75rem 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .view-all-quizzes {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        color: var(--text-primary, #ffffff);
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.1) 100%);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .view-all-quizzes:hover {
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 255, 136, 0.2) 100%);
+        border-color: rgba(0, 212, 255, 0.4);
+        color: var(--text-primary, #ffffff);
+        text-decoration: none;
+    }
+
     /* Notification Bell Styles */
     .notification-bell-container {
         position: relative;
@@ -260,6 +503,14 @@
         font-weight: 600;
         min-width: 20px;
         animation: pulse-notification 2s infinite;
+    }
+
+    .quiz-button .notification-count {
+        background: linear-gradient(135deg, #00d2d3 0%, #00b8b9 100%);
+        min-width: 20px;
+        padding: 0 4px;
+        text-align: center;
+        line-height: 20px;
     }
 
     @keyframes pulse-notification {
@@ -737,5 +988,54 @@
 
     .notification-dropdown-content::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Custom scrollbar for quiz dropdown */
+    .quiz-dropdown-content::-webkit-scrollbar {
+        width: 8px !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .quiz-dropdown-content::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 4px !important;
+        margin: 4px 0 !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .quiz-dropdown-content::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%) !important;
+        border-radius: 4px !important;
+        transition: all 0.3s ease !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        min-height: 20px !important;
+    }
+
+    .quiz-dropdown-content::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #00b8d4 0%, #00e676 100%) !important;
+        box-shadow: 0 0 8px rgba(0, 212, 255, 0.3) !important;
+    }
+
+    .quiz-dropdown-content::-webkit-scrollbar-corner {
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* Enhanced quiz dropdown content scrolling */
+    .quiz-dropdown-content {
+        max-height: 200px !important;
+        overflow-y: scroll !important;
+        overflow-x: hidden !important;
+        scroll-behavior: smooth !important;
+        padding-right: 8px !important;
+        /* Force scrollbar to always be visible */
+        scrollbar-gutter: stable;
+        /* Ensure minimum height to trigger scrollbar */
+        min-height: 100px !important;
+    }
+
+    /* Firefox scrollbar styling */
+    .quiz-dropdown-content {
+        scrollbar-width: thin !important;
+        scrollbar-color: rgba(0, 212, 255, 0.6) rgba(255, 255, 255, 0.05) !important;
     }
 </style>

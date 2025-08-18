@@ -1,6 +1,6 @@
 import json
-from fastapi import APIRouter, Request, Query, Depends, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request, Query, Depends, HTTPException, Form
+from fastapi.responses import HTMLResponse, JSONResponse
 from database import SessionLocal
 from databaseclient.models import Job, Company, Department, Application, ProfileCandidat, SavedJob, JobSkill
 from routers.client_dep.dependencies import get_db, get_current_user
@@ -9,8 +9,10 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, or_, and_
 from fastapi.templating import Jinja2Templates
-from typing import Optional
+from typing import Optional, List
 import os
+from datetime import datetime, timedelta
+from quiz_service import QuizService
 
 router = APIRouter()
 # Templates
@@ -728,6 +730,40 @@ async def check_application_status(job_id: int, request: Request, db: Session = 
         print(f"Error checking application status: {str(e)}")
         return {"has_applied": False}
 
+@router.get("/api/jobs/{job_id}/quiz-assignment-status")
+async def check_quiz_assignment_status(job_id: int, request: Request, db: Session = Depends(get_db)):
+    """Check if a quiz is assigned to the current user for this job and its status"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"success": False, "message": "User not logged in"}
+        
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == current_user.id).first()
+        if not candidate_profile:
+            return {"success": False, "message": "Candidate profile not found"}
+        
+        from models import JobQuizAssignment
+        assignment = db.query(JobQuizAssignment).filter(
+            JobQuizAssignment.job_id == job_id,
+            JobQuizAssignment.candidate_id == candidate_profile.id
+        ).first()
+        
+        if assignment:
+            return {
+                "success": True,
+                "assignment_status": {
+                    "assignment_id": assignment.id,
+                    "status": assignment.status,
+                    "quiz_attempt_id": assignment.quiz_attempt_id
+                }
+            }
+        else:
+            return {"success": False, "message": "No quiz assigned for this job"}
+            
+    except Exception as e:
+        print(f"Error checking quiz assignment status: {str(e)}")
+        return {"success": False, "message": f"Error: {str(e)}"}
+
 @router.post("/api/applications/{application_id}/withdraw")
 async def withdraw_application(application_id: int, request: Request, db: Session = Depends(get_db)):
     """Withdraw a job application"""
@@ -761,3 +797,292 @@ async def withdraw_application(application_id: int, request: Request, db: Sessio
         db.rollback()
         print(f"Error withdrawing application: {str(e)}")
         return {"success": False, "message": "Erreur lors du retrait de la candidature"}
+
+@router.get("/api/my-assigned-quizzes")
+async def get_my_assigned_quizzes(request: Request, db: Session = Depends(get_db)):
+    """Get all quiz assignments for the current user"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"success": False, "message": "Vous devez être connecté"}
+        
+        # Get candidate profile
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == current_user.id).first()
+        if not candidate_profile:
+            return {"success": False, "message": "Profil candidat non trouvé"}
+        
+        # Get assigned quizzes
+        quiz_service = QuizService()
+        assignments = quiz_service.get_assigned_quizzes_for_candidate(candidate_profile.id)
+        
+        return {
+            "success": True,
+            "assignments": assignments
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+
+@router.get("/api/take-quiz/{assignment_id}")
+async def take_assigned_quiz(assignment_id: int, request: Request, db: Session = Depends(get_db)):
+    """Take an assigned quiz - redirects to existing quiz system"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"success": False, "message": "Vous devez être connecté"}
+        
+        # Get candidate profile
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == current_user.id).first()
+        if not candidate_profile:
+            return {"success": False, "message": "Profil candidat non trouvé"}
+        
+        # Get assignment
+        from models import JobQuizAssignment
+        assignment = db.query(JobQuizAssignment).filter(
+            JobQuizAssignment.id == assignment_id,
+            JobQuizAssignment.candidate_id == candidate_profile.id,
+            JobQuizAssignment.status.in_(["assigned", "in_progress"])
+        ).first()
+        
+        if not assignment:
+            return {"success": False, "message": "Quiz non trouvé"}
+        
+        # Generate quiz if not already generated
+        quiz_service = QuizService()
+        if not assignment.quiz_attempt_id:
+            quiz_data = quiz_service.generate_job_based_quiz(
+                job_id=assignment.job_id,
+                candidate_id=candidate_profile.id
+            )
+            
+            # Update assignment with quiz attempt
+            assignment.quiz_attempt_id = quiz_data["quiz_id"]
+            assignment.status = "in_progress"
+            db.commit()
+        
+        # Return redirect information to use existing quiz system
+        return {
+            "success": True,
+            "redirect_url": f"/take-quiz/{candidate_profile.id}?assignment_id={assignment_id}",
+            "candidate_id": candidate_profile.id,
+            "assignment_id": assignment_id
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+
+@router.post("/api/submit-quiz/{assignment_id}")
+async def submit_quiz(assignment_id: int, request: Request, db: Session = Depends(get_db)):
+    """Submit quiz answers and get results - uses existing submission system"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"success": False, "message": "Vous devez être connecté"}
+        
+        # Get request body
+        body = await request.json()
+        answers = body.get("answers", {})
+        
+        # Get candidate profile
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == current_user.id).first()
+        if not candidate_profile:
+            return {"success": False, "message": "Profil candidat non trouvé"}
+        
+        # Get assignment
+        from models import JobQuizAssignment
+        assignment = db.query(JobQuizAssignment).filter(
+            JobQuizAssignment.id == assignment_id,
+            JobQuizAssignment.candidate_id == candidate_profile.id
+        ).first()
+        
+        if not assignment or not assignment.quiz_attempt_id:
+            return {"success": False, "message": "Quiz non trouvé"}
+        
+        # Use existing quiz service to submit
+        quiz_service = QuizService()
+        evaluation = quiz_service.submit_quiz_attempt(
+            quiz_id=assignment.quiz_attempt_id,
+            candidate_id=candidate_profile.id,
+            answers=answers
+        )
+        
+        # Update assignment status
+        assignment.status = "completed"
+        db.commit()
+        
+        # Return redirect to existing results page
+        return {
+            "success": True,
+            "redirect_url": f"/quiz-results/{assignment.quiz_attempt_id}",
+            "evaluation": evaluation
+        }
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+
+@router.get("/api/quizzes/count")
+async def get_quiz_count(request: Request, db: Session = Depends(get_db)):
+    """Get count of assigned quizzes for the current user"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"unread_count": 0}
+        
+        # Get candidate profile
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == current_user.id).first()
+        if not candidate_profile:
+            return {"unread_count": 0}
+        
+        # Get assigned quizzes count (including both assigned and in_progress)
+        from models import JobQuizAssignment
+        quiz_count = db.query(JobQuizAssignment).filter(
+            JobQuizAssignment.candidate_id == candidate_profile.id,
+            JobQuizAssignment.status.in_(["assigned", "in_progress"])
+        ).count()
+        
+        return {"unread_count": quiz_count}
+    except Exception as e:
+        return {"unread_count": 0}
+
+@router.get("/api/quizzes/recent")
+async def get_recent_quizzes(request: Request, limit: int = None, db: Session = Depends(get_db)):
+    """Get recent quiz assignments for the current user"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"quizzes": []}
+        
+        # Get candidate profile
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == current_user.id).first()
+        if not candidate_profile:
+            return {"quizzes": []}
+        
+        # Get recent quiz assignments (that can be taken)
+        from models import JobQuizAssignment
+        query = db.query(JobQuizAssignment).filter(
+            JobQuizAssignment.candidate_id == candidate_profile.id,
+            JobQuizAssignment.status.in_(["assigned", "in_progress"])
+        ).order_by(JobQuizAssignment.assigned_at.desc())
+        
+        # Only apply limit if it's provided and greater than 0
+        if limit and limit > 0:
+            query = query.limit(limit)
+            
+        assignments = query.all()
+        
+        quizzes = []
+        for assignment in assignments:
+            job = db.query(Job).filter(Job.id == assignment.job_id).first()
+            quizzes.append({
+                "id": assignment.id,
+                "title": f"Quiz - {job.title if job else 'Poste inconnu'}",
+                "description": f"Quiz assigné le {assignment.assigned_at.strftime('%d/%m/%Y')}",
+                "status": assignment.status,
+                "created_at": assignment.assigned_at.isoformat(),
+                "is_read": assignment.status == "completed"
+            })
+        
+        return {"quizzes": quizzes}
+    except Exception as e:
+        return {"quizzes": []}
+
+@router.post("/api/generate-job-quiz/{job_id}")
+async def generate_job_quiz(job_id: int, request: Request, db: Session = Depends(get_db)):
+    """Generate a quiz based on job requirements for the current user"""
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"success": False, "message": "Vous devez être connecté"}
+        
+        # Get candidate profile
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == current_user.id).first()
+        if not candidate_profile:
+            return {"success": False, "message": "Profil candidat non trouvé"}
+        
+        # Get job details
+        job = db.query(Job).options(joinedload(Job.company)).filter(Job.id == job_id).first()
+        if not job:
+            return {"success": False, "message": "Offre d'emploi non trouvée"}
+        
+        # Get job skills
+        job_skills = db.query(JobSkill).filter(JobSkill.job_id == job_id).all()
+        required_skills = [skill.skill_name for skill in job_skills if skill.is_required]
+        all_job_skills = [skill.skill_name for skill in job_skills]
+        
+        # Get candidate skills
+        candidate_skills = []
+        if candidate_profile.skills:
+            try:
+                if isinstance(candidate_profile.skills, str):
+                    parsed_skills = json.loads(candidate_profile.skills)
+                else:
+                    parsed_skills = candidate_profile.skills
+                
+                if isinstance(parsed_skills, list):
+                    for skill in parsed_skills:
+                        if isinstance(skill, str) and skill:
+                            if ':' in skill:
+                                candidate_skills.append(skill.split(':')[0].strip())
+                            else:
+                                candidate_skills.append(skill.strip())
+            except:
+                candidate_skills = []
+        
+        # Use QuizService to generate job-based quiz
+        quiz_service = QuizService()
+        
+        # Generate quiz using the existing quiz generator
+        from quiz_generator import QuizGenerator
+        quiz_gen = QuizGenerator()
+        
+        # Create quiz data
+        quiz_data = quiz_gen.generate_quiz(
+            job_title=job.title,
+            required_skills=required_skills or all_job_skills[:5],  # Use first 5 skills if no required skills
+            candidate_skills=candidate_skills,
+            num_questions=10,
+            use_expert_prompt=True
+        )
+        
+        if not quiz_data or not quiz_data.get("questions"):
+            return {"success": False, "message": "Erreur lors de la génération du quiz"}
+        
+        # Create quiz attempt record
+        from models import QuizAttempt
+        quiz_attempt = QuizAttempt(
+            candidate_id=candidate_profile.id,
+            job_title=job.title,
+            difficulty="medium",
+            questions=quiz_data,
+            answers={},
+            total_score=0.0,
+            category_scores={},
+            detailed_results={}
+        )
+        
+        db.add(quiz_attempt)
+        db.commit()
+        db.refresh(quiz_attempt)
+        
+        # Create job quiz assignment record
+        from models import JobQuizAssignment
+        assignment = JobQuizAssignment(
+            job_id=job_id,
+            candidate_id=candidate_profile.id,
+            assigned_by=None,  # Self-generated
+            status="assigned",  # Start as assigned, not in_progress
+            quiz_attempt_id=quiz_attempt.id
+        )
+        
+        db.add(assignment)
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Quiz généré avec succès. Vous pouvez maintenant le passer depuis le menu quiz.",
+            "quiz_id": quiz_attempt.id,
+            "assignment_id": assignment.id
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error generating job quiz: {str(e)}")
+        return {"success": False, "message": f"Erreur: {str(e)}"}

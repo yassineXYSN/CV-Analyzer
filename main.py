@@ -168,9 +168,41 @@ async def get_quiz_statistics(quiz_id: int):
         return {"success": False, "error": str(e)}
 
 @app.get("/take-quiz/{candidate_id}", response_class=HTMLResponse)
-async def take_quiz(request: Request, candidate_id: int, num_questions: int = Query(5)):
+async def take_quiz(request: Request, candidate_id: int, num_questions: int = Query(5), assignment_id: int = Query(None)):
     """Display all per-skill quizzes for a candidate on one page"""
     try:
+        # Check if this is a job-based quiz assignment
+        if assignment_id:
+            db = SessionLocal()
+            try:
+                from models import JobQuizAssignment
+                assignment = db.query(JobQuizAssignment).filter(
+                    JobQuizAssignment.id == assignment_id,
+                    JobQuizAssignment.candidate_id == candidate_id
+                ).first()
+                
+                if assignment and assignment.quiz_attempt_id:
+                    # Get existing quiz attempt
+                    from models import QuizAttempt
+                    quiz_attempt = db.query(QuizAttempt).filter(QuizAttempt.id == assignment.quiz_attempt_id).first()
+                    if quiz_attempt:
+                        quizzes = [{
+                            "quiz_id": quiz_attempt.id,
+                            "skill": quiz_attempt.job_title,
+                            "job_title": quiz_attempt.job_title,
+                            "questions": quiz_attempt.questions
+                        }]
+                        return templates.TemplateResponse("client-dep/quiz.html", {
+                            "request": request,
+                            "quizzes": quizzes,
+                            "candidate_id": candidate_id,
+                            "assignment_id": assignment_id,
+                            "error_message": None
+                        })
+            finally:
+                db.close()
+        
+        # Fallback to CV-based quiz generation
         quizzes = quiz_service.generate_quiz_for_candidate(
             candidate_id=candidate_id,
             job_title="Développeur",

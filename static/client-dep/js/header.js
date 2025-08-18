@@ -2,6 +2,7 @@ class HeaderComponent {
   constructor() {
     this.currentUser = null
     this.notificationCount = 0
+    this.quizCount = 0
     this.notificationWs = null
     this.reconnectInterval = null // Added for managing reconnects
     this.init()
@@ -55,6 +56,13 @@ class HeaderComponent {
         if (notificationDropdown && notificationBellTrigger && notificationDropdown.classList.contains("show")) {
           notificationDropdown.classList.remove("show")
           notificationBellTrigger.classList.remove("active")
+        }
+        // Close quiz dropdown if open
+        const quizDropdown = document.getElementById("quizDropdown")
+        const quizButtonTrigger = document.getElementById("quizButtonTrigger")
+        if (quizDropdown && quizButtonTrigger && quizDropdown.classList.contains("show")) {
+          quizDropdown.classList.remove("show")
+          quizButtonTrigger.classList.remove("active")
         }
 
         if (!isOpen) {
@@ -122,6 +130,7 @@ class HeaderComponent {
 
     const userMenuContainer = document.getElementById("userMenuContainer")
     const notificationBellContainer = document.getElementById("notificationBellContainer")
+    const quizButtonContainer = document.getElementById("quizButtonContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
 
     if (userMenuContainer) {
@@ -132,14 +141,17 @@ class HeaderComponent {
       notificationBellContainer.style.display = "block"
     }
 
+    if (quizButtonContainer) {
+      quizButtonContainer.style.display = "block"
+    }
+
     guestMenuContainers.forEach((container) => {
       container.style.display = "none"
     })
 
     this.updateUserInfo(user)
     this.setupEventListeners()
-    this.setupNotificationDropdown()
-
+    
     // Set profile link dynamically
     const profileLink = document.getElementById("profileLink")
     if (profileLink && user.id) {
@@ -148,7 +160,14 @@ class HeaderComponent {
 
     // Fetch notification count and setup WebSocket
     this.fetchNotificationCount()
+    this.loadQuizCount()
     this.setupNotificationWebSocket()
+    
+    // Setup dropdowns with delay to ensure DOM is ready
+    setTimeout(() => {
+      this.setupNotificationDropdown()
+      this.setupQuizDropdown()
+    }, 200)
   }
 
   setGuest() {
@@ -157,6 +176,7 @@ class HeaderComponent {
     // Hide user menu and notification bell, show guest menu
     const userMenuContainer = document.getElementById("userMenuContainer")
     const notificationBellContainer = document.getElementById("notificationBellContainer")
+    const quizButtonContainer = document.getElementById("quizButtonContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
 
     if (userMenuContainer) {
@@ -165,6 +185,10 @@ class HeaderComponent {
 
     if (notificationBellContainer) {
       notificationBellContainer.style.display = "none"
+    }
+
+    if (quizButtonContainer) {
+      quizButtonContainer.style.display = "none"
     }
 
     guestMenuContainers.forEach((container) => {
@@ -247,6 +271,37 @@ class HeaderComponent {
     }
   }
 
+  async fetchQuizCount() {
+    if (!this.currentUser) return
+
+    try {
+      const response = await fetch("/api/quizzes/count", {
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        this.updateQuizCount(data.unread_count || 0)
+      }
+    } catch (error) {
+      console.error("Error fetching quiz count:", error)
+    }
+  }
+
+  updateQuizCount(count) {
+    this.quizCount = count
+    const quizCountElement = document.getElementById("quizCount")
+
+    if (quizCountElement) {
+      if (count > 0) {
+        quizCountElement.textContent = count > 99 ? "99+" : count.toString()
+        quizCountElement.style.display = "flex"
+      } else {
+        quizCountElement.style.display = "none"
+      }
+    }
+  }
+
   setupNotificationWebSocket() {
     if (!this.currentUser || !this.currentUser.id) {
       console.log("No current user ID available, skipping WebSocket connection setup.")
@@ -299,6 +354,21 @@ class HeaderComponent {
           if (dropdown && dropdown.classList.contains("show")) {
             this.addNotificationToDropdown(data)
           }
+        } else if (data.type === "quiz_assigned") {
+          // Increment quiz count
+          this.updateQuizCount(this.quizCount + 1)
+
+          // Show quiz notification indicator
+          this.showQuizNotificationIndicator()
+
+          // Dispatch custom event for quiz assignment
+          document.dispatchEvent(new CustomEvent("newQuizAssigned", { detail: data }))
+
+          // Update quiz dropdown in real-time if it's open
+          const quizDropdown = document.getElementById("quizDropdown")
+          if (quizDropdown && quizDropdown.classList.contains("show")) {
+            this.loadRecentQuizzes()
+          }
         }
       }
 
@@ -349,6 +419,21 @@ class HeaderComponent {
       // Remove animation after it completes
       setTimeout(() => {
         bellElement.style.animation = ""
+      }, 500)
+    }
+  }
+
+  showQuizNotificationIndicator() {
+    const quizButton = document.querySelector(".quiz-button")
+    if (quizButton) {
+      // Add a brief animation to indicate new quiz
+      quizButton.style.animation = "none"
+      quizButton.offsetHeight // Trigger reflow
+      quizButton.style.animation = "bell-shake 0.5s ease-in-out"
+
+      // Remove animation after it completes
+      setTimeout(() => {
+        quizButton.style.animation = ""
       }, 500)
     }
   }
@@ -448,6 +533,118 @@ class HeaderComponent {
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") closeDropdown()
       })
+    }
+  }
+
+  setupQuizDropdown() {
+    // Use a timeout to ensure DOM elements are available
+    setTimeout(() => {
+      const quizButtonTrigger = document.getElementById("quizButtonTrigger")
+      const dropdown = document.getElementById("quizDropdown")
+
+      console.log("Setting up quiz dropdown - trigger:", quizButtonTrigger, "dropdown:", dropdown)
+
+      if (quizButtonTrigger && dropdown) {
+        const closeDropdown = () => {
+          quizButtonTrigger.classList.remove("active")
+          dropdown.classList.remove("show")
+        }
+
+        // Remove any existing listeners to prevent duplicates
+        if (this.quizClickHandler) {
+          quizButtonTrigger.removeEventListener("click", this.quizClickHandler)
+        }
+        
+        // Store the handler so we can remove it later
+        this.quizClickHandler = async (e) => {
+          console.log("Quiz button clicked!")
+          e.stopPropagation()
+          e.preventDefault()
+          const isOpen = dropdown.classList.contains("show")
+
+          // Close other dropdowns first
+          document.querySelectorAll(".user-dropdown.show").forEach((d) => {
+            if (d !== dropdown) d.classList.remove("show")
+          })
+          document.querySelectorAll(".user-menu-trigger.active").forEach((t) => {
+            if (t !== quizButtonTrigger) t.classList.remove("active")
+          })
+          
+          // Close notification dropdown if open
+          const notificationDropdown = document.getElementById("notificationDropdown")
+          const notificationBellTrigger = document.getElementById("notificationBellTrigger")
+          if (notificationDropdown && notificationBellTrigger && notificationDropdown.classList.contains("show")) {
+            notificationDropdown.classList.remove("show")
+            notificationBellTrigger.classList.remove("active")
+          }
+
+          if (!isOpen) {
+            console.log("Opening quiz dropdown")
+            quizButtonTrigger.classList.add("active")
+            dropdown.classList.add("show")
+            await this.loadRecentQuizzes()
+          } else {
+            console.log("Closing quiz dropdown")
+            closeDropdown()
+          }
+        }
+
+        // Add event listener with proper binding
+        quizButtonTrigger.addEventListener("click", this.quizClickHandler.bind(this))
+
+        // Also add event delegation for the entire quiz button area
+        const quizButton = quizButtonTrigger.querySelector(".quiz-button")
+        if (quizButton) {
+          quizButton.addEventListener("click", this.quizClickHandler.bind(this))
+        }
+
+        // Close on outside click
+        document.addEventListener("click", (e) => {
+          if (!quizButtonTrigger.contains(e.target) && !dropdown.contains(e.target)) {
+            closeDropdown()
+          }
+        })
+
+        // Close on Esc
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") closeDropdown()
+        })
+        
+        console.log("Quiz dropdown setup complete")
+      } else {
+        console.log("Quiz dropdown elements not found, retrying in 1 second...")
+        // Retry after 1 second if elements not found
+        setTimeout(() => this.setupQuizDropdown(), 1000)
+      }
+    }, 100)
+  }
+
+  async loadQuizCount() {
+    if (!this.currentUser) return
+    
+    try {
+      const response = await fetch("/api/quizzes/count", {
+        credentials: "include",
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        this.updateQuizBadge(data.unread_count || 0)
+      }
+    } catch (error) {
+      console.error("Error loading quiz count:", error)
+    }
+  }
+
+  updateQuizBadge(count) {
+    const badge = document.getElementById("quizBadge")
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = count > 99 ? "99+" : count.toString()
+        badge.style.display = "inline-block"
+      } else {
+        badge.style.display = "none"
+      }
     }
   }
 
@@ -559,6 +756,124 @@ class HeaderComponent {
   `
   }
 
+  async loadRecentQuizzes() {
+    const contentElement = document.getElementById("quizDropdownContent")
+    const loadingElement = document.getElementById("quizLoading")
+
+    console.log("Loading recent quizzes - contentElement:", contentElement, "loadingElement:", loadingElement)
+
+    if (!contentElement || !this.currentUser) {
+      console.log("Missing elements or user - contentElement:", !!contentElement, "currentUser:", !!this.currentUser)
+      return
+    }
+
+    // Show loading
+    if (loadingElement) {
+      loadingElement.style.display = "flex"
+    }
+    contentElement.innerHTML = "" // Clear previous content
+
+    try {
+      console.log("Fetching quizzes from API...")
+      const response = await fetch("/api/quizzes/recent", {
+        credentials: "include",
+      })
+
+      console.log("Quiz API response status:", response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Quiz API response data:", data)
+        this.renderRecentQuizzes(data.quizzes || [])
+      } else {
+        console.log("Quiz API response not ok")
+        this.renderQuizError()
+      }
+    } catch (error) {
+      console.error("Error loading recent quizzes:", error)
+      this.renderQuizError()
+    } finally {
+      // Hide loading
+      if (loadingElement) {
+        loadingElement.style.display = "none"
+      }
+    }
+  }
+
+  renderRecentQuizzes(quizzes) {
+    const contentElement = document.getElementById("quizDropdownContent")
+    console.log("Rendering quizzes - contentElement:", contentElement, "quizzes:", quizzes)
+    
+    if (!contentElement) {
+      console.log("No content element found for quiz dropdown")
+      return
+    }
+
+    if (quizzes.length === 0) {
+      console.log("No quizzes to display")
+      contentElement.innerHTML = `
+      <div class="notification-empty">
+        <i class="fas fa-bell-slash"></i>
+        <div>Aucun quiz assigné</div>
+      </div>
+    `
+      return
+    }
+
+    console.log("Creating HTML for", quizzes.length, "quizzes")
+    const quizzesHTML = quizzes
+      .map((quiz) => this.createQuizMiniHtml(quiz))
+      .join("")
+
+    console.log("Generated quiz HTML:", quizzesHTML)
+    contentElement.innerHTML = quizzesHTML
+    
+    // Force scrollbar visibility after content is loaded
+    setTimeout(() => {
+      const dropdown = document.getElementById("quizDropdownContent")
+      if (dropdown) {
+        // Check if content overflows
+        if (dropdown.scrollHeight > dropdown.clientHeight) {
+          dropdown.style.overflowY = 'scroll'
+          console.log("Scrollbar should be visible - content height:", dropdown.scrollHeight, "container height:", dropdown.clientHeight)
+        }
+      }
+    }, 100)
+  }
+
+  createQuizMiniHtml(quiz) {
+    const timeAgo = this.getTimeAgo(new Date(quiz.created_at))
+    const statusClass = `status-${quiz.status}`
+    const unreadClass = quiz.is_read ? "" : "unread"
+
+    return `
+      <div class="quiz-item ${unreadClass}">
+        <div class="quiz-item-icon">
+          <i class="fas fa-question-circle"></i>
+        </div>
+        <div class="quiz-item-content">
+          <div class="quiz-item-title">${quiz.title}</div>
+          <div class="quiz-item-job">${quiz.description}</div>
+        </div>
+        <button class="quiz-item-action" onclick="takeAssignedQuiz(${quiz.id})">
+          Passer Quiz
+        </button>
+      </div>
+    `
+  }
+
+  renderQuizError() {
+    const contentElement = document.getElementById("quizDropdownContent")
+    if (!contentElement) return
+
+    contentElement.innerHTML = `
+    <div class="notification-empty">
+      <i class="fas fa-exclamation-triangle"></i>
+      <div>Erreur lors du chargement</div>
+    </div>
+  `
+  }
+
   getTimeAgo(date) {
     const now = new Date()
     const diffInSeconds = Math.floor((now - date) / 1000)
@@ -612,3 +927,61 @@ document.head.appendChild(style)
 document.addEventListener("DOMContentLoaded", () => {
   window.headerComponent = new HeaderComponent()
 })
+
+// Also initialize when header HTML is dynamically loaded
+document.addEventListener("headerLoaded", () => {
+  console.log("Header loaded event triggered")
+  if (window.headerComponent) {
+    console.log("Setting up quiz and notification dropdowns")
+    window.headerComponent.setupQuizDropdown()
+    window.headerComponent.setupNotificationDropdown()
+  } else {
+    console.log("Header component not found, creating new one")
+    window.headerComponent = new HeaderComponent()
+  }
+})
+
+// Global function to take assigned quiz
+async function takeAssignedQuiz(assignmentId) {
+  try {
+    console.log('Taking assigned quiz:', assignmentId)
+    
+    // Show loading indicator if available
+    if (window.showLoading) {
+      window.showLoading()
+    }
+    
+    const response = await fetch(`/api/take-quiz/${assignmentId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    const data = await response.json()
+    
+    if (data.success && data.redirect_url) {
+      console.log('Redirecting to quiz:', data.redirect_url)
+      window.location.href = data.redirect_url
+    } else {
+      console.error('Quiz loading failed:', data.message)
+      if (window.showToast) {
+        window.showToast(data.message || 'Erreur lors du chargement du quiz', 'error')
+      } else {
+        alert(data.message || 'Erreur lors du chargement du quiz')
+      }
+    }
+  } catch (error) {
+    console.error('Error taking quiz:', error)
+    if (window.showToast) {
+      window.showToast('Erreur de connexion lors du chargement du quiz', 'error')
+    } else {
+      alert('Erreur lors du chargement du quiz')
+    }
+  } finally {
+    // Hide loading indicator if available
+    if (window.hideLoading) {
+      window.hideLoading()
+    }
+  }
+}

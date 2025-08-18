@@ -1,177 +1,123 @@
 #!/usr/bin/env python3
 """
-Simple test script to check quiz generation functionality
+Test script to verify quiz generation and AI model functionality
 """
 
 import json
-from database import SessionLocal
-from databaseclient.models import ProfileCandidat, Contact, AnalyseCandidat
-from models import QuizAttempt
-from quiz_service import QuizService
+from quiz_generator import QuizGenerator, query_deepseek
 
-def create_sample_candidate():
-    """Create a sample candidate for testing"""
-    db = SessionLocal()
+def test_ai_model():
+    """Test the AI model connection and response"""
+    print("🔍 Testing AI model connection...")
+    
+    test_prompt = """Generate a simple test response in JSON format:
+    {
+        "status": "working",
+        "message": "AI model is functioning correctly"
+    }
+    
+    Respond ONLY with the JSON object above."""
+    
     try:
-        # Check if candidate already exists
-        existing_candidate = db.query(ProfileCandidat).filter(ProfileCandidat.name == "Test Candidate").first()
-        if existing_candidate:
-            print(f"✅ Sample candidate already exists with ID: {existing_candidate.id}")
-            return existing_candidate.id
+        response = query_deepseek(test_prompt)
+        print(f"✅ AI Model Response: {response}")
         
-        # Create contact
-        contact = Contact(
-            email="test@example.com",
-            phone="+1234567890",
-            linkedin="https://linkedin.com/in/test",
-            address="123 Test Street"
-        )
-        db.add(contact)
-        db.flush()
-        
-        # Create analysis
-        analysis = AnalyseCandidat(
-            analyse="Sample analysis for test candidate"
-        )
-        db.add(analysis)
-        db.flush()
-        
-        # Create candidate profile
-        candidate = ProfileCandidat(
-            name="Test Candidate",
-            title="Développeur Full Stack",
-            profile="Experienced full stack developer with expertise in Python, JavaScript, and React",
-            contact_id=contact.id,
-            analyse_id=analysis.id,
-            yearOfExperience=3,
-            education=json.dumps([
-                {"degree": "Bachelor in Computer Science", "institution": "Test University", "year": 2020}
-            ]),
-            languages=json.dumps([
-                {"language": "French", "level": "Native"},
-                {"language": "English", "level": "Fluent"}
-            ]),
-            certificates=json.dumps([
-                {"name": "AWS Certified Developer", "issuer": "Amazon", "year": 2022}
-            ]),
-            skills=json.dumps([
-                "Python: Advanced",
-                "JavaScript: Advanced", 
-                "React: Intermediate",
-                "Node.js: Intermediate",
-                "SQL: Advanced"
-            ])
-        )
-        db.add(candidate)
-        db.commit()
-        db.refresh(candidate)
-        
-        print(f"✅ Sample candidate created with ID: {candidate.id}")
-        return candidate.id
-        
+        if response.get("success"):
+            print("✅ AI model is working correctly!")
+            return True
+        else:
+            print(f"❌ AI model error: {response.get('error', 'Unknown error')}")
+            return False
+            
     except Exception as e:
-        print(f"❌ Error creating sample candidate: {e}")
-        db.rollback()
-        return None
-    finally:
-        db.close()
+        print(f"❌ AI model test failed: {str(e)}")
+        return False
 
 def test_quiz_generation():
-    """Test quiz generation functionality"""
-    print("🧪 Testing quiz generation...")
+    """Test quiz generation with job skills"""
+    print("\n🎯 Testing quiz generation based on job skills...")
     
-    # Create sample candidate
-    candidate_id = create_sample_candidate()
-    if not candidate_id:
-        print("❌ Failed to create sample candidate")
-        return
+    # Sample job skills data
+    job_title = "Python Developer"
+    required_skills_with_levels = [
+        {
+            "skill_name": "Python",
+            "skill_level": "Advanced",
+            "is_required": True
+        },
+        {
+            "skill_name": "Django",
+            "skill_level": "Intermediate", 
+            "is_required": True
+        },
+        {
+            "skill_name": "PostgreSQL",
+            "skill_level": "Intermediate",
+            "is_required": False
+        }
+    ]
     
-    # Initialize quiz service
-    quiz_service = QuizService()
+    job_description = "We are looking for an experienced Python developer to join our team. The candidate should have strong experience with Django framework and database management."
     
     try:
-        # Generate quiz
-        quizzes = quiz_service.generate_quiz_for_candidate(
-            candidate_id=candidate_id,
-            job_title="Développeur Full Stack",
-            num_questions=5
+        generator = QuizGenerator()
+        print(f"📝 Generating quiz for: {job_title}")
+        print(f"📋 Skills: {[skill['skill_name'] + ' (' + skill['skill_level'] + ')' for skill in required_skills_with_levels]}")
+        
+        quiz_data = generator.generate_recruitment_quiz(
+            job_title=job_title,
+            required_skills_with_levels=required_skills_with_levels,
+            job_description=job_description,
+            num_questions=5,  # Small number for testing
+            past_questions=[]
         )
         
-        if quizzes:
-            print("✅ Quiz generation successful!")
-            print(f"Generated {len(quizzes)} quiz(zes)")
+        print("✅ Quiz generated successfully!")
+        print(f"📊 Quiz Title: {quiz_data.get('quiz_title', 'N/A')}")
+        print(f"📈 Number of questions: {len(quiz_data.get('questions', []))}")
+        
+        # Display first question as example
+        if quiz_data.get('questions'):
+            first_q = quiz_data['questions'][0]
+            print(f"\n📝 Sample Question:")
+            print(f"   Question: {first_q.get('question', 'N/A')}")
+            print(f"   Options: {list(first_q.get('options', {}).keys())}")
+            print(f"   Correct Answer: {first_q.get('correct_answer', 'N/A')}")
+            print(f"   Skill Related: {first_q.get('skill_related', 'N/A')}")
+        
+        if quiz_data.get('warning'):
+            print(f"⚠️  Warning: {quiz_data['warning']}")
             
-            for i, quiz in enumerate(quizzes):
-                print(f"\n📝 Quiz {i+1}:")
-                print(f"  - Quiz ID: {quiz.get('quiz_id', 'N/A')}")
-                print(f"  - Title: {quiz.get('quiz_title', 'N/A')}")
-                print(f"  - Questions: {len(quiz.get('questions', []))}")
-                
-                if 'warning' in quiz:
-                    print(f"  - Warning: {quiz['warning']}")
-                
-                # Show first question as example
-                questions = quiz.get('questions', [])
-                if questions:
-                    first_q = questions[0]
-                    print(f"  - Sample question: {first_q.get('question', 'N/A')[:100]}...")
-        else:
-            print("❌ No quizzes generated")
-            
+        return True
+        
     except Exception as e:
-        print(f"❌ Error in quiz generation: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Quiz generation failed: {str(e)}")
+        return False
 
-def test_quiz_evaluation():
-    """Test quiz evaluation functionality"""
-    print("\n🧪 Testing quiz evaluation...")
+def main():
+    """Run all tests"""
+    print("🚀 Starting Quiz Generation System Tests\n")
     
-    # Get the first quiz attempt from database
-    db = SessionLocal()
-    try:
-        attempt = db.query(QuizAttempt).first()
-        if not attempt:
-            print("❌ No quiz attempts found in database")
-            return
+    # Test 1: AI Model Connection
+    ai_working = test_ai_model()
+    
+    # Test 2: Quiz Generation
+    if ai_working:
+        quiz_working = test_quiz_generation()
         
-        print(f"✅ Found quiz attempt ID: {attempt.id}")
-        
-        # Create sample answers
-        questions = attempt.questions or []
-        answers = {}
-        for i, q in enumerate(questions[:5]):  # Answer first 5 questions
-            if isinstance(q, dict) and 'options' in q:
-                # Choose first option as answer
-                first_option = list(q['options'].keys())[0] if q['options'] else 'A'
-                answers[i+1] = first_option
-        
-        print(f"Sample answers: {answers}")
-        
-        # Test evaluation
-        quiz_service = QuizService()
-        evaluation = quiz_service.submit_quiz_attempt(
-            quiz_id=attempt.id,
-            candidate_id=attempt.candidate_id,
-            answers=answers
-        )
-        
-        if evaluation:
-            print("✅ Quiz evaluation successful!")
-            print(f"Total score: {evaluation.get('total_score', 'N/A')}%")
-            print(f"Category scores: {evaluation.get('category_scores', 'N/A')}")
+        if quiz_working:
+            print("\n🎉 All tests passed! Quiz generation system is working correctly.")
         else:
-            print("❌ Quiz evaluation failed")
-            
-    except Exception as e:
-        print(f"❌ Error in quiz evaluation: {e}")
-        import traceback
-        traceback.print_exc()
-    finally:
-        db.close()
+            print("\n❌ Quiz generation test failed.")
+    else:
+        print("\n❌ Cannot test quiz generation - AI model is not working.")
+    
+    print("\n" + "="*50)
+    print("Test Summary:")
+    print(f"AI Model: {'✅ Working' if ai_working else '❌ Failed'}")
+    if ai_working:
+        quiz_working = test_quiz_generation()
+        print(f"Quiz Generation: {'✅ Working' if quiz_working else '❌ Failed'}")
 
 if __name__ == "__main__":
-    print("🚀 Starting quiz functionality tests...")
-    test_quiz_generation()
-    test_quiz_evaluation()
-    print("\n✅ Tests completed!") 
+    main()

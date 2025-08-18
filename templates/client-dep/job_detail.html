@@ -340,13 +340,6 @@
             box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
         }
 
-        .apply-btn:disabled {
-            background: #6b7280;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
         .apply-btn.applied {
             background: var(--success-color);
             color: white;
@@ -379,6 +372,32 @@
             color: var(--error-color);
         }
 
+        .quiz-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+        }
+
+        .quiz-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+        }
+
+        .quiz-btn.completed {
+            background: var(--success-color);
+            color: white;
+        }
+
         /* Job Content */
         .job-content {
             display: grid;
@@ -405,16 +424,6 @@
             box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
             border: 1px solid var(--border-color);
             backdrop-filter: blur(10px);
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
         }
 
         .section-title i {
@@ -618,10 +627,6 @@
 
         .toast.error {
             border-left-color: var(--error-color);
-        }
-
-        .toast.info {
-            border-left-color: var(--info-color);
         }
 
         .toast-content {
@@ -856,13 +861,17 @@
                         </div>
 
                         <div class="job-actions">
-                            <button class="apply-btn" id="applyBtn" onclick="applyToJob({{ job.id }})">
+                            <button class="apply-btn" id="applyBtn" data-job-id="{{ job.id }}">
                                 <i class="fas fa-paper-plane"></i>
                                 <span id="applyBtnText">Postuler maintenant</span>
                             </button>
-                            <button class="save-btn" onclick="toggleSaveJob({{ job.id }}, this)">
+                            <button class="save-btn" data-job-id="{{ job.id }}">
                                 <i class="far fa-heart"></i>
                                 Sauvegarder
+                            </button>
+                            <button class="quiz-btn" id="quizBtn" data-job-id="{{ job.id }}" style="display: none;">
+                                <i class="fas fa-clipboard-check"></i>
+                                <span id="quizBtnText">Passer le quiz</span>
                             </button>
                         </div>
                     </div>
@@ -948,7 +957,7 @@
                             </div>
                             <div class="stat-item">
                                 <span class="stat-value" id="applicationCount">{{ job.applications_count }}</span>
-                                <span class="stat-label">Candidatures</span>
+                            <span class="stat-label">Candidatures</span>
                             </div>
                         </div>
                     </div>
@@ -988,38 +997,8 @@
                                 {% endfor %}
                             {% endif %}
                         </ul>
-                        {% if not matched_job_skills and not unmatched_job_skills %}
-                            <p style="color: var(--text-muted);">Aucune compétence spécifique n'est listée pour ce poste.</p>
-                        {% endif %}
-                    </div>
-                    {% elif current_user %}
-                    <div class="content-section">
-                        <h3 class="section-title">
-                            <i class="fas fa-cogs"></i>
-                            Vos compétences vs. le poste
-                        </h3>
-                        <p style="color: var(--text-muted);">
-                            Pour voir la correspondance des compétences, veuillez vous assurer que votre profil candidat est complet avec vos compétences.
-                        </p>
                     </div>
                     {% endif %}
-
-                    <!-- Job Tags -->
-                    <div class="content-section">
-                        <h3 class="section-title">
-                            <i class="fas fa-tags"></i>
-                            Tags du poste
-                        </h3>
-                        <div class="job-tags">
-                            <span class="tag employment-type">{{ job.employment_type }}</span>
-                            {% if job.priority and job.priority != 'normal' %}
-                                <span class="tag priority">{{ job.priority.title() }}</span>
-                            {% endif %}
-                            {% if job.department %}
-                                <span class="tag">{{ job.department.name }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
 
                     <!-- Company Info -->
                     {% if job.company %}
@@ -1033,6 +1012,12 @@
                                 <span class="company-detail-label">Nom</span>
                                 <span class="company-detail-value">{{ job.company.company_name }}</span>
                             </div>
+                            {% if job.company.address %}
+                            <div class="company-detail">
+                                <span class="company-detail-label">Adresse</span>
+                                <span class="company-detail-value">{{ job.company.address }}</span>
+                            </div>
+                            {% endif %}
                             {% if job.company.industry %}
                             <div class="company-detail">
                                 <span class="company-detail-label">Secteur</span>
@@ -1042,53 +1027,27 @@
                             {% if job.company.company_size %}
                             <div class="company-detail">
                                 <span class="company-detail-label">Taille</span>
-                                <span class="company-detail-value">{{ job.company.company_size }} employés</span>
-                            </div>
-                            {% endif %}
-                            {% if job.company.website %}
-                            <div class="company-detail">
-                                <span class="company-detail-label">Site web</span>
-                                <span class="company-detail-value">
-                                    <a href="{{ job.company.website }}" target="_blank" style="color: var(--info-color);">
-                                        Visiter le site
-                                    </a>
-                                </span>
+                                <span class="company-detail-value">{{ job.company.company_size }}</span>
                             </div>
                             {% endif %}
                         </div>
-                        {% if job.company.description %}
-                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                            <p style="color: var(--text-secondary); line-height: 1.6;">{{ job.company.description }}</p>
-                        </div>
-                        {% endif %}
                     </div>
                     {% endif %}
 
-                    <!-- Dates -->
+                    <!-- Job Tags -->
+                    {% if job.tags %}
                     <div class="content-section">
                         <h3 class="section-title">
-                            <i class="fas fa-calendar-alt"></i>
-                            Dates importantes
+                            <i class="fas fa-tags"></i>
+                            Tags
                         </h3>
-                        <div class="company-info">
-                            <div class="company-detail">
-                                <span class="company-detail-label">Publié le</span>
-                                <span class="company-detail-value">{{ job.created_at.strftime('%d/%m/%Y') }}</span>
-                            </div>
-                            {% if job.deadline %}
-                            <div class="company-detail">
-                                <span class="company-detail-label">Date limite</span>
-                                <span class="company-detail-value">{{ job.deadline.strftime('%d/%m/%Y') }}</span>
-                            </div>
-                            {% endif %}
-                            {% if job.start_date %}
-                            <div class="company-detail">
-                                <span class="company-detail-label">Date de début</span>
-                                <span class="company-detail-value">{{ job.start_date.strftime('%d/%m/%Y') }}</span>
-                            </div>
-                            {% endif %}
+                        <div class="job-tags">
+                            {% for tag in job.tags.split(',') if job.tags %}
+                                <span class="tag">{{ tag.strip() }}</span>
+                            {% endfor %}
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -1097,8 +1056,8 @@
     <!-- Toast Notification -->
     <div class="toast" id="toast">
         <div class="toast-content">
-            <i class="toast-icon"></i>
-            <span class="toast-message"></span>
+            <i class="toast-icon fas fa-info-circle"></i>
+            <span class="toast-message" id="toastMessage"></span>
         </div>
         <button class="toast-close" onclick="hideToast()">
             <i class="fas fa-times"></i>
@@ -1108,184 +1067,71 @@
     <!-- Loading Spinner -->
     <div class="loading-spinner" id="loadingSpinner">
         <div class="spinner"></div>
-        <span>Envoi de la candidature...</span>
+        <span style="color: var(--text-primary); margin-left: 1rem;">Chargement...</span>
     </div>
 
+    <!-- Quiz Assignment Modal -->
+    <div id="quizModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; backdrop-filter: blur(5px);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); border-radius: var(--radius); padding: 2rem; max-width: 500px; width: 90%; border: 1px solid var(--border-color);">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-clipboard-check" style="color: var(--warning-color);"></i>
+                Quiz Assigné
+            </h3>
+            <div id="quizModalContent" style="color: var(--text-secondary); margin-bottom: 2rem;">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button onclick="closeQuizModal()" style="padding: 0.75rem 1.5rem; background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer;">
+                    Fermer
+                </button>
+                <button id="takeQuizBtn" onclick="takeAssignedQuiz()" style="padding: 0.75rem 1.5rem; background: var(--accent-gradient); color: #000; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 600;">
+                    Passer le Quiz
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="job-data" style="display: none;">{% if job and job.id %}{{ job.id }}{% endif %}</div>
+    <div id="user-auth-data" style="display: none;">{% if current_user %}true{% else %}false{% endif %}</div>
+    
     <script>
-        // Initialize page
-        document.addEventListener("DOMContentLoaded", () => {
-            initializeJobDetail();
-            checkApplicationStatus();
-        });
+        // Get job ID from hidden div
+        const jobDataElement = document.getElementById('job-data');
+        let currentJobId = jobDataElement.textContent.trim();
+        
+        // User authentication status
+        const userAuthElement = document.getElementById('user-auth-data');
+        const isUserAuthenticated = userAuthElement.textContent.trim() === 'true';
+        currentJobId = currentJobId ? parseInt(currentJobId) : null;
+        let currentAssignmentId = null;
 
-        function initializeJobDetail() {
-            // Hamburger menu functionality
-            const hamburger = document.querySelector(".hamburger");
-            const navMenu = document.querySelector(".nav-menu");
+        // Show/hide loading spinner
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        // Toast notification functions
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = toast.querySelector('.toast-icon');
             
-            if (hamburger && navMenu) {
-                hamburger.addEventListener("click", function() {
-                    this.classList.toggle("active");
-                    navMenu.classList.toggle("active");
-                    
-                    // Toggle body overflow when menu is open
-                    if (navMenu.classList.contains("active")) {
-                        document.body.style.overflow = "hidden";
-                    } else {
-                        document.body.style.overflow = "auto";
-                    }
-                });
+            toastMessage.textContent = message;
+            toast.className = `toast show ${type}`;
+            
+            // Update icon based on type
+            if (type === 'success') {
+                toastIcon.className = 'toast-icon fas fa-check-circle';
+            } else if (type === 'error') {
+                toastIcon.className = 'toast-icon fas fa-exclamation-circle';
+            } else {
+                toastIcon.className = 'toast-icon fas fa-info-circle';
             }
-        }
-
-        // Check if user has already applied to this job
-        function checkApplicationStatus() {
-            const jobId = {{ job.id }};
             
-            fetch(`/api/jobs/${jobId}/application-status`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.has_applied) {
-                        updateApplyButtonToApplied();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error checking application status:', error);
-                });
-        }
-
-        // Apply to job function
-        function applyToJob(jobId) {
-            console.log("Applying to job with ID:", jobId);
-            const applyBtn = document.getElementById('applyBtn');
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            
-            // Disable button and show loading
-            applyBtn.disabled = true;
-            loadingSpinner.style.display = 'flex';
-            
-            fetch(`/api/jobs/${jobId}/apply`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: "Application submitted via job portal"
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                loadingSpinner.style.display = 'none';
-                
-                if (data.success) {
-                    showToast(data.message, "success");
-                    updateApplyButtonToApplied();
-                    
-                    // Update application count
-                    const appCountElement = document.getElementById('applicationCount');
-                    if (appCountElement) {
-                        const currentCount = parseInt(appCountElement.textContent);
-                        appCountElement.textContent = currentCount + 1;
-                    }
-                } else {
-                    showToast(data.message, "error");
-                    applyBtn.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                loadingSpinner.style.display = 'none';
-                applyBtn.disabled = false;
-                showToast("Erreur lors de l'envoi de la candidature", "error");
-            });
-        }
-
-        function updateApplyButtonToApplied() {
-            const applyBtn = document.getElementById('applyBtn');
-            const applyBtnText = document.getElementById('applyBtnText');
-            
-            if (applyBtn && applyBtnText) {
-                applyBtn.classList.add('applied');
-                applyBtn.disabled = true;
-                applyBtn.innerHTML = '<i class="fas fa-check"></i> <span>Candidature envoyée</span>';
-            }
-        }
-
-        // Save/unsave job function
-        function toggleSaveJob(jobId, button) {
-            const icon = button.querySelector("i");
-            const isSaved = button.classList.contains("saved");
-            const endpoint = isSaved ? 'DELETE' : 'POST';
-            
-            fetch(`/api/jobs/${jobId}/save`, {
-                method: endpoint,
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Toggle button state
-                    if (isSaved) {
-                        button.classList.remove("saved");
-                        if (icon) {
-                            icon.className = "far fa-heart";
-                        }
-                        button.innerHTML = '<i class="far fa-heart"></i> Sauvegarder';
-                    } else {
-                        button.classList.add("saved");
-                        if (icon) {
-                            icon.className = "fas fa-heart";
-                        }
-                        button.innerHTML = '<i class="fas fa-heart"></i> Sauvegardé';
-                    }
-                    
-                    showToast(data.message, "success");
-                } else {
-                    showToast("Erreur lors de la sauvegarde", "error");
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast("Erreur lors de la sauvegarde", "error");
-            });
-        }
-
-        // Toast functions
-        function showToast(message, type = "info") {
-            const toast = document.getElementById("toast");
-            if (!toast) return;
-
-            const toastMessage = toast.querySelector(".toast-message");
-            const toastIcon = toast.querySelector(".toast-icon");
-
-            if (toastMessage) {
-                toastMessage.textContent = message;
-            }
-
-            // Set type and icon
-            toast.className = `toast ${type}`;
-
-            if (toastIcon) {
-                switch (type) {
-                    case "success":
-                        toastIcon.className = "fas fa-check-circle toast-icon";
-                        break;
-                    case "error":
-                        toastIcon.className = "fas fa-exclamation-circle toast-icon";
-                        break;
-                    case "warning":
-                        toastIcon.className = "fas fa-exclamation-triangle toast-icon";
-                        break;
-                    default:
-                        toastIcon.className = "fas fa-info-circle toast-icon";
-                }
-            }
-
-            // Show toast
-            toast.classList.add("show");
-
             // Auto hide after 5 seconds
             setTimeout(() => {
                 hideToast();
@@ -1293,56 +1139,355 @@
         }
 
         function hideToast() {
-            const toast = document.getElementById("toast");
-            if (toast) {
-                toast.classList.remove("show");
+            const toast = document.getElementById('toast');
+            toast.classList.remove('show');
+        }
+
+        // Quiz Modal functions
+        function showQuizModal(assignments) {
+            const modal = document.getElementById('quizModal');
+            const content = document.getElementById('quizModalContent');
+            
+            if (assignments.length === 0) {
+                content.innerHTML = `
+                    <p>Aucun quiz n'est actuellement assigné pour ce poste.</p>
+                    <p style="margin-top: 1rem;">Vous pouvez générer un quiz basé sur les exigences du poste pour tester vos compétences.</p>
+                `;
+                document.getElementById('takeQuizBtn').textContent = 'Générer un Quiz';
+                document.getElementById('takeQuizBtn').onclick = () => generateJobQuiz();
+            } else {
+                let html = '<div style="max-height: 300px; overflow-y: auto;">';
+                assignments.forEach(assignment => {
+                    const statusBadge = assignment.status === 'assigned' ? 
+                        '<span style="background: var(--warning-color); color: #000; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">Nouveau</span>' :
+                        '<span style="background: var(--info-color); color: #000; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">En cours</span>';
+                    
+                    html += `
+                        <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; cursor: pointer;" 
+                             data-assignment-id="${assignment.assignment_id}" 
+                             onclick="selectAssignment(${assignment.assignment_id})">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <h4 style="color: var(--text-primary); margin: 0;">${assignment.title}</h4>
+                                ${statusBadge}
+                            </div>
+                            <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">${assignment.description}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                content.innerHTML = html;
+                
+                if (assignments.length > 0) {
+                    currentAssignmentId = assignments[0].assignment_id;
+                }
+                
+                document.getElementById('takeQuizBtn').textContent = 'Voir dans le menu Quiz';
+                document.getElementById('takeQuizBtn').onclick = () => {
+                    closeQuizModal();
+                    showToast('Quiz disponible dans le menu quiz de l\'en-tête.', 'info');
+                    // Refresh quiz count in header if available
+                    if (window.headerComponent) {
+                        window.headerComponent.loadQuizCount();
+                    }
+                };
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeQuizModal() {
+            document.getElementById('quizModal').style.display = 'none';
+        }
+
+        function selectAssignment(assignmentId) {
+            currentAssignmentId = assignmentId;
+            // Visual feedback for selection
+            document.querySelectorAll('#quizModalContent > div > div').forEach(div => {
+                div.style.background = 'transparent';
+            });
+            event.currentTarget.style.background = 'rgba(0, 212, 255, 0.1)';
+        }
+
+        // Check quiz status and show appropriate button/modal
+        async function checkQuizStatus(jobId) {
+            try {
+                showLoading();
+                
+                // Check for assigned quizzes
+                const response = await fetch('/api/my-assigned-quizzes');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Filter assignments for this specific job
+                    const jobAssignments = data.assignments.filter(a => a.job_id === jobId);
+                    showQuizModal(jobAssignments);
+                } else {
+                    showToast(data.message || 'Erreur lors de la vérification des quiz', 'error');
+                }
+            } catch (error) {
+                console.error('Error checking quiz status:', error);
+                showToast('Erreur de connexion', 'error');
+            } finally {
+                hideLoading();
             }
         }
 
-        // Keyboard shortcuts
-        document.addEventListener("keydown", (e) => {
-            // Escape to hide toast
-            if (e.key === "Escape") {
-                hideToast();
-            }
-        });
-        
-        // Pass user data from server to client if available
-        {% if current_user %}
-        window.currentUser = {
-            id: {{ current_user.id }},
-            email: "{{ current_user.email }}",
-            first_name: "{{ current_user.first_name or '' }}",
-            last_name: "{{ current_user.last_name or '' }}",
-            name: "{{ (current_user.first_name + ' ' + current_user.last_name).strip() if current_user.first_name else current_user.email }}",
-            is_active: {{ 'true' if current_user.is_active else 'false' }}
-        };
-        {% else %}
-        window.currentUser = null;
-        {% endif %}
-
-        // Load header component
-        document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const response = await fetch('/static/client-dep/components/header.html');
-            if (response.ok) {
-                const headerHTML = await response.text();
-                const container = document.getElementById('header-component');
-                container.innerHTML = headerHTML;
+        // Take assigned quiz - redirects to quiz page
+        async function takeAssignedQuiz() {
+            try {
+                showLoading();
                 
-                // Execute scripts from the loaded HTML
-                const scripts = container.querySelectorAll('script');
-                scripts.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    newScript.textContent = oldScript.textContent;
-                    oldScript.parentNode.removeChild(oldScript);
-                    document.body.appendChild(newScript);
+                // Get the first assignment ID from the modal content
+                const assignmentElement = document.querySelector('#quizModalContent > div > div');
+                if (!assignmentElement) {
+                    throw new Error('Aucun quiz trouvé');
+                }
+                
+                const assignmentId = assignmentElement.getAttribute('data-assignment-id');
+                if (!assignmentId) {
+                    throw new Error('ID de quiz non trouvé');
+                }
+                
+                // Call API to get redirect URL
+                const response = await fetch(`/api/take-quiz/${assignmentId}`);
+                const data = await response.json();
+                
+                if (data.success && data.redirect_url) {
+                    // Redirect to quiz page
+                    window.location.href = data.redirect_url;
+                } else {
+                    throw new Error(data.message || 'Erreur lors du chargement du quiz');
+                }
+            } catch (error) {
+                console.error('Error taking quiz:', error);
+                showToast(error.message || 'Erreur lors du chargement du quiz', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Generate job-based quiz
+        async function generateJobQuiz() {
+            try {
+                showLoading();
+                
+                const response = await fetch(`/api/generate-job-quiz/${currentJobId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeQuizModal();
+                    showToast('Quiz généré avec succès! Vous pouvez maintenant le passer depuis le menu quiz.', 'success');
+                    // Refresh quiz count in header if available
+                    if (window.headerComponent) {
+                        window.headerComponent.loadQuizCount();
+                    }
+                } else {
+                    showToast(data.message || 'Erreur lors de la génération du quiz', 'error');
+                }
+            } catch (error) {
+                console.error('Error generating quiz:', error);
+                showToast('Erreur de connexion', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Job application functions
+        async function applyToJob(jobId) {
+            const btn = document.getElementById('applyBtn');
+            const btnText = document.getElementById('applyBtnText');
+            
+            if (btn.disabled) return;
+            
+            try {
+                btn.disabled = true;
+                btnText.textContent = 'Envoi en cours...';
+                
+                const response = await fetch(`/api/jobs/${jobId}/apply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    btn.classList.add('applied');
+                    btnText.innerHTML = '<i class="fas fa-check"></i> Candidature envoyée';
+                    showToast(data.message, 'success');
+                    
+                    // Update application count
+                    const countElement = document.getElementById('applicationCount');
+                    if (countElement) {
+                        const currentCount = parseInt(countElement.textContent) || 0;
+                        countElement.textContent = currentCount + 1;
+                    }
+                } else {
+                    showToast(data.message, 'error');
+                    btn.disabled = false;
+                    btnText.textContent = 'Postuler maintenant';
+                }
+            } catch (error) {
+                console.error('Error applying to job:', error);
+                showToast('Erreur de connexion', 'error');
+                btn.disabled = false;
+                btnText.textContent = 'Postuler maintenant';
+            }
+        }
+
+        // Save/unsave job functions
+        async function toggleSaveJob(jobId, button) {
+            const icon = button.querySelector('i');
+            const isSaved = button.classList.contains('saved');
+            
+            try {
+                button.disabled = true;
+                
+                const method = isSaved ? 'DELETE' : 'POST';
+                const response = await fetch(`/api/jobs/${jobId}/save`, {
+                    method: method
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (isSaved) {
+                        button.classList.remove('saved');
+                        icon.className = 'far fa-heart';
+                        button.innerHTML = '<i class="far fa-heart"></i> Sauvegarder';
+                    } else {
+                        button.classList.add('saved');
+                        icon.className = 'fas fa-heart';
+                        button.innerHTML = '<i class="fas fa-heart"></i> Sauvegardé';
+                    }
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error toggling save job:', error);
+                showToast('Erreur de connexion', 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners for buttons
+            const applyBtn = document.getElementById('applyBtn');
+            const saveBtn = document.querySelector('.save-btn');
+            const quizBtn = document.getElementById('quizBtn');
+            
+            if (applyBtn) {
+                applyBtn.addEventListener('click', function() {
+                    const jobId = this.getAttribute('data-job-id');
+                    applyToJob(jobId);
                 });
             }
-        } catch (error) {
-            console.error('Failed to load header component:', error);
+            
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function() {
+                    const jobId = this.getAttribute('data-job-id');
+                    toggleSaveJob(jobId, this);
+                });
+            }
+            
+            if (quizBtn) {
+                quizBtn.addEventListener('click', function() {
+                    const jobId = this.getAttribute('data-job-id');
+                    checkQuizStatus(jobId);
+                });
+            }
+            
+            // Check if user has applied and update button state
+            if (isUserAuthenticated) {
+                fetch(`/api/jobs/${currentJobId}/application-status`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.has_applied) {
+                            const btn = document.getElementById('applyBtn');
+                            const btnText = document.getElementById('applyBtnText');
+                            btn.classList.add('applied');
+                            btn.disabled = true;
+                            btnText.innerHTML = '<i class="fas fa-check"></i> Candidature envoyée';
+                        }
+                    })
+                    .catch(error => console.error('Error checking application status:', error));
+
+                // Check for quiz assignments and show quiz button if available
+                fetch('/api/my-assigned-quizzes')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const jobAssignments = data.assignments.filter(a => a.job_id === currentJobId);
+                            const quizBtn = document.getElementById('quizBtn');
+                            const quizBtnText = document.getElementById('quizBtnText');
+                            
+                            if (jobAssignments.length > 0) {
+                                quizBtn.style.display = 'flex';
+                                
+                                if (jobAssignments.length > 0) {
+                                    const hasAssigned = jobAssignments.some(a => a.status === 'assigned');
+                                    const hasInProgress = jobAssignments.some(a => a.status === 'in_progress');
+                                    
+                                    if (hasAssigned) {
+                                        quizBtnText.textContent = 'Quiz Disponible';
+                                        quizBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                                    } else if (hasInProgress) {
+                                        quizBtnText.textContent = 'Continuer le Quiz';
+                                        quizBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+                                    }
+                                } else {
+                                    quizBtnText.textContent = 'Générer un Quiz';
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error checking quiz assignments:', error));
+            }
+
+        });
+
+        // Mobile menu toggle
+        const hamburger = document.querySelector('.hamburger');
+        const navMenu = document.querySelector('.nav-menu');
+
+        if (hamburger && navMenu) {
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('active');
+                navMenu.classList.toggle('active');
+            });
+
+            // Close mobile menu when clicking on a link
+            document.querySelectorAll('.nav-link').forEach(n => n.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+            }));
         }
-    });
+
+        // Close modal when clicking outside
+        document.getElementById('quizModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeQuizModal();
+            }
+        });
+    </script>
+
+    <!-- Load header component -->
+    <script>
+        fetch('/static/client-dep/components/header.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('header-component').innerHTML = html;
+                // Dispatch custom event to reinitialize header functionality
+                document.dispatchEvent(new CustomEvent('headerLoaded'));
+            })
+            .catch(error => console.error('Error loading header:', error));
     </script>
     <script src="/static/client-dep/js/header.js"></script>
 </body>

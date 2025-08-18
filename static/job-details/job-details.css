@@ -898,6 +898,17 @@ body {
   transform: translateY(-1px);
 }
 
+.btn-action.quiz {
+  background: rgba(0, 212, 255, 0.1);
+  color: #00d4ff;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.btn-action.quiz:hover {
+  background: rgba(0, 212, 255, 0.2);
+  transform: translateY(-1px);
+}
+
 /* Recommandations */
 .recommendation-badge {
   background: linear-gradient(135deg, var(--warning-orange), var(--warning-orange-dark));

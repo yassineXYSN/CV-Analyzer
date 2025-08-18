@@ -100,10 +100,12 @@ function loadJobData() {
 }
 
 // FONCTION AMÉLIORÉE: Charger le job depuis l'API avec calcul de compatibilité
-async function loadJobFromAPI(jobId) {
+async function loadJobFromAPI(jobId, preserveState = false) {
   try {
     console.log(`🔄 Chargement job ID: ${jobId}`)
-    showLoading("Chargement des détails du poste...")
+    if (!preserveState) {
+      showLoading("Chargement des détails du poste...");
+    }
 
     const response = await fetch(`/api/job/${jobId}`)
     console.log("📡 Réponse API:", response.status)
@@ -113,30 +115,59 @@ async function loadJobFromAPI(jobId) {
       console.log("📦 Données reçues:", result)
 
       if (result.success) {
-        currentJob = result.job
-        applications = result.job.applications || []
+        // Store the current quiz assignment status before updating
+        const currentQuizStatus = {};
+        if (preserveState && applications) {
+          applications.forEach(app => {
+            if (app.quiz_assignment_status) {
+              currentQuizStatus[app.candidate_id || app.id] = { ...app.quiz_assignment_status };
+            }
+          });
+        }
+
+        currentJob = result.job;
+        applications = result.job.applications || [];
+
+        // Restore quiz assignment status if preserving state
+        if (preserveState) {
+          applications.forEach(app => {
+            const candidateId = app.candidate_id || app.id;
+            if (currentQuizStatus[candidateId]) {
+              app.quiz_assignment_status = { ...currentQuizStatus[candidateId] };
+            }
+          });
+        }
 
         console.log("✅ Job chargé:", currentJob.title)
         console.log("👥 Candidatures:", applications.length)
 
-        // NOUVEAU: Calculer la compatibilité pour chaque candidature
+        // Calculate compatibility for each application
         await calculateCompatibilityForApplications()
 
-        hideLoading()
-        displayJobInfo()
-        renderApplicationsWithCompatibility()
-        updateCompatibilityStats()
+        if (!preserveState) {
+          hideLoading();
+          displayJobInfo();
+        }
+        
+        renderApplicationsWithCompatibility();
+        updateCompatibilityStats();
       } else {
         console.error("❌ Erreur API:", result.message)
-        showError(result.message || "Erreur lors du chargement du poste")
+        if (!preserveState) {
+          showError(result.message || "Erreur lors du chargement du poste");
+        }
       }
     } else {
       console.error("❌ Erreur HTTP:", response.status)
-      showError("Erreur de connexion au serveur")
+      if (!preserveState) {
+        showError("Erreur de connexion au serveur");
+      }
     }
   } catch (error) {
     console.error("❌ Erreur critique:", error)
-    showError("Erreur lors du chargement des données")
+    if (!preserveState) {
+      showError("Erreur lors du chargement des données");
+    }
   }
 }
 
@@ -940,92 +971,152 @@ function renderCandidateActions(app) {
   })
 
   if (currentUser && currentUser.role === "department_head") {
-    console.log("🏢 Mode chef de département")
-
-    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
-      const safeCandidateName = app.name.replace(/'/g, "\\'").replace(/"/g, '\\"')
-      const safeJobTitle = currentJob.title.replace(/'/g, "\\'").replace(/"/g, '\\"')
-
-      console.log("✅ Affichage bouton recommander")
+      console.log("🏢 Mode chef de département")
       return `
-      <button class="btn-action recommend" onclick="showRecommendConfirmation(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
-        <i class="fas fa-thumbs-up"></i> Recommander
-      </button>
-      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-info-circle"></i> Voir profil
-      </button>
-    `
-    } else if (app.is_recommended) {
-      console.log("✅ Affichage statut recommandé")
-      return `
-      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-info-circle"></i> Voir profil
-      </button>
-    `
-    } else {
-      console.log("ℹ️ Candidature non éligible pour recommandation")
-      return `
-      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-info-circle"></i> Voir profil
-      </button>
-      <small style="color: #6b7280; font-style: italic;">
+        ${getQuizButtonHtml(app)}
+        ${
+          (app.status === "pending" || app.status === "reviewed") && !app.is_recommended
+            ? `<button class="btn-action recommend" onclick="showRecommendConfirmation(${app.id}, '${app.name.replace(/'/g, "\\'").replace(/"/g, '\\"')}', '${currentJob.title.replace(/'/g, "\\'").replace(/"/g, '\\"')}')">
+                <i class="fas fa-thumbs-up"></i> Recommander
+              </button>`
+            : ""
+        }
+        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+          <i class="fas fa-info-circle"></i> Voir profil
+        </button>
         ${
           app.status === "accepted"
-            ? "Candidature déjà acceptée"
+            ? `<small style="color: #6b7280; font-style: italic;">Candidature déjà acceptée</small>`
             : app.status === "rejected"
-              ? "Candidature rejetée"
-              : "Statut: " + getStatusText(app.status)
+              ? `<small style="color: #6b7280; font-style: italic;">Candidature rejetée</small>`
+              : ""
         }
-      </small>
-    `
+      `
+    }
+
+    // Pour les autres rôles (recruteur, super_admin) : boutons complets
+    let actionsHtml = getQuizButtonHtml(app)
+
+    if (app.status === "pending") {
+      actionsHtml += `
+        <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+          <i class="fas fa-eye"></i> Examiner
+        </button>
+        <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+          <i class="fas fa-check"></i> Accepter
+        </button>
+        <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+          <i class="fas fa-times"></i> Rejeter
+        </button>
+      `
+    } else if (app.status === "reviewed") {
+      actionsHtml += `
+        <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
+          <i class="fas fa-calendar"></i> Programmer entretien
+        </button>
+        <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+          <i class="fas fa-check-circle"></i> Accepter
+        </button>
+        <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+          <i class="fas fa-times"></i> Rejeter
+        </button>
+      `
+    } else if (app.status === "interview_scheduled") {
+      actionsHtml += `
+        <button class="btn-action complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+          <i class="fas fa-check-double"></i> Entretien terminé
+        </button>
+        <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+          <i class="fas fa-user-check"></i> Accepter
+        </button>
+        <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+          <i class="fas fa-times"></i> Rejeter
+        </button>
+      `
+    } else {
+      actionsHtml += `
+        <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+          <i class="fas fa-info-circle"></i> Voir profil
+        </button>
+      `
+    }
+    return actionsHtml
+  }
+
+  // Generate Quiz Button HTML based on assignment status
+  function getQuizButtonHtml(app) {
+    try {
+      // Debug log to see what's in the app object
+      console.log("App data for quiz button:", {
+        appId: app.id,
+        candidateId: app.candidate_id,
+        quizStatus: app.quiz_assignment_status,
+        fullApp: app
+      });
+
+      // Check if quiz is assigned and has valid status
+      if (app.quiz_assignment_status) {
+        const status = app.quiz_assignment_status.status || 'assigned';
+        const assignmentId = app.quiz_assignment_status.assignment_id || app.quiz_assignment_status.id;
+        const quizAttemptId = app.quiz_assignment_status.quiz_attempt_id || app.quiz_assignment_status.quiz_id;
+
+        console.log("Quiz status:", { status, assignmentId, quizAttemptId });
+
+        // Handle different quiz states
+        if ((status === 'assigned' || status === 'in_progress') && assignmentId) {
+          return `
+            <button class="btn-action quiz assigned" onclick="event.stopPropagation(); viewAssignedQuiz('${assignmentId}')">
+              <i class="fas fa-clipboard-check"></i> Quiz Assigné
+            </button>
+          `;
+        } else if (status === 'completed' && quizAttemptId) {
+          return `
+            <button class="btn-action quiz completed" onclick="event.stopPropagation(); viewQuizResults('${quizAttemptId}')">
+              <i class="fas fa-check-circle"></i> Quiz Complété
+            </button>
+          `;
+        }
+      }
+      
+      // Default "Évaluer Quiz" button if no quiz assigned or status is unknown
+      const candidateId = app.candidate_id || app.id || (app.candidate_profile_id ? app.candidate_profile_id.toString() : '');
+      if (!candidateId) {
+        console.error("No candidate ID found in app:", app);
+        return '';
+      }
+      
+      return `
+        <button class="btn-action quiz" onclick="event.stopPropagation(); assignQuizToCandidate('${candidateId}')">
+          <i class="fas fa-question-circle"></i> Évaluer Quiz
+        </button>
+      `;
+    } catch (error) {
+      console.error("Error generating quiz button:", error);
+      // Fallback to default button if there's an error
+      const candidateId = app.candidate_id || app.id || (app.candidate_profile_id ? app.candidate_profile_id.toString() : '');
+      if (!candidateId) return '';
+      
+      return `
+        <button class="btn-action quiz" onclick="event.stopPropagation(); assignQuizToCandidate('${candidateId}')">
+          <i class="fas fa-question-circle"></i> Évaluer Quiz
+        </button>
+      `;
     }
   }
 
-  // Pour les autres rôles (recruteur, super_admin) : boutons complets
-  if (app.status === "pending") {
-    return `
-    <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-      <i class="fas fa-eye"></i> Examiner
-    </button>
-    <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
-      <i class="fas fa-check"></i> Accepter
-    </button>
-    <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
-      <i class="fas fa-times"></i> Rejeter
-    </button>
-  `
-  } else if (app.status === "reviewed") {
-    return `
-    <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
-      <i class="fas fa-calendar"></i> Programmer entretien
-    </button>
-    <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
-      <i class="fas fa-check-circle"></i> Accepter
-    </button>
-    <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
-      <i class="fas fa-times"></i> Rejeter
-    </button>
-  `
-  } else if (app.status === "interview_scheduled") {
-    return `
-    <button class="btn-action complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-      <i class="fas fa-check-double"></i> Entretien terminé
-    </button>
-    <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
-      <i class="fas fa-user-check"></i> Accepter
-    </button>
-    <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
-      <i class="fas fa-times"></i> Rejeter
-    </button>
-  `
-  } else {
-    return `
-    <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-      <i class="fas fa-info-circle"></i> Voir profil
-    </button>
-  `
+  // NEW FUNCTION: View Assigned Quiz (for HR to see candidate's progress or quiz itself)
+  function viewAssignedQuiz(assignmentId) {
+    showNotification("Redirection vers le quiz assigné...", "info");
+    // This might redirect to a read-only view of the quiz or the candidate's progress
+    // For now, let's redirect to the take-quiz page (which will handle if it's in_progress)
+    window.open(`/take-quiz/${assignmentId}`, "_blank"); // Open in new tab for HR
   }
-}
+
+  // NEW FUNCTION: View Quiz Results (for HR to see completed quiz results)
+  function viewQuizResults(quizAttemptId) {
+    showNotification("Redirection vers les résultats du quiz...", "info");
+    window.open(`/quiz-results/${quizAttemptId}`, "_blank"); // Open in new tab for HR
+  }
 
 // Fonction pour retourner au dashboard
 function goBackToDashboard() {
@@ -1690,5 +1781,119 @@ style.textContent = `
 }
 `
 document.head.appendChild(style)
+
+// Fonction pour assigner un quiz à un candidat
+async function assignQuizToCandidate(candidateId) {
+  try {
+    if (!currentJob) {
+      showNotification("error", "Aucun poste sélectionné");
+      return;
+    }
+
+    // Show loading state
+    const quizButton = document.querySelector(`button[onclick*="assignQuizToCandidate(${candidateId})"]`);
+    if (quizButton) {
+      quizButton.disabled = true;
+      quizButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assignation...';
+    }
+
+    console.log(`🎯 Assignation de quiz pour le candidat ${candidateId} au poste ${currentJob.id}`);
+    
+    const response = await fetch(`/api/assign-quiz/${currentJob.id}/${candidateId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      credentials: 'same-origin'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("Backend response:", result);
+
+    if (result.success) {
+      showNotification("success", result.message || "Quiz assigné avec succès au candidat!");
+      
+      // Find the application in the applications array
+      const appIndex = applications.findIndex(a => 
+        a.candidate_id == candidateId || 
+        a.id == candidateId ||
+        a.id == result.assignment?.application_id ||
+        (a.candidate_profile_id && a.candidate_profile_id == candidateId)
+      );
+      
+      if (appIndex !== -1) {
+        // Update the application with quiz assignment data from the backend
+        applications[appIndex].quiz_assignment_status = {
+          status: "assigned",
+          assignment_id: result.assignment?.id || result.assignment?.assignment_id,
+          quiz_attempt_id: result.quiz?.quiz_id || result.assignment?.quiz_attempt_id
+        };
+        
+        // Update the application status to indicate quiz assigned
+        applications[appIndex].status = "in_review";
+        
+        // Force a re-render of the applications list
+        renderApplicationsWithCompatibility();
+        
+        // Reload job data to ensure consistency with the server
+        setTimeout(() => loadJobFromAPI(currentJob.id, true), 500);
+      } else {
+        // If we couldn't find the app, reload everything
+        console.log("Application not found in local state, reloading from server...");
+        await loadJobFromAPI(currentJob.id, false);
+      }
+    } else {
+      showNotification("error", result.message || "Erreur lors de l'assignation du quiz")
+      console.error("❌ Erreur assignation quiz:", result.message)
+    }
+  } catch (error) {
+    console.error("❌ Erreur réseau assignation quiz:", error)
+    showNotification("error", "Erreur de connexion lors de l'assignation du quiz")
+  }
+}
+
+// Fonction pour générer un quiz basé sur les compétences du poste
+async function generateJobQuiz(candidateId) {
+  try {
+    if (!currentJob) {
+      showNotification("error", "Aucun poste sélectionné")
+      return
+    }
+
+    console.log(`🎯 Génération de quiz pour le candidat ${candidateId} au poste ${currentJob.id}`)
+    
+    const response = await fetch(`/api/generate-job-quiz/${currentJob.id}/${candidateId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      showNotification("success", `Quiz généré avec succès!`)
+      console.log("✅ Quiz généré:", result.quiz)
+      
+      // Optionnel: afficher les détails du quiz ou rediriger
+      // showQuizDetails(result.quiz)
+    } else {
+      showNotification("error", result.message || "Erreur lors de la génération du quiz")
+      console.error("❌ Erreur génération quiz:", result.message)
+    }
+  } catch (error) {
+    console.error("❌ Erreur réseau génération quiz:", error)
+    showNotification("error", "Erreur de connexion lors de la génération du quiz")
+  }
+}
 
 console.log("✅ Script job-details-enhanced.js chargé complètement avec compatibilité et modal sombre")

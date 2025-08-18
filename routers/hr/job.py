@@ -274,6 +274,23 @@ async def get_job_details(job_id: int):
                     ).first()
                 
                 if candidate:
+                    # Initialize quiz assignment status
+                    quiz_assignment_status = None
+                    
+                    # Fetch quiz assignment status for this application
+                    from models import JobQuizAssignment
+                    quiz_assignment = db.query(JobQuizAssignment).filter(
+                        JobQuizAssignment.job_id == job.id,
+                        JobQuizAssignment.candidate_id == candidate.id
+                    ).first()
+                    
+                    if quiz_assignment:
+                        quiz_assignment_status = {
+                            "assignment_id": quiz_assignment.id,
+                            "status": quiz_assignment.status,
+                            "quiz_attempt_id": quiz_assignment.quiz_attempt_id
+                        }
+                    
                     applications_list.append({
                         "id": app.id,
                         "name": candidate.name,
@@ -288,7 +305,8 @@ async def get_job_details(job_id: int):
                         "recommendation_priority": app.recommendation_priority,
                         "recommendation_comment": app.recommendation_comment,
                         "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
-                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None
+                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None,
+                        "quiz_assignment_status": quiz_assignment_status
                     })
             
             days_remaining = None
@@ -318,7 +336,7 @@ async def get_job_details(job_id: int):
                 "applications_count": len(applications_list),
                 "applications": applications_list,
                 "created_at": job.created_at.isoformat() if job.created_at else None,
-                "skills": skills_list  # Utiliser la liste des compétences récupérées
+                "skills": skills_list,  # Utiliser la liste des compétences récupérées
             }
             
             return {
@@ -331,4 +349,3 @@ async def get_job_details(job_id: int):
             db.close()
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
-

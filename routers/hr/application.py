@@ -10,6 +10,7 @@ from datetime import datetime, date
 import json
 from typing import Optional
 from pydantic import BaseModel
+from quiz_service import QuizService
 
 
 router = APIRouter()
@@ -891,3 +892,157 @@ def accept_application(application_id: int):
         return {"success": False, "message": f"Erreur: {str(e)}"}
     finally:
         db.close()
+
+@router.post("/api/assign-quiz/{job_id}/{candidate_id}")
+async def assign_quiz_to_candidate(job_id: int, candidate_id: int):
+    """Assign a quiz to a candidate for a specific job and generate the quiz immediately"""
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        # Verify user is HR admin
+        db = SessionLocal()
+        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not current_admin:
+            return {"success": False, "message": "Utilisateur non trouvé"}
+        
+        # Check if job exists and user has access
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            return {"success": False, "message": "Poste non trouvé"}
+        
+        # Check if candidate exists
+        candidate = db.query(ProfileCandidat).filter(ProfileCandidat.id == candidate_id).first()
+        if not candidate:
+            return {"success": False, "message": "Candidat non trouvé"}
+        
+        # Check if application exists
+        application = db.query(Application).filter(
+            Application.job_id == job_id,
+            Application.candidate_profile_id == candidate_id
+        ).first()
+        if not application:
+            return {"success": False, "message": "Candidature non trouvée"}
+        
+        # Assign quiz AND generate it immediately
+        quiz_service = QuizService()
+        
+        # First, assign the quiz
+        assignment = quiz_service.assign_quiz_to_candidate(
+            job_id=job_id,
+            candidate_id=candidate_id,
+            assigned_by=user_id
+        )
+        
+        # Then, generate the job-based quiz immediately
+        quiz_data = quiz_service.generate_job_based_quiz(
+            job_id=job_id,
+            candidate_id=candidate_id
+        )
+        
+        # Update the assignment with the quiz attempt ID
+        from models import JobQuizAssignment
+        assignment_record = db.query(JobQuizAssignment).filter(
+            JobQuizAssignment.id == assignment["assignment_id"]
+        ).first()
+        
+        if assignment_record and quiz_data:
+            assignment_record.quiz_attempt_id = quiz_data["quiz_id"]
+            assignment_record.status = "in_progress"
+            db.commit()
+            
+            # Send WebSocket notification to candidate
+            try:
+                from routers.client_dep.notifications import manager
+                websocket_notification = {
+                    "type": "quiz_assigned",
+                    "message": f"Un quiz a été assigné pour le poste {job.title}",
+                    "assignment_id": assignment["assignment_id"],
+                    "job_title": job.title,
+                    "timestamp": datetime.now().isoformat()
+                }
+                await manager.send_personal_message(websocket_notification, candidate.user_id)
+            except Exception as e:
+                print(f"Failed to send WebSocket notification: {e}")
+        
+        return {
+            "success": True,
+            "message": f"Quiz généré et assigné avec succès au candidat {candidate.name}",
+            "assignment": assignment,
+            "quiz": quiz_data
+        }
+    except ValueError as e:
+        return {"success": False, "message": str(e)}
+    except Exception as e:
+        return {"success": False, "message": f"Erreur lors de l'assignation: {str(e)}"}
+    finally:
+        db.close()
+
+@router.get("/api/job-quiz-assignments/{job_id}")
+def get_job_quiz_assignments(job_id: int):
+    """Get all quiz assignments for a specific job"""
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        db = SessionLocal()
+        
+        # Check if job exists
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            return {"success": False, "message": "Poste non trouvé"}
+        
+        # Get quiz assignments for this job
+        from models import JobQuizAssignment
+        assignments = db.query(JobQuizAssignment).filter(
+            JobQuizAssignment.job_id == job_id
+        ).all()
+        
+        result = []
+        for assignment in assignments:
+            candidate = db.query(ProfileCandidat).filter(ProfileCandidat.id == assignment.candidate_id).first()
+            result.append({
+                "assignment_id": assignment.id,
+                "candidate_id": assignment.candidate_id,
+                "candidate_name": candidate.name if candidate else "Unknown",
+                "assigned_at": assignment.assigned_at,
+                "due_date": assignment.due_date,
+                "status": assignment.status,
+                "quiz_attempt_id": assignment.quiz_attempt_id
+            })
+        
+        return {
+            "success": True,
+            "assignments": result
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+    finally:
+        db.close()
+
+@router.post("/api/generate-job-quiz/{job_id}/{candidate_id}")
+def generate_job_quiz(job_id: int, candidate_id: int):
+    """Generate a quiz based on job requirements for a candidate"""
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        # Generate quiz
+        quiz_service = QuizService()
+        quiz_data = quiz_service.generate_job_based_quiz(
+            job_id=job_id,
+            candidate_id=candidate_id
+        )
+        
+        return {
+            "success": True,
+            "message": "Quiz généré avec succès",
+            "quiz": quiz_data
+        }
+    except ValueError as e:
+        return {"success": False, "message": str(e)}
+    except Exception as e:
+        return {"success": False, "message": f"Erreur lors de la génération: {str(e)}"}

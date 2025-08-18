@@ -1,27 +1,24 @@
 import os
-import requests
 import json
 import random
 import uuid
 import re
-import datetime
+import time
+import requests
+from datetime import datetime
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
 
 load_dotenv()
 
-# Remove old API_URL and headers
-# API_URL = "https://router.huggingface.co/novita/v3/openai/chat/completions"
-# headers = {
-#     "Authorization": f"Bearer {os.environ.get('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', '')}",
-# }
-
-# Use the provided access token directly
-HF_ACCESS_TOKEN = "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"
+# Configuration
+# Use the provided token directly
+HF_ACCESS_TOKEN = "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"
 
 # Use the same model as in data_generator.py
 HF_MODEL = "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B"
+
 
 def query_deepseek(prompt):
     """Query the DeepSeek model using huggingface_hub.InferenceClient"""
@@ -51,18 +48,299 @@ class QuizGenerator:
     def __init__(self):
         self.question_types = ["technique", "comportemental", "culturel"]
     
-    def generate_quiz(self, job_title: str, required_skills: List[str], candidate_skills: List[str], num_questions: int = 10, past_questions: Optional[list] = None, use_expert_prompt: bool = False) -> Dict[str, Any]:
+    def _fail_with_error(self, message: str) -> None:
+        """Raise an error with the given message"""
+        raise ValueError(f"Quiz generation failed: {message}")
+
+    def _parse_quiz_response(self, content: str, job_title: str = "") -> Dict[str, Any]:
+        """Parse the raw response from the AI model into a structured quiz
+        
+        Args:
+            content: Raw content from the AI model
+            job_title: The job title for the quiz (used for fallback title)
+            
+        Returns:
+            Dict containing the parsed quiz data
+            
+        Raises:
+            ValueError: If the content cannot be parsed into a valid quiz
         """
-        Generate a QCM quiz based on job requirements and candidate skills
+        if not content or not content.strip():
+            raise ValueError("Empty response from AI model")
+            
+        content = content.strip()
+        
+        def try_parse_json(json_str: str) -> Optional[Dict]:
+            """Helper to attempt JSON parsing with error details"""
+            try:
+                # Clean up common JSON issues
+                json_str = json_str.strip()
+                
+                # Remove markdown code block markers if present
+                if json_str.startswith('```'):
+                    json_str = re.sub(r'^```(?:json)?\s*', '', json_str, flags=re.IGNORECASE)
+                    json_str = re.sub(r'\s*```$', '', json_str)
+                
+                # Fix common JSON syntax issues
+                json_str = json_str.replace('\n', ' ').replace('\r', '')
+                json_str = re.sub(r',\s*([}\]])', r'\1', json_str)  # Remove trailing commas
+                json_str = re.sub(r'([{\[,])\s*([}\],])', r'\1null\2', json_str)  # Add null for empty values
+                
+                # Try to parse the cleaned JSON
+                parsed = json.loads(json_str)
+                
+                # Basic validation of the parsed structure
+                if isinstance(parsed, dict):
+                    if 'questions' in parsed and not isinstance(parsed['questions'], list):
+                        return None
+                    return parsed
+                elif isinstance(parsed, list):
+                    # Handle case where response is just an array of questions
+                    return {
+                        'quiz_title': f"QCM - {job_title}" if job_title else "QCM",
+                        'job_title': job_title or "",
+                        'questions': parsed
+                    }
+                return None
+                
+            except (json.JSONDecodeError, TypeError, AttributeError) as e:
+                print(f"JSON parse error: {e}")
+                return None
+        
+        # Try different parsing strategies in order of preference
+        parsing_attempts = [
+            # 1. Try parsing as direct JSON
+            lambda: try_parse_json(content),
+            
+            # 2. Try extracting JSON from markdown code blocks
+            lambda: try_parse_json(re.search(r'```(?:json)?\s*(.*?)\s*```', content, re.DOTALL).group(1) 
+                                 if re.search(r'```(?:json)?\s*\{', content, re.DOTALL) else None),
+            
+            # 3. Try finding any JSON object in the content
+            lambda: try_parse_json(re.search(r'\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\}', content, re.DOTALL).group(0)
+                                 if re.search(r'\{.*\}', content, re.DOTALL) else None),
+            
+            # 4. Try extracting questions using regex as last resort
+            lambda: {
+                'quiz_title': f"QCM - {job_title}" if job_title else "QCM",
+                'job_title': job_title or "",
+                'questions': self.extract_questions_with_regex(content)
+            } if self.extract_questions_with_regex(content) else None
+        ]
+        
+        # Try each parsing strategy until one works
+        parsed_data = None
+        for attempt in parsing_attempts:
+            try:
+                parsed_data = attempt()
+                if parsed_data and (isinstance(parsed_data, dict) and 'questions' in parsed_data):
+                    # Validate questions structure
+                    if not isinstance(parsed_data['questions'], list):
+                        continue
+                    if parsed_data['questions'] and all(
+                        isinstance(q, dict) and 'question' in q and 'options' in q and 'correct_answer' in q
+                        for q in parsed_data['questions']
+                    ):
+                        return parsed_data
+            except Exception as e:
+                print(f"Parsing attempt failed: {e}")
+                continue
+        
+        # If we get here, all parsing attempts failed
+        error_msg = (
+            "Failed to parse AI response. The model did not return valid JSON or questions.\n"
+            f"Response preview: {content[:300]}..."
+        )
+        print(error_msg)
+        raise ValueError(error_msg)
+
+    def _create_fallback_quiz(self, job_title: str, num_questions: int = 5) -> Dict[str, Any]:
+        """Create a simple fallback quiz when AI generation fails"""
+        print("⚠️  Using fallback quiz generator")
+        
+        fallback_questions = [
+            {
+                "question": f"What is your experience with {job_title} role?",
+                "options": {
+                    "A": "Less than 1 year",
+                    "B": "1-3 years",
+                    "C": "3-5 years",
+                    "D": "More than 5 years"
+                },
+                "correct_answer": "B",
+                "difficulty": "easy",
+                "skill_related": "General Experience"
+            },
+            {
+                "question": "Rate your problem-solving skills from 1-5",
+                "options": {
+                    "A": "1 - Novice",
+                    "B": "2 - Basic",
+                    "C": "3 - Intermediate",
+                    "D": "4 - Advanced",
+                    "E": "5 - Expert"
+                },
+                "correct_answer": "C",
+                "difficulty": "easy",
+                "skill_related": "Problem Solving"
+            },
+            {
+                "question": "How do you handle tight deadlines?",
+                "options": {
+                    "A": "Prioritize tasks and work efficiently",
+                    "B": "Request for deadline extension",
+                    "C": "Work overtime if needed",
+                    "D": "All of the above"
+                },
+                "correct_answer": "D",
+                "difficulty": "medium",
+                "skill_related": "Time Management"
+            }
+        ]
+        
+        # Ensure we don't exceed available questions
+        questions = fallback_questions[:min(num_questions, len(fallback_questions))]
+        
+        return {
+            "quiz_title": f"{job_title} - Technical Assessment",
+            "job_title": job_title,
+            "questions": questions,
+            "is_fallback": True  # Flag to indicate this is a fallback quiz
+        }
+
+    def _generate_skill_quiz(self, job_title: str, skill: Dict, job_description: str = "", 
+                           num_questions: int = 5, past_questions: List = None) -> Dict[str, Any]:
+        """Generate a quiz for a specific skill"""
+        if past_questions is None:
+            past_questions = []
+            
+        skill_name = skill.get('skill_name', 'Unknown Skill')
+        skill_level = skill.get('skill_level', 'Intermediate')
+        
+        print(f"🔄 Generating {skill_level} level quiz for skill: {skill_name}")
+        
+        # Create a more specific prompt for the skill
+        prompt = (
+            f"Generate a {skill_level} level multiple choice quiz about {skill_name} "
+            f"for a {job_title} position. "
+            f"Job Description: {job_description[:500]}\n\n"
+            f"Create exactly {num_questions} questions with 4 options each. "
+            "Each question should be challenging and relevant to the skill level. "
+            "Format the response as a JSON object with 'questions' array containing objects with: "
+            "'question', 'options' (object with A,B,C,D keys), 'correct_answer' (letter), "
+            "'difficulty' (easy/medium/hard), and 'explanation' (why the answer is correct)."
+            "\n\nRespond with ONLY the JSON, no other text or markdown formatting."
+        )
+        
+        response = query_deepseek(prompt)
+        if not response:
+            raise ValueError("Failed to get response from AI model")
+            
+        content = response.choices[0].message.content if hasattr(response.choices[0].message, 'content') else str(response.choices[0].message)
+        
+        if not content or not content.strip():
+            raise ValueError("Empty content in AI response")
+            
+        try:
+            # Try to parse the response as JSON
+            quiz_data = json.loads(content)
+            
+            # If we get here, parsing succeeded, but let's validate the structure
+            if not isinstance(quiz_data, dict) or 'questions' not in quiz_data:
+                raise ValueError("Invalid quiz format in response")
+                
+            # Ensure we have the required fields
+            quiz_data['quiz_title'] = f"{skill_name} ({skill_level})"
+            quiz_data['job_title'] = job_title
+            quiz_data['skill_name'] = skill_name
+            quiz_data['skill_level'] = skill_level
+            quiz_data['is_fallback'] = False
+            
+            return quiz_data
+            
+        except json.JSONDecodeError:
+            # If parsing as JSON fails, try to extract JSON from the response
+            print("⚠️  Could not parse response as JSON, attempting to extract...")
+            try:
+                # Try to find JSON in the response
+                json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                if json_match:
+                    quiz_data = json.loads(json_match.group(0))
+                    if not isinstance(quiz_data, dict) or 'questions' not in quiz_data:
+                        raise ValueError("Could not find valid quiz data in response")
+                        
+                    quiz_data['quiz_title'] = f"{skill_name} ({skill_level})"
+                    quiz_data['job_title'] = job_title
+                    quiz_data['skill_name'] = skill_name
+                    quiz_data['skill_level'] = skill_level
+                    quiz_data['is_fallback'] = False
+                    return quiz_data
+                raise
+            except Exception as e:
+                print(f"⚠️  Could not extract quiz data: {str(e)}")
+                raise ValueError("Could not parse quiz data from AI response")
+
+    def generate_recruitment_quiz(self, job_title: str, required_skills_with_levels: List[Dict], 
+                               job_description: str = "", questions_per_skill: int = 5, 
+                               past_questions: Optional[list] = None) -> Dict[str, Any]:
+        """
+        Generate skill-specific quizzes for a job position
+        
         Args:
             job_title: The job title/position
-            required_skills: List of skills required for the job
-            candidate_skills: List of skills the candidate has
-            num_questions: Number of questions to generate
+            required_skills_with_levels: List of dicts with skill_name, skill_level, is_required
+            job_description: Job description for context
+            questions_per_skill: Number of questions to generate per skill
             past_questions: List of previously used questions to avoid (optional)
-            use_expert_prompt: If True, use the expert prompt; else use the default prompt
+            
         Returns:
-            Dictionary containing quiz data
+            Dictionary containing quizzes organized by skill
+        """
+        if past_questions is None:
+            past_questions = []
+            
+        print(f"\n📊 Generating quizzes for job: {job_title}")
+        print(f"📋 Required Skills: {[s['skill_name'] for s in required_skills_with_levels]}")
+        
+        quizzes = {
+            'job_title': job_title,
+            'job_description': job_description,
+            'skills_quizzes': [],
+            'generated_at': str(datetime.now())
+        }
+        
+        # Generate a quiz for each required skill
+        for skill in required_skills_with_levels:
+            if not skill.get('is_required', True):
+                continue
+                
+            try:
+                skill_quiz = self._generate_skill_quiz(
+                    job_title=job_title,
+                    skill=skill,
+                    job_description=job_description,
+                    num_questions=questions_per_skill,
+                    past_questions=past_questions
+                )
+                
+                if skill_quiz:
+                    quizzes['skills_quizzes'].append(skill_quiz)
+                    print(f"✅ Generated {len(skill_quiz.get('questions', []))} questions for {skill['skill_name']}")
+                
+            except Exception as e:
+                print(f"⚠️  Skipping {skill.get('skill_name', 'unknown')} due to error: {str(e)}")
+                continue
+        
+        return quizzes
+        if num_returned == 0:
+            quiz_data["warning"] = "Le QCM généré ne contient aucune question valide."
+        elif num_returned < num_questions:
+            quiz_data["warning"] = f"Le QCM généré contient seulement {num_returned} question(s) sur {num_questions} demandées."
+        return quiz_data
+
+    def generate_quiz(self, job_title: str, required_skills: List[str], candidate_skills: List[str], num_questions: int = 10, past_questions: Optional[list] = None, use_expert_prompt: bool = False) -> Dict[str, Any]:
+        """
+        Generate a QCM quiz based on job requirements (legacy method)
         """
         if past_questions is None:
             past_questions = []
@@ -155,7 +433,7 @@ SKILL: {skill}
 - Best practice: "Which approach is considered best practice for..."
 - Troubleshooting: "When encountering this error, what should you..."
 
-**Output Format (JSON array):**
+**OUTPUT FORMAT (JSON array):**
 [
   {{
     "question": "Complete question text ending with question mark?",
@@ -204,7 +482,7 @@ You are an expert AI quiz generator.
 - Questions must not be repetitive
 - Ensure ALL questions and options are COMPLETE - do not truncate or leave incomplete sentences
 
-**Output Format (JSON array):**
+**OUTPUT FORMAT (JSON array):**
 [
   {{
     "question": "Complete question text ending with question mark?",
@@ -223,275 +501,481 @@ You are an expert AI quiz generator.
 """
         return prompt
 
-    def _parse_quiz_response(self, content: str, job_title: str) -> Dict[str, Any]:
+    def _create_recruitment_quiz_prompt(self, job_title: str, required_skills_with_levels: List[Dict], job_description: str, num_questions: int, past_questions: list) -> str:
+        """Create a prompt for generating a recruitment quiz."""
+        
+        # Format skills with levels
+        skills_text = []
+        for skill in required_skills_with_levels:
+            skill_name = skill.get("skill_name", "")
+            skill_level = skill.get("skill_level", "Intermediate").capitalize()
+            is_required = skill.get("is_required", True)
+            priority = "REQUIRED" if is_required else "PREFERRED"
+            skills_text.append(f"- {skill_name} ({skill_level}) - {priority}")
+        
+        skills_formatted = "\n".join(skills_text) if skills_text else "No specific skills provided"
+        
+        # Format past questions to avoid
+        past_qs = ""
+        if past_questions:
+            past_qs = "\n".join([f"- {q}" for q in past_questions[:5]])  # Limit to 5 to avoid token overflow
+        else:
+            past_qs = "None provided"
+
+        # Create skill distribution
+        total_skills = len(required_skills_with_levels)
+        questions_per_skill = max(1, num_questions // max(1, total_skills))
+        remaining_questions = num_questions - (questions_per_skill * total_skills)
+        
+        skill_distribution = []
+        for i, skill in enumerate(required_skills_with_levels):
+            count = questions_per_skill + (1 if i < remaining_questions else 0)
+            if count > 0:
+                skill_distribution.append(f"- {count} questions about {skill['skill_name']} ({skill.get('skill_level', 'Intermediate')})")
+        
+        skill_distribution_text = "\n".join(skill_distribution)
+        
+        prompt = f"""You are an expert technical recruiter creating a skills assessment quiz. 
+
+**JOB POSITION:** {job_title}
+**JOB DESCRIPTION:**
+{job_description[:400] if job_description else 'Not provided'}
+
+**REQUIRED SKILLS & LEVELS:**
+{skills_formatted}
+
+**QUIZ REQUIREMENTS:**
+- Generate exactly {num_questions} multiple-choice questions
+- Questions must be distributed as follows:
+{skill_distribution_text}
+- Each question must test a specific skill from the required skills list
+- Difficulty must match the specified skill level
+- No generic or soft-skill questions
+- No questions about experience levels or years of experience
+
+**QUESTION FORMAT:**
+- Each question must have exactly 4 options (A, B, C, D)
+- Only one correct answer per question
+- Include clear, technical explanations
+- Use realistic code examples where applicable
+- Questions should be practical and job-relevant
+
+**PREVIOUSLY USED QUESTIONS (AVOID THESE):**
+{past_qs}
+
+**RESPONSE FORMAT (STRICT JSON):**
+{{
+  "quiz_title": "Technical Assessment - {job_title}",
+  "job_title": "{job_title}",
+  "questions": [
+    {{
+      "id": 1,
+      "question": "Specific technical question about a required skill?",
+      "options": {{
+        "A": "Option A (must be a complete answer)",
+        "B": "Option B (must be a complete answer)",
+        "C": "Option C (must be a complete answer)",
+        "D": "Option D (must be a complete answer)"
+      }},
+      "correct_answer": "A",
+      "explanation": "Clear explanation of why this is the correct answer",
+      "skill_tested": "Exact skill name from required skills",
+      "difficulty": "Beginner/Intermediate/Advanced/Expert"
+    }}
+  ]
+}}
+
+**CRITICAL INSTRUCTIONS:**
+1. Your response MUST be valid JSON that follows the exact structure above
+2. Start with '{{' and end with '}}'
+3. Do not include any markdown formatting or code blocks
+4. Do not include any text outside the JSON object
+5. Escape all special characters in strings
+6. Ensure all brackets and quotes are properly closed
+7. All questions must be technical and test specific skills from the required skills list
+8. Do NOT include any questions about:
+   - Rating proficiency or skill levels
+   - Years of experience
+   - Generic soft skills
+   - Company culture or work preferences
+
+**EXAMPLES OF FORBIDDEN QUESTIONS:**
+- "How many years of experience do you have with Python?"
+- "Rate your SQL skills from 1 to 10"
+- "What is your preferred work environment?"
+- "How do you handle team conflicts?"
+
+**EXAMPLES OF GOOD QUESTIONS:**
+- "Which Python method is used to sort a list in place?"
+- "What is the time complexity of a binary search algorithm?"
+- "Which SQL query finds duplicate values in a table?"
+
+**REMEMBER:**
+- Generate exactly {num_questions} questions
+- Follow the exact JSON format shown above
+- Test only the specific skills listed in the required skills
+- Make questions practical and job-relevant
+- Include clear explanations for answers
+- Ensure all questions have exactly 4 options (A, B, C, D)
+- Only one correct answer per question
+- No markdown or extra text in the response
+- Escape all special characters
+- Each question must specify the exact skill it's testing in the 'skill_tested' field
+- Include a difficulty level for each question (Beginner/Intermediate/Advanced/Expert)
+
+**CRITICAL:** Your response MUST be valid JSON that starts with '{{' and ends with '}}'. Do NOT include any explanation, markdown, or extra text. Output ONLY the JSON object, nothing else.
+
+**FINAL REMINDER:**
+- The response must be parseable as JSON
+- No markdown code blocks (```json or ```)
+- No additional text before or after the JSON
+- All strings must be properly escaped
+- All brackets and quotes must be properly closed
+- Follow the exact structure shown in the example"""
+        
+        return prompt
+
+    def _parse_quiz_response(self, content: str, job_title: str = "") -> Dict[str, Any]:
+        """Parse the raw response from the AI model into a structured quiz
+        
+        Args:
+            content: Raw content from the AI model
+            job_title: The job title for the quiz (used for fallback title)
+            
+        Returns:
+            Dict containing the parsed quiz data
+            
+        Raises:
+            ValueError: If the content cannot be parsed into a valid quiz
+        """
         import json
         import re
-        import logging
-
-        def clean_response(text):
-            # Remove <think>...</think> blocks
+        from typing import Any, Dict, List, Optional, Union
+        
+        def clean_response(text: str) -> str:
+            """Clean the response text by removing unwanted characters and formatting."""
+            if not text:
+                return ""
+                
+            # Remove any text before the first { or [
+            first_char = min(
+                [i for i in [text.find('{'), text.find('[')] if i != -1],
+                default=0
+            )
+            if first_char > 0:
+                text = text[first_char:]
+                
+            # Remove markdown code blocks and think blocks
+            text = re.sub(r'```(?:json)?\s*([\s\S]*?)\s*```', r'\1', text)
             text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-            # Remove markdown code blocks
-            text = re.sub(r'```json|```', '', text)
-            # Remove everything before the first { or [
-            first_brace = min([i for i in [text.find('{'), text.find('[')] if i != -1], default=0)
-            if first_brace > 0:
-                text = text[first_brace:]
+            
+            # Remove any remaining HTML tags
+            text = re.sub(r'<[^>]+>', '', text)
+            
+            # Replace common JSON-breaking patterns
+            text = text.replace('\n', ' ').replace('\r', '').strip()
+            text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
+            
+            # Fix common JSON formatting issues
+            text = re.sub(r',\s*([}\]])', r'\1', text)  # Trailing commas
+            text = re.sub(r'([{\[,])\s*([}\],])', r'\1null\2', text)  # Missing values
+            
             return text.strip()
-
-        def extract_json_block(text):
-            text = clean_response(text)
-            # Try to find a JSON object
-            obj_match = re.search(r'\{[\s\S]*\}', text)
-            if obj_match:
-                return obj_match.group(0)
-            # Try to find a JSON array
-            arr_match = re.search(r'\[[\s\S]*\]', text)
-            if arr_match:
-                return arr_match.group(0)
-            raise ValueError("No JSON object or array found in model response")
-
-        def repair_json_string(json_str):
-            # Remove <think>...</think> and markdown
-            json_str = re.sub(r'<think>.*?</think>', '', json_str, flags=re.DOTALL)
-            json_str = json_str.replace('```json', '').replace('```', '')
-            # Replace smart quotes and single quotes with double quotes
-            json_str = json_str.replace('“', '"').replace('”', '"').replace("‘", "'").replace("’", "'")
-            json_str = re.sub(r"'", '"', json_str)
-            # Remove trailing commas
-            json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
-            # Remove any non-JSON lines (lines that don't start with [ or { or ")
-            json_str = '\n'.join([line for line in json_str.splitlines() if line.strip().startswith(('"', '{', '[', ']', '}'))])
-            # Attempt to close unterminated arrays/objects
-            open_braces = json_str.count('{')
-            close_braces = json_str.count('}')
-            if open_braces > close_braces:
-                json_str += '}' * (open_braces - close_braces)
-            open_brackets = json_str.count('[')
-            close_brackets = json_str.count(']')
-            if open_brackets > close_brackets:
-                json_str += ']' * (open_brackets - close_brackets)
+            
+        def extract_json_blocks(text: str) -> List[str]:
+            """Extract potential JSON blocks from text."""
+            # Look for JSON objects
+            json_objects = re.findall(r'\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\}', text)
+            
+            # Look for JSON arrays
+            json_arrays = re.findall(r'\[(?:[^\[\]]|\[(?:[^\[\]]|\[[^\[\]]*\])*\])*\]', text)
+            
+            # Combine and deduplicate while preserving order
+            seen = set()
+            result = []
+            for item in json_objects + json_arrays:
+                if item not in seen:
+                    seen.add(item)
+                    result.append(item)
+                    
+            return result
+            
+        def try_parse_json(json_str: str) -> Optional[Union[Dict, List]]:
+            """Attempt to parse a JSON string with multiple fallback strategies."""
+            if not json_str or not isinstance(json_str, str):
+                return None
+                
             json_str = json_str.strip()
-            return json_str
-
-        def extract_questions_with_regex(text):
-            # More robust regex patterns to extract questions
-            questions = []
-            
-            # Pattern 1: Look for question blocks with options
-            question_patterns = [
-                r'\{[^\{\}]*?"question"\s*:\s*"[^"]*".*?"options"\s*:\s*\{[^\}]*\}.*?\}',
-                r'\{[^\{\}]*?"question"\s*:\s*"[^"]*".*?"correct_answer"\s*:\s*"[ABCD]".*?\}',
-                r'"question"\s*:\s*"([^"]*)"[^}]*"options"\s*:\s*\{([^\}]*)\}[^}]*"correct_answer"\s*:\s*"([ABCD])"'
-            ]
-            
-            for pattern in question_patterns:
-                matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
-                for match in matches:
-                    try:
-                        if isinstance(match, tuple):
-                            # Handle tuple matches
-                            question_text = match[0] if len(match) > 0 else ""
-                            options_text = match[1] if len(match) > 1 else ""
-                            correct_answer = match[2] if len(match) > 2 else "A"
-                            
-                            # Parse options
-                            options = {}
-                            option_matches = re.findall(r'"([ABCD])"\s*:\s*"([^"]*)"', options_text)
-                            for opt_key, opt_val in option_matches:
-                                if opt_val and opt_val.strip():
-                                    options[opt_key] = opt_val.strip()
-                            
-                            # Ensure we have 4 options
-                            for key in ["A", "B", "C", "D"]:
-                                if key not in options:
-                                    options[key] = f"Option {key}"
-                            
-                            if question_text and len(options) == 4:
-                                questions.append({
-                                    "question": question_text,
-                                    "options": options,
-                                    "correct_answer": correct_answer
-                                })
-                        else:
-                            # Handle string matches
-                            repaired = repair_json_string(match)
-                            q = json.loads(repaired)
-                            if "question" in q and q["question"].strip():
-                                # Ensure options exist
-                                if "options" not in q or not isinstance(q["options"], dict) or len(q["options"]) != 4:
-                                    q["options"] = {"A": "Option A", "B": "Option B", "C": "Option C", "D": "Option D"}
-                                if "correct_answer" not in q or q["correct_answer"] not in q["options"]:
-                                    q["correct_answer"] = "A"
-                                questions.append(q)
-                    except Exception as e:
-                        continue
-            
-            # Pattern 2: Look for simple question-answer pairs
-            simple_pattern = r'(\d+\.\s*[^?]+\?)\s*([A-D]\.\s*[^\n]+)\s*([A-D]\.\s*[^\n]+)\s*([A-D]\.\s*[^\n]+)\s*([A-D]\.\s*[^\n]+)'
-            simple_matches = re.findall(simple_pattern, text, re.DOTALL)
-            
-            for match in simple_matches:
+            if not json_str:
+                return None
+                
+            # Try direct parsing first
+            try:
+                return json.loads(json_str)
+            except json.JSONDecodeError:
+                pass
+                
+            # Try fixing common JSON issues
+            try:
+                # Handle single quotes
+                fixed = json_str.replace("'", '"')
+                return json.loads(fixed)
+            except json.JSONDecodeError:
+                pass
+                
+            # Try removing trailing commas
+            try:
+                fixed = re.sub(r',\s*([}\]])(?!\s*[{\[])', r'\1', json_str)
+                return json.loads(fixed)
+            except json.JSONDecodeError:
+                pass
+                
+            # Try wrapping in array if it's not already
+            if not (json_str.startswith('[') and json_str.endswith(']')):
                 try:
-                    question_text = match[0].strip()
-                    options = {}
-                    for i, option in enumerate(match[1:5]):
-                        if option.strip():
-                            options[chr(65 + i)] = option.strip()
+                    return json.loads(f'[{json_str}]')
+                except json.JSONDecodeError:
+                    pass
                     
-                    # Ensure we have 4 options
-                    for key in ["A", "B", "C", "D"]:
-                        if key not in options:
-                            options[key] = f"Option {key}"
-                    
-                    if question_text and len(options) == 4:
-                        questions.append({
-                            "question": question_text,
-                            "options": options,
-                            "correct_answer": "A"  # Default to A
-                        })
-                except Exception as e:
-                    continue
+            return None
             
-            return questions
-
+        # Clean the input content
+        content = content.strip()
+        if not content:
+            raise ValueError("Empty response from AI model")
+            
+        # Try to parse the content directly first
+        parsed = try_parse_json(content)
+        
+        # If direct parsing failed, try extracting JSON blocks
+        if parsed is None:
+            json_blocks = extract_json_blocks(content)
+            for block in json_blocks:
+                parsed = try_parse_json(block)
+                if parsed is not None:
+                    break
+        
+        # If we still don't have a parsed result, try regex extraction
+        if parsed is None:
+            questions = self.extract_questions_with_regex(content)
+            if questions:
+                return {
+                    "quiz_title": f"QCM - {job_title}" if job_title else "QCM",
+                    "job_title": job_title or "",
+                    "questions": questions[:20],  # Limit to 20 questions
+                    "warning": "Used regex fallback for question extraction"
+                }
+            else:
+                raise ValueError("Failed to extract any questions from the response")
+        
+        # Handle different parsed structures
         quiz_data = {
-            "quiz_title": f"QCM - {job_title}",
-            "job_title": job_title,
+            "quiz_title": f"QCM - {job_title}" if job_title else "QCM",
+            "job_title": job_title or "",
             "questions": [],
             "warning": None
         }
-        warning_msgs = []
-        try:
-            json_str = extract_json_block(content)
-            try:
-                parsed = json.loads(json_str)
-            except Exception:
-                # Try to repair and parse again
-                json_str = repair_json_string(json_str)
-                parsed = json.loads(json_str)
-            # If it's a list, wrap in object
-            if isinstance(parsed, list):
-                parsed = {
-                    "quiz_title": f"QCM - {job_title}",
-                    "job_title": job_title,
-                    "questions": parsed
-                }
-            if "questions" not in parsed or not parsed["questions"]:
-                warning_msgs.append("No questions found after parsing. Raw response may be invalid.")
-            else:
-                # Fill missing fields with placeholders
-                all_questions = []
-                for question in parsed["questions"]:
-                    # Fix question text - be more lenient
-                    qtext = question.get("question", "")
-                    if not qtext or str(qtext).strip() == "":
-                        continue  # skip completely empty questions
-                    
-                    # Clean up question text - remove trailing incomplete sentences
-                    qtext = str(qtext).strip()
-                    if qtext.endswith("...") or qtext.endswith(".") == False:
-                        # Try to complete the question or use as is
-                        if len(qtext) > 10:  # If question has substantial content, keep it
-                            pass
-                        else:
-                            continue
-                    
-                    # Fix options - be more lenient
-                    valid_options = {}
-                    options = question.get("options", {})
-                    
-                    # Handle different option formats
-                    if isinstance(options, dict):
-                        for key in ["A", "B", "C", "D"]:
-                            val = options.get(key, "")
-                            if val and str(val).strip():
-                                # Clean up option text
-                                clean_val = str(val).strip()
-                                if clean_val and clean_val not in ["...", "option a", "option b", "option c", "option d"]:
-                                    valid_options[key] = clean_val
-                    elif isinstance(options, list) and len(options) >= 4:
-                        # Handle array format
-                        for i, val in enumerate(options[:4]):
-                            if val and str(val).strip():
-                                valid_options[chr(65 + i)] = str(val).strip()
-                    
-                    # If we don't have 4 valid options, create placeholder options
-                    if len(valid_options) < 4:
-                        for key in ["A", "B", "C", "D"]:
-                            if key not in valid_options:
-                                valid_options[key] = f"Option {key}"
-                    
-                    # Ensure we have exactly 4 options
-                    if len(valid_options) == 4:
-                        question["options"] = valid_options
-                        # Fix correct_answer
-                        if "correct_answer" not in question or question["correct_answer"] not in valid_options:
-                            question["correct_answer"] = "A"
-                        all_questions.append(question)
+        
+        # Case 1: Response is a list of questions
+        if isinstance(parsed, list):
+            questions = parsed
+        # Case 2: Response is a dictionary with a 'questions' key
+        elif isinstance(parsed, dict) and 'questions' in parsed:
+            quiz_data['quiz_title'] = parsed.get('quiz_title', quiz_data['quiz_title'])
+            quiz_data['job_title'] = parsed.get('job_title', quiz_data['job_title'])
+            questions = parsed['questions']
+            if not isinstance(questions, list):
+                questions = [questions]
+        # Case 3: Response is a single question object
+        elif isinstance(parsed, dict):
+            questions = [parsed]
+        else:
+            questions = []
+        
+        # Process and validate questions
+        valid_questions = []
+        for question in questions:
+            if not isinstance(question, dict):
+                continue
                 
-                quiz_data["questions"] = all_questions
-        except Exception as e:
-            warning_msgs.append(f"Error parsing quiz response: {e}")
-            # Fallback: try to extract and repair individual questions
-            questions = extract_questions_with_regex(content)
+            # Extract and clean question text
+            qtext = str(question.get('question', '')).strip()
+            if not qtext or len(qtext) < 10:  # Skip empty or very short questions
+                continue
+                
+            # Process options
+            options = question.get('options', [])
+            if isinstance(options, dict):
+                # Convert dict to list, preserving order if possible
+                if all(k.upper() in ['A', 'B', 'C', 'D'] for k in options.keys()):
+                    options = [options.get(k, '') for k in ['A', 'B', 'C', 'D']]
+                else:
+                    options = list(options.values())
+            elif not isinstance(options, list):
+                options = []
+                
+            # Clean and validate options
+            options = [str(opt).strip() for opt in options if str(opt).strip()]
+            if len(options) < 2:  # Need at least 2 options
+                continue
+                
+            # Process correct answer
+            correct_answer = question.get('correct_answer', 0)
+            if isinstance(correct_answer, str):
+                # Convert letter to index (A->0, B->1, etc.)
+                if correct_answer.upper() in ['A', 'B', 'C', 'D']:
+                    correct_answer = ord(correct_answer.upper()) - ord('A')
+                else:
+                    correct_answer = 0
+            
+            # Ensure correct_answer is within bounds
+            correct_answer = max(0, min(int(correct_answer), len(options) - 1))
+            
+            # Add the question
+            valid_questions.append({
+                'id': str(uuid.uuid4()),
+                'question': qtext,
+                'options': options[:4],  # Max 4 options
+                'correct_answer': correct_answer,
+                'explanation': str(question.get('explanation', '')).strip(),
+                'difficulty': str(question.get('difficulty', 'medium')).lower(),
+                'category': str(question.get('category', 'technique')).lower(),
+                'skill_related': str(question.get('skill_related', 'General'))
+            })
+            
+            # Limit to 20 questions max
+            if len(valid_questions) >= 20:
+                break
+        
+        if not valid_questions:
+            # Last resort: try regex extraction
+            questions = self.extract_questions_with_regex(content)
             if questions:
-                quiz_data["questions"] = questions
-                warning_msgs.append("Quiz generated from regex extraction due to parsing error.")
-            else:
-                warning_msgs.append("No questions found after all attempts. Returning empty quiz.")
-        if warning_msgs:
-            quiz_data["warning"] = " ".join(warning_msgs)
+                quiz_data['questions'] = questions[:20]
+                quiz_data['warning'] = "Used regex fallback for question extraction"
+                return quiz_data
+            raise ValueError("No valid questions found in the response")
         
-        # If no questions were generated, add a placeholder question
-        if not quiz_data["questions"]:
-            quiz_data["questions"] = [{
-                "id": 1,
-                "question": f"Question placeholder pour {job_title}",
-                "options": {
-                    "A": "Option A",
-                    "B": "Option B", 
-                    "C": "Option C",
-                    "D": "Option D"
-                },
-                "correct_answer": "A",
-                "explanation": "Question générée automatiquement en raison d'une erreur de génération.",
-                "category": "technique",
-                "skill_related": job_title
-            }]
-            if quiz_data["warning"]:
-                quiz_data["warning"] += " Une question placeholder a été ajoutée."
-            else:
-                quiz_data["warning"] = "Aucune question valide générée. Une question placeholder a été ajoutée."
-        
+        quiz_data['questions'] = valid_questions
         return quiz_data
     
-    def _fallback_quiz(self, job_title):
-        # You can customize this fallback quiz as needed
-        return {
-            "quiz_title": f"QCM - {job_title}",
-            "job_title": job_title,
-            "questions": [
-                {
-                    "id": 1,
-                    "question": "What is Python?",
-                    "options": {"A": "A snake", "B": "A programming language", "C": "A car", "D": "A fruit"},
-                    "correct_answer": "B",
-                    "explanation": "Python is a popular programming language.",
-                    "category": "technique",
-                    "skill_related": "Python"
-                },
-                {
-                    "id": 2,
-                    "question": "Which HTML tag is used for the largest heading?",
-                    "options": {"A": "<h6>", "B": "<heading>", "C": "<h1>", "D": "<head>"},
-                    "correct_answer": "C",
-                    "explanation": "<h1> is the largest heading tag.",
-                    "category": "technique",
-                    "skill_related": "HTML"
-                }
-            ]
-        }
+    def extract_questions_with_regex(self, text: str) -> List[Dict[str, Any]]:
+        """Extract questions from raw text using regex patterns
+        
+        Args:
+            text: Raw text response from the AI model
+            
+        Returns:
+            List of question dictionaries with standard format
+        """
+        if not text or not isinstance(text, str):
+            return []
+        
+        questions = []
+        
+        # Common patterns for extracting questions and answers
+        question_patterns = [
+            # Pattern 1: Numbered questions with lettered options (1. Question... A) ... B) ...)
+            {
+                'pattern': r'(?P<number>\d+)\.\s*(?P<question>.+?)\n'
+                         r'(?P<options>(?:[A-D][.)]\s*.+?\n){4})'
+
+                         r'(?:[^\w]*(?:Correct|Answer|Réponse|Right|Solution)[^\w]*(?:is|est|:)?[^\w]*(?P<answer>[A-D]))?',
+                'option_regex': r'[A-D][.)]\s*(.+)',
+                'answer_map': {'A': 0, 'B': 1, 'C': 2, 'D': 3}
+            },
+            
+            # Pattern 2: Questions with markdown-style options
+            {
+                'pattern': r'(?:Q\d+[:.]?|\*\*Q\d+\*\*)[\s\*]*(?P<question>.+?)\n'
+                         r'(?P<options>(?:[-*]\s*[A-D][.)]?\s*.+?\n){4})'
+
+                         r'(?:[^\w]*(?:Correct|Answer|Réponse|Right|Solution)[^\w]*(?:is|est|:)?[^\w]*(?P<answer>[A-D]))?',
+                'option_regex': r'[-*]\s*[A-D][.)]?\s*(.+)',
+                'answer_map': {'A': 0, 'B': 1, 'C': 2, 'D': 3}
+            },
+            
+            # Pattern 3: JSON-like format (as fallback)
+            {
+                'pattern': r'(?:question|q)["\s:]+(.+?)["\s]*,'
+
+                         r'[\s\S]*?options[\s\S]*?\['
+
+                         r'([\s\S]*?)\]',
+                'option_regex': r'["\'](.+?)["\']',
+                'answer_map': {'A': 0, 'B': 1, 'C': 2, 'D': 3}
+            }
+        ]
+        
+        for pattern_info in question_patterns:
+            try:
+                for match in re.finditer(pattern_info['pattern'], text, re.IGNORECASE | re.DOTALL):
+                    try:
+                        # Extract question text
+                        question_text = match.group('question').strip()
+                        question_text = re.sub(r'^["\']|["\']$', '', question_text)  # Remove surrounding quotes
+                        
+                        if not question_text or len(question_text) < 10:  # Skip very short questions
+                            continue
+                            
+                        # Extract options
+                        options_text = match.group('options')
+                        options = []
+                        option_matches = re.finditer(pattern_info['option_regex'], options_text, re.MULTILINE)
+                        
+                        for opt_match in option_matches:
+                            option_text = opt_match.group(1).strip() if len(opt_match.groups()) > 0 else opt_match.group(0).strip()
+                            option_text = re.sub(r'^[^\w\s]+', '', option_text)  # Clean up option text
+                            if option_text:
+                                options.append(option_text)
+                        
+                        if len(options) < 2:  # Skip if we didn't get enough options
+                            continue
+                            
+                        # Determine correct answer (default to first option if not specified)
+                        correct_answer = match.group('answer').upper() if match.groupdict().get('answer') else 'A'
+                        correct_index = pattern_info['answer_map'].get(correct_answer, 0)
+                        
+                        # Skip if this question is too similar to one we already have
+                        is_duplicate = False
+                        for q in questions:
+                            if self._calculate_similarity(question_text, q['question']) > 0.8:
+                                is_duplicate = True
+                                break
+                        if is_duplicate:
+                            continue
+                        
+                        # Ensure we have exactly 4 options (duplicate last option if needed)
+                        while len(options) < 4 and len(options) > 0:
+                            options.append(options[-1])
+                        
+                        questions.append({
+                            'id': str(uuid.uuid4()),
+                            'question': question_text,
+                            'options': options[:4],  # Ensure exactly 4 options
+                            'correct_answer': min(correct_index, len(options) - 1),  # Ensure index is in range
+                            'explanation': 'Auto-generated from text response',
+                            'difficulty': 'medium',
+                            'category': 'technique',
+                            'skill_related': 'General'
+                        })
+                        
+                        # Limit to 20 questions max to avoid excessive processing
+                        if len(questions) >= 20:
+                            break
+                            
+                    except (IndexError, KeyError, AttributeError) as e:
+                        print(f"Error parsing question with regex: {e}")
+                        continue
+                
+                if questions:  # If we found questions with this pattern, stop trying others
+                    break
+                    
+            except Exception as e:
+                print(f"Error processing pattern: {e}")
+                continue
+                
+        return questions
     
     def evaluate_quiz(self, quiz_data: Dict[str, Any], answers: Dict[str, str]) -> Dict[str, Any]:
         """
