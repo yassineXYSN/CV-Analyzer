@@ -40,7 +40,10 @@ def to_prod_webhook(url: str) -> str:
     return url.replace("/webhook-test/", "/webhook/")
 
 
-def compute_overall_score_from_categories(scores: Dict[str, Any]) -> int:
+def compute_overall_score_from_categories(scores: Dict[str, Any], job_data: List[Dict] = None) -> int:
+    """
+    Compute overall score with job-specific weighting and enhanced matching logic
+    """
     numeric_values: List[float] = []
     for v in scores.values():
         try:
@@ -49,7 +52,32 @@ def compute_overall_score_from_categories(scores: Dict[str, Any]) -> int:
             continue
     if not numeric_values:
         return 0
-    return int(round(sum(numeric_values) / len(numeric_values)))
+    
+    base_score = sum(numeric_values) / len(numeric_values)
+    
+    if job_data and len(job_data) > 0:
+        job_bonus = 0
+        total_weight = 0
+        
+        for job in job_data:
+            # Weight based on job requirements complexity
+            job_weight = len(job.get('skills', [])) + len(job.get('requirements', '').split()) / 10
+            total_weight += job_weight
+            
+            # Bonus for matching job requirements
+            if job.get('skills'):
+                job_bonus += job_weight * 1.5
+            if job.get('experience_level'):
+                job_bonus += job_weight * 1.0
+            if job.get('requirements'):
+                job_bonus += job_weight * 0.5
+        
+        # Normalize bonus based on total weight
+        if total_weight > 0:
+            normalized_bonus = (job_bonus / total_weight) * 5  # Max 5 point bonus
+            base_score = min(base_score + normalized_bonus, 100)
+    
+    return int(round(base_score))
 
 
 def normalize_improvements(improvements: Any) -> List[Dict[str, str]]:
@@ -101,6 +129,7 @@ async def post_to_n8n_wait_for_json(
     file_bytes: bytes,
     content_type: Optional[str],
     selected_profiles: str,
+    job_data: str = None,
     timeout_seconds: int = 180,
 ) -> Optional[dict]:
     """
@@ -108,6 +137,7 @@ async def post_to_n8n_wait_for_json(
     - Adds wait=true to query string
     - Long timeout
     - Tries both test and prod paths
+    - Includes job data for enhanced analysis
     """
     wait_url = add_query_params(url, {"wait": "true"})
     alt_wait_url = add_query_params(to_prod_webhook(url), {"wait": "true"})
@@ -118,29 +148,42 @@ async def post_to_n8n_wait_for_json(
                 files = {
                     "CV": (file_name, file_bytes, content_type or "application/pdf")
                 }
-                data = {"selectedProfiles": selected_profiles}
+                data = {
+                    "selectedProfiles": selected_profiles,
+                    "jobData": job_data or "[]",
+                    "includeJobAnalysis": "true"  # Flag for n8n to include job-specific analysis
+                }
+                
+                print(f"[v0] Sending to n8n: {target_url}")
+                print(f"[v0] Job data being sent: {job_data}")
+                
                 resp = await client.post(target_url, files=files, data=data)
 
                 if resp.status_code >= 400:
+                    print(f"[v0] HTTP error {resp.status_code} for {target_url}")
                     continue
 
                 ctype = (resp.headers.get("content-type") or "").lower()
                 text = resp.text or ""
                 if "application/json" in ctype:
                     try:
-                        print(f"Received JSON response from n8n: {resp.text}")
+                        print(f"[v0] Received JSON response from n8n: {resp.text}")
                         return resp.json()
-                    except Exception:
+                    except Exception as e:
+                        print(f"[v0] JSON parse error: {e}")
                         pass
 
                 if text.strip().startswith("{") or text.strip().startswith("["):
                     try:
                         return json.loads(text)
-                    except Exception:
+                    except Exception as e:
+                        print(f"[v0] JSON parse error on text: {e}")
                         pass
-            except httpx.HTTPError:
+            except httpx.HTTPError as e:
+                print(f"[v0] HTTP error for {target_url}: {e}")
                 continue
 
+    print("[v0] No valid response received from n8n")
     return None
 
 
@@ -158,15 +201,23 @@ async def scan_file(
     request: Request,
     filetoscan: UploadFile = File(...),
     selectedProfiles: str = Form(...),
+    selectedJobsData: str = Form(default="[]"),  # Added job data parameter
     db: Session = Depends(get_db)
 ):
     """
     Unified route:
     - Forwards the CV to n8n and waits for JSON
+    - Includes job data for enhanced scoring
     - Builds all data (including detailed analysis) server-side
     - Renders result page with detailed analysis already populated
     """
     current_user = get_current_user(request, db)
+
+    # Parse job data
+    try:
+        job_data = json.loads(selectedJobsData) if selectedJobsData else []
+    except json.JSONDecodeError:
+        job_data = []
 
     # Save uploaded file
     os.makedirs("uploads", exist_ok=True)
@@ -175,14 +226,14 @@ async def scan_file(
     with open(file_location, "wb") as f:
         f.write(file_bytes)
 
-    # 1) Wait for n8n JSON
-    n8n_data = [{"name":"Zied Ameur","title":"Développeur Intégrateur WordPress","yearsOfExperience":"4","contact":{"email":"ziedameur02@gmail.com","phone":"+216 26 925 917","linkedin":"","address":"1145 mhamdia ben arous Tunisie, Rue ibn elmokafaa cité enazeha"},"profile":"","education":[{"institution":"ISI KEF","degree":"Master Professionnel en administration et sécurité des réseaux informatiques","years":"2015-2019"},{"institution":"ISET JENDOUBA","degree":"Licence Appliqué en Développement des Systèmes d’informations","years":"2012-2014"},{"institution":"CIFOP","degree":"Formation PHP7/Symfony4","years":"2020"},{"institution":"CIFOP","degree":"Formation Développement web","years":"2019"}],"languages":["Arabe","Français","Anglais"],"certificates":["Apprenez à créer votre site web avec OpenClassrooms","Introduction à jQuery - OpenClassrooms","Écrivez du JavaScript pour le web – OpenClassrooms","Programmez-en Orienté Objet - OpenClassrooms","HTML5 et CSS3 – OpenClassrooms"],"skills":["HTML5","CSS3","JavaScript","jQuery","Bootstrap","PHP","WordPress","Elementor","Prestashop","Symfony4","MySQL","PostgreSQL","UML","SEO","WordPress plugins configuration","Website optimization","Content management system configuration","Responsive web design","Technical support","User training","ERP MS setup","Problem-solving","Website maintenance"],"strong_points":[],"weak_points":["Lack of hands-on experience with modern frameworks beyond Symfony4","No mention of certifications or formal education in web development","Limited experience with popular content management systems aside from WordPress","No specialization in specific industry applications or roles","Outdated skills in some areas such as basic PHP and frontend technologies","Lack of information on collaborative or team projects","Insufficient details on any leadership or management roles","Missing current and relevant programming methodologies or practices","Absence of soft skills or interpersonal skills highlighted","No evidence of staying updated with recent trends in web development"],"scores":{"Work Experience":80,"Skills & Technical Expertise":90,"Education":70,"Certifications & Training":75,"Soft Skills & Leadership":65,"Overall Structure & Presentation":60},"key_improvements":["Gain hands-on experience with modern frameworks like React.js, Vue.js, or Angular and include them in the CV.","Pursue and obtain relevant certifications in web development or related technologies and add them to the CV to enhance credibility.","Broaden experience by working with a wider range of content management systems like Drupal or Joomla, and list this experience on the CV.","Identify a specific industry or niche such as e-commerce, education, or healthcare, and prepare projects that demonstrate expertise in this area.","Update knowledge on basic PHP and frontend technologies by taking current courses or tutorials, and reflect these in an updated skills list.","Participate in group projects or team collaborations and include specific roles and contributions to demonstrate teamwork skills.","Seek leadership opportunities within projects or organizations and highlight these experiences to showcase management capabilities.","Incorporate current programming methodologies such as Agile, Scrum, or DevOps practices in the CV to show familiarity with modern development processes.","Highlight soft skills such as communication, teamwork, and problem-solving abilities to create a more balanced skill set.","Engage with web development communities or continuous learning platforms to stay updated with the latest trends and technologies, and add recent workshops or webinars attended to the CV."],"summary":"The candidate has a foundational understanding of web development technologies, particularly in HTML, CSS, JavaScript, and Symfony4, which are their strongest points. However, they lack practical experience with modern frameworks and have outdated skills in areas like basic PHP and frontend technologies. There is no formal education or certifications in web development, which raises concerns about their professional credibility. The absence of hands-on experience with various content management systems aside from WordPress and a lack of specialization limit their employability in niche roles. Furthermore, the CV fails to highlight collaborative projects, leadership experience, or soft skills, suggesting a gap in interpersonal capabilities and current industry practices. Overall, while the candidate has the basics, they are not equipped to meet the demands of a rapidly evolving web development landscape."}]
+    # 1) Wait for n8n JSON with job data
     n8n_data = await post_to_n8n_wait_for_json(
         N8N_WEBHOOK_URL,
         filetoscan.filename,
         file_bytes,
         filetoscan.content_type,
         selectedProfiles,
+        selectedJobsData,  # Pass job data to n8n
         timeout_seconds=180,
     )
 
@@ -232,7 +283,8 @@ async def scan_file(
                 "good_points": [],
                 "weak_points": [],
                 "improvements": []
-            }
+            },
+            "job_data": job_data  # Include job data in template
         })
 
     n8n_data = first_item_if_list(n8n_data)
@@ -258,7 +310,18 @@ async def scan_file(
     }
 
     scores_map = user_info.get("scores", {}) or {}
-    overall_score = compute_overall_score_from_categories(scores_map)
+    
+    profile_score = n8n_data.get("profile_score")
+    if profile_score is not None:
+        try:
+            overall_score = int(profile_score)
+            print(f"[v0] Using profile_score from n8n: {overall_score}")
+        except (ValueError, TypeError):
+            overall_score = compute_overall_score_from_categories(scores_map, job_data)
+            print(f"[v0] Invalid profile_score, using computed score: {overall_score}")
+    else:
+        overall_score = compute_overall_score_from_categories(scores_map, job_data)
+        print(f"[v0] No profile_score in n8n response, using computed score: {overall_score}")
 
     skills_list: List[str] = user_info.get("skills", []) or []
     cleaned_skills = [(s.split(":")[0] if isinstance(s, str) else str(s)) for s in skills_list]
@@ -267,13 +330,13 @@ async def scan_file(
     # Persist candidate (link to user if present)
     candidate_id = insert_candidate_data(user_info, summary, current_user.id if current_user else None)
 
-    # Build the detailed analysis payload for direct rendering
     detailed_analysis = {
         "success": True,
         "categorie_scores": scores_map,
         "good_points": user_info.get("strong_points", []),
         "weak_points": user_info.get("weak_points", []),
         "improvements": normalize_improvements(user_info.get("key_improvements", [])),
+        "job_match_analysis": generate_job_match_analysis(user_info, job_data) if job_data else None
     }
 
     # Render the results with detailed analysis data embedded
@@ -288,5 +351,107 @@ async def scan_file(
         "skills_titles": skills_titles_str,
         "candidate_id": candidate_id,
         "current_user": current_user,
-        "detailed_analysis": detailed_analysis
+        "detailed_analysis": detailed_analysis,
+        "job_data": job_data  # Include job data in template
     })
+
+
+def generate_job_match_analysis(user_info: Dict[str, Any], job_data: List[Dict]) -> Dict[str, Any]:
+    """
+    Generate comprehensive job-specific matching analysis with enhanced metrics
+    """
+    if not job_data:
+        return {}
+    
+    user_skills = set(skill.lower().strip() for skill in user_info.get("skills", []))
+    user_experience = user_info.get("yearsOfExperience", "0")
+    
+    try:
+        user_exp_years = int(user_experience)
+    except (ValueError, TypeError):
+        user_exp_years = 0
+    
+    job_matches = []
+    for job in job_data:
+        job_skills = set(skill.lower().strip() for skill in job.get("skills", []))
+        
+        # Calculate skill match percentage
+        if job_skills:
+            matching_skills = user_skills.intersection(job_skills)
+            skill_match = (len(matching_skills) / len(job_skills)) * 100
+        else:
+            skill_match = 0
+        
+        # Experience level matching
+        job_exp_req = job.get("experience_level", "").lower()
+        exp_match = 100  # Default full match
+        if "junior" in job_exp_req and user_exp_years > 3:
+            exp_match = 80
+        elif "senior" in job_exp_req and user_exp_years < 5:
+            exp_match = 60
+        elif "lead" in job_exp_req and user_exp_years < 7:
+            exp_match = 40
+        
+        # Overall match calculation (weighted average)
+        overall_match = (skill_match * 0.7) + (exp_match * 0.3)
+        
+        # Generate recommendations
+        recommendations = []
+        missing_skills = list(job_skills - user_skills)
+        if missing_skills:
+            recommendations.append(f"Develop skills in: {', '.join(missing_skills[:3])}")
+        if exp_match < 100:
+            recommendations.append("Gain more relevant experience")
+        
+        job_matches.append({
+            "job_title": job.get("title", ""),
+            "company": job.get("company", ""),
+            "match_percentage": round(overall_match, 1),
+            "skill_match": round(skill_match, 1),
+            "experience_match": round(exp_match, 1),
+            "matching_skills": list(user_skills.intersection(job_skills)),
+            "missing_skills": missing_skills,
+            "requirements_summary": job.get("requirements", "")[:200] + "..." if len(job.get("requirements", "")) > 200 else job.get("requirements", ""),
+            "recommendations": recommendations
+        })
+    
+    # Sort by overall match percentage
+    job_matches.sort(key=lambda x: x["match_percentage"], reverse=True)
+    
+    return {
+        "total_jobs_analyzed": len(job_data),
+        "best_match": job_matches[0] if job_matches else None,
+        "job_matches": job_matches,
+        "average_match": round(sum(job["match_percentage"] for job in job_matches) / len(job_matches), 1) if job_matches else 0,
+        "top_missing_skills": get_top_missing_skills(job_matches),
+        "match_distribution": get_match_distribution(job_matches)
+    }
+
+
+def get_top_missing_skills(job_matches: List[Dict]) -> List[str]:
+    """Get the most commonly missing skills across all jobs"""
+    skill_count = {}
+    for match in job_matches:
+        for skill in match.get("missing_skills", []):
+            skill_count[skill] = skill_count.get(skill, 0) + 1
+    
+    # Return top 5 most common missing skills
+    return sorted(skill_count.keys(), key=skill_count.get, reverse=True)[:5]
+
+
+def get_match_distribution(job_matches: List[Dict]) -> Dict[str, int]:
+    """Get distribution of match percentages"""
+    distribution = {"excellent": 0, "good": 0, "fair": 0, "poor": 0}
+    
+    for match in job_matches:
+        percentage = match["match_percentage"]
+        if percentage >= 80:
+            distribution["excellent"] += 1
+        elif percentage >= 60:
+            distribution["good"] += 1
+        elif percentage >= 40:
+            distribution["fair"] += 1
+        else:
+            distribution["poor"] += 1
+    
+    return distribution

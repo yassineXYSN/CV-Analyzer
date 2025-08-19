@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interface Grand Admin - Gestion des Entreprises</title>
+    <link rel="stylesheet" href="/static/super_admin/admin-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="profile-container">
+        <!-- Header -->
+        <div class="profile-header">
+            <div class="header-content">
+                <div style="display: flex; align-items: center;">
+                    <div class="company-logo">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="company-info" style="margin-left: 3%;">
+                        <h1>Interface Admin</h1>
+                        <div class="company-industry">
+                            <i class="fas fa-building"></i>
+                            Gestion Globale des Entreprises
+                        </div>
+
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-add" onclick="showAddCompanyModal()">
+                        <i class="fas fa-plus"></i>
+                        Nouvelle Entreprise
+                    </button>
+                    <button class="btn-add" onclick="showAddUserModal()">
+                        <i class="fas fa-user-plus"></i>
+                        Nouvel Utilisateur
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="info-section">
+            <div class="tab-navigation">
+                <button class="tab-btn active" onclick="showTab('companies')">
+                    <i class="fas fa-building"></i>
+                    Entreprises
+                </button>
+
+                <button class="tab-btn" onclick="showTab('stats')">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiques
+                </button>
+            </div>
+        </div>
+
+        <!-- Companies Tab -->
+        <div id="companies-tab" class="tab-content active">
+            <div class="info-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-building"></i> Gestion des Entreprises</h2>
+                    <div class="search-controls">
+                        <input type="text" id="company-search" placeholder="Rechercher une entreprise..." class="search-input">
+                        <select id="company-filter" class="filter-select">
+                            <option value="">Toutes les industries</option>
+                            <option value="tech">Technologie</option>
+                            <option value="finance">Finance</option>
+                            <option value="healthcare">Santé</option>
+                            <option value="education">Éducation</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="companies-grid" class="companies-grid">
+                    <!-- Companies will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="users-tab" class="tab-content">
+            <div class="info-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Gestion des Utilisateurs</h2>
+                    <div class="search-controls">
+                        <input type="text" id="user-search" placeholder="Rechercher un utilisateur..." class="search-input">
+                        <select id="user-role-filter" class="filter-select">
+                            <option value="">Tous les rôles</option>
+                            <option value="super_admin">Super Admin</option>
+                            <option value="hr_manager">HR Manager</option>
+                            <option value="hr_admin">HR Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="users-grid" class="users-grid">
+                    <!-- Users will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="stats-tab" class="tab-content">
+            <div class="info-section">
+                <h2><i class="fas fa-chart-bar"></i> Statistiques Globales</h2>
+                <div class="overview-grid">
+                    <div class="overview-card">
+                        <div class="overview-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="overview-content">
+                            <h3>Total Entreprises</h3>
+                            <p id="total-companies">0</p>
+                        </div>
+                    </div>
+                    <div class="overview-card">
+                        <div class="overview-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="overview-content">
+                            <h3>Total Utilisateurs</h3>
+                            <p id="total-users">0</p>
+                        </div>
+                    </div>
+                    <div class="overview-card">
+                        <div class="overview-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="overview-content">
+                            <h3>Employés Actifs</h3>
+                            <p id="total-employees">0</p>
+                        </div>
+                    </div>
+                    <div class="overview-card">
+                        <div class="overview-icon">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        <div class="overview-content">
+                            <h3>Postes Ouverts</h3>
+                            <p id="total-jobs">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Company Modal -->
+    <div id="add-company-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-building"></i> Nouvelle Entreprise</h3>
+                <button class="modal-close" onclick="closeModal('add-company-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" onsubmit="createCompany(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-building"></i> Nom de l'entreprise</label>
+                        <input type="text" name="company_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-industry"></i> Secteur d'activité</label>
+                        <select name="industry">
+                            <option value="">Sélectionner...</option>
+                            <option value="tech">Technologie</option>
+                            <option value="finance">Finance</option>
+                            <option value="healthcare">Santé</option>
+                            <option value="education">Éducation</option>
+                            <option value="retail">Commerce</option>
+                            <option value="manufacturing">Industrie</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-users"></i> Taille de l'entreprise</label>
+                        <select name="company_size">
+                            <option value="">Sélectionner...</option>
+                            <option value="1-10">1-10 employés</option>
+                            <option value="11-50">11-50 employés</option>
+                            <option value="51-200">51-200 employés</option>
+                            <option value="201-1000">201-1000 employés</option>
+                            <option value="1000+">1000+ employés</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar"></i> Année de création</label>
+                        <input type="number" name="founded_year" min="1800" max="2024">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-align-left"></i> Description</label>
+                    <textarea name="description" rows="3" placeholder="Description de l'entreprise..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-envelope"></i> Email</label>
+                        <input type="email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-phone"></i> Téléphone</label>
+                        <input type="tel" name="phone">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-globe"></i> Site web</label>
+                    <input type="url" name="website" placeholder="https://...">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('add-company-modal')">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="submit" class="btn-create">
+                        <i class="fas fa-plus"></i> Créer l'entreprise
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="add-user-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Nouvel Utilisateur</h3>
+                <button class="modal-close" onclick="closeModal('add-user-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" onsubmit="createUser(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Prénom</label>
+                        <input type="text" name="first_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Nom</label>
+                        <input type="text" name="last_name" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Mot de passe</label>
+                    <input type="password" name="password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-user-tag"></i> Rôle</label>
+                    <select name="role" required>
+                        <option value="hr_admin">HR Admin</option>
+                        <option value="hr_manager">HR Manager</option>
+                        <option value="super_admin">Super Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-building"></i> Entreprise (optionnel)</label>
+                    <select name="company_id" id="user-company-select">
+                        <option value="">Aucune entreprise</option>
+                        <!-- Companies will be loaded here -->
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('add-user-modal')">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="submit" class="btn-create">
+                        <i class="fas fa-plus"></i> Créer l'utilisateur
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Company Modal -->
+    <div id="edit-company-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Modifier l'entreprise</h3>
+                <button class="modal-close" onclick="closeModal('edit-company-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" onsubmit="updateCompany(event)">
+                <input type="hidden" name="company_id" id="edit-company-id">
+                <!-- Same fields as add company form -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-building"></i> Nom de l'entreprise</label>
+                        <input type="text" name="company_name" id="edit-company-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-industry"></i> Secteur d'activité</label>
+                        <select name="industry" id="edit-company-industry">
+                            <option value="">Sélectionner...</option>
+                            <option value="tech">Technologie</option>
+                            <option value="finance">Finance</option>
+                            <option value="healthcare">Santé</option>
+                            <option value="education">Éducation</option>
+                            <option value="retail">Commerce</option>
+                            <option value="manufacturing">Industrie</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('edit-company-modal')">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="submit" class="btn-save">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/super_admin/admin-interface.js"></script>
+</body>
+</html>

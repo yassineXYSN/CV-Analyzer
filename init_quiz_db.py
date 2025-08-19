@@ -17,5 +17,6 @@ def init_quiz_database():
     print("   - quiz_attempts")
     print("   - job_quiz_assignments")
 
+
 if __name__ == "__main__":
     init_quiz_database() 

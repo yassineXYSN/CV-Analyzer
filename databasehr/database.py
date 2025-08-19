@@ -1,5 +1,6 @@
 import os
 from sqlalchemy import create_engine, text
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -49,7 +50,8 @@ def test_connection():
     """Teste la connexion à la base de données"""
     try:
         db = SessionLocal()
-        db.execute(text("SELECT 1"))
+
+        db.execute("SELECT 1")
         db.close()
         print("✅ Connexion à la base de données réussie")
         return True

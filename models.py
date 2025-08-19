@@ -32,6 +32,7 @@ class JobQuizAssignment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+
 # If you have a Quiz table, define it here as well (based on your README):
 # class Quiz(Base):
 #     __tablename__ = "quiz"
