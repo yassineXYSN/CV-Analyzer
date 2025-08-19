@@ -46,6 +46,13 @@ async def get_companies(db: Session = Depends(get_db)):
         {
             "id": company.id,
             "name": company.company_name,
+            "company_size": company.company_size,
+            "founded_year": company.founded_year,
+            "industry": company.industry,
+            "description": company.description,
+            "logo_url": company.logo_url,
+            "website": company.website,
+            "setup_completed": bool(company.setup_completed),
             "email": company.email,
             "phone": company.phone,
             "address": company.address,
@@ -77,35 +84,89 @@ async def delete_company(company_id: int, db: Session = Depends(get_db)):
 # API Routes pour les utilisateurs/employés
 @router.get("/api/users")
 async def get_users(db: Session = Depends(get_db)):
-    """Récupérer tous les utilisateurs"""
-    users = db.query(Employee).all()
-    return [
-        {
-            "id": user.id,
-            "name": f"{user.first_name} {user.last_name}",
-            "email": user.email,
-            "phone": user.phone,
-            "position": user.position,
-            "company_id": user.company_id,
-            "company_name": user.company.company_name if user.company else None,
-            "created_at": user.created_at.isoformat() if user.created_at else None
-        }
-        for user in users
-    ]
+    """Récupérer tous les utilisateurs (HRAdmin et Employee)"""
+    hr_admins = db.query(HRAdmin).all()
+    employees = db.query(Employee).all()
+    
+    # Combiner les deux types d'utilisateurs
+    users = []
+    
+    # Ajouter les HRAdmin
+    for admin in hr_admins:
+        users.append({
+            "id": admin.id,
+            "name": f"{admin.first_name} {admin.last_name}",
+            "first_name": admin.first_name,
+            "last_name": admin.last_name,
+            "email": admin.email,
+            "phone": None,  # HRAdmin n'a pas de téléphone
+            "position": admin.role,
+            "company_id": None,  # Les admins ne sont pas liés directement à une entreprise
+            "company_name": None,
+            "user_type": "admin",
+            "is_active": admin.is_active,
+            "created_at": admin.created_at.isoformat() if admin.created_at else None
+        })
+    
+    # Ajouter les Employee
+    for employee in employees:
+        company_name = None
+        if employee.company_id:
+            company = db.query(Company).filter(Company.id == employee.company_id).first()
+            company_name = company.company_name if company else None
+            
+        users.append({
+            "id": f"emp_{employee.id}",  # Préfixe pour éviter les conflits d'ID
+            "name": f"{employee.first_name} {employee.last_name}",
+            "first_name": employee.first_name,
+            "last_name": employee.last_name,
+            "email": employee.email,
+            "phone": employee.phone,
+            "position": employee.position,
+            "company_id": employee.company_id,
+            "company_name": company_name,
+            "user_type": "employee",
+            "is_active": employee.status == "active",
+            "created_at": employee.created_at.isoformat() if employee.created_at else None
+        })
+    
+    return users
 
 @router.post("/api/users")
-async def create_user(user: EmployeeCreate, db: Session = Depends(get_db)):
-    """Créer un nouveau utilisateur"""
-    # Vérifier que l'entreprise existe
-    company = db.query(Company).filter(Company.id == user.company_id).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-    
-    db_user = Employee(**user.dict())
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return {"message": "Utilisateur créé avec succès", "id": db_user.id}
+async def create_user(user_data: dict, db: Session = Depends(get_db)):
+    """Créer un nouveau utilisateur (HRAdmin)"""
+    try:
+        # Hasher le mot de passe (vous devriez utiliser une vraie fonction de hashage)
+        password_hash = user_data.get("password", "default_password")  # À remplacer par un vrai hash
+        
+        db_admin = HRAdmin(
+            first_name=user_data.get("first_name"),
+            last_name=user_data.get("last_name"),
+            email=user_data.get("email"),
+            password_hash=password_hash,
+            role=user_data.get("role", "hr_admin"),
+            is_active=True
+        )
+        
+        db.add(db_admin)
+        db.commit()
+        db.refresh(db_admin)
+        
+        # Si une entreprise est spécifiée, créer l'accès
+        company_id = user_data.get("company_id")
+        if company_id:
+            access = AdminCompanyAccess(
+                admin_id=db_admin.id,
+                company_id=company_id,
+                access_level="admin"
+            )
+            db.add(access)
+            db.commit()
+        
+        return {"message": "Utilisateur créé avec succès", "id": db_admin.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Erreur lors de la création: {str(e)}")
 
 @router.delete("/api/users/{user_id}")
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
@@ -123,7 +184,7 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
 async def get_admin_stats(db: Session = Depends(get_db)):
     """Récupérer les statistiques pour le dashboard"""
     total_companies = db.query(Company).count()
-    total_users = db.query(Employee).count()
+    total_users = db.query(Employee).count() + db.query(HRAdmin).count()
     
     return {
         "total_companies": total_companies,

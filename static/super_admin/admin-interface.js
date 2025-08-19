@@ -3,12 +3,16 @@ let companies = []
 let users = []
 const companyAdmins = {} // Store admins by company ID
 
+// Variables for users table functionality
+let usersTableData = []
+let sortColumn = "name"
+let sortDirection = "asc"
+
 // Initialize the interface
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("[v0] Admin interface loading...")
   await loadCompaniesFromAPI()
   await loadUsersFromAPI()
-  updateStatistics()
   loadCompanyOptions()
   console.log("[v0] Admin interface loaded successfully")
 })
@@ -37,6 +41,7 @@ async function loadUsersFromAPI() {
     if (response.ok) {
       users = await response.json()
       loadUsers()
+      loadUsersTable() // Load users table when users are loaded
     } else {
       showNotification("Erreur lors du chargement des utilisateurs", "error")
     }
@@ -102,21 +107,33 @@ async function loadCompanyAdmins(companyId) {
 
 // Tab Management
 function showTab(tabName) {
-  // Hide all tabs
-  document.querySelectorAll(".tab-content").forEach((tab) => {
-    tab.classList.remove("active")
-  })
+  console.log("[v0] Switching to tab:", tabName)
 
-  // Remove active class from all buttons
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.remove("active")
-  })
+  // Remove active class from all tabs and content
+  document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"))
+  document.querySelectorAll(".tab-content").forEach((content) => content.classList.remove("active"))
 
-  // Show selected tab
-  document.getElementById(tabName + "-tab").classList.add("active")
-
-  // Add active class to clicked button
+  // Add active class to current tab
   event.target.classList.add("active")
+
+  // Show corresponding content
+  const tabContent = document.getElementById(`${tabName}-tab`)
+  if (tabContent) {
+    tabContent.classList.add("active")
+  }
+
+  // Load data based on tab
+  switch (tabName) {
+    case "companies":
+      loadCompanies()
+      break
+    case "users":
+      loadUsers()
+      break
+    case "users-table":
+      loadUsersTable()
+      break
+  }
 }
 
 // Load Companies
@@ -146,16 +163,24 @@ function loadCompanies() {
   }
 
   grid.innerHTML = filteredCompanies
-    .map(
-      (company) => `
+    .map((company) => {
+      console.log(
+        "[v0] Company:",
+        company.name,
+        "founded_year:",
+        company.founded_year,
+        "type:",
+        typeof company.founded_year,
+      )
+
+      return `
         <div class="company-card" onclick="showCompanyDetails(${company.id})">
           <div class="company-header">
             <div class="company-logo">
               ${
                 company.logo_url
                   ? `<img src="${company.logo_url}" alt="${company.name || "Company"}">`
-                  : // Using 'name' instead of 'company_name'
-                    (company.name || "N/A").charAt(0)
+                  : (company.name || "N/A").charAt(0)
               }
             </div>
             <div class="company-info">
@@ -174,7 +199,9 @@ function loadCompanies() {
               </button>
             </div>
           </div>
-
+          <p class="company-description">
+            ${company.description || "Aucune description"}
+          </p>
           <div class="company-details">
             <div class="detail-item">
               <i class="fas fa-users"></i>
@@ -182,7 +209,7 @@ function loadCompanies() {
             </div>
             <div class="detail-item">
               <i class="fas fa-calendar"></i>
-              <span>Fondée: ${company.founded_year || "Non spécifiée"}</span>
+              <span>Fondée: ${formatFoundedYear(company.founded_year)}</span>
             </div>
             <div class="detail-item">
               <i class="fas fa-envelope"></i>
@@ -199,8 +226,8 @@ function loadCompanies() {
             <small>Cliquez pour voir les administrateurs</small>
           </div>
         </div>
-      `,
-    )
+      `
+    })
     .join("")
 }
 
@@ -218,6 +245,15 @@ async function showCompanyDetails(companyId) {
   const admins = await loadCompanyAdmins(companyId)
   console.log("[v0] Admins loaded:", admins)
 
+  const cleanDescription = (desc) => {
+    if (!desc || typeof desc !== "string") return null
+    // Remove technical code patterns and return clean description
+    if (desc.includes("try:") || desc.includes("return") || desc.includes('"""') || desc.length < 10) {
+      return null
+    }
+    return desc.trim()
+  }
+
   // Create and show modal
   const modal = document.createElement("div")
   modal.className = "company-details-overlay"
@@ -229,8 +265,7 @@ async function showCompanyDetails(companyId) {
             ${
               company.logo_url
                 ? `<img src="${company.logo_url}" alt="${company.name || "Company"}">`
-                : // Using 'name' instead of 'company_name'
-                  (company.name || "N/A").charAt(0)
+                : (company.name || "N/A").charAt(0)
             }
           </div>
           <div>
@@ -246,30 +281,30 @@ async function showCompanyDetails(companyId) {
       <div class="details-content">
         <div class="company-overview">
           <h3><i class="fas fa-info-circle"></i> Informations générales</h3>
-          <div class="overview-grid">
-            <div class="overview-item">
+          <div class="company-details">
+            <div class="detail-item">
               <i class="fas fa-calendar"></i>
-              <span>Fondée en ${company.founded_year || "Non spécifiée"}</span>
+              <span>Fondée en ${formatFoundedYear(company.founded_year)}</span>
             </div>
-            <div class="overview-item">
+            <div class="detail-item">
               <i class="fas fa-envelope"></i>
               <span>${company.email || "Email non spécifié"}</span>
             </div>
-            <div class="overview-item">
+            <div class="detail-item">
               <i class="fas fa-phone"></i>
               <span>${company.phone || "Téléphone non spécifié"}</span>
             </div>
-            <div class="overview-item">
+            <div class="detail-item">
               <i class="fas fa-globe"></i>
-              <span>${company.website ? `<a href="${company.website}" target="_blank">Site web</a>` : "Site web non spécifié"}</span>
+              <span>${company.website ? `Site web non spécifié` : "Site web non spécifié"}</span>
             </div>
           </div>
           ${
-            company.description
+            cleanDescription(company.description)
               ? `
             <div class="company-description">
               <strong>Description:</strong><br>
-              ${company.description}
+              ${cleanDescription(company.description)}
             </div>
           `
               : ""
@@ -277,9 +312,9 @@ async function showCompanyDetails(companyId) {
         </div>
 
         <div class="admins-section">
-          <div class="section-header">
+          <div class="admins-header">
             <h3><i class="fas fa-users-cog"></i> Administrateurs (${admins.length})</h3>
-            <button class="btn btn-primary" onclick="showAddAdminModal(${companyId})">
+            <button class="add-admin-btn" onclick="showAddAdminModal(${companyId})">
               <i class="fas fa-plus"></i> Ajouter Admin
             </button>
           </div>
@@ -292,19 +327,14 @@ async function showCompanyDetails(companyId) {
                       (admin) => `
               <div class="admin-card">
                 <div class="admin-avatar">
-                  ${(admin.name || "UN").charAt(0)}${(admin.name || "UN").charAt(1) || ""}
+                  ${(admin.name || admin.first_name || "UN").charAt(0).toUpperCase()}${((admin.name || admin.last_name || "N").charAt(1) || "").toUpperCase()}
                 </div>
                 <div class="admin-info">
-                  <h4>${admin.name || "Nom non spécifié"}</h4>
+                  <h4>${admin.name || `${admin.first_name || ""} ${admin.last_name || ""}`.trim() || "Nom non spécifié"}</h4>
                   <p class="admin-email">${admin.email}</p>
-                <span class="admin-role role-${admin.position || "employee"}">
-                  ${{
-                    super_admin: "ADMIN",
-                    recruiter: "RECRUTEUR",
-                    department_head: "CHEF DE DÉPARTEMENT"
-                  }[admin.position] || (admin.position || "employee").toUpperCase()}
-                </span>
-
+                  <span class="admin-role role-${(admin.position || admin.access_level || "employee").toLowerCase().replace("_", "-")}">
+                    ${formatRoleDisplay(admin.position || admin.access_level || "employee")}
+                  </span>
                 </div>
                 <div class="admin-actions">
                   <button class="btn-icon" onclick="editAdminAccess(${admin.id}, ${companyId})" title="Modifier accès">
@@ -351,101 +381,277 @@ function closeCompanyDetails() {
 
 // Load Users
 function loadUsers() {
-  console.log("[v0] Rendering users:", users.length)
-  const grid = document.getElementById("users-grid")
-  const searchTerm = document.getElementById("user-search").value.toLowerCase()
-  const roleFilter = document.getElementById("user-role-filter").value
+  console.log("[v0] Loading users grid...")
+  const usersGrid = document.getElementById("users-grid")
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      (user.name && user.name.toLowerCase().includes(searchTerm)) ||
-      (user.email && user.email.toLowerCase().includes(searchTerm))
-    const matchesRole = !roleFilter || user.position === roleFilter
-    return matchesSearch && matchesRole
-  })
-
-  if (filteredUsers.length === 0) {
-    grid.innerHTML = `
-      <div class="empty-state" style="grid-column: 1 / -1;">
+  if (users.length === 0) {
+    usersGrid.innerHTML = `
+      <div class="empty-state">
         <i class="fas fa-users"></i>
         <h3>Aucun utilisateur trouvé</h3>
-        <p>Aucun utilisateur ne correspond à vos critères de recherche.</p>
+        <p>Aucun utilisateur n'a été créé pour le moment.</p>
+        <button class="btn-add" onclick="showAddUserModal()">
+          <i class="fas fa-user-plus"></i>
+          Ajouter un utilisateur
+        </button>
       </div>
     `
     return
   }
 
-  grid.innerHTML = filteredUsers
-    .map(
-      (user) => `
-        <div class="admin-card-full">
-          <div class="user-header">
-            <div class="user-avatar">
-              ${(user.name || "UN").charAt(0)}${(user.name || "UN").charAt(1) || ""}
-            </div>
-            <div class="user-info">
-              <h3>${user.name || "Nom non spécifié"}</h3>
-              <div class="email">${user.email || "Email non spécifié"}</div>
-              <span class="user-role ${user.position || "employee"}">${getRoleLabel(user.position)}</span>
-              <div class="user-status ${user.is_active !== false ? "active" : "inactive"}">
-                <i class="fas fa-circle"></i>
-                ${user.is_active !== false ? "Actif" : "Inactif"}
-              </div>
-            </div>
-            <div class="user-actions">
-              <button class="btn-icon" onclick="editUser(${user.id})" title="Modifier">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button class="btn-icon ${user.is_active !== false ? "danger" : ""}" 
-                      onclick="toggleUserStatus(${user.id})" 
-                      title="${user.is_active !== false ? "Désactiver" : "Activer"}">
-                <i class="fas fa-${user.is_active !== false ? "user-slash" : "user-check"}"></i>
-              </button>
-              <button class="btn-icon danger" onclick="deleteUser(${user.id})" title="Supprimer">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
+  usersGrid.innerHTML = users
+    .map((user) => {
+      const initials = user.name
+        .split(" ")
+        .map((n) => n.charAt(0))
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
+      const userType = user.user_type === "admin" ? "Admin" : "Employé"
+      const roleDisplay = formatRoleDisplay(user.position)
+
+      return `
+      <div class="user-card" onclick="showUserDetails(${user.id})">
+        <div class="user-header">
+          <div class="user-avatar">
+            ${initials}
           </div>
-          
-          <div class="admin-companies">
-            <h4><i class="fas fa-building"></i> Entreprises assignées</h4>
-            <div class="company-tags" id="user-companies-${user.id}">
-              <span class="loading">Chargement...</span>
-            </div>
+          <div class="user-info">
+            <h3>${user.name}</h3>
+            <p class="user-email">${user.email}</p>
+            <span class="user-type ${user.user_type}">${userType}</span>
+          </div>
+          <div class="user-actions">
+            <button class="btn-icon" onclick="event.stopPropagation(); editUser('${user.id}')" title="Modifier">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-icon btn-danger" onclick="event.stopPropagation(); deleteUser('${user.id}')" title="Supprimer">
+              <i class="fas fa-trash"></i>
+            </button>
           </div>
         </div>
-      `,
-    )
+        <div class="user-details">
+          <div class="user-detail">
+            <i class="fas fa-briefcase"></i>
+            <span>${roleDisplay}</span>
+          </div>
+          ${
+            user.company_name
+              ? `
+            <div class="user-detail">
+              <i class="fas fa-building"></i>
+              <span>${user.company_name}</span>
+            </div>
+          `
+              : ""
+          }
+          <div class="user-detail">
+            <i class="fas fa-circle ${user.is_active ? "text-success" : "text-danger"}"></i>
+            <span>${user.is_active ? "Actif" : "Inactif"}</span>
+          </div>
+        </div>
+      </div>
+    `
+    })
     .join("")
-
-  // Load companies for each user
-  filteredUsers.forEach((user) => {
-    loadUserCompanies(user.id)
-  })
 }
 
-async function loadUserCompanies(userId) {
-  try {
-    const user = users.find((u) => u.id === userId)
-    const container = document.getElementById(`user-companies-${userId}`)
+function showUserDetails(userId) {
+  const user = users.find((u) => u.id == userId)
+  if (!user) return
 
-    if (user && user.company_id && user.company_name) {
-      container.innerHTML = `
-        <span class="company-tag" onclick="showCompanyDetails(${user.company_id})">
-          ${user.company_name}
-          <small>(employee)</small>
-        </span>
-      `
-    } else {
-      container.innerHTML = '<span class="no-companies">Aucune entreprise assignée</span>'
-    }
-  } catch (error) {
-    console.error("Error loading user companies:", error)
-    const container = document.getElementById(`user-companies-${userId}`)
-    if (container) {
-      container.innerHTML = '<span class="error">Erreur de chargement</span>'
-    }
+  // Afficher les détails de l'utilisateur (à implémenter selon vos besoins)
+  showNotification(`Détails de ${user.name}`, "info")
+}
+
+// Users Table Functions
+function loadUsersTable() {
+  console.log("[v0] Loading users table...")
+  usersTableData = users.map((user) => ({
+    id: user.id,
+    name: user.name || `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Nom non spécifié",
+    email: user.email || "Email non spécifié",
+    type: getUserTypeForTable(user.position),
+    lastActivity: getRandomLastActivity(),
+    position: user.position,
+    isActive: user.is_active !== false,
+  }))
+
+  renderUsersTable()
+}
+
+function getUserTypeForTable(position) {
+  const typeMap = {
+    super_admin: "Super Admin",
+    hr_manager: "Super Admin",
+    hr_admin: "Admin",
+    department_head: "Admin",
+    recruiter: "Member",
   }
+  return typeMap[position] || "Member"
+}
+
+function getRandomLastActivity() {
+  const activities = ["Today", "Yesterday", "2 days ago", "1 week ago", "2 weeks ago", "1 month ago", "-"]
+  return activities[Math.floor(Math.random() * activities.length)]
+}
+
+function getAvatarColor(name) {
+  const colors = ["blue", "green", "purple", "pink", "orange", "red", "indigo", "teal"]
+  const index = name.charCodeAt(0) % colors.length
+  return colors[index]
+}
+
+function renderUsersTable() {
+  const tbody = document.getElementById("users-table-body")
+
+  if (usersTableData.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" class="table-empty-state">
+          <i class="fas fa-users"></i>
+          <h3>Aucun utilisateur trouvé</h3>
+          <p>Aucun utilisateur ne correspond à vos critères de recherche.</p>
+        </td>
+      </tr>
+    `
+    return
+  }
+
+  tbody.innerHTML = usersTableData
+    .map((user) => {
+      const initials = user.name
+        .split(" ")
+        .map((n) => n.charAt(0))
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
+      const avatarColor = getAvatarColor(user.name)
+
+      return `
+      <tr>
+        <td>
+          <div class="table-user-info">
+            <div class="table-user-avatar avatar-${avatarColor}">
+              ${initials}
+            </div>
+            <div class="table-user-details">
+              <h4>${user.name}</h4>
+              <p class="table-user-email">${user.email}</p>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="table-user-type ${user.type.toLowerCase().replace(" ", "-")}">
+            ${user.type}
+          </span>
+        </td>
+        <td class="table-last-activity">
+          ${user.lastActivity}
+        </td>
+        <td>
+          <div class="table-actions">
+            <button class="table-actions-btn" onclick="showUserTableActions(${user.id})" title="Actions">
+              <i class="fas fa-ellipsis-h"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `
+    })
+    .join("")
+}
+
+function filterUsersTable() {
+  const searchTerm = document.getElementById("users-table-search").value.toLowerCase()
+  const typeFilter = document.getElementById("users-table-filter").value
+
+  let filteredData = users.map((user) => ({
+    id: user.id,
+    name: user.name || `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Nom non spécifié",
+    email: user.email || "Email non spécifié",
+    type: getUserTypeForTable(user.position),
+    lastActivity: getRandomLastActivity(),
+    position: user.position,
+    isActive: user.is_active !== false,
+  }))
+
+  if (searchTerm) {
+    filteredData = filteredData.filter(
+      (user) => user.name.toLowerCase().includes(searchTerm) || user.email.toLowerCase().includes(searchTerm),
+    )
+  }
+
+  if (typeFilter) {
+    filteredData = filteredData.filter((user) => user.type === typeFilter)
+  }
+
+  usersTableData = filteredData
+  renderUsersTable()
+}
+
+function sortUsersTable(column) {
+  if (sortColumn === column) {
+    sortDirection = sortDirection === "asc" ? "desc" : "asc"
+  } else {
+    sortColumn = column
+    sortDirection = "asc"
+  }
+
+  usersTableData.sort((a, b) => {
+    let aVal = a[column]
+    let bVal = b[column]
+
+    if (column === "activity") {
+      // Custom sorting for last activity
+      const activityOrder = {
+        Today: 0,
+        Yesterday: 1,
+        "2 days ago": 2,
+        "1 week ago": 3,
+        "2 weeks ago": 4,
+        "1 month ago": 5,
+        "-": 6,
+      }
+      aVal = activityOrder[a.lastActivity] || 999
+      bVal = activityOrder[b.lastActivity] || 999
+    }
+
+    if (typeof aVal === "string") {
+      aVal = aVal.toLowerCase()
+      bVal = bVal.toLowerCase()
+    }
+
+    if (sortDirection === "asc") {
+      return aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+    } else {
+      return aVal > bVal ? -1 : aVal < bVal ? 1 : 0
+    }
+  })
+
+  renderUsersTable()
+
+  // Update sort indicators
+  document.querySelectorAll(".users-table th i").forEach((icon) => {
+    icon.className = "fas fa-sort"
+  })
+
+  const currentHeader = document.querySelector(`[onclick="sortUsersTable('${column}')"] i`)
+  if (currentHeader) {
+    currentHeader.className = `fas fa-sort-${sortDirection === "asc" ? "up" : "down"}`
+  }
+}
+
+function showUserTableActions(userId) {
+  // Simple implementation - could be expanded with a dropdown menu
+  const actions = [
+    { label: "Modifier", action: () => editUser(userId) },
+    { label: "Désactiver", action: () => toggleUserStatus(userId) },
+    { label: "Supprimer", action: () => deleteUser(userId) },
+  ]
+
+  // For now, just show the first action (edit)
+  editUser(userId)
 }
 
 // Update Statistics
@@ -497,6 +703,20 @@ function getRoleLabel(role) {
     hr_admin: "HR Admin",
   }
   return labels[role] || role
+}
+
+function formatRoleDisplay(role) {
+  if (!role) return "EMPLOYEE"
+
+  const roleMap = {
+    SUPER_ADMIN: "Admin",
+    DEPARTMENT_HEAD: "Chef de département",
+    RECRUITER: "Recruteur",
+    HR_ADMIN: "Admin RH",
+    HR_MANAGER: "Manager RH",
+  }
+
+  return roleMap[role.toUpperCase()] || role.replace("_", " ").toUpperCase()
 }
 
 // Modal Management
@@ -626,10 +846,11 @@ async function createUser(event) {
   const formData = new FormData(event.target)
 
   const userData = {
-    name: formData.get("first_name") + " " + formData.get("last_name"),
+    first_name: formData.get("first_name"),
+    last_name: formData.get("last_name"),
     email: formData.get("email"),
-    phone: formData.get("phone") || "",
-    position: formData.get("role"),
+    password: formData.get("password"),
+    role: formData.get("role"),
     company_id: formData.get("company_id") ? Number.parseInt(formData.get("company_id")) : null,
   }
 
@@ -739,3 +960,37 @@ document.addEventListener("keydown", (e) => {
     closeCompanyDetails()
   }
 })
+
+function formatFoundedYear(foundedYear) {
+  console.log("[v0] formatFoundedYear input:", foundedYear, "type:", typeof foundedYear)
+
+  if (!foundedYear || foundedYear === null || foundedYear === undefined) {
+    console.log("[v0] Founded year is null/undefined")
+    return "Non spécifiée"
+  }
+
+  // Handle different formats: could be a year number, date string, or null
+  if (typeof foundedYear === "number") {
+    console.log("[v0] Founded year is number:", foundedYear)
+    return foundedYear.toString()
+  }
+
+  if (typeof foundedYear === "string") {
+    console.log("[v0] Founded year is string:", foundedYear)
+    // If it's a date string, extract the year
+    const year = new Date(foundedYear).getFullYear()
+    if (!isNaN(year) && year > 1800 && year <= new Date().getFullYear()) {
+      console.log("[v0] Extracted year from date:", year)
+      return year.toString()
+    }
+    // If it's already just a year string
+    const yearNum = Number.parseInt(foundedYear)
+    if (!isNaN(yearNum) && yearNum > 1800 && yearNum <= new Date().getFullYear()) {
+      console.log("[v0] Parsed year from string:", yearNum)
+      return yearNum.toString()
+    }
+  }
+
+  console.log("[v0] Could not format founded year, returning default")
+  return "Non spécifiée"
+}
