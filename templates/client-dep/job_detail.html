@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ job.title }} - {{ job.company.company_name if job.company else 'Entreprise' }} - CV Analyzer Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --accent-gradient: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            --dark-bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --error-color: #ff6b6b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --info-color: #60a5fa;
+            --radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            background: var(--dark-bg);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Background Effects */
+        .background-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.05));
+            animation: float 20s ease-in-out infinite;
+            filter: blur(40px);
+        }
+
+        .shape:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            top: 60%;
+            right: 10%;
+            animation-delay: -7s;
+        }
+
+        .shape:nth-child(3) {
+            width: 150px;
+            height: 150px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: -14s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            33% { transform: translateY(-30px) rotate(120deg); opacity: 0.6; }
+            66% { transform: translateY(30px) rotate(240deg); opacity: 0.4; }
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+            transition: var(--transition);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-logo a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-primary);
+        }
+
+        .nav-link::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent-gradient);
+            transition: var(--transition);
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+
+        .hamburger {
+            display: none;
+            cursor: pointer;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 1100;
+        }
+
+        .bar {
+            width: 25px;
+            height: 3px;
+            background: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            background: rgba(30, 41, 59, 0.7);
+            padding: 1rem 0;
+            margin-top: 70px;
+        }
+
+        .breadcrumb .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .breadcrumb a:hover {
+            color: var(--text-primary);
+        }
+
+        .separator {
+            color: var(--text-muted);
+        }
+
+        .current {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem 0;
+            min-height: calc(100vh - 200px);
+            position: relative;
+            z-index: 10;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Job Header */
+        .job-header {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .job-header-content {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+
+        .company-logo {
+            flex-shrink: 0;
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 2rem;
+        }
+
+        .company-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .job-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .job-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem 0;
+            line-height: 1.2;
+        }
+
+        .company-name {
+            color: var(--info-color);
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin: 0 0 1rem 0;
+        }
+
+        .job-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .job-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .job-meta-item i {
+            color: var(--text-muted);
+            width: 16px;
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .apply-btn {
+            padding: 1rem 2rem;
+            background: var(--accent-gradient);
+            color: #000;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+        }
+
+        .apply-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .apply-btn.applied {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .save-btn {
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.5);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .save-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--info-color);
+            transform: translateY(-2px);
+        }
+
+        .save-btn.saved {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--error-color);
+            color: var(--error-color);
+        }
+
+        .quiz-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+        }
+
+        .quiz-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+        }
+
+        .quiz-btn.completed {
+            background: var(--success-color);
+            color: white;
+        }
+
+        /* Job Content */
+        .job-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .job-main {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .job-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .content-section {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .section-title i {
+            color: var(--info-color);
+        }
+
+        .job-description {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .job-description h3 {
+            color: var(--text-primary);
+            margin: 1.5rem 0 1rem 0;
+            font-size: 1.2rem;
+        }
+
+        .job-description ul {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .job-description li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Job Stats */
+        .job-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--info-color);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Salary Info */
+        .salary-info {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .salary-amount {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--success-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .salary-period {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Company Info */
+        .company-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .company-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .company-detail:last-child {
+            border-bottom: none;
+        }
+
+        .company-detail-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .company-detail-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Tags */
+        .job-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
+        }
+
+        .tag.priority {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .tag.employment-type {
+            background: rgba(96, 165, 250, 0.1);
+            color: var(--info-color);
+            border-color: rgba(96, 165, 250, 0.2);
+        }
+
+        /* Skill Match Section */
+        .skill-match-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .skill-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .skill-item:last-child {
+            border-bottom: none;
+        }
+
+        .skill-item .icon {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .skill-item.matched .icon {
+            color: var(--success-color);
+        }
+
+        .skill-item.not-matched .icon {
+            color: var(--error-color);
+        }
+
+        .skill-item.not-matched {
+            opacity: 0.7;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            padding: 1rem 1.5rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            z-index: 1000;
+            max-width: 400px;
+            border-left: 4px solid var(--info-color);
+            transform: translateX(400px);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.show {
+            display: flex;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left-color: var(--success-color);
+        }
+
+        .toast.error {
+            border-left-color: var(--error-color);
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        .toast.success .toast-icon {
+            color: var(--success-color);
+        }
+
+        .toast.error .toast-icon {
+            color: var(--error-color);
+        }
+
+        .toast.info .toast-icon {
+            color: var(--info-color);
+        }
+
+        .toast-message {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: var(--transition);
+            font-size: 1.2rem;
+        }
+
+        .toast-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 2rem;
+            border-radius: var(--radius);
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--info-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .job-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .job-sidebar {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                position: fixed;
+                left: -100%;
+                top: 0;
+                height: 100vh;
+                gap: 0;
+                flex-direction: column;
+                background-color: var(--card-bg);
+                width: 280px;
+                padding: 6rem 2rem 2rem;
+                transition: var(--transition);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
+                backdrop-filter: blur(20px);
+            }
+
+            .nav-item {
+                margin: 16px 0;
+            }
+
+            .nav-menu.active {
+                left: 0;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .hamburger.active .bar:nth-child(2) {
+                opacity: 0;
+            }
+
+            .hamburger.active .bar:nth-child(1) {
+                transform: translateY(8px) rotate(45deg);
+            }
+
+            .hamburger.active .bar:nth-child(3) {
+                transform: translateY(-8px) rotate(-45deg);
+            }
+
+            .job-header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .job-actions {
+                flex-direction: column;
+            }
+
+            .job-meta {
+                justify-content: center;
+            }
+
+            .job-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .job-header {
+                padding: 1.5rem;
+            }
+
+            .job-title {
+                font-size: 1.5rem;
+            }
+
+            .company-name {
+                font-size: 1rem;
+            }
+
+            .content-section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+     <div id="header-component"></div>
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+        <div class="container">
+            <a href="/">Accueil</a>
+            <span class="separator">/</span>
+            <a href="/jobs">Offres d'emploi</a>
+            <span class="separator">/</span>
+            <span class="current">{{ job.title }}</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Job Header -->
+            <div class="job-header">
+                <div class="job-header-content">
+                    <div class="company-logo">
+                        {% if job.company and job.company.logo_url %}
+                            <img src="{{ job.company.logo_url }}" alt="{{ job.company.company_name }}">
+                        {% else %}
+                            <i class="fas fa-building"></i>
+                        {% endif %}
+                    </div>
+                    <div class="job-info">
+                        <h1 class="job-title">{{ job.title }}</h1>
+                        <div class="company-name">{{ job.company.company_name if job.company else 'Entreprise Confidentielle' }}</div>
+                        
+                        <div class="job-meta">
+                            <div class="job-meta-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>{{ job.company.address if job.company and job.company.address else 'Non spécifié' }}</span>
+                            </div>
+                            <div class="job-meta-item">
+                                <i class="fas fa-briefcase"></i>
+                                <span>{{ job.employment_type }}</span>
+                            </div>
+                            <div class="job-meta-item">
+                                <i class="fas fa-building"></i>
+                                <span>{{ job.department.name if job.department else 'Non spécifié' }}</span>
+                            </div>
+                            <div class="job-meta-item">
+                                <i class="fas fa-eye"></i>
+                                <span>{{ job.views_count }} vues</span>
+                            </div>
+                            <div class="job-meta-item">
+                                <i class="fas fa-users"></i>
+                                <span>{{ job.applications_count }} candidatures</span>
+                            </div>
+                            <div class="job-meta-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>Publié le {{ job.created_at.strftime('%d/%m/%Y') }}</span>
+                            </div>
+                        </div>
+
+                        <div class="job-actions">
+                            <button class="apply-btn" id="applyBtn" data-job-id="{{ job.id }}">
+                                <i class="fas fa-paper-plane"></i>
+                                <span id="applyBtnText">Postuler maintenant</span>
+                            </button>
+                            <button class="save-btn" data-job-id="{{ job.id }}">
+                                <i class="far fa-heart"></i>
+                                Sauvegarder
+                            </button>
+                            <button class="quiz-btn" id="quizBtn" data-job-id="{{ job.id }}" style="display: none;">
+                                <i class="fas fa-clipboard-check"></i>
+                                <span id="quizBtnText">Passer le quiz</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Content -->
+            <div class="job-content">
+                <!-- Main Content -->
+                <div class="job-main">
+                    <!-- Description -->
+                    <div class="content-section">
+                        <h2 class="section-title">
+                            <i class="fas fa-file-alt"></i>
+                            Description du poste
+                        </h2>
+                        <div class="job-description">
+                            {{ job.description | safe }}
+                        </div>
+                    </div>
+
+                    <!-- Requirements -->
+                    {% if job.requirements %}
+                    <div class="content-section">
+                        <h2 class="section-title">
+                            <i class="fas fa-check-circle"></i>
+                            Exigences
+                        </h2>
+                        <div class="job-description">
+                            {{ job.requirements | safe }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Responsibilities -->
+                    {% if job.responsibilities %}
+                    <div class="content-section">
+                        <h2 class="section-title">
+                            <i class="fas fa-tasks"></i>
+                            Responsabilités
+                        </h2>
+                        <div class="job-description">
+                            {{ job.responsibilities | safe }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Sidebar -->
+                <div class="job-sidebar">
+                    <!-- Salary -->
+                    {% if job.salary_min or job.salary_max %}
+                    <div class="content-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-euro-sign"></i>
+                            Salaire
+                        </h3>
+                        <div class="salary-info">
+                            <div class="salary-amount">
+                                {% if job.salary_min and job.salary_max %}
+                                    {{ "{:,.0f}".format(job.salary_min) }} - {{ "{:,.0f}".format(job.salary_max) }} €
+                                {% elif job.salary_min %}
+                                    À partir de {{ "{:,.0f}".format(job.salary_min) }} €
+                                {% elif job.salary_max %}
+                                    Jusqu'à {{ "{:,.0f}".format(job.salary_max) }} €
+                                {% endif %}
+                            </div>
+                            <div class="salary-period">par an</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Job Stats -->
+                    <div class="content-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Statistiques
+                        </h3>
+                        <div class="job-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">{{ job.views_count }}</span>
+                                <span class="stat-label">Vues</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="applicationCount">{{ job.applications_count }}</span>
+                            <span class="stat-label">Candidatures</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Skill Match Section -->
+                    {% if current_user and (matched_job_skills or unmatched_job_skills) %}
+                    <div class="content-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-cogs"></i>
+                            Vos compétences vs. le poste
+                        </h3>
+                        <ul class="skill-match-list">
+                            {% if matched_job_skills %}
+                                {% for skill in matched_job_skills %}
+                                    <li class="skill-item matched">
+                                        <span class="icon">
+                                            <i class="fas fa-check-circle"></i>
+                                        </span>
+                                        <span>{{ skill.skill_name }}</span>
+                                        {% if skill.is_required %}
+                                            <span style="font-size: 0.8em; color: var(--text-muted); margin-left: auto;">(Requis)</span>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            {% endif %}
+                            {% if unmatched_job_skills %}
+                                {% for skill in unmatched_job_skills %}
+                                    <li class="skill-item not-matched">
+                                        <span class="icon">
+                                            <i class="fas fa-times-circle"></i>
+                                        </span>
+                                        <span>{{ skill.skill_name }}</span>
+                                        {% if skill.is_required %}
+                                            <span style="font-size: 0.8em; color: var(--text-muted); margin-left: auto;">(Requis)</span>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Company Info -->
+                    {% if job.company %}
+                    <div class="content-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-building"></i>
+                            À propos de l'entreprise
+                        </h3>
+                        <div class="company-info">
+                            <div class="company-detail">
+                                <span class="company-detail-label">Nom</span>
+                                <span class="company-detail-value">{{ job.company.company_name }}</span>
+                            </div>
+                            {% if job.company.address %}
+                            <div class="company-detail">
+                                <span class="company-detail-label">Adresse</span>
+                                <span class="company-detail-value">{{ job.company.address }}</span>
+                            </div>
+                            {% endif %}
+                            {% if job.company.industry %}
+                            <div class="company-detail">
+                                <span class="company-detail-label">Secteur</span>
+                                <span class="company-detail-value">{{ job.company.industry }}</span>
+                            </div>
+                            {% endif %}
+                            {% if job.company.company_size %}
+                            <div class="company-detail">
+                                <span class="company-detail-label">Taille</span>
+                                <span class="company-detail-value">{{ job.company.company_size }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Job Tags -->
+                    {% if job.tags %}
+                    <div class="content-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-tags"></i>
+                            Tags
+                        </h3>
+                        <div class="job-tags">
+                            {% for tag in job.tags.split(',') if job.tags %}
+                                <span class="tag">{{ tag.strip() }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="toast-icon fas fa-info-circle"></i>
+            <span class="toast-message" id="toastMessage"></span>
+        </div>
+        <button class="toast-close" onclick="hideToast()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner"></div>
+        <span style="color: var(--text-primary); margin-left: 1rem;">Chargement...</span>
+    </div>
+
+    <!-- Quiz Assignment Modal -->
+    <div id="quizModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; backdrop-filter: blur(5px);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); border-radius: var(--radius); padding: 2rem; max-width: 500px; width: 90%; border: 1px solid var(--border-color);">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-clipboard-check" style="color: var(--warning-color);"></i>
+                Quiz Assigné
+            </h3>
+            <div id="quizModalContent" style="color: var(--text-secondary); margin-bottom: 2rem;">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button onclick="closeQuizModal()" style="padding: 0.75rem 1.5rem; background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer;">
+                    Fermer
+                </button>
+                <button id="takeQuizBtn" onclick="takeAssignedQuiz()" style="padding: 0.75rem 1.5rem; background: var(--accent-gradient); color: #000; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 600;">
+                    Passer le Quiz
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="job-data" style="display: none;">{% if job and job.id %}{{ job.id }}{% endif %}</div>
+    <div id="user-auth-data" style="display: none;">{% if current_user %}true{% else %}false{% endif %}</div>
+    
+    <script>
+        // Get job ID from hidden div
+        const jobDataElement = document.getElementById('job-data');
+        let currentJobId = jobDataElement.textContent.trim();
+        
+        // User authentication status
+        const userAuthElement = document.getElementById('user-auth-data');
+        const isUserAuthenticated = userAuthElement.textContent.trim() === 'true';
+        currentJobId = currentJobId ? parseInt(currentJobId) : null;
+        let currentAssignmentId = null;
+
+        // Show/hide loading spinner
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        // Toast notification functions
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = toast.querySelector('.toast-icon');
+            
+            toastMessage.textContent = message;
+            toast.className = `toast show ${type}`;
+            
+            // Update icon based on type
+            if (type === 'success') {
+                toastIcon.className = 'toast-icon fas fa-check-circle';
+            } else if (type === 'error') {
+                toastIcon.className = 'toast-icon fas fa-exclamation-circle';
+            } else {
+                toastIcon.className = 'toast-icon fas fa-info-circle';
+            }
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                hideToast();
+            }, 5000);
+        }
+
+        function hideToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('show');
+        }
+
+        // Quiz Modal functions
+        function showQuizModal(assignments) {
+            const modal = document.getElementById('quizModal');
+            const content = document.getElementById('quizModalContent');
+            
+            if (assignments.length === 0) {
+                content.innerHTML = `
+                    <p>Aucun quiz n'est actuellement assigné pour ce poste.</p>
+                    <p style="margin-top: 1rem;">Vous pouvez générer un quiz basé sur les exigences du poste pour tester vos compétences.</p>
+                `;
+                document.getElementById('takeQuizBtn').textContent = 'Évaluer quiz';
+                document.getElementById('takeQuizBtn').onclick = () => assignJobQuiz();
+            } else {
+                let html = '<div style="max-height: 300px; overflow-y: auto;">';
+                assignments.forEach(assignment => {
+                    const statusBadge = assignment.status === 'assigned' ? 
+                        '<span style="background: var(--warning-color); color: #000; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">Nouveau</span>' :
+                        '<span style="background: var(--info-color); color: #000; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">En cours</span>';
+                    
+                    html += `
+                        <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; cursor: pointer;" 
+                             data-assignment-id="${assignment.assignment_id}" 
+                             onclick="selectAssignment(${assignment.assignment_id})">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <h4 style="color: var(--text-primary); margin: 0;">${assignment.title}</h4>
+                                ${statusBadge}
+                            </div>
+                            <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">${assignment.description}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                content.innerHTML = html;
+                
+                if (assignments.length > 0) {
+                    currentAssignmentId = assignments[0].assignment_id;
+                }
+                
+                document.getElementById('takeQuizBtn').textContent = 'Passer quiz';
+                document.getElementById('takeQuizBtn').onclick = () => takeAssignedQuiz();
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeQuizModal() {
+            document.getElementById('quizModal').style.display = 'none';
+        }
+
+        function selectAssignment(assignmentId) {
+            currentAssignmentId = assignmentId;
+            // Visual feedback for selection
+            document.querySelectorAll('#quizModalContent > div > div').forEach(div => {
+                div.style.background = 'transparent';
+            });
+            event.currentTarget.style.background = 'rgba(0, 212, 255, 0.1)';
+        }
+
+        // Check quiz status and show appropriate button/modal
+        async function checkQuizStatus(jobId) {
+            try {
+                showLoading();
+                
+                // Check for assigned quizzes
+                const response = await fetch('/api/my-assigned-quizzes');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Filter assignments for this specific job
+                    const jobAssignments = data.assignments.filter(a => a.job_id === jobId);
+                    showQuizModal(jobAssignments);
+                } else {
+                    showToast(data.message || 'Erreur lors de la vérification des quiz', 'error');
+                }
+            } catch (error) {
+                console.error('Error checking quiz status:', error);
+                showToast('Erreur de connexion', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Assign job quiz (no generation)
+        async function assignJobQuiz() {
+            try {
+                showLoading();
+                
+                const response = await fetch(`/api/generate-job-quiz/${currentJobId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeQuizModal();
+                    showToast('Quiz assigné avec succès! Cliquez sur "Passer quiz" pour commencer.', 'success');
+                    if (window.headerComponent) {
+                        window.headerComponent.loadQuizCount();
+                    }
+                    // Refresh the quiz button to show "Passer quiz"
+                    checkQuizStatus(currentJobId);
+                } else {
+                    showToast(data.message || 'Erreur lors de l\'assignation du quiz', 'error');
+                }
+            } catch (error) {
+                console.error('Error assigning quiz:', error);
+                showToast('Erreur de connexion', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Take assigned quiz (generates quiz when clicked)
+        async function takeAssignedQuiz() {
+            try {
+                showLoading();
+                
+                // Find the assignment for this job
+                const response = await fetch('/api/my-assigned-quizzes');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    showToast('Erreur lors du chargement des quiz assignés', 'error');
+                    return;
+                }
+                
+                const assignment = data.assignments.find(a => a.job_id == currentJobId);
+                if (!assignment) {
+                    showToast('Aucun quiz assigné pour ce poste', 'error');
+                    return;
+                }
+                
+                // Take the assigned quiz (this will generate it)
+                const takeResponse = await fetch(`/api/take-quiz/${assignment.id}`);
+                const takeData = await takeResponse.json();
+                
+                if (takeData.success && takeData.redirect_url) {
+                    window.location.href = takeData.redirect_url;
+                } else {
+                    showToast(takeData.message || 'Erreur lors du chargement du quiz', 'error');
+                }
+            } catch (error) {
+                console.error('Error taking quiz:', error);
+                showToast(error.message || 'Erreur lors du chargement du quiz', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+
+
+        // Job application functions
+        async function applyToJob(jobId) {
+            const btn = document.getElementById('applyBtn');
+            const btnText = document.getElementById('applyBtnText');
+            
+            if (btn.disabled) return;
+            
+            try {
+                btn.disabled = true;
+                btnText.textContent = 'Envoi en cours...';
+                
+                const response = await fetch(`/api/jobs/${jobId}/apply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    btn.classList.add('applied');
+                    btnText.innerHTML = '<i class="fas fa-check"></i> Candidature envoyée';
+                    showToast(data.message, 'success');
+                    
+                    // Update application count
+                    const countElement = document.getElementById('applicationCount');
+                    if (countElement) {
+                        const currentCount = parseInt(countElement.textContent) || 0;
+                        countElement.textContent = currentCount + 1;
+                    }
+                } else {
+                    showToast(data.message, 'error');
+                    btn.disabled = false;
+                    btnText.textContent = 'Postuler maintenant';
+                }
+            } catch (error) {
+                console.error('Error applying to job:', error);
+                showToast('Erreur de connexion', 'error');
+                btn.disabled = false;
+                btnText.textContent = 'Postuler maintenant';
+            }
+        }
+
+        // Save/unsave job functions
+        async function toggleSaveJob(jobId, button) {
+            const icon = button.querySelector('i');
+            const isSaved = button.classList.contains('saved');
+            
+            try {
+                button.disabled = true;
+                
+                const method = isSaved ? 'DELETE' : 'POST';
+                const response = await fetch(`/api/jobs/${jobId}/save`, {
+                    method: method
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (isSaved) {
+                        button.classList.remove('saved');
+                        icon.className = 'far fa-heart';
+                        button.innerHTML = '<i class="far fa-heart"></i> Sauvegarder';
+                    } else {
+                        button.classList.add('saved');
+                        icon.className = 'fas fa-heart';
+                        button.innerHTML = '<i class="fas fa-heart"></i> Sauvegardé';
+                    }
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error toggling save job:', error);
+                showToast('Erreur de connexion', 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners for buttons
+            const applyBtn = document.getElementById('applyBtn');
+            const saveBtn = document.querySelector('.save-btn');
+            const quizBtn = document.getElementById('quizBtn');
+            
+            if (applyBtn) {
+                applyBtn.addEventListener('click', function() {
+                    const jobId = this.getAttribute('data-job-id');
+                    applyToJob(jobId);
+                });
+            }
+            
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function() {
+                    const jobId = this.getAttribute('data-job-id');
+                    toggleSaveJob(jobId, this);
+                });
+            }
+            
+            if (quizBtn) {
+                quizBtn.addEventListener('click', function() {
+                    const jobId = this.getAttribute('data-job-id');
+                    checkQuizStatus(jobId);
+                });
+            }
+            
+            // Check if user has applied and update button state
+            if (isUserAuthenticated) {
+                fetch(`/api/jobs/${currentJobId}/application-status`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.has_applied) {
+                            const btn = document.getElementById('applyBtn');
+                            const btnText = document.getElementById('applyBtnText');
+                            btn.classList.add('applied');
+                            btn.disabled = true;
+                            btnText.innerHTML = '<i class="fas fa-check"></i> Candidature envoyée';
+                        }
+                    })
+                    .catch(error => console.error('Error checking application status:', error));
+
+                // Check for quiz assignments and show quiz button if available
+                fetch('/api/my-assigned-quizzes')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const jobAssignments = data.assignments.filter(a => a.job_id === currentJobId);
+                            const quizBtn = document.getElementById('quizBtn');
+                            const quizBtnText = document.getElementById('quizBtnText');
+                            
+                            if (jobAssignments.length > 0) {
+                                quizBtn.style.display = 'flex';
+                                
+                                if (jobAssignments.length > 0) {
+                                    const hasAssigned = jobAssignments.some(a => a.status === 'assigned');
+                                    const hasInProgress = jobAssignments.some(a => a.status === 'in_progress');
+                                    
+                                    if (hasAssigned) {
+                                        quizBtnText.textContent = 'Quiz Disponible';
+                                        quizBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                                    } else if (hasInProgress) {
+                                        quizBtnText.textContent = 'Continuer le Quiz';
+                                        quizBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+                                    }
+                                } else {
+                                    quizBtnText.textContent = 'Générer un Quiz';
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error checking quiz assignments:', error));
+            }
+
+        });
+
+        // Mobile menu toggle
+        const hamburger = document.querySelector('.hamburger');
+        const navMenu = document.querySelector('.nav-menu');
+
+        if (hamburger && navMenu) {
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('active');
+                navMenu.classList.toggle('active');
+            });
+
+            // Close mobile menu when clicking on a link
+            document.querySelectorAll('.nav-link').forEach(n => n.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+            }));
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('quizModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeQuizModal();
+            }
+        });
+    </script>
+
+    <!-- Load header component -->
+    <script>
+        fetch('/static/client-dep/components/header.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('header-component').innerHTML = html;
+                // Dispatch custom event to reinitialize header functionality
+                document.dispatchEvent(new CustomEvent('headerLoaded'));
+            })
+            .catch(error => console.error('Error loading header:', error));
+    </script>
+    <script src="/static/client-dep/js/header.js"></script>
+</body>
+</html>

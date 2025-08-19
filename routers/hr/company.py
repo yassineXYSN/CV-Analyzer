@@ -1,0 +1,271 @@
+from fastapi import APIRouter, Request, HTTPException
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+from databasehr.database import SessionLocal
+from company_utils import create_company, update_company, get_user_company, get_company_admins, get_company_departments
+from utils import add_user_to_company
+
+from databasehr.session_manager import current_user_session
+from auth_utils import create_admin_user
+from typing import Optional 
+import os 
+from fastapi.templating import Jinja2Templates
+import databasehr.models as models
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+templates_dir = os.path.join(current_dir, '../../templates')
+templates = Jinja2Templates(directory=templates_dir)
+
+router = APIRouter()
+
+class CompanySetupRequest(BaseModel):
+    company_name: str
+    industry: str
+    company_size: str
+    founded_year: Optional[int] = None
+    description: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    twitter_url: Optional[str] = None
+    facebook_url: Optional[str] = None
+
+class CreateUserRequest(BaseModel):
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+    role: str = "hr_admin"
+    company_id: Optional[int] = None
+    access_level: str = "admin"
+
+def check_super_admin_permission(user_id: int) -> bool:
+    """
+    Vérifie si l'utilisateur actuel est un super admin
+    """
+    db = SessionLocal()
+    try:
+        user = db.query(models.HRAdmin).filter(models.HRAdmin.id == user_id).first()
+        if not user:
+            return False
+        return user.role == "super_admin"
+    except Exception as e:
+        print(f"Erreur lors de la vérification des permissions: {e}")
+        return False
+    finally:
+        db.close()
+
+@router.get("/company-setup", response_class=HTMLResponse)
+def company_setup_page(request: Request):
+    return templates.TemplateResponse("HR-dep/company-setup.html", {"request": request})
+
+@router.get("/company-profile", response_class=HTMLResponse)
+def company_profile_page(request: Request):
+    try:
+        # Vérification de la session utilisateur
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
+        
+        # Vérification des permissions super admin
+        is_super_admin = check_super_admin_permission(user_id)
+        
+        # Récupération des données de l'entreprise
+        company = get_user_company(user_id)
+        company_admins = []
+        departments = []
+        
+        if company:
+            company_admins = get_company_admins(company.id)
+            departments = get_company_departments(company.id)
+        
+        # Rendu du template avec toutes les données incluant les permissions
+        return templates.TemplateResponse("HR-dep/company-profile.html", {
+            "request": request,
+            "company": company,
+            "company_admins": company_admins,
+            "departments": departments,
+            "is_super_admin": is_super_admin  # Nouveau paramètre pour les permissions
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
+
+@router.post("/api/company-setup")
+async def setup_company(company_data: CompanySetupRequest):
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        existing_company = get_user_company(user_id)
+        company_dict = company_data.dict()
+        
+        if existing_company:
+            success = update_company(existing_company.id, company_dict)
+            action = "mise à jour"
+        else:
+            company_id = create_company(user_id, company_dict)
+            success = company_id is not None
+            action = "création"
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"Entreprise {action} avec succès",
+                "redirect_url": "/dashboard"
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Erreur lors de la {action} de l'entreprise"
+            }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "message": "Erreur interne du serveur"}
+
+@router.post("/api/create-user")
+async def create_user(user_data: dict):
+    try:
+        current_user_id = current_user_session.get('user_id')
+        if not current_user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        # NOUVELLE VÉRIFICATION: Seuls les super admins peuvent créer des utilisateurs
+        if not check_super_admin_permission(current_user_id):
+            return {
+                "success": False, 
+                "message": "Accès refusé. Seuls les super administrateurs peuvent créer des comptes recruteur et chef de département."
+            }
+        
+        # Vérification supplémentaire du rôle demandé
+        requested_role = user_data.get('role', '')
+        if requested_role not in ['recruiter', 'department_head']:
+            return {
+                "success": False,
+                "message": "Rôle non autorisé. Seuls les rôles 'recruiter' et 'department_head' peuvent être créés."
+            }
+        
+        # Création de l'utilisateur
+        new_user_id = create_admin_user(
+            email=user_data['email'],
+            password=user_data['password'],
+            first_name=user_data['first_name'],
+            last_name=user_data['last_name'],
+            role=requested_role  # Utiliser le rôle demandé au lieu de 'super_admin'
+        )
+        
+        if not new_user_id:
+            return {"success": False, "message": "Erreur lors de la création de l'utilisateur"}
+        
+        db = SessionLocal()
+        try:
+            # Création des permissions
+            permissions_data = user_data.get('permissions', {})
+            permissions = models.AdminPermissions(
+                admin_id=new_user_id,
+                can_add_department=permissions_data.get('can_add_department', False),
+                can_manage_applications=permissions_data.get('can_manage_applications', False),
+                can_recommend_candidates=permissions_data.get('can_recommend_candidates', False)
+            )
+            db.add(permissions)
+            
+            # Gestion des départements (seulement pour les chefs de département)
+            if requested_role == 'department_head':
+                for dept_id in user_data.get('departments', []):
+                    assignment = models.AdminDepartments(
+                        admin_id=new_user_id,
+                        department_id=dept_id
+                    )
+                    db.add(assignment)
+            
+            # Récupérer l'entreprise de l'utilisateur actuel
+            current_user_company = get_user_company(current_user_id)
+            if current_user_company:
+                # Ajouter l'accès à l'entreprise
+                company_access = models.AdminCompanyAccess(
+                    admin_id=new_user_id,
+                    company_id=current_user_company.id,
+                    access_level='admin',
+                    granted_by=current_user_id
+                )
+                db.add(company_access)
+            
+            db.commit()
+            
+            role_names = {
+                'recruiter': 'Recruteur',
+                'department_head': 'Chef de Département'
+            }
+            
+            return {
+                "success": True, 
+                "message": f"{role_names.get(requested_role, 'Utilisateur')} créé avec succès"
+            }
+            
+        except Exception as e:
+            db.rollback()
+            return {"success": False, "message": f"Erreur création permissions: {str(e)}"}
+        finally:
+            db.close()
+            
+    except Exception as e:
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+
+@router.get("/api/company-info")
+async def get_company_info():
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise trouvée"}
+        
+        return {"success": True, "company": company}
+    except Exception as e:
+        return {"success": False, "message": "Erreur interne du serveur"}
+
+@router.get("/api/company-users")
+async def get_company_users():
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise trouvée"}
+        
+        admins = get_company_admins(company.id)
+        return {"success": True, "users": admins}
+    except Exception as e:
+        return {"success": False, "message": "Erreur interne du serveur"}
+
+@router.get("/api/check-permissions")
+async def check_user_permissions():
+    """
+    Endpoint pour vérifier les permissions de l'utilisateur actuel
+    """
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        is_super_admin = check_super_admin_permission(user_id)
+        
+        return {
+            "success": True,
+            "permissions": {
+                "is_super_admin": is_super_admin,
+                "can_create_users": is_super_admin
+            }
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Erreur: {str(e)}"}

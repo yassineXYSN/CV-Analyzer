@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats d'analyse - CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/client-dep/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Navigation -->
+    <div id="header-component"></div>
+
+    <div class="results-container">
+        <!-- Header -->
+        <div class="results-header">
+            <h1 class="results-title">Analyse terminée !</h1>
+            <p class="results-filename">{{ filename }}</p>
+        </div>
+
+        <!-- Mini Profil Candidat -->
+        <div class="results-card candidate-profile-featured" style="margin-bottom: 3rem;">
+            <h2 class="card-title">👤 Profil du candidat</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- Photo et infos principales -->
+                <div style="display: flex; align-items: center; gap: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
+                    <div style="flex-shrink: 0;">
+                        <div style="width: 100px; height: 100px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700; color: #000; box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);">
+                            {{ user_info.name[0].upper() if user_info.name else 'C' }}
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h3 style="font-size: 2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.75rem;">{{ user_info.name or 'Candidat' }}</h3>
+                        <p style="font-size: 1.3rem; color: var(--text-secondary); margin-bottom: 1.5rem;">{{ user_info.title or 'Professionnel' }}</p>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <span style="background: rgba(0, 212, 255, 0.2); color: #00d4ff; padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 600; border: 1px solid rgba(0, 212, 255, 0.3);">{{ user_info.yearsOfExperience or '0' }} années d'expérience</span>
+                            <span style="background: rgba(0, 255, 136, 0.2); color: #00ff88; padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 600; border: 1px solid rgba(0, 255, 136, 0.3);">Score: {{ score }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations de contact -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                    {% if user_info.contact.email %}
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+                        <span style="font-size: 1.5rem; flex-shrink: 0;">📧</span>
+                        <div>
+                            <span style="display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem;">Email</span>
+                            <span style="color: var(--text-primary); font-weight: 500; word-break: break-all;">{{ user_info.contact.email }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if user_info.contact.phone %}
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+                        <span style="font-size: 1.5rem; flex-shrink: 0;">📱</span>
+                        <div>
+                            <span style="display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem;">Téléphone</span>
+                            <span style="color: var(--text-primary); font-weight: 500; word-break: break-all;">{{ user_info.contact.phone }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if user_info.contact.linkedin %}
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+                        <span style="font-size: 1.5rem; flex-shrink: 0;">💼</span>
+                        <div>
+                            <span style="display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem;">LinkedIn</span>
+                            <span style="color: var(--text-primary); font-weight: 500; word-break: break-all;">{{ user_info.contact.linkedin }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if user_info.contact.address %}
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+                        <span style="font-size: 1.5rem; flex-shrink: 0;">📍</span>
+                        <div>
+                            <span style="display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem;">Adresse</span>
+                            <span style="color: var(--text-primary); font-weight: 500; word-break: break-all;">{{ user_info.contact.address }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Compétences principales -->
+                {% if user_info.skills %}
+                <div style="padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                    <h4 style="font-size: 1.3rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">🎯 Compétences principales</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        {% for skill in user_info.skills[:6] %}
+                        <span style="background: rgba(0, 255, 136, 0.2); color: #00ff88; padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 500; border: 1px solid rgba(0, 255, 136, 0.3);">{{ skill.split(':')[0] }}</span>
+                        {% endfor %}
+                        {% if user_info.skills|length > 6 %}
+                        <span style="background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); border-color: var(--border-color); padding: 0.5rem 1rem; border-radius: 16px; font-size: 1rem; font-weight: 500; border: 1px solid var(--border-color);">+{{ user_info.skills|length - 6 }} autres</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Actions principales -->
+                <div style="display: flex; gap: 1.5rem; justify-content: center; padding-top: 2rem; border-top: 1px solid var(--border-color); flex-wrap: wrap;">
+                    <a href="/profile/{{ candidate_id }}" style="flex: 1; min-width: 200px; max-width: 250px; text-align: center; padding: 1.25rem 2rem; background: var(--accent-gradient); color: #000; border: none; border-radius: 16px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);">
+                        👁️ Voir le profil détaillé
+                    </a>
+                    <a href="/take-quiz/{{ candidate_id }}" style="flex: 1; min-width: 200px; max-width: 250px; text-align: center; padding: 1.25rem 2rem; background: linear-gradient(135deg, #00ff88, #00d4ff); color: #000; border: none; border-radius: 16px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);">
+                        🧠 Passer le QCM
+                    </a>
+                    <button onclick="downloadCV()" style="background: transparent; color: var(--text-primary); border: 2px solid var(--border-color); padding: 1.25rem 2rem; border-radius: 16px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.75rem; min-width: 200px;">
+                        📄 Télécharger CV
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Results Grid -->
+        <div class="results-grid" style="grid-template-columns: 1fr 350px; gap: 2rem;">
+            <!-- Summary Section -->
+            <div class="results-main">
+                <div class="results-card" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h2 class="card-title">📄 Résumé professionnel extrait</h2>
+                        <div class="card-content">{{ summary[:500] }}{% if summary|length > 500 %}...{% endif %}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="results-sidebar">
+                <!-- Score Card -->
+                <div class="results-card score-card">
+                    <h2 class="card-title">🎯 Score de correspondance</h2>
+                    <div class="score-display" id="scoreDisplay">{{ score }}%</div>
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                        Compatibilité avec le poste
+                    </p>
+                    <div class="score-bar-container">
+                        <div class="score-bar" id="scoreBar"></div>
+                    </div>
+                    <div id="scoreInterpretation" style="margin-top: 1rem; font-size: 0.9rem;"></div>
+                </div>
+
+                <!-- Actions -->
+                <div class="results-card">
+                    <h3 class="card-title">⚡ Actions rapides</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <a href="/analyze" class="btn-primary" style="text-align: center; padding: 0.75rem;">
+                            🔄 Nouvelle analyse
+                        </a>
+                        <button onclick="window.print()" class="btn-secondary" style="text-align: center; padding: 0.75rem;">
+                            🖨️ Imprimer le rapport
+                        </button>
+                        <button onclick="downloadReport()" class="btn-secondary" style="text-align: center; padding: 0.75rem;">
+                            💾 Télécharger PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Analysis Section -->
+        <div class="results-card" style="margin-top: 2rem;" id="detailedAnalysis">
+            <h2 class="card-title">🔍 Analyse détaillée</h2>
+            <div class="analysis-tabs">
+                <button class="tab-button active" onclick="switchTab('scores')" data-tab="scores">
+                    📊 Scores par catégorie
+                </button>
+                <button class="tab-button" onclick="switchTab('strengths')" data-tab="strengths">
+                    ✅ Points forts
+                </button>
+                <button class="tab-button" onclick="switchTab('weaknesses')" data-tab="weaknesses">
+                    ⚠️ Points faibles
+                </button>
+                <button class="tab-button" onclick="switchTab('improvements')" data-tab="improvements">
+                    📈 Recommandations
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Category Scores Tab -->
+                <div class="tab-pane active" id="scores-tab">
+                    <div id="categoryScoresList" class="score-list"></div>
+                </div>
+
+                <!-- Strengths Tab -->
+                <div class="tab-pane" id="strengths-tab">
+                    <div id="goodPointsList" class="point-list"></div>
+                </div>
+
+                <!-- Weaknesses Tab -->
+                <div class="tab-pane" id="weaknesses-tab">
+                    <div id="weakPointsList" class="point-list"></div>
+                </div>
+
+                <!-- Improvements Tab -->
+                <div class="tab-pane" id="improvements-tab">
+                    <div id="improvementsList" class="improvement-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for detailed view -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Détails de l'analyse</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Modal content will be populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pass data from backend to frontend
+        window.analysisData = {
+            pdf_text: {{ pdf_text|tojson|safe }},
+            score: {{ score }}
+        };
+
+        // Pass detailed analysis data from server
+        window.detailedAnalysisData = {{ detailed_analysis|tojson|safe }};
+
+        // Pass user data from server to client if available
+        {% if current_user %}
+        window.currentUser = {
+            id: {{ current_user.id }},
+            email: "{{ current_user.email }}",
+            first_name: "{{ current_user.first_name or '' }}",
+            last_name: "{{ current_user.last_name or '' }}",
+            name: "{{ (current_user.first_name + ' ' + current_user.last_name).strip() if current_user.first_name else current_user.email }}",
+            is_active: {% if current_user.is_active %}true{% else %}false{% endif %}
+        };
+        {% else %}
+        window.currentUser = null;
+        {% endif %}
+
+        // Load header component
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/static/client-dep/components/header.html');
+                if (response.ok) {
+                    const headerHTML = await response.text();
+                    const container = document.getElementById('header-component');
+                    container.innerHTML = headerHTML;
+                    
+                    // Execute scripts from the loaded HTML
+                    const scripts = container.querySelectorAll('script');
+                    scripts.forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        newScript.textContent = oldScript.textContent;
+                        oldScript.parentNode.removeChild(oldScript);
+                        document.body.appendChild(newScript);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load header component:', error);
+            }
+        });
+    </script>
+    <script src="/static/client-dep/js/results.js"></script>
+    <script src="/static/client-dep/js/header.js"></script>
+</body>
+</html>

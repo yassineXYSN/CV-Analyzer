@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QCM | CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/client-dep/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Quiz-specific styles */
+        .quiz-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 3rem 2rem;
+            background: var(--card-bg);
+            border-radius: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(12px);
+            border: 1.5px solid var(--border-color);
+            position: relative;
+            z-index: 10;
+        }
+
+        .quiz-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(0, 255, 136, 0.05) 100%);
+            border-radius: 2rem;
+            z-index: -1;
+        }
+
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .quiz-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .quiz-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Progress Bar */
+        .quiz-progress-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2.5rem;
+            border: 1px solid var(--border-color);
+            position: sticky;
+            top: 80px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .progress-percentage {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+
+        .progress-bar-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            height: 8px;
+            position: relative;
+        }
+
+        .progress-bar {
+            background: var(--accent-gradient);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 0.5rem;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Skill Sections */
+        .skill-section {
+            margin-bottom: 2.5rem;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .skill-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-gradient);
+        }
+
+        .skill-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .skill-icon {
+            font-size: 1.2rem;
+        }
+
+        /* Questions */
+        .question-block {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .question-block:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 212, 255, 0.2);
+        }
+
+        .question-text {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.2rem;
+            line-height: 1.5;
+        }
+
+        .question-number {
+            display: inline-block;
+            background: var(--accent-gradient);
+            color: #000;
+            font-weight: 700;
+            padding: 0.3rem 0.8rem;
+            border-radius: 0.5rem;
+            margin-right: 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        /* Options */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.2rem;
+            border: 2px solid var(--border-color);
+            border-radius: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(.4,0,.2,1);
+            background: rgba(255, 255, 255, 0.03);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .option:hover::before {
+            left: 100%;
+        }
+
+        .option:hover, .option:focus {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.15);
+        }
+
+        .option-radio {
+            margin-right: 1rem;
+            width: 20px;
+            height: 20px;
+            accent-color: #00d4ff;
+            cursor: pointer;
+        }
+
+        .option-text {
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            flex: 1;
+        }
+
+        /* Submit Button */
+        .quiz-submit-section {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-quiz {
+            padding: 1.2rem 2.5rem;
+            border-radius: 1rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(.4,0,.2,1);
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-quiz::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-quiz:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #000;
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Warning Message */
+        .quiz-warning {
+            color: #ff4d4f;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 77, 79, 0.1);
+            border: 1px solid rgba(255, 77, 79, 0.3);
+            border-radius: 0.8rem;
+            font-weight: 600;
+            display: none;
+        }
+
+        /* Loading State */
+        .quiz-loading {
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .loader {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #00d4ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Quiz Complete */
+        .quiz-complete {
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .quiz-complete h2 {
+            color: #00d4ff;
+            margin-bottom: 1rem;
+        }
+
+        /* Question highlighting for unanswered questions */
+        .question-block.unanswered {
+            border-color: #ff4d4f;
+            background: rgba(255, 77, 79, 0.05);
+            animation: pulse 2s infinite;
+        }
+
+        .question-block.unanswered .question-text {
+            color: #ff4d4f;
+        }
+
+        .question-block.unanswered .question-number {
+            background: linear-gradient(135deg, #ff4d4f 0%, #ff3838 100%);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 77, 79, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
+            }
+        }
+
+        /* Smooth scroll behavior */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .quiz-container {
+                margin: 1rem;
+                padding: 2rem 1.5rem;
+            }
+
+            .quiz-title {
+                font-size: 2rem;
+            }
+
+            .skill-section {
+                padding: 1.5rem;
+            }
+
+            .question-block {
+                padding: 1rem;
+            }
+
+            .option {
+                padding: 0.8rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Navigation -->
+    <div id="header-component"></div>
+
+    <div class="main-container">
+        <div class="quiz-container">
+            {% if error_message %}
+                <div class="quiz-warning" style="display: block;">
+                    {{ error_message }}
+                </div>
+            {% elif quizzes %}
+                <div class="quiz-header">
+                    <h1 class="quiz-title">🎯 QCM par compétence</h1>
+                    <p class="quiz-subtitle">Testez vos connaissances et évaluez vos compétences professionnelles</p>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="quiz-progress-container">
+                    <div class="progress-header">
+                        <div class="progress-title">Progression du quiz</div>
+                        <div class="progress-percentage" id="progressPercentage">0%</div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span id="answeredCount">0</span> questions répondues
+                        <span id="totalCount">0</span> questions totales
+                    </div>
+                </div>
+
+                <form id="multiSkillQuizForm">
+                    {% for quiz in quizzes %}
+                        <div class="skill-section">
+                            <div class="skill-title">
+                                <span class="skill-icon">💼</span>
+                                {{ quiz.skill if quiz.skill else quiz.job_title }}
+                            </div>
+                            {% for q in quiz.questions %}
+                                <div class="question-block">
+                                    <div class="question-text">
+                                        <span class="question-number">{{ loop.index }}</span>
+                                        {{ q.question }}
+                                    </div>
+                                    <div class="options-container">
+                                        {% set qid = q.id if q.id is defined else loop.index %}
+                                        {% for key, val in q.options.items() %}
+                                            <label class="option">
+                                                <input type="radio" name="answer_{{ quiz.quiz_id }}_{{ qid }}" value="{{ key }}" class="option-radio">
+                                                <span class="option-text">{{ key }}: {{ val }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="quiz-submit-section">
+                        <button type="submit" class="btn-quiz btn-primary" id="submitAllBtn" disabled>
+                            <span>🚀 Soumettre toutes les réponses</span>
+                        </button>
+                        <div class="quiz-warning" id="quizWarning"></div>
+                    </div>
+                </form>
+                
+                <div id="quizResults" style="display:none;"></div>
+            {% else %}
+                <div class="quiz-loading">
+                    <div class="loader"></div>
+                    <p>Chargement du QCM...</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>CV Analyzer Pro</h3>
+                <p>La solution d'analyse de CV la plus avancée du marché. Propulsée par l'intelligence artificielle pour des résultats précis et exploitables.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Navigation</h3>
+                <p><a href="/">Accueil</a></p>
+                <p><a href="/#features">Fonctionnalités</a></p>
+                <p><a href="/#how-it-works">Comment ça marche</a></p>
+                <p><a href="/analyze">Analyser un CV</a></p>
+                <p><a href="/jobs">Offres d'emploi</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <p><a href="#contact">Centre d'aide</a></p>
+                <p><a href="#contact">Documentation</a></p>
+                <p><a href="#contact">Contact</a></p>
+                <p><a href="#contact">FAQ</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Légal</h3>
+                <p><a href="#legal">Politique de confidentialité</a></p>
+                <p><a href="#legal">Conditions d'utilisation</a></p>
+                <p><a href="#legal">RGPD</a></p>
+                <p><a href="#legal">Sécurité</a></p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 CV Analyzer Pro. Tous droits réservés. Fait avec ❤️ pour les professionnels.</p>
+        </div>
+    </footer>
+
+    <script src="/static/client-dep/js/header.js"></script>
+    <script>
+        // Quiz Progress Tracking
+        let totalQuestions = 0;
+        let answeredQuestions = 0;
+
+        function initializeQuizProgress() {
+            const form = document.getElementById('multiSkillQuizForm');
+            if (!form) return;
+
+            const radios = form.querySelectorAll('input[type="radio"]');
+            const questionNames = new Set();
+            radios.forEach(r => questionNames.add(r.name));
+            
+            totalQuestions = questionNames.size;
+            updateProgressDisplay();
+
+            // Add event listeners for progress tracking and highlight removal
+            radios.forEach(radio => {
+                radio.addEventListener('change', updateProgress);
+                radio.addEventListener('change', function() {
+                    // Remove highlighting when this question is answered
+                    removeQuestionHighlight(this.name);
+                });
+            });
+        }
+
+        function updateProgress() {
+            const form = document.getElementById('multiSkillQuizForm');
+            if (!form) return;
+
+            const radios = form.querySelectorAll('input[type="radio"]');
+            const questionNames = new Set();
+            const answeredNames = new Set();
+
+            radios.forEach(r => {
+                questionNames.add(r.name);
+                if (r.checked) {
+                    answeredNames.add(r.name);
+                }
+            });
+
+            answeredQuestions = answeredNames.size;
+            updateProgressDisplay();
+
+            // Remove highlighting from newly answered questions
+            answeredNames.forEach(questionName => {
+                removeQuestionHighlight(questionName);
+            });
+        }
+
+        function updateProgressDisplay() {
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const answeredCount = document.getElementById('answeredCount');
+            const totalCount = document.getElementById('totalCount');
+
+            if (totalQuestions > 0) {
+                const percentage = Math.round((answeredQuestions / totalQuestions) * 100);
+                progressBar.style.width = percentage + '%';
+                progressPercentage.textContent = percentage + '%';
+                answeredCount.textContent = answeredQuestions;
+                totalCount.textContent = totalQuestions;
+            }
+        }
+
+        // Function to highlight unanswered questions
+        function highlightUnansweredQuestions() {
+            const form = document.getElementById('multiSkillQuizForm');
+            if (!form) return;
+
+            // Remove previous highlighting
+            const allQuestionBlocks = form.querySelectorAll('.question-block');
+            allQuestionBlocks.forEach(block => {
+                block.classList.remove('unanswered');
+            });
+
+            // Find and highlight unanswered questions
+            const radios = form.querySelectorAll('input[type="radio"]');
+            const questionNames = new Set();
+            const answeredNames = new Set();
+
+            radios.forEach(r => {
+                questionNames.add(r.name);
+                if (r.checked) {
+                    answeredNames.add(r.name);
+                }
+            });
+
+            // Highlight unanswered questions
+            questionNames.forEach(questionName => {
+                if (!answeredNames.has(questionName)) {
+                    const radio = form.querySelector(`input[name="${questionName}"]`);
+                    if (radio) {
+                        const questionBlock = radio.closest('.question-block');
+                        if (questionBlock) {
+                            questionBlock.classList.add('unanswered');
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to scroll to first unanswered question
+        function scrollToFirstUnansweredQuestion() {
+            const form = document.getElementById('multiSkillQuizForm');
+            if (!form) return;
+
+            const firstUnanswered = form.querySelector('.question-block.unanswered');
+            if (firstUnanswered) {
+                // Add offset to account for sticky progress bar
+                const offset = 120;
+                const elementPosition = firstUnanswered.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+
+                // Add a brief flash effect
+                firstUnanswered.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => {
+                    firstUnanswered.style.animation = 'pulse 2s infinite';
+                }, 500);
+            }
+        }
+
+        // Function to remove highlighting when a question is answered
+        function removeQuestionHighlight(questionName) {
+            const form = document.getElementById('multiSkillQuizForm');
+            if (!form) return;
+
+            const radio = form.querySelector(`input[name="${questionName}"]`);
+            if (radio) {
+                const questionBlock = radio.closest('.question-block');
+                if (questionBlock) {
+                    questionBlock.classList.remove('unanswered');
+                }
+            }
+        }
+
+        // Require all questions to be answered before enabling submit
+        function allQuestionsAnswered() {
+            const form = document.getElementById('multiSkillQuizForm');
+            if (!form) return false;
+            const radios = form.querySelectorAll('input[type="radio"]');
+            const questionNames = new Set();
+            radios.forEach(r => questionNames.add(r.name));
+            for (const name of questionNames) {
+                if (!form.querySelector(`input[name='${name}']:checked`)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function updateSubmitButtonState() {
+            const btn = document.getElementById('submitAllBtn');
+            const warning = document.getElementById('quizWarning');
+            
+            if (allQuestionsAnswered()) {
+                btn.disabled = false;
+                warning.style.display = 'none';
+            } else {
+                btn.disabled = true;
+            }
+        }
+
+        // Form submission with progress animation
+        document.getElementById('multiSkillQuizForm')?.addEventListener('submit', async function(e) {
+            if (!allQuestionsAnswered()) {
+                e.preventDefault();
+                const warning = document.getElementById('quizWarning');
+                warning.textContent = 'Veuillez répondre à toutes les questions avant de soumettre.';
+                warning.style.display = 'block';
+                
+                // Highlight and scroll to first unanswered question
+                highlightUnansweredQuestions();
+                scrollToFirstUnansweredQuestion();
+                return;
+            }
+
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitAllBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="loader" style="width: 20px; height: 20px; margin-right: 0.5rem;"></span> Traitement en cours...';
+            submitBtn.disabled = true;
+
+            const form = e.target;
+            const formData = new FormData(form);
+            const answers = {};
+            
+            for (const [name, value] of formData.entries()) {
+                const parts = name.split('_');
+                if (parts.length === 3) {
+                    const quizId = parts[1];
+                    const questionId = parts[2];
+                    if (!answers[quizId]) answers[quizId] = {};
+                    answers[quizId][questionId] = value;
+                }
+            }
+
+            try {
+                // Check if this is a job-based quiz assignment
+                const urlParams = new URLSearchParams(window.location.search);
+                const assignmentId = urlParams.get('assignment_id');
+                
+                if (assignmentId) {
+                    // Job-based quiz submission
+                    const response = await fetch(`/api/submit-quiz/${assignmentId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            answers: answers
+                        })
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success && result.redirect_url) {
+                        window.location.href = result.redirect_url;
+                    } else {
+                        throw new Error(result.message || 'Erreur lors de la soumission');
+                    }
+                } else {
+                    // Original CV-based quiz submission
+                    let allResults = [];
+                    let attemptIds = [];
+                    
+                    for (const quizId in answers) {
+                        const response = await fetch('/submit-quiz', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                quiz_id: quizId,
+                                candidate_id: '{{ candidate_id }}',
+                                answers: answers[quizId]
+                            })
+                        });
+                        const result = await response.json();
+                        allResults.push(result);
+                        if (result.success && result.evaluation && result.evaluation.attempt_id) {
+                            attemptIds.push(result.evaluation.attempt_id);
+                        }
+                    }
+
+                    // Redirect to multi-quiz results page for all attempts
+                    if (attemptIds.length > 0) {
+                        window.location.href = `/multi-quiz-results?attempt_ids=${attemptIds.join(',')}`;
+                    } else {
+                        // fallback: show error or completion message
+                        document.getElementById('quizResults').style.display = 'block';
+                        document.getElementById('quizResults').innerHTML = `
+                            <div class='quiz-complete'>
+                                <h2>✅ QCM(s) soumis !</h2>
+                                <p>Merci d'avoir complété tous les QCM. Vos résultats sont en cours de traitement.</p>
+                            </div>
+                        `;
+                        form.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error submitting quiz:', error);
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                const warning = document.getElementById('quizWarning');
+                warning.textContent = 'Une erreur est survenue lors de la soumission. Veuillez réessayer.';
+                warning.style.display = 'block';
+            }
+        });
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeQuizProgress();
+            updateSubmitButtonState();
+            
+            // Add change listeners for submit button state
+            document.getElementById('multiSkillQuizForm')?.addEventListener('change', updateSubmitButtonState);
+        });
+
+        // Load header component
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/static/client-dep/components/header.html');
+                if (response.ok) {
+                    const headerHTML = await response.text();
+                    const container = document.getElementById('header-component');
+                    container.innerHTML = headerHTML;
+                    
+                    // Execute scripts from the loaded HTML
+                    const scripts = container.querySelectorAll('script');
+                    scripts.forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        newScript.textContent = oldScript.textContent;
+                        oldScript.parentNode.removeChild(oldScript);
+                        document.body.appendChild(newScript);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load header component:', error);
+            }
+        });
+    </script>
+</body>
+</html> 
