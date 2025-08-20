@@ -191,9 +191,7 @@ function loadCompanies() {
               </div>
             </div>
             <div class="company-actions" onclick="event.stopPropagation()">
-              <button class="btn-icon" onclick="editCompany(${company.id})" title="Modifier">
-                <i class="fas fa-edit"></i>
-              </button>
+
               <button class="btn-icon danger" onclick="deleteCompany(${company.id})" title="Supprimer">
                 <i class="fas fa-trash"></i>
               </button>
@@ -550,11 +548,11 @@ function renderUsersTable() {
           ${user.lastActivity}
         </td>
         <td>
-          <div class="table-actions">
-            <button class="table-actions-btn" onclick="showUserTableActions(${user.id})" title="Actions">
-              <i class="fas fa-ellipsis-h"></i>
-            </button>
-          </div>
+            <div class="table-actions">
+                <button class="table-actions-btn danger" onclick="deleteUser('${user.id}')" title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         </td>
       </tr>
     `
@@ -656,17 +654,20 @@ function showUserTableActions(userId) {
 
 // Update Statistics
 function updateStatistics() {
-  document.getElementById("total-companies").textContent = companies.length
-  document.getElementById("total-users").textContent = users.length
-
-  // Calculate additional stats
-  const activeUsers = users.filter((u) => u.is_active).length
-  const completedCompanies = companies.filter((c) => c.setup_completed).length
-
-  // Update additional stats if elements exist
+  // Vérifier si les éléments existent avant de les mettre à jour
+  const totalCompaniesEl = document.getElementById("total-companies")
+  const totalUsersEl = document.getElementById("total-users")
   const activeUsersEl = document.getElementById("active-users")
   const completedCompaniesEl = document.getElementById("completed-companies")
 
+  if (totalCompaniesEl) totalCompaniesEl.textContent = companies.length
+  if (totalUsersEl) totalUsersEl.textContent = users.length
+
+  // Calculer les statistiques supplémentaires
+  const activeUsers = users.filter((u) => u.is_active).length
+  const completedCompanies = companies.filter((c) => c.setup_completed).length
+
+  // Mettre à jour seulement si les éléments existent
   if (activeUsersEl) activeUsersEl.textContent = activeUsers
   if (completedCompaniesEl) completedCompaniesEl.textContent = completedCompanies
 }
@@ -738,10 +739,16 @@ async function createCompany(event) {
   const formData = new FormData(event.target)
 
   const companyData = {
-    name: formData.get("company_name"),
+    company_name: formData.get("company_name"), // Changed from name to company_name
+    industry: formData.get("industry") || "", // Added industry field
+    company_size: formData.get("company_size") || "", // Added company_size field
     email: formData.get("email"),
     phone: formData.get("phone"),
     address: formData.get("address"),
+    website: formData.get("website") || "", // Added website field
+    description: formData.get("description") || "", // Added description field
+    founded_year: formData.get("founded_year") ? Number.parseInt(formData.get("founded_year")) : null, // Added founded_year
+    setup_completed: false, // Default value
   }
 
   try {
@@ -762,6 +769,7 @@ async function createCompany(event) {
       event.target.reset()
     } else {
       const error = await response.json()
+      console.error("API Error:", error) // Added error logging for debugging
       showNotification(error.detail || "Erreur lors de la création", "error")
     }
   } catch (error) {
@@ -789,8 +797,14 @@ async function updateCompany(event) {
   const companyId = Number.parseInt(formData.get("company_id"))
 
   const companyData = {
-    name: formData.get("company_name"),
-    industry: formData.get("industry"),
+    company_name: formData.get("company_name"), // Changed from name to company_name
+    industry: formData.get("industry") || "",
+    company_size: formData.get("company_size") || "",
+    email: formData.get("email"),
+    phone: formData.get("phone"),
+    address: formData.get("address"),
+    website: formData.get("website") || "",
+    description: formData.get("description") || "",
   }
 
   try {
@@ -809,6 +823,7 @@ async function updateCompany(event) {
       showNotification("Entreprise modifiée avec succès!", "success")
     } else {
       const error = await response.json()
+      console.error("API Error:", error) // Added error logging for debugging
       showNotification(error.detail || "Erreur lors de la modification", "error")
     }
   } catch (error) {
@@ -825,14 +840,20 @@ async function deleteCompany(companyId) {
       method: "DELETE",
     })
 
-    if (response.ok) {
+    if (response.ok || response.status === 204) {
       await loadCompaniesFromAPI()
       loadCompanyOptions()
       updateStatistics()
       showNotification("Entreprise supprimée avec succès!", "success")
     } else {
-      const error = await response.json()
-      showNotification(error.detail || "Erreur lors de la suppression", "error")
+      let errorMessage = "Erreur lors de la suppression"
+      try {
+        const error = await response.json()
+        errorMessage = error.detail || errorMessage
+      } catch (parseError) {
+        console.warn("Réponse sans JSON valide:", parseError)
+      }
+      showNotification(errorMessage, "error")
     }
   } catch (error) {
     console.error("Error deleting company:", error)
@@ -840,7 +861,6 @@ async function deleteCompany(companyId) {
   }
 }
 
-// User Management
 async function createUser(event) {
   event.preventDefault()
   const formData = new FormData(event.target)
@@ -855,6 +875,7 @@ async function createUser(event) {
   }
 
   try {
+    console.log("[v0] Creating user with data:", userData)
     const response = await fetch("/admin/api/users", {
       method: "POST",
       headers: {
@@ -864,18 +885,46 @@ async function createUser(event) {
     })
 
     if (response.ok) {
-      await loadUsersFromAPI()
-      updateStatistics()
-      closeModal("add-user-modal")
       showNotification("Utilisateur créé avec succès!", "success")
+      closeModal("add-user-modal")
       event.target.reset()
+
+      try {
+        const result = await response.json()
+        console.log("[v0] User creation result:", result)
+
+        // Recharger les données
+        await loadUsersFromAPI()
+
+        // Mettre à jour les statistiques avec gestion d'erreur
+        try {
+          updateStatistics()
+        } catch (statsError) {
+          console.warn("[v0] Error updating statistics:", statsError)
+          // Ne pas afficher d'erreur à l'utilisateur pour ce problème mineur
+        }
+      } catch (updateError) {
+        console.warn("[v0] Error updating UI after user creation:", updateError)
+        // Message moins alarmant pour l'utilisateur
+        showNotification("Utilisateur créé avec succès", "success")
+      }
     } else {
-      const error = await response.json()
-      showNotification(error.detail || "Erreur lors de la création", "error")
+      const errorText = await response.text()
+      console.log("[v0] Error response:", errorText)
+
+      let errorMessage = "Erreur lors de la création"
+      try {
+        const error = JSON.parse(errorText)
+        errorMessage = error.detail || error.message || errorMessage
+      } catch (e) {
+        errorMessage = errorText || errorMessage
+      }
+
+      showNotification(errorMessage, "error")
     }
   } catch (error) {
-    console.error("Error creating user:", error)
-    showNotification("Erreur de connexion", "error")
+    console.error("[v0] Error creating user:", error)
+    showNotification("Erreur de connexion au serveur", "error")
   }
 }
 
@@ -888,24 +937,27 @@ async function toggleUserStatus(userId) {
 }
 
 async function deleteUser(userId) {
-  if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return
+  console.log("Tentative de suppression de l'utilisateur avec ID:", userId);
+  
+  if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return;
 
   try {
     const response = await fetch(`/admin/api/users/${userId}`, {
       method: "DELETE",
-    })
+    });
 
     if (response.ok) {
-      await loadUsersFromAPI()
-      updateStatistics()
-      showNotification("Utilisateur supprimé avec succès!", "success")
+      await loadUsersFromAPI();
+      updateStatistics();
+      showNotification("Utilisateur supprimé avec succès!", "success");
     } else {
-      const error = await response.json()
-      showNotification(error.detail || "Erreur lors de la suppression", "error")
+      const error = await response.json();
+      console.error("Erreur détaillée:", error);
+      showNotification(error.detail || "Erreur lors de la suppression", "error");
     }
   } catch (error) {
-    console.error("Error deleting user:", error)
-    showNotification("Erreur de connexion", "error")
+    console.error("Error deleting user:", error);
+    showNotification("Erreur de connexion", "error");
   }
 }
 
