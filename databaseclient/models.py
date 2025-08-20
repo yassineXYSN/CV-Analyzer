@@ -195,8 +195,12 @@ class Application(Base):
     decision_reason = Column(Text)
     source = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=func.now())
     user_id = Column(Integer, ForeignKey("users.id"))
+    compatibility_score = Column(Numeric(5, 2), comment="Compatibility score between candidate and job (0-100)")
+    compatibility_reason = Column(Text, comment="Detailed reason for compatibility score from AI analysis")
+    n8n_webhook_triggered = Column(Boolean, default=False, comment="Flag to track if n8n webhook was triggered")
+    
     user = relationship("User")
     job = relationship("Job")
     candidate_profile = relationship("ProfileCandidat")
