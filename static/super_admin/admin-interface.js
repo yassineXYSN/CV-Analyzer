@@ -480,10 +480,10 @@ function loadUsersTable() {
 
 function getUserTypeForTable(position) {
   const typeMap = {
-    super_admin: "Super Admin",
-    hr_manager: "Super Admin",
+    super_admin: "Admin",
+    hr_manager: "Admin",
     hr_admin: "Admin",
-    department_head: "Admin",
+    department_head: "Member",
     recruiter: "Member",
   }
   return typeMap[position] || "Member"
@@ -699,8 +699,6 @@ function getIndustryLabel(industry) {
 
 function getRoleLabel(role) {
   const labels = {
-    super_admin: "Super Admin",
-    hr_manager: "HR Manager",
     hr_admin: "HR Admin",
   }
   return labels[role] || role
@@ -833,32 +831,34 @@ async function updateCompany(event) {
 }
 
 async function deleteCompany(companyId) {
-  if (!confirm("Êtes-vous sûr de vouloir supprimer cette entreprise ?")) return
-
-  try {
-    const response = await fetch(`/admin/api/companies/${companyId}`, {
-      method: "DELETE",
-    })
-
-    if (response.ok || response.status === 204) {
-      await loadCompaniesFromAPI()
-      loadCompanyOptions()
-      updateStatistics()
-      showNotification("Entreprise supprimée avec succès!", "success")
-    } else {
-      let errorMessage = "Erreur lors de la suppression"
+  showConfirmationModal({
+    title: "Supprimer l'entreprise",
+    message:
+      "Êtes-vous sûr de vouloir supprimer cette entreprise ? Cette action est irréversible et supprimera également tous les administrateurs associés.",
+    confirmText: "Supprimer",
+    cancelText: "Annuler",
+    type: "danger",
+    onConfirm: async () => {
       try {
-        const error = await response.json()
-        errorMessage = error.detail || errorMessage
-      } catch (parseError) {
-        console.warn("Réponse sans JSON valide:", parseError)
+        showNotification("Suppression en cours...", "info")
+
+        const response = await fetch(`/admin/api/companies/${companyId}`, {
+          method: "DELETE",
+        })
+
+        if (response.ok) {
+          showNotification("Entreprise supprimée avec succès", "success")
+          loadCompanies()
+        } else {
+          const error = await response.text()
+          showNotification(`Erreur: ${error}`, "error")
+        }
+      } catch (error) {
+        console.error("Error deleting company:", error)
+        showNotification("Erreur lors de la suppression", "error")
       }
-      showNotification(errorMessage, "error")
-    }
-  } catch (error) {
-    console.error("Error deleting company:", error)
-    showNotification("Erreur de connexion", "error")
-  }
+    },
+  })
 }
 
 async function createUser(event) {
@@ -937,28 +937,36 @@ async function toggleUserStatus(userId) {
 }
 
 async function deleteUser(userId) {
-  console.log("Tentative de suppression de l'utilisateur avec ID:", userId);
-  
-  if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return;
+  console.log("Tentative de suppression de l'utilisateur avec ID:", userId)
 
-  try {
-    const response = await fetch(`/admin/api/users/${userId}`, {
-      method: "DELETE",
-    });
+  showConfirmationModal({
+    title: "Supprimer l'utilisateur",
+    message:
+      "Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible et retirera tous ses accès administrateur.",
+    confirmText: "Supprimer",
+    cancelText: "Annuler",
+    type: "danger",
+    onConfirm: async () => {
+      try {
+        showNotification("Suppression en cours...", "info")
 
-    if (response.ok) {
-      await loadUsersFromAPI();
-      updateStatistics();
-      showNotification("Utilisateur supprimé avec succès!", "success");
-    } else {
-      const error = await response.json();
-      console.error("Erreur détaillée:", error);
-      showNotification(error.detail || "Erreur lors de la suppression", "error");
-    }
-  } catch (error) {
-    console.error("Error deleting user:", error);
-    showNotification("Erreur de connexion", "error");
-  }
+        const response = await fetch(`/admin/api/users/${userId}`, {
+          method: "DELETE",
+        })
+
+        if (response.ok) {
+          showNotification("Utilisateur supprimé avec succès!", "success")
+          loadUsers()
+        } else {
+          const error = await response.text()
+          showNotification(`Erreur: ${error}`, "error")
+        }
+      } catch (error) {
+        console.error("Error deleting user:", error)
+        showNotification("Erreur lors de la suppression", "error")
+      }
+    },
+  })
 }
 
 // Notification System
@@ -1045,4 +1053,126 @@ function formatFoundedYear(foundedYear) {
 
   console.log("[v0] Could not format founded year, returning default")
   return "Non spécifiée"
+}
+
+// Custom Confirmation Modal System
+function showConfirmationModal(options) {
+  const {
+    title = "Confirmation",
+    message = "Êtes-vous sûr de vouloir continuer ?",
+    confirmText = "Confirmer",
+    cancelText = "Annuler",
+    type = "warning", // warning, danger, info
+    onConfirm = () => {},
+    onCancel = () => {},
+  } = options
+
+  // Remove any existing confirmation modal
+  const existingModal = document.querySelector(".confirmation-modal-overlay")
+  if (existingModal) {
+    existingModal.remove()
+  }
+
+  const modal = document.createElement("div")
+  modal.className = "confirmation-modal-overlay"
+
+  const typeIcons = {
+    warning: "fas fa-exclamation-triangle",
+    danger: "fas fa-exclamation-circle",
+    info: "fas fa-info-circle",
+  }
+
+  modal.innerHTML = `
+    <div class="confirmation-modal">
+      <div class="confirmation-header">
+        <div class="confirmation-icon ${type}">
+          <i class="${typeIcons[type]}"></i>
+        </div>
+        <h3>${title}</h3>
+      </div>
+      
+      <div class="confirmation-content">
+        <p>${message}</p>
+      </div>
+      
+      <div class="confirmation-actions">
+        <button class="btn-cancel" id="confirmCancel">${cancelText}</button>
+        <button class="btn-confirm ${type}" id="confirmAction">${confirmText}</button>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  // Add show class after a brief delay for animation
+  setTimeout(() => modal.classList.add("show"), 10)
+
+  // Event listeners
+  const confirmBtn = modal.querySelector("#confirmAction")
+  const cancelBtn = modal.querySelector("#confirmCancel")
+
+  const closeModal = () => {
+    modal.classList.remove("show")
+    setTimeout(() => modal.remove(), 300)
+  }
+
+  confirmBtn.addEventListener("click", () => {
+    onConfirm()
+    closeModal()
+  })
+
+  cancelBtn.addEventListener("click", () => {
+    onCancel()
+    closeModal()
+  })
+
+  // Close on outside click
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      onCancel()
+      closeModal()
+    }
+  })
+
+  // Close on Escape key
+  const escapeHandler = (e) => {
+    if (e.key === "Escape") {
+      onCancel()
+      closeModal()
+      document.removeEventListener("keydown", escapeHandler)
+    }
+  }
+  document.addEventListener("keydown", escapeHandler)
+}
+
+// Function to remove admin access with confirmation
+async function removeAdminAccess(adminId, companyId) {
+  showConfirmationModal({
+    title: "Retirer l'accès administrateur",
+    message: "Êtes-vous sûr de vouloir retirer l'accès administrateur à cet utilisateur pour cette entreprise ?",
+    confirmText: "Retirer l'accès",
+    cancelText: "Annuler",
+    type: "warning",
+    onConfirm: async () => {
+      try {
+        showNotification("Suppression de l'accès en cours...", "info")
+
+        const response = await fetch(`/admin/api/companies/${companyId}/admins/${adminId}`, {
+          method: "DELETE",
+        })
+
+        if (response.ok) {
+          showNotification("Accès administrateur retiré avec succès", "success")
+          // Refresh the company details
+          showCompanyDetails(companyId)
+        } else {
+          const error = await response.text()
+          showNotification(`Erreur: ${error}`, "error")
+        }
+      } catch (error) {
+        console.error("Error removing admin access:", error)
+        showNotification("Erreur lors de la suppression de l'accès", "error")
+      }
+    },
+  })
 }
