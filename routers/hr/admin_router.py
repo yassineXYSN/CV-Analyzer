@@ -5,6 +5,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List
 import os
+from datetime import datetime
+from auth_utils import hash_password, create_admin_user, authenticate_user
 from databasehr.database import get_db
 from databasehr.models import Company, Employee, AdminCompanyAccess, HRAdmin
 
@@ -46,6 +48,13 @@ async def get_companies(db: Session = Depends(get_db)):
         {
             "id": company.id,
             "name": company.company_name,
+            "company_size": company.company_size,
+            "founded_year": company.founded_year,
+            "industry": company.industry,
+            "description": company.description,
+            "logo_url": company.logo_url,
+            "website": company.website,
+            "setup_completed": bool(company.setup_completed),
             "email": company.email,
             "phone": company.phone,
             "address": company.address,
@@ -53,66 +62,294 @@ async def get_companies(db: Session = Depends(get_db)):
         }
         for company in companies
     ]
-
 @router.post("/api/companies")
-async def create_company(company: CompanyCreate, db: Session = Depends(get_db)):
+async def create_company(company_data: dict, db: Session = Depends(get_db)):
     """Créer une nouvelle entreprise"""
-    db_company = Company(**company.dict())
-    db.add(db_company)
-    db.commit()
-    db.refresh(db_company)
-    return {"message": "Entreprise créée avec succès", "id": db_company.id}
+    try:
+        # Créer directement l'objet Company sans schema
+        db_company = Company(
+            company_name=company_data.get('company_name'),
+            industry=company_data.get('industry'),
+            company_size=company_data.get('company_size'),
+            founded_year=company_data.get('founded_year'),
+            description=company_data.get('description'),
+            website=company_data.get('website'),
+            address=company_data.get('address'),
+            phone=company_data.get('phone'),
+            email=company_data.get('email'),
+            setup_completed=1
+        )
+        
+        db.add(db_company)
+        db.commit()
+        db.refresh(db_company)
+        
+        return {
+            "message": "Entreprise créée avec succès", 
+            "id": db_company.id,
+            "company_name": db_company.company_name
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Erreur lors de la création de l'entreprise: {str(e)}"
+        )
+    """Créer une nouvelle entreprise"""
+    try:
+        # Convert Pydantic model to dict and handle the founded_year conversion
+        company_data = company.dict()
+        
+        # Create the company instance
+        db_company = Company(**company_data)
+        db.add(db_company)
+        db.commit()
+        db.refresh(db_company)
+        
+        return {
+            "message": "Entreprise créée avec succès", 
+            "id": db_company.id,
+            "company_name": db_company.company_name
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Erreur lors de la création de l'entreprise: {str(e)}"
+        )
 
-@router.delete("/api/companies/{company_id}")
-async def delete_company(company_id: int, db: Session = Depends(get_db)):
-    """Supprimer une entreprise"""
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-    
-    db.delete(company)
-    db.commit()
-    return {"message": "Entreprise supprimée avec succès"}
+@router.delete("/api/users/{user_id}")
+async def delete_user(user_id: int, db: Session = Depends(get_db)):
+    try:
+        print(f"Tentative de suppression de l'utilisateur ID: {user_id}")
+        
+        # Vérifiez d'abord dans HRAdmin
+        user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if user:
+            print(f"Utilisateur trouvé dans HRAdmin: {user.email}")
+            db.delete(user)
+            db.commit()
+            return {"message": "Utilisateur supprimé avec succès"}
+        
+        # Vérifiez ensuite dans Employee
+        user = db.query(Employee).filter(Employee.id == user_id).first()
+        if user:
+            print(f"Utilisateur trouvé dans Employee: {user.email}")
+            db.delete(user)
+            db.commit()
+            return {"message": "Utilisateur supprimé avec succès"}
+        
+        print("Utilisateur non trouvé dans aucune table")
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+    except Exception as e:
+        print(f"Erreur lors de la suppression: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 # API Routes pour les utilisateurs/employés
 @router.get("/api/users")
 async def get_users(db: Session = Depends(get_db)):
-    """Récupérer tous les utilisateurs"""
-    users = db.query(Employee).all()
-    return [
-        {
-            "id": user.id,
-            "name": f"{user.first_name} {user.last_name}",
-            "email": user.email,
-            "phone": user.phone,
-            "position": user.position,
-            "company_id": user.company_id,
-            "company_name": user.company.company_name if user.company else None,
-            "created_at": user.created_at.isoformat() if user.created_at else None
-        }
-        for user in users
-    ]
+    """Récupérer tous les utilisateurs (HRAdmin et Employee)"""
+    hr_admins = db.query(HRAdmin).all()
+    employees = db.query(Employee).all()
+    
+    # Combiner les deux types d'utilisateurs
+    users = []
+    
+    # Ajouter les HRAdmin
+    for admin in hr_admins:
+        users.append({
+            "id": admin.id,
+            "name": f"{admin.first_name} {admin.last_name}",
+            "first_name": admin.first_name,
+            "last_name": admin.last_name,
+            "email": admin.email,
+            "phone": None,  # HRAdmin n'a pas de téléphone
+            "position": admin.role,
+            "company_id": None,  # Les admins ne sont pas liés directement à une entreprise
+            "company_name": None,
+            "user_type": "admin",
+            "is_active": admin.is_active,
+            "created_at": admin.created_at.isoformat() if admin.created_at else None
+        })
+    
+    # Ajouter les Employee
+    for employee in employees:
+        company_name = None
+        if employee.company_id:
+            company = db.query(Company).filter(Company.id == employee.company_id).first()
+            company_name = company.company_name if company else None
+            
+        users.append({
+            "id": f"emp_{employee.id}",  # Préfixe pour éviter les conflits d'ID
+            "name": f"{employee.first_name} {employee.last_name}",
+            "first_name": employee.first_name,
+            "last_name": employee.last_name,
+            "email": employee.email,
+            "phone": employee.phone,
+            "position": employee.position,
+            "company_id": employee.company_id,
+            "company_name": company_name,
+            "user_type": "employee",
+            "is_active": employee.status == "active",
+            "created_at": employee.created_at.isoformat() if employee.created_at else None
+        })
+    
+    return users
 
 @router.post("/api/users")
-async def create_user(user: EmployeeCreate, db: Session = Depends(get_db)):
-    """Créer un nouveau utilisateur"""
-    # Vérifier que l'entreprise existe
-    company = db.query(Company).filter(Company.id == user.company_id).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-    
-    db_user = Employee(**user.dict())
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return {"message": "Utilisateur créé avec succès", "id": db_user.id}
+async def create_user(user_data: dict, db: Session = Depends(get_db)):
+    """Créer un nouveau utilisateur (HRAdmin) avec sécurité renforcée"""
+    try:
+        # Validation des données requises
+        required_fields = ["first_name", "last_name", "email", "password"]
+        for field in required_fields:
+            if not user_data.get(field):
+                raise HTTPException(status_code=400, detail=f"Le champ {field} est requis")
+        
+        # Vérifier si l'utilisateur existe déjà
+        existing_user = db.query(HRAdmin).filter(HRAdmin.email == user_data.get("email")).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Un utilisateur avec cet email existe déjà")
+        
+        password_hash = hash_password(user_data.get("password"))
+        
+        valid_roles = ["super_admin", "recruiter", "department_head"]
+        role = user_data.get("role", "recruiter")
+        if role not in valid_roles:
+            role = "recruiter"  # Valeur par défaut sécurisée
+        
+        db_admin = HRAdmin(
+            first_name=user_data.get("first_name"),
+            last_name=user_data.get("last_name"),
+            email=user_data.get("email"),
+            password_hash=password_hash,  # Utilisation du hash sécurisé
+            role=role,  # Rôle correctement géré
+            is_active=True,
+            last_login=datetime.now()  # Initialiser last_login à la date de création
+        )
+        
+        db.add(db_admin)
+        db.commit()
+        db.refresh(db_admin)
+        
+        # Si une entreprise est spécifiée, créer l'accès
+        company_id = user_data.get("company_id")
+        if company_id:
+            # Vérifier que l'entreprise existe
+            company = db.query(Company).filter(Company.id == company_id).first()
+            if company:
+                access = AdminCompanyAccess(
+                    admin_id=db_admin.id,
+                    company_id=company_id,
+                    access_level="admin"
+                )
+                db.add(access)
+                db.commit()
+        
+        return {
+            "message": "Utilisateur créé avec succès", 
+            "id": db_admin.id,
+            "email": db_admin.email,
+            "role": db_admin.role,
+            "last_login": db_admin.last_login.isoformat()
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Erreur lors de la création: {str(e)}")
+
+@router.post("/api/users/{user_id}/login")
+async def update_last_login(user_id: int, db: Session = Depends(get_db)):
+    """Met à jour la date de dernière connexion d'un utilisateur"""
+    try:
+        user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        user.last_login = datetime.now()
+        db.commit()
+        
+        return {"message": "Date de dernière connexion mise à jour"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Erreur lors de la mise à jour: {str(e)}")
+
+@router.post("/api/users/secure")
+async def create_user_secure(user_data: dict, db: Session = Depends(get_db)):
+    """Créer un nouveau utilisateur en utilisant directement auth_utils.create_admin_user"""
+    try:
+        # Validation des données requises
+        required_fields = ["first_name", "last_name", "email", "password"]
+        for field in required_fields:
+            if not user_data.get(field):
+                raise HTTPException(status_code=400, detail=f"Le champ {field} est requis")
+        
+        # Validation du rôle
+        valid_roles = ["super_admin", "recruiter", "department_head"]
+        role = user_data.get("role", "recruiter")
+        if role not in valid_roles:
+            role = "recruiter"
+        
+        user_id = create_admin_user(
+            email=user_data.get("email"),
+            password=user_data.get("password"),
+            first_name=user_data.get("first_name"),
+            last_name=user_data.get("last_name"),
+            role=role
+        )
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Erreur lors de la création de l'utilisateur")
+        
+        user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if user:
+            user.last_login = datetime.now()
+            db.commit()
+        
+        # Gestion de l'accès entreprise si spécifié
+        company_id = user_data.get("company_id")
+        if company_id:
+            company = db.query(Company).filter(Company.id == company_id).first()
+            if company:
+                access = AdminCompanyAccess(
+                    admin_id=user_id,
+                    company_id=company_id,
+                    access_level="admin"
+                )
+                db.add(access)
+                db.commit()
+        
+        return {
+            "message": "Utilisateur créé avec succès via auth_utils", 
+            "id": user_id,
+            "role": role,
+            "last_login": user.last_login.isoformat() if user else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erreur lors de la création: {str(e)}")
 
 @router.delete("/api/users/{user_id}")
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
     """Supprimer un utilisateur"""
-    user = db.query(Employee).filter(Employee.id == user_id).first()
+    # Vérifiez d'abord dans la table HRAdmin
+    user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        # Si non trouvé, vérifiez dans la table Employee
+        user = db.query(Employee).filter(Employee.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
     db.delete(user)
     db.commit()
@@ -123,7 +360,7 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
 async def get_admin_stats(db: Session = Depends(get_db)):
     """Récupérer les statistiques pour le dashboard"""
     total_companies = db.query(Company).count()
-    total_users = db.query(Employee).count()
+    total_users = db.query(Employee).count() + db.query(HRAdmin).count()
     
     return {
         "total_companies": total_companies,
@@ -158,3 +395,29 @@ async def get_company_admins(company_id: int, db: Session = Depends(get_db)):
         }
         for admin in admins
     ]
+
+@router.post("/api/login")
+async def login_user(login_data: dict, db: Session = Depends(get_db)):
+    """Authentifier un utilisateur et mettre à jour last_login"""
+    try:
+        email = login_data.get("email")
+        password = login_data.get("password")
+        
+        if not email or not password:
+            raise HTTPException(status_code=400, detail="Email et mot de passe requis")
+        
+        # Utiliser authenticate_user qui met automatiquement à jour last_login
+        user_info = authenticate_user(email, password)
+        
+        if not user_info:
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        return {
+            "message": "Connexion réussie",
+            "user": user_info
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erreur lors de la connexion: {str(e)}")

@@ -193,6 +193,7 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  margin-left: 2%;
 }
 
 .company-industry {
@@ -408,6 +409,8 @@ body {
   font-size: 1.5rem;
   flex-shrink: 0;
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  position: relative;
+  border: 3px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
 }
 
@@ -455,27 +458,36 @@ body {
 .btn-icon {
   width: 36px;
   height: 36px;
-  border: none;
   border-radius: 10px;
-  cursor: pointer;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563eb;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
+  cursor: pointer;
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  backdrop-filter: blur(10px);
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .btn-icon:hover {
-  transform: scale(1.1);
-  background: var(--hr-accent);
-  color: white;
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.6);
+  color: #1d4ed8;
+  transform: scale(1.05);
+}
+
+.btn-icon.danger {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
 }
 
 .btn-icon.danger:hover {
-  background: var(--hr-error);
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #b91c1c;
 }
 
 .company-description {
@@ -550,15 +562,15 @@ body {
 }
 
 .company-details-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  width: 90%;
-  max-width: 900px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%);
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 24px;
+  width: 95%;
+  max-width: 1200px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(59, 130, 246, 0.2);
   animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -566,11 +578,24 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2rem;
-  border-bottom: 1px solid var(--border-color);
-  background: linear-gradient(135deg, var(--hr-primary) 0%, var(--hr-accent) 100%);
+  padding: 2.5rem 3rem;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
   color: white;
-  border-radius: 20px 20px 0 0;
+  border-radius: 24px 24px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.details-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .company-title {
@@ -580,43 +605,45 @@ body {
 }
 
 .company-logo-large {
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
-.company-title h2 {
-  margin: 0;
+.details-header h2 {
   font-size: 2rem;
   font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.company-title p {
-  margin: 8px 0 0 0;
-  opacity: 0.9;
+.details-header p {
   font-size: 1rem;
+  opacity: 0.9;
+  margin: 0;
+  font-weight: 500;
 }
 
 .close-details {
   background: rgba(255, 255, 255, 0.2);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+  font-size: 1.2rem;
 }
 
 .close-details:hover {
@@ -625,157 +652,240 @@ body {
 }
 
 .details-content {
-  padding: 2rem;
+  padding: 0;
 }
 
 .company-overview {
-  margin-bottom: 2rem;
+  padding: 2.5rem 3rem;
 }
 
-.overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.overview-item {
+.company-overview h3 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem 0;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: rgba(37, 99, 235, 0.05);
-  border: 1px solid rgba(37, 99, 235, 0.1);
-  border-radius: 12px;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+  gap: 0.75rem;
 }
 
-.overview-item:hover {
-  background: rgba(37, 99, 235, 0.1);
-  border-color: rgba(37, 99, 235, 0.2);
+.company-overview h3 i {
+  color: #60a5fa;
 }
 
-.overview-item i {
-  color: var(--hr-accent);
-  width: 20px;
-  text-align: center;
-}
-
-.company-description {
-  background: rgba(37, 99, 235, 0.05);
-  border: 1px solid rgba(37, 99, 235, 0.1);
-  padding: 1.5rem;
-  border-radius: 12px;
-  margin: 1.5rem 0 0 0;
-  line-height: 1.7;
-}
-
+/* Enhanced admin section with better layout and colors */
 .admins-section {
-  border-top: 1px solid var(--border-color);
-  padding-top: 2rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, transparent 100%);
 }
 
-.section-header {
+.admins-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  padding-left: 4%;
+  padding-right: 4%;
 }
 
-.section-header h3 {
+.admins-header h3 {
   margin: 0;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  color: var(--text-primary);
-  font-size: 1.3rem;
+  gap: 0.5rem;
+}
+
+.admins-header h3 i {
+  color: #3b82f6;
+  font-size: 1.1rem;
 }
 
 .admins-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 1.5rem;
+  padding: 0 3rem 2.5rem;
 }
 
+/* Completely redesigned admin cards with modern glassmorphism effect */
 .admin-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 20px;
+  padding: 2rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  transition: all 0.3s ease;
+  gap: 1.5rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
 }
 
 .admin-card:hover {
-  border-color: var(--hr-accent);
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
-  background: rgba(37, 99, 235, 0.05);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 25px 50px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.15);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.06) 100%);
+  transform: translateY(-4px);
+}
+
+.admin-card:hover::before {
+  transform: scaleY(1);
 }
 
 .admin-avatar {
-  width: 50px;
-  height: 50px;
-  background: linear-gradient(135deg, var(--hr-primary), var(--hr-accent));
-  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   font-weight: 700;
   flex-shrink: 0;
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+  position: relative;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.admin-card:hover .admin-avatar {
+  box-shadow: 0 15px 40px rgba(59, 130, 246, 0.5);
+  transform: scale(1.08) rotate(2deg);
 }
 
 .admin-info {
   flex: 1;
+  min-width: 0;
 }
 
 .admin-info h4 {
-  margin: 0 0 6px 0;
-  font-size: 1rem;
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
   font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-email {
-  margin: 0 0 10px 0;
-  font-size: 0.85rem;
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
   color: var(--text-secondary);
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* Enhanced role badges with better visual hierarchy */
 .admin-role {
   font-size: 0.75rem;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 20px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  display: inline-block;
 }
 
-.role-owner {
-  background: rgba(16, 185, 129, 0.2);
-  color: var(--hr-success);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+.admin-role::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s ease;
+}
+
+.admin-card:hover .admin-role::before {
+  left: 100%;
+}
+
+.role-super-admin {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.15));
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+}
+
+.role-department-head {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.15));
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+}
+
+.role-recruiter {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(59, 130, 246, 0.15));
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
 }
 
 .role-admin {
-  background: rgba(37, 99, 235, 0.2);
-  color: var(--hr-accent);
-  border: 1px solid rgba(37, 99, 235, 0.3);
-}
-
-.role-viewer {
-  background: rgba(100, 116, 139, 0.2);
-  color: var(--text-secondary);
-  border: 1px solid rgba(100, 116, 139, 0.3);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(168, 85, 247, 0.15));
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2);
 }
 
 .admin-actions {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+.add-admin-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.add-admin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+}
+
+.add-admin-btn i {
+  font-size: 0.8rem;
 }
 
 .empty-admins {
@@ -787,15 +897,14 @@ body {
 
 .empty-admins i {
   font-size: 3rem;
+  color: rgba(59, 130, 246, 0.3);
   margin-bottom: 1rem;
-  opacity: 0.5;
-  color: var(--hr-accent);
 }
 
 .empty-admins h4 {
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
   font-size: 1.2rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
 }
 
 /* Users Grid */
@@ -1300,11 +1409,197 @@ body {
   font-size: 1.2rem;
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .companies-grid {
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  }
+/* Users Table Styles */
+.users-table-container {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.users-table thead {
+  background: rgba(37, 99, 235, 0.05);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.users-table th {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.users-table th:hover {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.users-table th span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.users-table th i {
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.users-table th:hover i {
+  opacity: 1;
+}
+
+.users-table tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.users-table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.03);
+}
+
+.users-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.users-table td {
+  padding: 1rem 1.5rem;
+  vertical-align: middle;
+}
+
+.table-user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.table-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.table-user-details h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.table-user-email {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.table-user-type {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.table-user-type.super-admin {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.table-user-type.admin {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.table-user-type.member {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.table-last-activity {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-actions-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.table-actions-btn:hover {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--hr-accent);
+}
+
+.table-empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-secondary);
+}
+
+.table-empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.table-empty-state h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+}
+
+/* Avatar color variations */
+.avatar-blue {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+.avatar-green {
+  background: linear-gradient(135deg, #10b981, #047857);
+}
+.avatar-purple {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+.avatar-pink {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+}
+.avatar-orange {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.avatar-red {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+.avatar-indigo {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+.avatar-teal {
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
 }
 
 @media (max-width: 768px) {
@@ -1414,6 +1709,29 @@ body {
   .notification.show {
     transform: translateY(0);
   }
+
+  .users-table-container {
+    overflow-x: auto;
+  }
+
+  .users-table {
+    min-width: 600px;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 0.75rem 1rem;
+  }
+
+  .table-user-info {
+    gap: 0.75rem;
+  }
+
+  .table-user-avatar {
+    width: 35px;
+    height: 35px;
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1437,5 +1755,183 @@ body {
 
   .overview-content p {
     font-size: 1.5rem;
+  }
+}
+/* Confirmation Modal Styles */
+.confirmation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.confirmation-modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.confirmation-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 480px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  transform: scale(0.95) translateY(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.confirmation-modal-overlay.show .confirmation-modal {
+  transform: scale(1) translateY(0);
+}
+
+.confirmation-header {
+  padding: 24px 24px 16px;
+  text-align: center;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.confirmation-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 24px;
+}
+
+.confirmation-icon.warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.confirmation-icon.danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.confirmation-icon.info {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.confirmation-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.confirmation-content {
+  padding: 16px 24px 24px;
+}
+
+.confirmation-content p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.confirmation-actions {
+  padding: 0 24px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  min-width: 100px;
+}
+
+.btn-cancel {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-cancel:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-confirm {
+  color: white;
+  font-weight: 600;
+}
+
+.btn-confirm.warning {
+  background: #d97706;
+}
+
+.btn-confirm.warning:hover {
+  background: #b45309;
+}
+
+.btn-confirm.danger {
+  background: #dc2626;
+}
+
+.btn-confirm.danger:hover {
+  background: #b91c1c;
+}
+
+.btn-confirm.info {
+  background: #2563eb;
+}
+
+.btn-confirm.info:hover {
+  background: #1d4ed8;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .confirmation-modal {
+    margin: 16px;
+    width: calc(100% - 32px);
+  }
+
+  .confirmation-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    width: 100%;
+  }
+}
+
+/* Animation for better UX */
+.confirmation-modal-overlay {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

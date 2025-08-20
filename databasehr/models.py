@@ -55,7 +55,7 @@ class Company(Base):
     company_name = Column(String(255), nullable=False)
     industry = Column(String(100))
     company_size = Column(Enum('1-10', '11-50', '51-200', '201-1000', '1000+'))
-    founded_year = Column(Integer)
+    founded_year = Column(DateTime)
     description = Column(Text)
     logo_url = Column(String(500))
     
@@ -71,7 +71,7 @@ class Company(Base):
     facebook_url = Column(String(255))
     
     # Métadonnées
-    setup_completed = Column(Boolean, default=False)
+    setup_completed = Column(Integer, default=0)
     created_by = Column(Integer, ForeignKey("hr_admins.id"))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -276,4 +276,3 @@ class AdminDepartments(Base):
     # Relations
     admin = relationship("HRAdmin")
     department = relationship("Department")
-
