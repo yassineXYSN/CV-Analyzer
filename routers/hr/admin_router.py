@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
+from .email_service import EmailService, generate_verification_token, save_verification_token, verify_token
 from routers.hr.schemas import CompanyCreate, EmployeeCreate
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
@@ -9,6 +10,7 @@ from datetime import datetime
 from auth_utils import hash_password, create_admin_user, authenticate_user
 from databasehr.database import get_db
 from databasehr.models import Company, Employee, AdminCompanyAccess, HRAdmin
+from datetime import datetime
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -201,7 +203,7 @@ async def get_users(db: Session = Depends(get_db)):
 
 @router.post("/api/users")
 async def create_user(user_data: dict, db: Session = Depends(get_db)):
-    """Créer un nouveau utilisateur (HRAdmin) avec sécurité renforcée"""
+    """Créer un nouveau utilisateur avec vérification d'email"""
     try:
         # Validation des données requises
         required_fields = ["first_name", "last_name", "email", "password"]
@@ -219,42 +221,43 @@ async def create_user(user_data: dict, db: Session = Depends(get_db)):
         valid_roles = ["super_admin", "recruiter", "department_head"]
         role = user_data.get("role", "recruiter")
         if role not in valid_roles:
-            role = "recruiter"  # Valeur par défaut sécurisée
+            role = "recruiter"
         
+        # Créer l'utilisateur avec is_active=False par défaut
         db_admin = HRAdmin(
             first_name=user_data.get("first_name"),
             last_name=user_data.get("last_name"),
             email=user_data.get("email"),
-            password_hash=password_hash,  # Utilisation du hash sécurisé
-            role=role,  # Rôle correctement géré
-            is_active=True,
-            last_login=datetime.now()  # Initialiser last_login à la date de création
+            password_hash=password_hash,
+            role=role,
+            is_active=False,  # Compte désactivé jusqu'à vérification
+            is_verified=False,
+            last_login=datetime.now()
         )
         
         db.add(db_admin)
         db.commit()
         db.refresh(db_admin)
         
-        # Si une entreprise est spécifiée, créer l'accès
-        company_id = user_data.get("company_id")
-        if company_id:
-            # Vérifier que l'entreprise existe
-            company = db.query(Company).filter(Company.id == company_id).first()
-            if company:
-                access = AdminCompanyAccess(
-                    admin_id=db_admin.id,
-                    company_id=company_id,
-                    access_level="admin"
-                )
-                db.add(access)
-                db.commit()
+        # Générer et sauvegarder le token de vérification
+        token = generate_verification_token()
+        save_verification_token(db, db_admin.id, token)
+        
+        # Envoyer l'email de vérification
+        email_service = EmailService()
+        email_sent = email_service.send_verification_email(db_admin.email, token)
+        
+        if not email_sent:
+            # Rollback si l'email n'a pas pu être envoyé
+            db.delete(db_admin)
+            db.commit()
+            raise HTTPException(status_code=500, detail="Erreur lors de l'envoi de l'email de vérification")
         
         return {
-            "message": "Utilisateur créé avec succès", 
+            "message": "Utilisateur créé avec succès. Un email de vérification a été envoyé.", 
             "id": db_admin.id,
             "email": db_admin.email,
-            "role": db_admin.role,
-            "last_login": db_admin.last_login.isoformat()
+            "role": db_admin.role
         }
         
     except HTTPException:
@@ -282,6 +285,39 @@ async def update_last_login(user_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Erreur lors de la mise à jour: {str(e)}")
+    
+    
+@router.get("/verify-email")
+async def verify_email(token: str, db: Session = Depends(get_db)):
+    """Vérifier l'email d'un utilisateur"""
+    user = verify_token(db, token)
+    if user:
+        return {"message": "Email vérifié avec succès. Votre compte est maintenant activé."}
+    else:
+        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+
+@router.post("/api/users/{user_id}/resend-verification")
+async def resend_verification(user_id: int, db: Session = Depends(get_db)):
+    """Renvoyer l'email de vérification"""
+    user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="L'utilisateur est déjà vérifié")
+    
+    # Générer un nouveau token
+    token = generate_verification_token()
+    save_verification_token(db, user.id, token)
+    
+    # Renvoyer l'email
+    email_service = EmailService()
+    email_sent = email_service.send_verification_email(user.email, token)
+    
+    if email_sent:
+        return {"message": "Email de vérification renvoyé avec succès"}
+    else:
+        raise HTTPException(status_code=500, detail="Erreur lors de l'envoi de l'email")
 
 @router.post("/api/users/secure")
 async def create_user_secure(user_data: dict, db: Session = Depends(get_db)):

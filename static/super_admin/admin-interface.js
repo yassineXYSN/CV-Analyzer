@@ -506,7 +506,7 @@ function renderUsersTable() {
   if (usersTableData.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="4" class="table-empty-state">
+        <td colspan="5" class="table-empty-state">
           <i class="fas fa-users"></i>
           <h3>Aucun utilisateur trouvé</h3>
           <p>Aucun utilisateur ne correspond à vos critères de recherche.</p>
@@ -544,21 +544,34 @@ function renderUsersTable() {
             ${user.type}
           </span>
         </td>
+        <td>
+          <span class="table-user-status ${user.isVerified ? 'verified' : 'unverified'}">
+            <i class="fas ${user.isVerified ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+            ${user.isVerified ? 'Vérifié' : 'Non vérifié'}
+          </span>
+        </td>
         <td class="table-last-activity">
           ${user.lastActivity}
         </td>
         <td>
-            <div class="table-actions">
-                <button class="table-actions-btn danger" onclick="deleteUser('${user.id}')" title="Supprimer">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
+          <div class="table-actions">
+            ${!user.isVerified ? `
+            <button class="table-actions-btn warning" onclick="resendVerification('${user.id}')" title="Renvoyer la vérification">
+              <i class="fas fa-envelope"></i>
+            </button>
+            ` : ''}
+            <button class="table-actions-btn danger" onclick="deleteUser('${user.id}')" title="Supprimer">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
         </td>
       </tr>
     `
     })
     .join("")
 }
+
+
 
 function filterUsersTable() {
   const searchTerm = document.getElementById("users-table-search").value.toLowerCase()
@@ -885,7 +898,7 @@ async function createUser(event) {
     })
 
     if (response.ok) {
-      showNotification("Utilisateur créé avec succès!", "success")
+      showNotification("Utilisateur créé avec succès! Un email de vérification a été envoyé.", "success")
       closeModal("add-user-modal")
       event.target.reset()
 
@@ -895,17 +908,9 @@ async function createUser(event) {
 
         // Recharger les données
         await loadUsersFromAPI()
-
-        // Mettre à jour les statistiques avec gestion d'erreur
-        try {
-          updateStatistics()
-        } catch (statsError) {
-          console.warn("[v0] Error updating statistics:", statsError)
-          // Ne pas afficher d'erreur à l'utilisateur pour ce problème mineur
-        }
+        updateStatistics()
       } catch (updateError) {
         console.warn("[v0] Error updating UI after user creation:", updateError)
-        // Message moins alarmant pour l'utilisateur
         showNotification("Utilisateur créé avec succès", "success")
       }
     } else {
@@ -925,6 +930,24 @@ async function createUser(event) {
   } catch (error) {
     console.error("[v0] Error creating user:", error)
     showNotification("Erreur de connexion au serveur", "error")
+  }
+}
+
+async function resendVerification(userId) {
+  try {
+    const response = await fetch(`/admin/api/users/${userId}/resend-verification`, {
+      method: "POST",
+    })
+
+    if (response.ok) {
+      showNotification("Email de vérification renvoyé avec succès", "success")
+    } else {
+      const error = await response.json()
+      showNotification(error.detail || "Erreur lors de l'envoi de l'email", "error")
+    }
+  } catch (error) {
+    console.error("Error resending verification:", error)
+    showNotification("Erreur de connexion", "error")
   }
 }
 

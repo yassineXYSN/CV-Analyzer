@@ -1935,3 +1935,10 @@ body {
     opacity: 1;
   }
 }
+.table-user-status.verified {
+  color: var(--success-color);
+}
+
+.table-user-status.unverified {
+  color: var(--warning-color);
+}

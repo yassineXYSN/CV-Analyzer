@@ -44,6 +44,7 @@ class HRAdmin(Base):
     last_name = Column(String(100), nullable=False)
     role = Column(Enum('super_admin', 'recruiter', 'department_head'), default='recruiter')
     is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)  # Nouveau champ
     last_login = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
