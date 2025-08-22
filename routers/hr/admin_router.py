@@ -98,7 +98,7 @@ async def create_company(company_data: dict, db: Session = Depends(get_db)):
             status_code=400, 
             detail=f"Erreur lors de la création de l'entreprise: {str(e)}"
         )
-    """Créer une nouvelle entreprise"""
+
     try:
         # Convert Pydantic model to dict and handle the founded_year conversion
         company_data = company.dict()
@@ -287,12 +287,19 @@ async def update_last_login(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=f"Erreur lors de la mise à jour: {str(e)}")
     
     
+from fastapi.responses import RedirectResponse
+
+@router.get("/hr-login", response_class=HTMLResponse)
+def hr_login_page(request: Request):
+    return templates.TemplateResponse("HR-dep/auth/hr-login.html?message=email_verified", {"request": request})
+
 @router.get("/verify-email")
 async def verify_email(token: str, db: Session = Depends(get_db)):
-    """Vérifier l'email d'un utilisateur"""
+    """Vérifier l'email d'un utilisateur et rediriger vers la page de connexion"""
     user = verify_token(db, token)
     if user:
-        return {"message": "Email vérifié avec succès. Votre compte est maintenant activé."}
+        # Rediriger vers la page de connexion HR avec un message de confirmation
+        return RedirectResponse(url="/hr-login?message=email_verified")
     else:
         raise HTTPException(status_code=400, detail="Token invalide ou expiré")
 

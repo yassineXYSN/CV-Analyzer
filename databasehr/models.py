@@ -48,6 +48,9 @@ class HRAdmin(Base):
     last_login = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    verification_token = Column(String(255), nullable=True)
+    token_expires = Column(DateTime, nullable=True)
 
 class Company(Base):
     __tablename__ = "companies"

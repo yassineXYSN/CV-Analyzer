@@ -4,9 +4,9 @@ from email.mime.multipart import MIMEMultipart
 import os
 from datetime import datetime, timedelta
 import secrets
+from sqlalchemy.orm import Session
 from databasehr.database import get_db
 from databasehr.models import HRAdmin
-from sqlalchemy.orm import Session
 
 class EmailService:
     def __init__(self):
@@ -34,6 +34,7 @@ class EmailService:
                 <p>Merci de vous être inscrit. Veuillez cliquer sur le lien ci-dessous pour vérifier votre adresse email et activer votre compte :</p>
                 <p><a href="{verification_url}">Vérifier mon email</a></p>
                 <p>Ce lien expirera dans 24 heures.</p>
+                <p>Après vérification, vous serez redirigé vers la page de connexion.</p>
                 <p>Cordialement,<br>L'équipe d'administration</p>
             </body>
             </html>
@@ -67,11 +68,11 @@ def save_verification_token(db: Session, user_id: int, token: str):
     return False
 
 def verify_token(db: Session, token: str):
-    """Vérifier la validité d'un token"""
+    """Vérifier la validité d'un token et activer le compte"""
     user = db.query(HRAdmin).filter(HRAdmin.verification_token == token).first()
     if user and user.token_expires > datetime.now():
         user.is_verified = True
-        user.is_active = True
+        user.is_active = True  # Activer le compte
         user.verification_token = None
         user.token_expires = None
         db.commit()
