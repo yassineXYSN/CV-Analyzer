@@ -67,13 +67,12 @@
                 <div class="section-header">
                     <h2><i class="fas fa-building"></i> Gestion des Entreprises</h2>
                     <div class="search-controls">
-                        <input type="text" id="company-search" placeholder="Rechercher une entreprise..." class="search-input">
+                        <input type="text" id="company-search" 
+                            placeholder="Rechercher une entreprise..." 
+                            class="search-input"
+                            onkeyup="loadCompanies()">
                         <select id="company-filter" class="filter-select">
                             <option value="">Toutes les industries</option>
-                            <option value="tech">Technologie</option>
-                            <option value="finance">Finance</option>
-                            <option value="healthcare">Santé</option>
-                            <option value="education">Éducation</option>
                         </select>
                     </div>
                 </div>
@@ -92,7 +91,7 @@
                         <input type="text" id="user-search" placeholder="Rechercher un utilisateur..." class="search-input">
                         <select id="user-role-filter" class="filter-select">
                             <option value="">Tous les rôles</option>
-                            <option value="super_admin">Super Admin</option>
+                            <option value="super_admin">Admin</option>
                             <option value="hr_manager">HR Manager</option>
                             <option value="hr_admin">HR Admin</option>
                         </select>
@@ -113,7 +112,6 @@
                         <input type="text" id="users-table-search" placeholder="Rechercher un utilisateur..." class="search-input" onkeyup="filterUsersTable()">
                         <select id="users-table-filter" class="filter-select" onchange="filterUsersTable()">
                             <option value="">Tous les types</option>
-                            <option value="Super Admin">Super Admin</option>
                             <option value="Admin">Admin</option>
                             <option value="Member">Member</option>
                         </select>
@@ -124,18 +122,23 @@
                         <thead>
                             <tr>
                                 <th onclick="sortUsersTable('name')">
-                                    <span>Name</span>
+                                    <span>Nom</span>
                                     <i class="fas fa-sort"></i>
                                 </th>
                                 <th onclick="sortUsersTable('type')">
                                     <span>Type</span>
                                     <i class="fas fa-sort"></i>
                                 </th>
-                                <th onclick="sortUsersTable('activity')">
-                                    <span>Last activity</span>
+
+                                <th onclick="sortUsersTable('verified')">
+                                    <span>Vérifié</span>
                                     <i class="fas fa-sort"></i>
                                 </th>
-                                <th>Supprimer</th>
+                                <th onclick="sortUsersTable('activity')">
+                                    <span>Dernière activité</span>
+                                    <i class="fas fa-sort"></i>
+                                </th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="users-table-body">

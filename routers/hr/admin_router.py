@@ -159,8 +159,7 @@ async def get_users(db: Session = Depends(get_db)):
     
     # Combiner les deux types d'utilisateurs
     users = []
-    
-    # Ajouter les HRAdmin
+        
     for admin in hr_admins:
         users.append({
             "id": admin.id,
@@ -168,14 +167,17 @@ async def get_users(db: Session = Depends(get_db)):
             "first_name": admin.first_name,
             "last_name": admin.last_name,
             "email": admin.email,
-            "phone": None,  # HRAdmin n'a pas de téléphone
+            "phone": None,
             "position": admin.role,
-            "company_id": None,  # Les admins ne sont pas liés directement à une entreprise
+            "company_id": None,
             "company_name": None,
             "user_type": "admin",
             "is_active": admin.is_active,
+            "is_verified": admin.is_verified,     # ✅ ajouté
+            "last_login": admin.last_login.isoformat() if admin.last_login else None,  # ✅ ajouté
             "created_at": admin.created_at.isoformat() if admin.created_at else None
         })
+
     
     # Ajouter les Employee
     for employee in employees:
@@ -185,19 +187,22 @@ async def get_users(db: Session = Depends(get_db)):
             company_name = company.company_name if company else None
             
         users.append({
-            "id": f"emp_{employee.id}",  # Préfixe pour éviter les conflits d'ID
-            "name": f"{employee.first_name} {employee.last_name}",
-            "first_name": employee.first_name,
-            "last_name": employee.last_name,
-            "email": employee.email,
-            "phone": employee.phone,
-            "position": employee.position,
-            "company_id": employee.company_id,
-            "company_name": company_name,
-            "user_type": "employee",
-            "is_active": employee.status == "active",
-            "created_at": employee.created_at.isoformat() if employee.created_at else None
-        })
+        "id": f"emp_{employee.id}",
+        "name": f"{employee.first_name} {employee.last_name}",
+        "first_name": employee.first_name,
+        "last_name": employee.last_name,
+        "email": employee.email,
+        "phone": employee.phone,
+        "position": employee.position,
+        "company_id": employee.company_id,
+        "company_name": company_name,
+        "user_type": "employee",
+        "is_active": employee.status == "active",
+        "is_verified": getattr(employee, "is_verified", False),  # ✅ au cas où le modèle a ce champ
+        "last_login": getattr(employee, "last_login", None),     # ✅ si tu ajoutes ce champ plus tard
+        "created_at": employee.created_at.isoformat() if employee.created_at else None
+    })
+
     
     return users
 

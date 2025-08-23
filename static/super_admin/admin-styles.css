@@ -212,6 +212,24 @@ body {
   max-width: 600px;
 }
 
+/* Espace entre l’icône et le bloc titre + sous-titre */
+.company-logo + .company-info {
+  margin-left: 1rem; /* espace horizontal propre */
+}
+
+/* Titre toujours en haut, séparé de l’icône */
+.company-info h1 {
+  margin: 0 0 0.5rem 0; /* espace sous le titre */
+}
+
+/* La sous-ligne reste en dessous du titre */
+.company-industry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+
 .header-actions {
   display: flex;
   gap: 1rem;
