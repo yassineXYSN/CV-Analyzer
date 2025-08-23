@@ -1086,7 +1086,14 @@ async function deleteUser(userId) {
 
         if (response.ok) {
           showNotification("Utilisateur supprimé avec succès!", "success")
-          loadUsers()
+          removeUserFromLocalData(userId);
+          // Mettre à jour l'interface sans recharger la page
+          await loadUsersFromAPI(); // Recharger les données depuis l'API
+          
+          // Si on est dans l'onglet tableau, recharger aussi le tableau
+          if (document.getElementById("users-table-tab").classList.contains("active")) {
+            loadUsersTable();
+          }
         } else {
           const error = await response.text()
           showNotification(`Erreur: ${error}`, "error")
@@ -1097,6 +1104,29 @@ async function deleteUser(userId) {
       }
     },
   })
+}
+
+function removeUserFromLocalData(userId) {
+  // Supprimer de la liste des utilisateurs
+  users = users.filter(user => {
+    // Gérer les différents formats d'ID (emp_123 vs 123)
+    const currentUserId = typeof user.id === 'string' && user.id.startsWith('emp_') 
+      ? user.id.replace('emp_', '') 
+      : user.id.toString();
+    
+    return currentUserId !== userId.toString();
+  });
+  
+  // Mettre à jour l'affichage
+  loadUsers();
+  
+  // Si l'onglet tableau est actif, mettre à jour aussi le tableau
+  if (document.getElementById("users-table-tab").classList.contains("active")) {
+    loadUsersTable();
+  }
+  
+  // Mettre à jour les statistiques
+  updateStatistics();
 }
 
 // Notification System
