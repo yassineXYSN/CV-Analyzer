@@ -206,6 +206,31 @@ async def get_users(db: Session = Depends(get_db)):
     
     return users
 
+@router.delete("/api/companies/{company_id}")
+async def delete_company(company_id: int, db: Session = Depends(get_db)):
+    """Supprimer une entreprise"""
+    try:
+        # Vérifier si l'entreprise existe
+        company = db.query(Company).filter(Company.id == company_id).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        
+        # Supprimer d'abord les accès administrateurs liés à cette entreprise
+        db.query(AdminCompanyAccess).filter(AdminCompanyAccess.company_id == company_id).delete()
+        
+        # Supprimer l'entreprise
+        db.delete(company)
+        db.commit()
+        
+        return {"message": "Entreprise supprimée avec succès"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erreur lors de la suppression de l'entreprise: {str(e)}"
+        )
+
 @router.post("/api/users")
 async def create_user(user_data: dict, db: Session = Depends(get_db)):
     """Créer un nouveau utilisateur avec vérification d'email"""

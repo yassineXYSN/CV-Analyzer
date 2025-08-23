@@ -949,21 +949,33 @@ async function deleteCompany(companyId) {
     onConfirm: async () => {
       try {
         showNotification("Suppression en cours...", "info")
+        
+        // Conversion de l'ID en string si nécessaire (certaines APIs l'attendent en string)
+        const companyIdStr = companyId.toString()
 
-        const response = await fetch(`/admin/api/companies/${companyId}`, {
+        const response = await fetch(`/admin/api/companies/${companyIdStr}`, {
           method: "DELETE",
         })
 
         if (response.ok) {
           showNotification("Entreprise supprimée avec succès", "success")
-          loadCompanies()
+          // Recharger les données depuis l'API
+          await loadCompaniesFromAPI()
+          updateStatistics()
         } else {
-          const error = await response.text()
-          showNotification(`Erreur: ${error}`, "error")
+          // Meilleure gestion des erreurs
+          let errorMessage = "Erreur lors de la suppression"
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.detail || errorData.message || errorMessage
+          } catch (e) {
+            errorMessage = await response.text()
+          }
+          showNotification(`Erreur: ${errorMessage}`, "error")
         }
       } catch (error) {
         console.error("Error deleting company:", error)
-        showNotification("Erreur lors de la suppression", "error")
+        showNotification("Erreur de connexion au serveur", "error")
       }
     },
   })
