@@ -196,31 +196,8 @@ function renderApplicationsWithCompatibility(filter = "all") {
             
             ${
               app.compatibility_source === "ai"
-                ? // Enhanced AI compatibility display with better reason handling
-                  `<div class="ai-compatibility-reason">
-                     <div class="ai-reason-header">
-                       <i class="fas fa-lightbulb"></i>
-                       <span>Analyse IA</span>
-                       <!-- Debug info for AI reason -->
-                       <small style="color: #666; font-size: 0.7em; margin-left: 10px;">
-                         [Debug: reason=${app.compatibility_reason ? "exists" : "null"}, 
-                          len=${app.compatibility_reason ? app.compatibility_reason.length : 0}]
-                       </small>
-                     </div>
-                     ${
-                       app.compatibility_reason && app.compatibility_reason.trim().length > 0
-                         ? `<p class="ai-reason-text">${app.compatibility_reason}</p>`
-                         : `<div class="ai-reason-text ai-reason-placeholder">
-                              <i class="fas fa-info-circle"></i>
-                              <strong>Analyse IA disponible</strong><br>
-                              Score: ${app.compatibility_percentage}% basé sur l'évaluation automatique<br>
-                              <small style="color: #888;">
-                                Raison manquante dans la base de données - 
-                                Veuillez vérifier que le champ compatibility_reason est rempli
-                              </small>
-                            </div>`
-                     }
-                   </div>`
+                ? // Removed the ai-compatibility-reason div that displayed the paragraph on main page
+                  ""
                 : // For calculated compatibility, show skill matching details
                   `<div class="skills-summary">
                      <div class="skills-stats">

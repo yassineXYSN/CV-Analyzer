@@ -279,27 +279,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
         
         ${
           isAICompatibility
-            ? `
-          <div class="ai-compatibility-reason">
-            <div class="ai-reason-header">
-              <i class="fas fa-robot"></i>
-              Analyse IA
-            </div>
-            ${
-              hasAIReason
-                ? `
-              <p class="ai-reason-text">${app.compatibility_reason}</p>
-            `
-                : `
-              <div class="ai-reason-placeholder">
-                <i class="fas fa-robot"></i>
-                <strong>Analyse IA disponible</strong>
-                <small>Les détails de l'analyse sont en cours de traitement</small>
-              </div>
-            `
-            }
-          </div>
-        `
+            ? ""
             : `
           <div class="compatibility-details">
             <span class="skill-stat matched">
