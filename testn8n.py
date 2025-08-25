@@ -1,7 +1,7 @@
 import requests
 
 # The webhook URL from n8n
-url = "https://fabibenrjab.app.n8n.cloud/webhook-test/profile-creation"
+url = "https://fabibenrjab.app.n8n.cloud/webhook-test/compatibility"
 print("Sending file to n8n...")
 
 # Path to the PDF CV file

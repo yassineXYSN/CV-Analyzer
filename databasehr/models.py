@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum,TIMESTAMP
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum,Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from databasehr.database import Base
@@ -229,6 +229,10 @@ class Application(Base):
     # Relationships
     job = relationship("Job")
     candidate_profile = relationship("ProfileCandidat")
+    
+    compatibility_score = Column(Numeric(5, 2), comment="Compatibility score between candidate and job (0-100)")
+    compatibility_reason = Column(Text, comment="Detailed reason for compatibility score from AI analysis")
+    n8n_webhook_triggered = Column(Boolean, default=False, comment="Flag to track if n8n webhook was triggered")
 
 # NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
 class ActivityLog(Base):
