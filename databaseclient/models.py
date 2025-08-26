@@ -41,6 +41,8 @@ class User(Base):
     profile_picture = Column(String(500))
     is_active = Column(Integer, default=1)
     is_verified = Column(Integer, default=0)
+    verification_token = Column(String(255), nullable=True)
+    verification_token_expires = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     profile = relationship("ProfileCandidat", back_populates="user", uselist=False)

@@ -181,7 +181,6 @@ async def get_applications(
             
             if has_ai_compatibility:
                 print(f"   - AI compatibility score: {app.compatibility_score}")
-                print(f"   - AI compatibility reason: {app.compatibility_reason}")
                 compatibility_percentage = float(app.compatibility_score)
                 matched_skills_count = 0  # AI data doesn't provide this breakdown
                 total_job_skills = 0      # AI data doesn't provide this breakdown
@@ -660,6 +659,198 @@ async def update_application_status(application_id: int, status_data: dict):
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
+@router.get("/api/job/{job_id}")
+async def get_job_with_applications(job_id: int, db: Session = Depends(get_db)):
+    try:
+        print(f"🚀 [v0] API JOB: Starting request for job {job_id}")
+        
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            print(f"❌ [v0] API JOB: No user_id in session")
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        print(f"🔍 [v0] API JOB: User ID: {user_id}")
+
+        company = get_user_company(user_id)
+        if not company:
+            print(f"❌ [v0] API JOB: No company found for user {user_id}")
+            return {"success": False, "message": "Aucune entreprise associée"}
+
+        print(f"🔍 [v0] API JOB: Company ID: {company.id}")
+
+        # Récupérer l'utilisateur actuel pour vérifier son rôle
+        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not current_admin:
+            print(f"❌ [v0] API JOB: Admin not found for user {user_id}")
+            return {"success": False, "message": "Utilisateur non trouvé"}
+
+        print(f"🔍 [v0] API JOB: Current admin: {current_admin.first_name} {current_admin.last_name} ({current_admin.role})")
+
+        # Récupérer le job avec ses informations
+        job_query = db.query(Job).join(
+            Department, Job.department_id == Department.id
+        ).filter(
+            Job.id == job_id,
+            Job.company_id == company.id
+        ).options(
+            joinedload(Job.department)
+        )
+
+        # Si c'est un chef de département, filtrer par ses départements assignés
+        if current_admin.role == 'department_head':
+            print(f"🔒 [v0] API JOB: Department head filtering for: {current_admin.first_name} {current_admin.last_name}")
+
+            assigned_dept_ids = db.query(AdminDepartments.department_id).filter(
+                AdminDepartments.admin_id == user_id
+            ).subquery()
+
+            job_query = job_query.filter(Department.id.in_(assigned_dept_ids))
+            print("📋 [v0] API JOB: Department filtering applied")
+
+        job = job_query.first()
+        if not job:
+            print(f"❌ [v0] API JOB: Job {job_id} not found or no access")
+            return {"success": False, "message": "Poste non trouvé ou accès non autorisé"}
+
+        print(f"✅ [v0] API JOB: Found job: {job.title}")
+
+        # Récupérer toutes les candidatures pour ce poste avec debug logging
+        print(f"🔍 [v0] API JOB: Querying applications for job_id {job_id}")
+        applications_query = db.query(Application).filter(
+            Application.job_id == job_id
+        ).options(
+            joinedload(Application.candidate_profile).joinedload(ProfileCandidat.contact)
+        )
+
+        applications = applications_query.order_by(Application.application_date.desc()).all()
+        print(f"📊 [v0] API JOB: Raw query found {len(applications)} applications for job {job_id}")
+        
+        # Debug: Print all application IDs found
+        for app in applications:
+            print(f"   - Application ID: {app.id}, Candidate ID: {app.candidate_profile_id}, Status: {app.status}")
+
+        # Traiter chaque candidature avec calcul de compatibilité
+        applications_list = []
+        for app in applications:
+            print(f"\n🔍 [v0] API JOB: Processing application {app.id}")
+            
+            candidate = app.candidate_profile
+            contact = candidate.contact if candidate else None
+
+            print(f"   - Candidate: {candidate.name if candidate else 'N/A'}")
+
+            # Vérifier si on a des données de compatibilité IA
+            has_ai_compatibility = app.compatibility_score is not None and app.compatibility_reason is not None
+            print(f"   - Has AI compatibility data: {has_ai_compatibility}")
+            
+            if has_ai_compatibility:
+                print(f"   - AI compatibility score: {app.compatibility_score}")
+                compatibility_percentage = float(app.compatibility_score)
+                matched_skills_count = 0  # AI data doesn't provide this breakdown
+                total_job_skills = 0      # AI data doesn't provide this breakdown
+                compatibility_source = "ai"
+                compatibility_reason = app.compatibility_reason
+                print(f"✅ [v0] API JOB: Using AI compatibility data: {compatibility_percentage}%")
+            else:
+                print(f"   - No AI data, calculating compatibility...")
+                # Récupérer les compétences du job via la relation JobSkill
+                job_skills = db.query(JobSkill).filter(JobSkill.job_id == job.id).all()
+                
+                candidate_skills = candidate.skills if candidate else None
+                print(f"   - Job skills found: {len(job_skills)}")
+                print(f"   - Job skills: {[skill.skill_name for skill in job_skills]}")
+                print(f"   - Candidate skills raw: {candidate_skills}")
+
+                # Utiliser la fonction de calcul de compatibilité
+                compatibility_percentage, matched_skills_count, total_job_skills = calculate_skill_compatibility(candidate_skills, job_skills)
+                compatibility_source = "calculated"
+                compatibility_reason = None
+                print(f"✅ [v0] API JOB: Calculated compatibility: {compatibility_percentage}% ({matched_skills_count}/{total_job_skills})")
+
+            # Récupérer les informations de recommandation
+            recommended_by_admin = None
+            if app.recommended_by_admin_id:
+                recommended_by_admin = db.query(HRAdmin).filter(
+                    HRAdmin.id == app.recommended_by_admin_id
+                ).first()
+
+            days_since_application = (datetime.now() - app.application_date).days if app.application_date else 0
+
+            app_data = {
+                "id": app.id,
+                "name": candidate.name if candidate else "N/A",
+                "email": contact.email if contact else "N/A",
+                "status": app.status,
+                "application_date": app.application_date.isoformat() if app.application_date else None,
+                "days_since_application": days_since_application,
+                "hr_rating": float(app.hr_rating) if app.hr_rating else None,
+                "hr_notes": app.hr_notes,
+                "reviewed_by": app.reviewed_by,
+                "reviewed_at": app.reviewed_at.isoformat() if app.reviewed_at else None,
+                "is_recommended": app.is_recommended or False,
+                "recommendation_priority": app.recommendation_priority,
+                "recommendation_comment": app.recommendation_comment,
+                "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
+                "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None,
+                "compatibility_percentage": compatibility_percentage,
+                "matched_skills_count": matched_skills_count,
+                "total_job_skills": total_job_skills,
+                "compatibility_source": compatibility_source,
+                "compatibility_reason": compatibility_reason
+            }
+            
+            applications_list.append(app_data)
+            print(f"✅ [v0] API JOB: Added application {app.id} to results")
+
+        # Récupérer les compétences du job pour l'affichage
+        job_skills = db.query(JobSkill).filter(JobSkill.job_id == job.id).all()
+        skills_data = []
+        for skill in job_skills:
+            skills_data.append({
+                "name": skill.skill_name,
+                "level": skill.skill_level,
+                "required": skill.is_required
+            })
+
+        # Récupérer les informations de l'entreprise
+        company_data = {
+            "name": company.name,
+            "industry": company.industry,
+            "size": company.size
+        }
+
+        # Construire la réponse avec les informations du job
+        job_data = {
+            "id": job.id,
+            "title": job.title,
+            "company": company_data,
+            "department": job.department.name if job.department else "N/A",
+            "description": job.description,
+            "requirements": job.requirements,
+            "responsibilities": job.responsibilities,
+            "skills": skills_data,
+            "employment_type": job.employment_type,
+            "salary_min": job.salary_min,
+            "salary_max": job.salary_max,
+            "priority": job.priority,
+            "experience_level": job.experience_level,
+            "status": job.status,
+            "created_at": job.created_at.isoformat() if job.created_at else None,
+            "applications": applications_list  # This is the key fix - applications are now included
+        }
+
+        print(f"By yassine {job_data}")
+        
+        return {
+            "success": True,
+            "job": job_data
+        }
+
+    except Exception as e:
+        import traceback
+        print(f"❌ [v0] API JOB: Internal error: {str(e)}")
+        print(f"❌ [v0] API JOB: Traceback: {traceback.format_exc()}")
+        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
 @router.post("/api/applications/create-demo")
 async def create_demo_applications():

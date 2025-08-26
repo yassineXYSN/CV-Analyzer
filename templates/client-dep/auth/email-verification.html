@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification Email - CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/client-dep/css/auth.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Email Verification Container -->
+    <div class="auth-container verification-layout">
+        <!-- Logo Section - Left -->
+        <div class="logo-section">
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <a href="/" style="text-decoration: none; color: inherit;">CV Analyzer Pro</a>
+            </div>
+            <div class="logo-subtitle">Vérification de votre adresse email</div>
+            <div class="logo-description">
+                <p>Nous avons envoyé un lien de vérification à votre adresse email. Cliquez sur le lien pour activer votre compte.</p>
+                <div class="features-list">
+                    <div class="feature-item">
+                        <i class="fas fa-envelope-circle-check"></i>
+                        <span>Email de vérification envoyé</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-shield-check"></i>
+                        <span>Sécurisation de votre compte</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-clock"></i>
+                        <span>Lien valide 24 heures</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verification Form - Right -->
+        <div class="auth-form verification-form">
+            <div class="form-header">
+                <h2 class="form-title">
+                    <i class="fas fa-envelope-open-text"></i>
+                    Vérifiez votre email
+                </h2>
+                <p class="form-subtitle">Un email de vérification a été envoyé à <strong id="userEmail">{{ user_email }}</strong></p>
+            </div>
+            
+            <!-- Messages -->
+            <div class="message success-message" id="successMessage" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <span>Email de vérification renvoyé avec succès !</span>
+            </div>
+            
+            <div class="message error-message" id="errorMessage" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="errorText">Une erreur s'est produite.</span>
+            </div>
+
+            <!-- Verification Status -->
+            <div class="verification-status">
+                <div class="status-icon">
+                    <i class="fas fa-envelope fa-3x"></i>
+                </div>
+                <h3>Consultez votre boîte email</h3>
+                <p>Nous avons envoyé un lien de vérification à votre adresse email. Cliquez sur le lien dans l'email pour activer votre compte et continuer.</p>
+                
+                <div class="verification-steps">
+                    <div class="step">
+                        <i class="fas fa-envelope"></i>
+                        <span>1. Ouvrez votre boîte email</span>
+                    </div>
+                    <div class="step">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <span>2. Cliquez sur le lien de vérification</span>
+                    </div>
+                    <div class="step">
+                        <i class="fas fa-check-circle"></i>
+                        <span>3. Votre compte sera activé</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resend Email -->
+            <div class="resend-section">
+                <p>Vous n'avez pas reçu l'email ?</p>
+                <button type="button" class="resend-btn" id="resendBtn">
+                    <span class="btn-content" id="resendBtnContent">
+                        <i class="fas fa-paper-plane"></i>
+                        Renvoyer l'email
+                    </span>
+                    <div class="loading-spinner" id="resendLoadingSpinner" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Envoi en cours...
+                    </div>
+                </button>
+                <p class="resend-timer" id="resendTimer" style="display: none;">
+                    Vous pourrez renvoyer l'email dans <span id="countdown">60</span> secondes
+                </p>
+            </div>
+
+            <!-- Help Section -->
+            <div class="help-section">
+                <h4><i class="fas fa-question-circle"></i> Besoin d'aide ?</h4>
+                <ul>
+                    <li>Vérifiez votre dossier spam/courrier indésirable</li>
+                    <li>Assurez-vous que l'adresse email est correcte</li>
+                    <li>Le lien de vérification expire après 24 heures</li>
+                </ul>
+                <p>
+                    <a href="/contact" class="help-link">
+                        <i class="fas fa-headset"></i>
+                        Contactez le support
+                    </a>
+                </p>
+            </div>
+
+            <!-- Back to Login -->
+            <div class="back-to-login">
+                <a href="/login">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour à la connexion
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            initializeEmailVerification()
+        })
+
+        function initializeEmailVerification() {
+            const resendBtn = document.getElementById("resendBtn")
+            const resendBtnContent = document.getElementById("resendBtnContent")
+            const resendLoadingSpinner = document.getElementById("resendLoadingSpinner")
+            const resendTimer = document.getElementById("resendTimer")
+            const countdown = document.getElementById("countdown")
+            const successMessage = document.getElementById("successMessage")
+            const errorMessage = document.getElementById("errorMessage")
+            const errorText = document.getElementById("errorText")
+
+            let canResend = true
+            let countdownInterval
+
+            resendBtn.addEventListener("click", async () => {
+                if (!canResend) return
+
+                // Show loading state
+                resendBtn.disabled = true
+                resendBtnContent.style.display = "none"
+                resendLoadingSpinner.style.display = "flex"
+
+                try {
+                    const response = await fetch('/auth/resend-verification', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+
+                    const result = await response.json()
+
+                    if (result.success) {
+                        showSuccess("Email de vérification renvoyé avec succès !")
+                        startResendCooldown()
+                    } else {
+                        showError(result.message || "Erreur lors de l'envoi de l'email")
+                    }
+                } catch (error) {
+                    console.error('Resend error:', error)
+                    showError("Erreur de connexion. Veuillez réessayer.")
+                } finally {
+                    // Reset button state
+                    resendBtn.disabled = false
+                    resendBtnContent.style.display = "flex"
+                    resendLoadingSpinner.style.display = "none"
+                }
+            })
+
+            function startResendCooldown() {
+                canResend = false
+                resendBtn.style.display = "none"
+                resendTimer.style.display = "block"
+                
+                let timeLeft = 60
+                countdown.textContent = timeLeft
+
+                countdownInterval = setInterval(() => {
+                    timeLeft--
+                    countdown.textContent = timeLeft
+
+                    if (timeLeft <= 0) {
+                        clearInterval(countdownInterval)
+                        canResend = true
+                        resendBtn.style.display = "block"
+                        resendTimer.style.display = "none"
+                    }
+                }, 1000)
+            }
+
+            function showSuccess(message) {
+                successMessage.querySelector("span").textContent = message
+                successMessage.style.display = "flex"
+                errorMessage.style.display = "none"
+            }
+
+            function showError(message) {
+                errorText.textContent = message
+                errorMessage.style.display = "flex"
+                successMessage.style.display = "none"
+            }
+
+            // Check verification status periodically
+            const checkVerificationInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/auth/status')
+                    const result = await response.json()
+                    
+                    if (result.authenticated && result.user.is_verified) {
+                        clearInterval(checkVerificationInterval)
+                        showSuccess("Email vérifié avec succès ! Redirection...")
+                        setTimeout(() => {
+                            window.location.href = '/signup/step2'
+                        }, 2000)
+                    }
+                } catch (error) {
+                    console.error('Status check error:', error)
+                }
+            }, 5000) // Check every 5 seconds
+        }
+    </script>
+
+    <style>
+        .verification-layout {
+            max-width: 1000px;
+        }
+
+        .verification-form {
+            max-width: 500px;
+        }
+
+        .verification-status {
+            text-align: center;
+            padding: 2rem 0;
+            border: 2px dashed #e0e6ed;
+            border-radius: 12px;
+            margin: 2rem 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .status-icon {
+            color: #3b82f6;
+            margin-bottom: 1rem;
+        }
+
+        .verification-status h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .verification-status p {
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .verification-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            text-align: left;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .step i {
+            color: #10b981;
+            width: 20px;
+        }
+
+        .resend-section {
+            text-align: center;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+
+        .resend-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 1rem 0;
+        }
+
+        .resend-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .resend-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .resend-timer {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .help-section {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .help-section h4 {
+            color: #92400e;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .help-section ul {
+            color: #92400e;
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .help-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .help-link {
+            color: #1d4ed8;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .help-link:hover {
+            text-decoration: underline;
+        }
+
+        .back-to-login {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .back-to-login a {
+            color: #64748b;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-to-login a:hover {
+            color: #1e293b;
+        }
+    </style>
+</body>
+</html>

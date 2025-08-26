@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from databaseclient.insert_to_db import insert_candidate_data
 from fastapi.templating import Jinja2Templates
+from utils1.email_service import send_verification_email, generate_verification_token, get_verification_token_expiry
+from datetime import datetime
 
 
 router = APIRouter()
@@ -174,7 +176,7 @@ def signup_page(request: Request, db: Session = Depends(get_db)):
 @router.post("/signup")
 async def signup(
     request: Request,
-    response: Response,  # Add response parameter
+    response: Response,
     first_name: str = Form(...),
     last_name: str = Form(...),
     email: str = Form(...),
@@ -195,10 +197,26 @@ async def signup(
         if existing_user:
             return {"success": False, "message": "Un compte avec cet email existe déjà"}
         
-        # Create user
+        # Create user (not verified yet)
         user = create_user(db, email, password, first_name, last_name)
         
-        # Automatically log in the user
+        # Generate verification token
+        verification_token = generate_verification_token()
+        token_expiry = get_verification_token_expiry()
+        
+        # Update user with verification token
+        user.verification_token = verification_token
+        user.verification_token_expires = token_expiry
+        db.commit()
+        
+        # Send verification email
+        user_name = f"{first_name} {last_name}"
+        email_sent = send_verification_email(email, user_name, verification_token)
+        
+        if not email_sent:
+            return {"success": False, "message": "Erreur lors de l'envoi de l'email de vérification"}
+        
+        # Automatically log in the user (but they still need to verify email)
         session_token = create_user_session(db, user.id, remember_me=False)
         
         # Set session cookie
@@ -211,24 +229,118 @@ async def signup(
             samesite="lax"
         )
         
-        return {"success": True, "redirect_url": "/signup/step2"}
+        return {"success": True, "redirect_url": "/auth/email-verification"}
         
     except Exception as e:
         print(f"Signup error: {str(e)}")
         return {"success": False, "message": "Erreur lors de la création du compte"}
+
+@router.get("/auth/email-verification", response_class=HTMLResponse)
+def email_verification_page(request: Request, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
     
-# Add new signup step routes
+    # If already verified, redirect to step 2
+    if current_user.is_verified:
+        return RedirectResponse(url="/signup/step2", status_code=302)
+    
+    return templates.TemplateResponse("client-dep/auth/email-verification.html", {
+        "request": request,
+        "current_user": current_user,
+        "user_email": current_user.email
+    })
+
+@router.get("/auth/verify-email")
+async def verify_email(
+    request: Request,
+    token: str,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Find user with this verification token
+        user = db.query(User).filter(
+            User.verification_token == token,
+            User.verification_token_expires > datetime.utcnow()
+        ).first()
+        
+        if not user:
+            return templates.TemplateResponse("client-dep/auth/verification-error.html", {
+                "request": request,
+                "error": "Lien de vérification invalide ou expiré"
+            })
+        
+        # Verify the user
+        user.is_verified = 1
+        user.verification_token = None
+        user.verification_token_expires = None
+        db.commit()
+        
+        return templates.TemplateResponse("client-dep/auth/verification-success.html", {
+            "request": request,
+            "user": user
+        })
+        
+    except Exception as e:
+        print(f"Email verification error: {str(e)}")
+        return templates.TemplateResponse("client-dep/auth/verification-error.html", {
+            "request": request,
+            "error": "Erreur lors de la vérification"
+        })
+
+@router.post("/auth/resend-verification")
+async def resend_verification(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    try:
+        current_user = get_current_user(request, db)
+        if not current_user:
+            return {"success": False, "message": "Authentication required"}
+        
+        if current_user.is_verified:
+            return {"success": False, "message": "Compte déjà vérifié"}
+        
+        # Generate new verification token
+        verification_token = generate_verification_token()
+        token_expiry = get_verification_token_expiry()
+        
+        # Update user with new verification token
+        current_user.verification_token = verification_token
+        current_user.verification_token_expires = token_expiry
+        db.commit()
+        
+        # Send verification email
+        user_name = f"{current_user.first_name} {current_user.last_name}"
+        email_sent = send_verification_email(current_user.email, user_name, verification_token)
+        
+        if email_sent:
+            return {"success": True, "message": "Email de vérification renvoyé"}
+        else:
+            return {"success": False, "message": "Erreur lors de l'envoi de l'email"}
+            
+    except Exception as e:
+        print(f"Resend verification error: {str(e)}")
+        return {"success": False, "message": "Erreur lors de l'envoi"}
+
 @router.get("/signup/step2", response_class=HTMLResponse)
 def signup_step2_page(request: Request, db: Session = Depends(get_db)):
     current_user = get_current_user(request, db)
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
+    
+    # Check if email is verified
+    if not current_user.is_verified:
+        return RedirectResponse(url="/auth/email-verification", status_code=302)
+    
     if current_user.profile:
         return RedirectResponse(url="/", status_code=302)
+    
     return templates.TemplateResponse("client-dep/auth/signup-step2.html", {
         "request": request,
         "current_user": current_user
     })
+
 
 @router.post("/signup/step2")
 async def signup_step2(

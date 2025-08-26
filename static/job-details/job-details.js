@@ -112,12 +112,31 @@ async function loadJobFromAPI(jobId) {
       const result = await response.json()
       console.log("📦 Données reçues:", result)
 
+      console.log("[v0] DEBUG - Full API response structure:", JSON.stringify(result, null, 2))
+      console.log("[v0] DEBUG - result.success:", result.success)
+      console.log("[v0] DEBUG - result.job exists:", !!result.job)
+      if (result.job) {
+        console.log("[v0] DEBUG - result.job.applications exists:", !!result.job.applications)
+        console.log("[v0] DEBUG - result.job.applications type:", typeof result.job.applications)
+        console.log(
+          "[v0] DEBUG - result.job.applications length:",
+          result.job.applications ? result.job.applications.length : "N/A",
+        )
+        console.log("[v0] DEBUG - result.job.applications content:", result.job.applications)
+      }
+
       if (result.success) {
         currentJob = result.job
         applications = result.job.applications || []
 
         console.log("✅ Job chargé:", currentJob.title)
         console.log("👥 Candidatures:", applications.length)
+
+        console.log("[v0] DEBUG - Applications array after assignment:", applications)
+        console.log("[v0] DEBUG - Applications array length:", applications.length)
+        if (applications.length > 0) {
+          console.log("[v0] DEBUG - First application sample:", applications[0])
+        }
 
         // NOUVEAU: Calculer la compatibilité pour chaque candidature
         await calculateCompatibilityForApplications()
@@ -179,21 +198,22 @@ async function calculateCompatibilityForApplications() {
   console.log("✅ Calcul de compatibilité terminé pour toutes les candidatures")
 }
 
-// NOUVELLE FONCTION: Mettre à jour les statistiques de compatibilité
 function updateCompatibilityStats() {
+  const avgElement = document.getElementById("averageCompatibility")
+  if (!avgElement) {
+    console.log("📊 Element averageCompatibility not found, skipping stats update")
+    return
+  }
+
   if (applications.length === 0) {
-    document.getElementById("averageCompatibility").textContent = "--"
+    avgElement.textContent = "--"
     return
   }
 
   const totalCompatibility = applications.reduce((sum, app) => sum + (app.compatibility_percentage || 0), 0)
   const averageCompatibility = Math.round(totalCompatibility / applications.length)
 
-  const avgElement = document.getElementById("averageCompatibility")
-  if (avgElement) {
-    avgElement.textContent = `${averageCompatibility}%`
-  }
-
+  avgElement.textContent = `${averageCompatibility}%`
   console.log(`📊 Compatibilité moyenne: ${averageCompatibility}%`)
 }
 
@@ -305,7 +325,7 @@ function renderJobSkills() {
   console.log("🛠️ Affichage des compétences requises")
   const skillsContainer = document.getElementById("jobSkillsContainer")
   if (!skillsContainer) {
-    console.error("❌ Container jobSkillsContainer non trouvé")
+    console.log("📝 Container jobSkillsContainer not found, skipping skills render")
     return
   }
 
@@ -326,8 +346,12 @@ function renderJobSkills() {
           .map(
             (skill) => `
           <div class="skill-item">
-            <div class="skill-name">${skill.skill_name}</div>
-            <div class="skill-level">${skill.skill_level.charAt(0).toUpperCase() + skill.skill_level.slice(1)}</div>
+            <div class="skill-name">${skill.skill_name || "Compétence non spécifiée"}</div>
+            <div class="skill-level">${
+              skill.skill_level
+                ? skill.skill_level.charAt(0).toUpperCase() + skill.skill_level.slice(1)
+                : "Non spécifié"
+            }</div>
             ${
               skill.is_required
                 ? `<span class="skill-required-badge">Requis</span>`
@@ -339,7 +363,6 @@ function renderJobSkills() {
           .join("")}
       </div>
     `
-  console.log(`✅ ${currentJob.skills.length} compétences affichées`)
 }
 
 // FONCTION AMÉLIORÉE: Rendre les candidatures avec compatibilité
@@ -348,7 +371,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
 
   const container = document.getElementById("applicationsList")
   if (!container) {
-    console.error("❌ Container applicationsList non trouvé")
+    console.log("📝 Container applicationsList not found, skipping applications render")
     return
   }
 
@@ -799,7 +822,7 @@ function showDarkCompatibilityModal(compatibilityData) {
                   <div class="skill-status matched" style="
                     color: #10b981;
                     font-weight: 600;
-                    display: flex;
+                    display: flex
                     align-items: center;
                     gap: 0.5rem;
                   ">
