@@ -198,7 +198,7 @@ class Application(Base):
     
     # Informations de candidature
     application_date = Column(DateTime, default=func.now())
-    status = Column(Enum('pending', 'reviewed', 'interview_scheduled', 'interview_completed', 'accepted', 'rejected', 'withdrawn'), default='pending')
+    status = Column(Enum('pending', 'reviewed', 'interview_scheduled', 'interview_completed', 'accepted', 'rejected', 'withdrawn','accepted_pending_validation'), default='pending')
     
     # Évaluation
     hr_rating = Column(DECIMAL(3,2))

@@ -940,91 +940,88 @@ function renderCandidateActions(app) {
   })
 
   if (currentUser && currentUser.role === "department_head") {
-    console.log("🏢 Mode chef de département")
+    // ... (le code existant pour les chefs de département)
+  }
 
-    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
-      const safeCandidateName = app.name.replace(/'/g, "\\'").replace(/"/g, '\\"')
-      const safeJobTitle = currentJob.title.replace(/'/g, "\\'").replace(/"/g, '\\"')
-
-      console.log("✅ Affichage bouton recommander")
+  // Pour les recruteurs
+  if (currentUser && currentUser.role === "recruiter") {
+    if (app.status === "pending") {
       return `
-      <button class="btn-action recommend" onclick="showRecommendConfirmation(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
-        <i class="fas fa-thumbs-up"></i> Recommander
+      <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+        <i class="fas fa-eye"></i> Examiner
       </button>
-      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-info-circle"></i> Voir profil
+      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+        <i class="fas fa-check"></i> Accepter
+      </button>
+      <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+        <i class="fas fa-times"></i> Rejeter
       </button>
     `
-    } else if (app.is_recommended) {
-      console.log("✅ Affichage statut recommandé")
+    } else if (app.status === "reviewed") {
       return `
-      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-info-circle"></i> Voir profil
+      <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
+        <i class="fas fa-calendar"></i> Programmer entretien
+      </button>
+      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+        <i class="fas fa-check-circle"></i> Accepter
+      </button>
+      <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+        <i class="fas fa-times"></i> Rejeter
       </button>
     `
-    } else {
-      console.log("ℹ️ Candidature non éligible pour recommandation")
+    } else if (app.status === "interview_scheduled") {
       return `
-      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-        <i class="fas fa-info-circle"></i> Voir profil
+      <button class="btn-action complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
+        <i class="fas fa-check-double"></i> Entretien terminé
       </button>
-      <small style="color: #6b7280; font-style: italic;">
-        ${
-          app.status === "accepted"
-            ? "Candidature déjà acceptée"
-            : app.status === "rejected"
-              ? "Candidature rejetée"
-              : "Statut: " + getStatusText(app.status)
-        }
-      </small>
+      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+        <i class="fas fa-user-check"></i> Accepter
+      </button>
+      <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+        <i class="fas fa-times"></i> Rejeter
+      </button>
+    `
+    } else if (app.status === "accepted_pending_validation") {
+      return `
+      <span class="status-badge pending-validation">
+        <i class="fas fa-clock"></i> En attente validation admin
+      </span>
     `
     }
   }
 
-  // Pour les autres rôles (recruteur, super_admin) : boutons complets
-  if (app.status === "pending") {
-    return `
-    <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-      <i class="fas fa-eye"></i> Examiner
-    </button>
-    <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
-      <i class="fas fa-check"></i> Accepter
-    </button>
-    <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
-      <i class="fas fa-times"></i> Rejeter
-    </button>
-  `
-  } else if (app.status === "reviewed") {
-    return `
-    <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
-      <i class="fas fa-calendar"></i> Programmer entretien
-    </button>
-    <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
-      <i class="fas fa-check-circle"></i> Accepter
-    </button>
-    <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
-      <i class="fas fa-times"></i> Rejeter
-    </button>
-  `
-  } else if (app.status === "interview_scheduled") {
-    return `
-    <button class="btn-action complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
-      <i class="fas fa-check-double"></i> Entretien terminé
-    </button>
-    <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
-      <i class="fas fa-user-check"></i> Accepter
-    </button>
-    <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
-      <i class="fas fa-times"></i> Rejeter
-    </button>
-  `
-  } else {
-    return `
-    <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
-      <i class="fas fa-info-circle"></i> Voir profil
-    </button>
-  `
+  // Pour les administrateurs
+  if (currentUser && currentUser.role === "super_admin") {
+    if (app.status === "accepted_pending_validation") {
+      return `
+      <button class="btn-action validate" onclick="showAdminValidationModal(${app.id}, '${app.name}', '${currentJob.title}')">
+        <i class="fas fa-user-shield"></i> Valider
+      </button>
+      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+        <i class="fas fa-info-circle"></i> Voir profil
+      </button>
+    `
+    } else if (app.status === "pending" || app.status === "reviewed" || app.status === "interview_scheduled") {
+      return `
+      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${app.name}', '${currentJob.title}', '${currentJob.department_name}')">
+        <i class="fas fa-check"></i> Accepter définitivement
+      </button>
+      <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${app.name}', '${currentJob.title}')">
+        <i class="fas fa-times"></i> Rejeter
+      </button>
+      <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+        <i class="fas fa-info-circle"></i> Voir profil
+      </button>
+    `
+    }
   }
+
+  // Pour tous les autres cas
+  return `
+  <button class="btn-action info" onclick="viewCandidateProfile(${app.candidate_id})">
+    <i class="fas fa-info-circle"></i> Voir profil
+  </button>
+`
 }
 
 // Fonction pour retourner au dashboard
@@ -1044,8 +1041,113 @@ function getStatusText(status) {
     rejected: "Rejetée",
     withdrawn: "Retirée",
     recommended: "Recommandée",
+    accepted_pending_validation: "accepted_pending_validation"
   }
   return statusTexts[status] || status
+}
+
+// Fonction pour afficher la modal de validation admin
+function showAdminValidationModal(applicationId, candidateName, jobTitle) {
+  console.log(`👑 Affichage validation admin pour ${candidateName}`)
+
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay"
+  modal.style.opacity = "1"
+
+  modal.innerHTML = `
+  <div class="confirmation-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="confirmation-icon validate">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <h3>Validation Administrateur</h3>
+        <p>Valider définitivement <strong>${candidateName}</strong> pour le poste</p>
+      </div>
+      
+      <div class="candidate-modal-info">
+        <div class="candidate-modal-avatar">${candidateName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")}</div>
+        <div class="candidate-modal-details">
+          <h4>${candidateName}</h4>
+          <p>Poste: ${jobTitle}</p>
+        </div>
+      </div>
+      
+      <div class="modal-body">
+        <p><strong>En tant qu'administrateur, votre validation est définitive :</strong></p>
+        <div class="confirmation-details">
+          <ul class="confirmation-list">
+            <li><i class="fas fa-user-plus"></i> Création automatique de l'employé</li>
+            <li><i class="fas fa-briefcase"></i> Attribution du poste</li>
+            <li><i class="fas fa-check-circle"></i> Marquage du poste comme pourvu</li>
+            <li><i class="fas fa-times-circle"></i> Rejet automatique des autres candidatures</li>
+            <li><i class="fas fa-envelope"></i> Envoi des notifications au candidat</li>
+          </ul>
+        </div>
+        <div class="warning-note">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>Cette action est irréversible. Le candidat sera intégré en tant qu'employé.</p>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-confirm validate" onclick="confirmAdminValidation(${applicationId})">
+          <i class="fas fa-user-shield"></i> Valider Définitivement
+        </button>
+        <button class="btn-cancel" onclick="closeConfirmationModal()">
+          <i class="fas fa-times"></i> Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+`
+
+  document.body.appendChild(modal)
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      closeConfirmationModal()
+    }
+  })
+
+  document.addEventListener("keydown", handleEscapeKey)
+}
+
+// Fonction pour confirmer la validation admin
+async function confirmAdminValidation(applicationId) {
+  console.log(`✅ Confirmation validation admin candidature ${applicationId}`)
+
+  try {
+    closeConfirmationModal()
+    showLoading("Validation en cours...")
+
+    const response = await fetch(`/api/accept-application/${applicationId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status: "accepted" })
+    })
+
+    const result = await response.json()
+    hideLoading()
+
+    if (response.ok && result.success) {
+      showNotification("Candidat validé et employé créé avec succès", "success")
+      setTimeout(() => {
+        loadJobData()
+      }, 1000)
+    } else {
+      showNotification(result.message || "Erreur lors de la validation", "error")
+    }
+  } catch (error) {
+    hideLoading()
+    console.error("❌ Erreur validation admin:", error)
+    showNotification("Erreur de connexion lors de la validation", "error")
+  }
 }
 
 // FONCTION CORRIGÉE: Afficher la modal de confirmation de recommandation
@@ -1207,6 +1309,12 @@ async function confirmRecommendApplication(applicationId) {
 function showAcceptConfirmation(applicationId, candidateName, jobTitle, departmentName) {
   console.log(`🎉 Affichage confirmation acceptation pour ${candidateName}`)
 
+  const isAdmin = currentUser && currentUser.role === "super_admin";
+  const modalTitle = isAdmin ? "Accepter définitivement" : "Accepter la candidature";
+  const modalDescription = isAdmin 
+    ? "En tant qu'administrateur, votre acceptation sera définitive et créera immédiatement l'employé."
+    : "Votre acceptation devra être validée par un administrateur avant la création de l'employé.";
+
   const modal = document.createElement("div")
   modal.className = "modal-overlay"
   modal.style.opacity = "1"
@@ -1218,8 +1326,8 @@ function showAcceptConfirmation(applicationId, candidateName, jobTitle, departme
         <div class="confirmation-icon accept">
           <i class="fas fa-user-check"></i>
         </div>
-        <h3>Confirmer l'acceptation</h3>
-        <p>Accepter la candidature de <strong>${candidateName}</strong></p>
+        <h3>${modalTitle}</h3>
+        <p>${modalDescription}</p>
       </div>
       
       <div class="candidate-modal-info">
@@ -1234,26 +1342,32 @@ function showAcceptConfirmation(applicationId, candidateName, jobTitle, departme
       </div>
       
       <div class="modal-body">
-        <p><strong>Actions automatiques qui seront effectuées :</strong></p>
+        <p><strong>Processus d'acceptation :</strong></p>
         <div class="confirmation-details">
           <ul class="confirmation-list">
-            <li><i class="fas fa-user-plus"></i> Création automatique de l'employé dans le système</li>
-            <li><i class="fas fa-briefcase"></i> Attribution du poste "${jobTitle}" à l'employé</li>
-            <li><i class="fas fa-building"></i> Assignation au département "${departmentName}"</li>
+            ${isAdmin ? `
+            <li><i class="fas fa-user-plus"></i> Création automatique de l'employé</li>
+            <li><i class="fas fa-briefcase"></i> Attribution du poste</li>
             <li><i class="fas fa-check-circle"></i> Marquage du poste comme pourvu</li>
             <li><i class="fas fa-times-circle"></i> Rejet automatique des autres candidatures</li>
-            <li><i class="fas fa-calendar-check"></i> Date d'embauche fixée à aujourd'hui</li>
+            ` : `
+            <li><i class="fas fa-check-circle"></i> Candidature marquée comme acceptée</li>
+            <li><i class="fas fa-user-shield"></i> Envoi pour validation administrateur</li>
+            <li><i class="fas fa-clock"></i> En attente d'approbation finale</li>
+            `}
           </ul>
         </div>
-        <div class="warning-note">
-          <i class="fas fa-exclamation-triangle"></i>
-          <p>Cette action est irréversible et modifiera définitivement le statut du poste.</p>
+        <div class="info-note">
+          <i class="fas fa-info-circle"></i>
+          <p>${isAdmin 
+            ? "Cette action est définitive. Le candidat sera intégré en tant qu'employé." 
+            : "La candidature sera envoyée à l'administrateur pour validation finale avant création de l'employé."}</p>
         </div>
       </div>
       
       <div class="modal-actions">
         <button class="btn-confirm" onclick="confirmAcceptApplication(${applicationId})">
-          <i class="fas fa-check"></i> Confirmer l'acceptation
+          <i class="fas fa-check"></i> ${isAdmin ? "Confirmer l'acceptation définitive" : "Confirmer l'acceptation"}
         </button>
         <button class="btn-cancel" onclick="closeConfirmationModal()">
           <i class="fas fa-times"></i> Annuler
@@ -1368,20 +1482,35 @@ function closeConfirmationModal() {
 }
 
 // Fonction pour confirmer l'acceptation
+// Fonction pour confirmer l'acceptation
 async function confirmAcceptApplication(applicationId) {
   try {
     closeConfirmationModal()
     showLoading("Traitement de l'acceptation...")
 
+    // Déterminer le statut en fonction du rôle
+    let targetStatus = "accepted";
+    if (currentUser && currentUser.role === "recruiter") {
+      targetStatus = "accepted_pending_validation";
+    }
+
     const response = await fetch(`/api/accept-application/${applicationId}`, {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status: targetStatus })
     })
 
     const result = await response.json()
     hideLoading()
 
     if (response.ok && result.success) {
-      showNotification(result.message || "Candidat accepté avec succès", "success")
+      const message = targetStatus === "accepted_pending_validation" 
+        ? "Candidature acceptée, en attente de validation admin" 
+        : "Candidat accepté avec succès";
+      
+      showNotification(message, "success")
       setTimeout(() => {
         loadJobData()
       }, 1000)

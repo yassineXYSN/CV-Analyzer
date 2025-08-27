@@ -332,3 +332,81 @@ async def get_job_details(job_id: int):
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
+@router.post("/api/accept-application/{application_id}")
+async def accept_application(application_id: int, status_data: dict):
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
+        
+        db = SessionLocal()
+        try:
+            application = db.query(Application).filter(
+                Application.id == application_id,
+                Application.job.has(company_id=company.id)
+            ).first()
+            
+            if not application:
+                return {"success": False, "message": "Candidature non trouvée"}
+            
+            # Vérifier les permissions
+            admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+            if not admin:
+                return {"success": False, "message": "Droits insuffisants"}
+            
+            status = status_data.get("status", "accepted_pending_validation")
+            
+            # Seuls les super admins peuvent accepter définitivement
+            if status == "accepted" and admin.role != "super_admin":
+                return {"success": False, "message": "Seuls les administrateurs peuvent valider définitivement"}
+            
+            application.status = status
+            application.decision_date = datetime.now()
+            
+            # Si acceptation définitive, créer l'employé
+            if status == "accepted":
+                candidate = application.candidate_profile
+                
+                # Vérifier si l'employé existe déjà
+                existing_employee = db.query(Employee).filter(
+                    Employee.company_id == company.id,
+                    Employee.email == candidate.contact.email
+                ).first()
+                
+                if not existing_employee:
+                    new_employee = Employee(
+                        company_id=company.id,
+                        department_id=application.job.department_id,
+                        first_name=candidate.name.split(' ')[0],
+                        last_name=' '.join(candidate.name.split(' ')[1:]),
+                        email=candidate.contact.email,
+                        phone=candidate.contact.phone,
+                        position=application.job.title,
+                        hire_date=date.today(),
+                        employment_type=application.job.employment_type,
+                        status='active',
+                        candidate_profile_id=candidate.id
+                    )
+                    db.add(new_employee)
+                    
+                    # Marquer le poste comme pourvu
+                    application.job.status = "filled"
+            
+            db.commit()
+            
+            return {
+                "success": True, 
+                "message": f"Candidature {'acceptée' if status == 'accepted' else 'en attente de validation'}"
+            }
+            
+        except Exception as e:
+            db.rollback()
+            return {"success": False, "message": f"Erreur: {str(e)}"}
+        finally:
+            db.close()
+    except Exception as e:
+        return {"success": False, "message": f"Erreur interne: {str(e)}"}
