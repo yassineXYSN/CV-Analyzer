@@ -553,18 +553,55 @@ body {
   padding: 0.5rem 1rem;
   border: 1px solid var(--border-color);
   background: rgba(15, 23, 42, 0.6);
-  color: var(--text-secondary);
-  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: var(--transition-standard);
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
-.filter-btn:hover,
+.filter-btn:hover {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+
 .filter-btn.active {
-  background: var(--primary-blue);
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-color: #3b82f6;
   color: white;
-  border-color: var(--primary-blue);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.filter-btn.demo-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #10b981;
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  font-weight: 600;
+}
+
+.filter-btn.demo-btn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  border-color: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.filter-btn.debug-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: #f59e0b;
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  font-weight: 600;
+}
+
+.filter-btn.debug-btn:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  border-color: #d97706;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
 }
 
 /* Compatibility Filter */
@@ -1170,6 +1207,26 @@ body {
   background: rgba(156, 163, 175, 0.1);
   color: #9ca3af;
   border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.skill-item.error {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+}
+
+.skill-item.error .skill-name {
+  color: #ef4444;
+}
+
+.skill-item.error .skill-level {
+  color: #fca5a5;
+}
+
+.skill-item.error .skill-optional-badge {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 /* Enhanced Modal Styles for Recommendation System */
