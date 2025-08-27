@@ -55,30 +55,30 @@ async function loadUsersFromAPI() {
 // Add this function near the top with other helper functions
 function formatLastActivity(dateString) {
   if (!dateString || dateString === "-") return "-"
-  
+
   try {
     // If it's already a formatted string like "Today", "Yesterday", etc.
-    if (typeof dateString === 'string' && !dateString.includes('-') && !dateString.includes('T')) {
-      return dateString;
+    if (typeof dateString === "string" && !dateString.includes("-") && !dateString.includes("T")) {
+      return dateString
     }
-    
+
     const date = new Date(dateString)
     if (isNaN(date.getTime())) return "-"
-    
+
     const now = new Date()
     const diffTime = Math.abs(now - date)
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
     const diffHours = Math.floor(diffTime / (1000 * 60 * 60))
     const diffMinutes = Math.floor(diffTime / (1000 * 60))
-    
+
     if (diffDays > 30) {
-      return date.toLocaleDateString('fr-FR')
+      return date.toLocaleDateString("fr-FR")
     } else if (diffDays > 0) {
-      return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`
+      return `Il y a ${diffDays} jour${diffDays > 1 ? "s" : ""}`
     } else if (diffHours > 0) {
-      return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`
+      return `Il y a ${diffHours} heure${diffHours > 1 ? "s" : ""}`
     } else if (diffMinutes > 0) {
-      return `Il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`
+      return `Il y a ${diffMinutes} minute${diffMinutes > 1 ? "s" : ""}`
     } else {
       return "À l'instant"
     }
@@ -91,17 +91,17 @@ function formatLastActivity(dateString) {
 // Also add this function to handle the last login date
 function getLastLoginDisplay(lastLogin) {
   if (!lastLogin) return "-"
-  
+
   try {
     // If it's already a formatted string
-    if (typeof lastLogin === 'string' && !lastLogin.includes('T') && !lastLogin.includes('-')) {
-      return lastLogin;
+    if (typeof lastLogin === "string" && !lastLogin.includes("T") && !lastLogin.includes("-")) {
+      return lastLogin
     }
-    
-    const loginDate = new Date(lastLogin);
+
+    const loginDate = new Date(lastLogin)
     if (isNaN(loginDate.getTime())) return "-"
-    
-    return formatLastActivity(lastLogin);
+
+    return formatLastActivity(lastLogin)
   } catch (e) {
     console.error("Error processing last login:", e, lastLogin)
     return "-"
@@ -202,9 +202,9 @@ function loadCompanies() {
 
   const filteredCompanies = companies.filter((company) => {
     const matchesSearch =
-  ((company.name || company.company_name) &&
-   (company.name || company.company_name).toLowerCase().includes(searchTerm)) ||
-  (company.description && company.description.toLowerCase().includes(searchTerm))
+      ((company.name || company.company_name) &&
+        (company.name || company.company_name).toLowerCase().includes(searchTerm)) ||
+      (company.description && company.description.toLowerCase().includes(searchTerm))
     const matchesIndustry = !industryFilter || company.industry === industryFilter
     return matchesSearch && matchesIndustry
   })
@@ -519,14 +519,12 @@ function showUserDetails(userId) {
 
 function loadUsersTable() {
   console.log("[v0] Loading users table...")
-  
+
   // Map the users data correctly
   usersTableData = users.map((user) => {
     // Handle different user types and ID formats
-    const userId = typeof user.id === 'string' && user.id.startsWith('emp_') 
-      ? user.id.replace('emp_', '') 
-      : user.id;
-    
+    const userId = typeof user.id === "string" && user.id.startsWith("emp_") ? user.id.replace("emp_", "") : user.id
+
     return {
       id: userId,
       name: user.name || `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Nom non spécifié",
@@ -535,7 +533,7 @@ function loadUsersTable() {
       lastActivity: user.last_login || user.lastActivity || "-",
       position: user.position || user.role,
       isActive: user.is_active !== false,
-      isVerified: user.is_verified || user.isVerified || false
+      isVerified: user.is_verified || user.isVerified || false,
     }
   })
 
@@ -590,7 +588,7 @@ function renderUsersTable() {
         .toUpperCase()
       const avatarColor = getAvatarColor(user.name)
 
-return `
+      return `
   <tr>
     <td>
       <div class="table-user-info">
@@ -610,9 +608,9 @@ return `
     </td>
 
     <td>
-      <span class="table-user-verified ${user.isVerified ? 'verified' : 'not-verified'}">
-        <i class="fas ${user.isVerified ? 'fa-check-circle' : 'fa-times-circle'}"></i>
-        ${user.isVerified ? 'Oui' : 'Non'}
+      <span class="table-user-verified ${user.isVerified ? "verified" : "not-verified"}">
+        <i class="fas ${user.isVerified ? "fa-check-circle" : "fa-times-circle"}"></i>
+        ${user.isVerified ? "Oui" : "Non"}
       </span>
     </td>
     <td class="table-last-activity">
@@ -620,11 +618,15 @@ return `
     </td>
     <td>
       <div class="table-actions">
-        ${!user.isVerified ? `
+        ${
+          !user.isVerified
+            ? `
         <button class="table-actions-btn warning" onclick="resendVerification('${user.id}')" title="Renvoyer la vérification">
           <i class="fas fa-envelope"></i>
         </button>
-        ` : ''}
+        `
+            : ""
+        }
         <button class="table-actions-btn danger" onclick="deleteUser('${user.id}')" title="Supprimer">
           <i class="fas fa-trash"></i>
         </button>
@@ -632,31 +634,30 @@ return `
     </td>
   </tr>
 `
-
     })
     .join("")
 }
 
 // Add this function to safely parse dates
 function safeParseDate(dateString) {
-  if (!dateString) return null;
-  
+  if (!dateString) return null
+
   try {
     // Handle ISO string
-    if (typeof dateString === 'string' && dateString.includes('T')) {
-      return new Date(dateString);
+    if (typeof dateString === "string" && dateString.includes("T")) {
+      return new Date(dateString)
     }
-    
+
     // Handle timestamp
-    if (typeof dateString === 'number' || !isNaN(dateString)) {
-      return new Date(parseInt(dateString));
+    if (typeof dateString === "number" || !isNaN(dateString)) {
+      return new Date(Number.parseInt(dateString))
     }
-    
+
     // Handle other string formats
-    return new Date(dateString);
+    return new Date(dateString)
   } catch (e) {
-    console.error("Error parsing date:", e, dateString);
-    return null;
+    console.error("Error parsing date:", e, dateString)
+    return null
   }
 }
 
@@ -666,10 +667,8 @@ function filterUsersTable() {
 
   // Use the actual users data from the API
   let filteredData = users.map((user) => {
-    const userId = typeof user.id === 'string' && user.id.startsWith('emp_') 
-      ? user.id.replace('emp_', '') 
-      : user.id;
-    
+    const userId = typeof user.id === "string" && user.id.startsWith("emp_") ? user.id.replace("emp_", "") : user.id
+
     return {
       id: userId,
       name: user.name || `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Nom non spécifié",
@@ -678,7 +677,7 @@ function filterUsersTable() {
       lastActivity: user.last_login || "-",
       position: user.position || user.role,
       isActive: user.is_active !== false,
-      isVerified: user.is_verified || false
+      isVerified: user.is_verified || false,
     }
   })
 
@@ -949,7 +948,7 @@ async function deleteCompany(companyId) {
     onConfirm: async () => {
       try {
         showNotification("Suppression en cours...", "info")
-        
+
         // Conversion de l'ID en string si nécessaire (certaines APIs l'attendent en string)
         const companyIdStr = companyId.toString()
 
@@ -1086,13 +1085,13 @@ async function deleteUser(userId) {
 
         if (response.ok) {
           showNotification("Utilisateur supprimé avec succès!", "success")
-          removeUserFromLocalData(userId);
+          removeUserFromLocalData(userId)
           // Mettre à jour l'interface sans recharger la page
-          await loadUsersFromAPI(); // Recharger les données depuis l'API
-          
+          await loadUsersFromAPI() // Recharger les données depuis l'API
+
           // Si on est dans l'onglet tableau, recharger aussi le tableau
           if (document.getElementById("users-table-tab").classList.contains("active")) {
-            loadUsersTable();
+            loadUsersTable()
           }
         } else {
           const error = await response.text()
@@ -1108,25 +1107,24 @@ async function deleteUser(userId) {
 
 function removeUserFromLocalData(userId) {
   // Supprimer de la liste des utilisateurs
-  users = users.filter(user => {
+  users = users.filter((user) => {
     // Gérer les différents formats d'ID (emp_123 vs 123)
-    const currentUserId = typeof user.id === 'string' && user.id.startsWith('emp_') 
-      ? user.id.replace('emp_', '') 
-      : user.id.toString();
-    
-    return currentUserId !== userId.toString();
-  });
-  
+    const currentUserId =
+      typeof user.id === "string" && user.id.startsWith("emp_") ? user.id.replace("emp_", "") : user.id.toString()
+
+    return currentUserId !== userId.toString()
+  })
+
   // Mettre à jour l'affichage
-  loadUsers();
-  
+  loadUsers()
+
   // Si l'onglet tableau est actif, mettre à jour aussi le tableau
   if (document.getElementById("users-table-tab").classList.contains("active")) {
-    loadUsersTable();
+    loadUsersTable()
   }
-  
+
   // Mettre à jour les statistiques
-  updateStatistics();
+  updateStatistics()
 }
 
 // Notification System

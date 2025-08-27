@@ -56,14 +56,15 @@ async def get_companies(db: Session = Depends(get_db)):
             "description": company.description,
             "logo_url": company.logo_url,
             "website": company.website,
-            "setup_completed": bool(company.setup_completed),
-            "email": company.email,
-            "phone": company.phone,
             "address": company.address,
+            "phone": company.phone,
+            "email": company.email,
+            "setup_completed": bool(company.setup_completed),
             "created_at": company.created_at.isoformat() if company.created_at else None
         }
         for company in companies
     ]
+
 @router.post("/api/companies")
 async def create_company(company_data: dict, db: Session = Depends(get_db)):
     """Créer une nouvelle entreprise"""
@@ -82,29 +83,6 @@ async def create_company(company_data: dict, db: Session = Depends(get_db)):
             setup_completed=1
         )
         
-        db.add(db_company)
-        db.commit()
-        db.refresh(db_company)
-        
-        return {
-            "message": "Entreprise créée avec succès", 
-            "id": db_company.id,
-            "company_name": db_company.company_name
-        }
-        
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Erreur lors de la création de l'entreprise: {str(e)}"
-        )
-
-    try:
-        # Convert Pydantic model to dict and handle the founded_year conversion
-        company_data = company.dict()
-        
-        # Create the company instance
-        db_company = Company(**company_data)
         db.add(db_company)
         db.commit()
         db.refresh(db_company)
@@ -269,6 +247,18 @@ async def create_user(user_data: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_admin)
         
+        company_id = user_data.get("company_id")
+        if company_id:
+            company = db.query(Company).filter(Company.id == company_id).first()
+            if company:
+                access = AdminCompanyAccess(
+                    admin_id=db_admin.id,
+                    company_id=company_id,
+                    access_level="admin"
+                )
+                db.add(access)
+                db.commit()
+        
         # Générer et sauvegarder le token de vérification
         token = generate_verification_token()
         save_verification_token(db, db_admin.id, token)
@@ -287,7 +277,8 @@ async def create_user(user_data: dict, db: Session = Depends(get_db)):
             "message": "Utilisateur créé avec succès. Un email de vérification a été envoyé.", 
             "id": db_admin.id,
             "email": db_admin.email,
-            "role": db_admin.role
+            "role": db_admin.role,
+            "company_id": company_id  # Return company_id in response
         }
         
     except HTTPException:
