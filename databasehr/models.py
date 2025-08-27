@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum,TIMESTAMP
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from databasehr.database import Base
@@ -90,7 +90,6 @@ class AdminCompanyAccess(Base):
     granted_at = Column(DateTime, default=func.now())
     granted_by = Column(Integer, ForeignKey("hr_admins.id"))
     
-
 
 class Department(Base):
     __tablename__ = "departments"
@@ -270,13 +269,57 @@ class AdminPermissions(Base):
     can_recommend_candidates = Column(Boolean, default=False)
     # Relations
     admin = relationship("HRAdmin")
-    
+
 class AdminDepartments(Base):
     __tablename__ = "admin_departments"
-
+    
     id = Column(Integer, primary_key=True, index=True)
     admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
+    
     # Relations
     admin = relationship("HRAdmin")
     department = relationship("Department")
+
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), nullable=False, unique=True)
+    password_hash = Column(String(255))
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    google_id = Column(String(255), unique=True)
+    profile_picture = Column(String(500))
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    profile_id = Column(Integer, ForeignKey("profile_candidat.id"))
+    verification_token = Column(String(255))
+    verification_token_expires = Column(DateTime)
+    
+    # Relations
+    profile = relationship("ProfileCandidat")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(String(50), nullable=False)
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
+    status = Column(String(50), nullable=True)
+    company_name = Column(String(200), nullable=True)
+    job_title = Column(String(200), nullable=True)
+    admin_name = Column(String(100), nullable=True)
+    
+    # Relations
+    user = relationship("User")
+    application = relationship("Application")
+    job = relationship("Job")

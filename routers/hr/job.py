@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from databasehr.database import SessionLocal
-from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin, JobSkill
+from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin, JobSkill, Notification, User
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
@@ -367,7 +367,7 @@ async def accept_application(application_id: int, status_data: dict):
             application.status = status
             application.decision_date = datetime.now()
             
-            # Si acceptation définitive, créer l'employé
+            # Si acceptation définitive, créer l'employé et la notification
             if status == "accepted":
                 candidate = application.candidate_profile
                 
@@ -395,6 +395,43 @@ async def accept_application(application_id: int, status_data: dict):
                     
                     # Marquer le poste comme pourvu
                     application.job.status = "filled"
+                
+                # Chercher l'utilisateur par email plutôt que par profile_id
+                user = db.query(User).filter(User.email == candidate.contact.email).first()
+                
+                if not user:
+                    print(f"[v0] User not found, creating new user for candidate: {candidate.name}")
+                    # Create a new user for the candidate
+                    user = User(
+                        email=candidate.contact.email,
+                        first_name=candidate.name.split(' ')[0] if candidate.name else "Unknown",
+                        last_name=' '.join(candidate.name.split(' ')[1:]) if len(candidate.name.split(' ')) > 1 else "",
+                        password_hash="",  # Empty password hash for now
+                        is_active=True,
+                        is_verified=False,
+                        created_at=datetime.now()
+                    )
+                    db.add(user)
+                    db.commit()  # Commit to get the user.id
+                    db.refresh(user)
+                    print(f"[v0] Created new user with id: {user.id}")
+                
+                print(f"[v0] Creating notification for user_id: {user.id}")
+                notification = Notification(
+                    user_id=user.id,
+                    type="application_accepted",
+                    title="Candidature acceptée !",
+                    message=f"Félicitations ! Votre candidature pour le poste de {application.job.title} chez {company.company_name} a été acceptée. Vous recevrez bientôt plus d'informations concernant les prochaines étapes.",
+                    is_read=False,
+                    application_id=application.id,
+                    job_id=application.job.id,
+                    status="accepted",
+                    company_name=company.company_name,
+                    job_title=application.job.title,
+                    admin_name=f"{admin.first_name} {admin.last_name}"
+                )
+                db.add(notification)
+                print(f"[v0] Notification created successfully for user_id: {user.id}")
             
             db.commit()
             
@@ -405,8 +442,10 @@ async def accept_application(application_id: int, status_data: dict):
             
         except Exception as e:
             db.rollback()
+            print(f"[v0] Error in accept_application: {str(e)}")
             return {"success": False, "message": f"Erreur: {str(e)}"}
         finally:
             db.close()
     except Exception as e:
+        print(f"[v0] Internal error in accept_application: {str(e)}")
         return {"success": False, "message": f"Erreur interne: {str(e)}"}
