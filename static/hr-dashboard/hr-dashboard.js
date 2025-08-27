@@ -129,8 +129,12 @@ function renderApplicationsWithCompatibility(filter = "all") {
   container.innerHTML = filteredApps
     .map((app) => {
       console.log(
-        `🎯 FRONTEND: Fallback rendering app ${app.id} with compatibility ${app.compatibility_percentage}% (matched: ${app.matched_skills_count}, total: ${app.total_job_skills})`,
+        `🎯 FRONTEND: Rendering app ${app.id} with compatibility ${app.compatibility_percentage}% (source: ${app.compatibility_source || "calculated"})`,
       )
+
+      const isAICompatibility = app.compatibility_source === "ai"
+      const hasAIReason = isAICompatibility && app.compatibility_reason && app.compatibility_reason.trim() !== ""
+
       return `
 <div class="application-card ${app.status}">
   <div class="application-header">
@@ -258,6 +262,10 @@ function renderApplicationsWithCompatibility(filter = "all") {
           <div class="compatibility-title">
             <i class="fas fa-chart-pie"></i>
             Compatibilité des compétences
+            <span class="compatibility-source ${isAICompatibility ? "ai" : "calculated"}">
+              <i class="fas fa-${isAICompatibility ? "robot" : "calculator"}"></i>
+              ${isAICompatibility ? "IA" : "CALCULÉ"}
+            </span>
           </div>
           <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
             ${app.compatibility_percentage}%
@@ -268,17 +276,24 @@ function renderApplicationsWithCompatibility(filter = "all") {
           <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage)}"
                style="width: ${app.compatibility_percentage}%"></div>
         </div>
-        <div class="compatibility-details">
-          <span class="skill-stat matched">
-            <i class="fas fa-check-circle"></i>
-            ${app.matched_skills_count || 0} compétences correspondantes
-          </span>
-          <span class="skill-stat missing">
-            <i class="fas fa-times-circle"></i>
-            ${(app.total_job_skills || 0) - (app.matched_skills_count || 0)} manquantes
-          </span>
-          <span>Total: ${app.total_job_skills || 0} compétences</span>
-        </div>
+        
+        ${
+          isAICompatibility
+            ? ""
+            : `
+          <div class="compatibility-details">
+            <span class="skill-stat matched">
+              <i class="fas fa-check-circle"></i>
+              ${app.matched_skills_count || 0} compétences correspondantes
+            </span>
+            <span class="skill-stat missing">
+              <i class="fas fa-times-circle"></i>
+              ${(app.total_job_skills || 0) - (app.matched_skills_count || 0)} manquantes
+            </span>
+            <span>Total: ${app.total_job_skills || 0} compétences</span>
+          </div>
+        `
+        }
       </div>
     `
       : ""
@@ -291,6 +306,15 @@ function renderApplicationsWithCompatibility(filter = "all") {
     <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
       <i class="fas fa-info-circle"></i> Détails du poste
     </button>
+    ${
+      isAICompatibility && hasAIReason
+        ? `
+      <button class="app-btn ai-reason" onclick="showAIReasonModal(${app.id}, '${app.compatibility_reason.replace(/'/g, "\\'")}')">
+        <i class="fas fa-robot"></i> Raison IA
+      </button>
+    `
+        : ""
+    }
     ${renderApplicationActionButtons(app)}
   </div>
 </div>
@@ -982,6 +1006,166 @@ async function confirmRecommendation(applicationId) {
     hideLoading()
     console.error("❌ Erreur réseau recommandation candidature:", error)
     showNotification("❌ Erreur de connexion lors de la recommandation", "error")
+  }
+}
+
+function showAIReasonModal(applicationId, reason) {
+  console.log(`🤖 [v0] DASHBOARD: Showing AI reason modal for application ${applicationId}`)
+
+  const modal = document.createElement("div")
+  modal.className = "ai-reason-modal-overlay"
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease-out;
+  `
+
+  modal.innerHTML = `
+    <div class="ai-reason-modal-content" style="
+      background: linear-gradient(135deg, #1e293b, #334155);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 16px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      animation: slideIn 0.3s ease-out;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    ">
+      <div class="ai-reason-modal-header" style="
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 16px 16px 0 0;
+        position: relative;
+        overflow: hidden;
+      ">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <i class="fas fa-robot" style="font-size: 1.5rem;"></i>
+            <div>
+              <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Analyse IA</h3>
+              <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Candidature #${applicationId}</p>
+            </div>
+          </div>
+          <button onclick="closeAIReasonModal()" style="
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 1.2rem;
+          " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" 
+             onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="ai-reason-modal-body" style="padding: 2rem;">
+        <div class="ai-analysis-section" style="
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          border-radius: 12px;
+          padding: 1.5rem;
+          position: relative;
+          overflow: hidden;
+        ">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+            <i class="fas fa-brain" style="color: #10b981; font-size: 1.2rem;"></i>
+            <h4 style="margin: 0; color: #10b981; font-weight: 600;">Raisonnement de l'IA</h4>
+            <span class="modal-source-badge" style="
+              background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+              color: #10b981;
+              border: 1px solid rgba(16, 185, 129, 0.3);
+              padding: 0.25rem 0.5rem;
+              border-radius: 12px;
+              font-size: 0.7rem;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-left: auto;
+            ">
+              <i class="fas fa-robot"></i> IA
+            </span>
+          </div>
+          <div style="
+            color: #e2e8f0;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #10b981;
+          ">
+            ${reason}
+          </div>
+        </div>
+      </div>
+      
+      <div class="ai-reason-modal-footer" style="
+        padding: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: flex-end;
+      ">
+        <button onclick="closeAIReasonModal()" style="
+          background: linear-gradient(135deg, #6b7280, #4b5563);
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        " onmouseover="this.style.background='linear-gradient(135deg, #4b5563, #374151)'" 
+           onmouseout="this.style.background='linear-gradient(135deg, #6b7280, #4b5563)'">
+          Fermer
+        </button>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  // Close on overlay click
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      closeAIReasonModal()
+    }
+  })
+
+  // Close on escape key
+  const handleEscape = (e) => {
+    if (e.key === "Escape") {
+      closeAIReasonModal()
+      document.removeEventListener("keydown", handleEscape)
+    }
+  }
+  document.addEventListener("keydown", handleEscape)
+}
+
+function closeAIReasonModal() {
+  const modal = document.querySelector(".ai-reason-modal-overlay")
+  if (modal) {
+    modal.style.animation = "fadeOut 0.2s ease-out"
+    setTimeout(() => {
+      modal.remove()
+    }, 200)
   }
 }
 

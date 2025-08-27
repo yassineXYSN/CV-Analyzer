@@ -425,3 +425,324 @@
 .compatibility-loading {
   animation: compatibilityPulse 1.5s ease-in-out infinite;
 }
+/* Enhanced compatibility source indicators */
+.compatibility-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 0.5rem;
+}
+
+.compatibility-source.ai {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.compatibility-source.calculated {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* AI reasoning section */
+.ai-compatibility-reason {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+}
+
+.ai-reason-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: #10b981;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.ai-reason-text {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Enhanced styling for AI reason placeholder with better visual hierarchy */
+.ai-reason-placeholder {
+  color: #94a3b8;
+  font-style: italic;
+  opacity: 0.9;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.02));
+  border: 1px dashed rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.ai-reason-placeholder i {
+  color: #10b981;
+  opacity: 0.7;
+  margin-right: 0.5rem;
+}
+
+.ai-reason-placeholder strong {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.ai-reason-placeholder small {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-style: normal;
+}
+
+/* Added debug information styling for development */
+.ai-debug-info {
+  font-family: "Courier New", monospace;
+  font-size: 0.6rem;
+  color: #64748b;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+/* Enhanced action buttons for AI compatibility */
+.app-btn.ai-details {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.app-btn.ai-details:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Added styling for the new AI reason button */
+.app-btn.ai-reason {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.app-btn.ai-reason:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.app-btn.ai-reason i {
+  margin-right: 0.5rem;
+  color: #ffffff;
+}
+
+/* Added styling for the AI reason modal */
+.ai-reason-modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.ai-reason-modal-content {
+  animation: slideIn 0.3s ease-out;
+  transform-origin: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.ai-reason-modal-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-reason-modal-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: headerGlow 3s infinite;
+}
+
+@keyframes headerGlow {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.ai-reason-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.1);
+}
+
+/* Modal source badges */
+.modal-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Enhanced AI analysis section in modal */
+.ai-analysis-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-analysis-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.1), transparent);
+  animation: aiGlow 3s infinite;
+}
+
+@keyframes aiGlow {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Skills summary for calculated compatibility */
+.skills-summary {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+}
+
+.skills-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skills-stats span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.matched-skills i {
+  color: #10b981;
+}
+
+.missing-skills i {
+  color: #ef4444;
+}
+
+.total-skills i {
+  color: #6b7280;
+}
+
+/* Responsive enhancements */
+@media (max-width: 768px) {
+  .compatibility-source {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .ai-compatibility-reason {
+    padding: 0.75rem;
+  }
+
+  .ai-reason-text {
+    font-size: 0.8rem;
+  }
+
+  /* Enhanced responsive styling for AI reason placeholder */
+  .ai-reason-placeholder {
+    font-size: 0.8rem;
+    padding: 0.75rem;
+  }
+
+  .ai-reason-placeholder small {
+    font-size: 0.7rem;
+  }
+
+  .ai-debug-info {
+    font-size: 0.55rem;
+  }
+
+  .skills-stats {
+    gap: 0.25rem;
+  }
+
+  .skills-stats span {
+    font-size: 0.8rem;
+  }
+
+  /* Added responsive styling for AI reason button and modal */
+  .app-btn.ai-reason {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .ai-reason-modal-content {
+    max-width: 95%;
+    margin: 1rem;
+  }
+
+  .ai-reason-modal-header {
+    padding: 1.25rem;
+  }
+
+  .ai-reason-modal-body {
+    padding: 1.5rem;
+  }
+
+  .ai-reason-modal-footer {
+    padding: 1.25rem;
+  }
+}

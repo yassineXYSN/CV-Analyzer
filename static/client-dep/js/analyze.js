@@ -4,9 +4,12 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeFileUpload()
   initializeProfileModal()
   initializeFormSubmission()
+  loadHeaderComponent()
+  loadJobProfiles()
 })
 
 let selectedProfiles = []
+let availableJobProfiles = []
 
 function initializeFileUpload() {
   const fileUploadArea = document.getElementById("fileUploadArea")
@@ -66,96 +69,121 @@ function initializeProfileModal() {
   const closeModalBtn = document.getElementById("closeProfileModal")
   const cancelModalBtn = document.getElementById("cancelProfileModal")
   const confirmModalBtn = document.getElementById("confirmProfileModal")
-  const profileCards = document.querySelectorAll(".profile-card")
   const customProfileInput = document.getElementById("customProfileInput")
   const addCustomBtn = document.getElementById("addCustomBtn")
   const profileSearch = document.getElementById("profileSearch")
 
   // Open modal
   profileSelectorBtn.addEventListener("click", () => {
-    profileModal.classList.add("show")
-    document.body.style.overflow = "hidden"
+    console.log("[v0] Profile selector button clicked")
+    console.log("[v0] Modal element:", profileModal)
+
+    if (profileModal) {
+      profileModal.classList.add("active")
+      document.body.style.overflow = "hidden"
+      console.log("[v0] Modal should now be visible")
+    } else {
+      console.error("[v0] Modal element not found!")
+    }
   })
 
   // Close modal
   function closeModal() {
-    profileModal.classList.remove("show")
-    document.body.style.overflow = ""
+    console.log("[v0] Closing modal")
+    if (profileModal) {
+      profileModal.classList.remove("active")
+      document.body.style.overflow = ""
+    }
   }
 
-  closeModalBtn.addEventListener("click", closeModal)
-  cancelModalBtn.addEventListener("click", closeModal)
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener("click", closeModal)
+  }
 
-  profileModal.addEventListener("click", (e) => {
-    if (e.target === profileModal) {
-      closeModal()
-    }
-  })
+  if (cancelModalBtn) {
+    cancelModalBtn.addEventListener("click", closeModal)
+  }
 
-  // Profile card selection
-  profileCards.forEach((card) => {
-    card.addEventListener("click", () => {
-      const profileName = card.querySelector(".profile-name").textContent
-      const profileId = card.dataset.profile
-
-      if (card.classList.contains("selected")) {
-        // Deselect
-        card.classList.remove("selected")
-        selectedProfiles = selectedProfiles.filter((p) => p.id !== profileId)
-      } else {
-        // Select
-        card.classList.add("selected")
-        selectedProfiles.push({
-          id: profileId,
-          name: profileName,
-        })
+  if (profileModal) {
+    profileModal.addEventListener("click", (e) => {
+      if (e.target.classList.contains("modal-overlay")) {
+        closeModal()
       }
-
-      updateSelectedProfiles()
     })
-  })
+  }
 
   // Add custom profile
-  addCustomBtn.addEventListener("click", () => {
-    const customName = customProfileInput.value.trim()
-    if (customName) {
-      const customId = "custom_" + Date.now()
-      selectedProfiles.push({
-        id: customId,
-        name: customName,
-        custom: true,
-      })
+  if (addCustomBtn && customProfileInput) {
+    addCustomBtn.addEventListener("click", () => {
+      const customName = customProfileInput.value.trim()
+      if (customName) {
+        const customId = "custom_" + Date.now()
+        selectedProfiles.push({
+          id: customId,
+          name: customName,
+          custom: true,
+        })
 
-      customProfileInput.value = ""
-      updateSelectedProfiles()
-    }
-  })
-
-  // Search functionality
-  profileSearch.addEventListener("input", (e) => {
-    const searchTerm = e.target.value.toLowerCase()
-    profileCards.forEach((card) => {
-      const profileName = card.querySelector(".profile-name").textContent.toLowerCase()
-      const profileDesc = card.querySelector(".profile-description").textContent.toLowerCase()
-
-      if (profileName.includes(searchTerm) || profileDesc.includes(searchTerm)) {
-        card.style.display = "block"
-      } else {
-        card.style.display = "none"
+        customProfileInput.value = ""
+        updateSelectedProfiles()
+        updateProfileSelector()
       }
     })
-  })
+
+    // Custom profile input enter key
+    customProfileInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        addCustomBtn.click()
+      }
+    })
+  }
+
+  // Search functionality
+  if (profileSearch) {
+    profileSearch.addEventListener("input", (e) => {
+      const searchTerm = e.target.value.toLowerCase()
+      filterProfiles(searchTerm)
+    })
+  }
 
   // Confirm selection
-  confirmModalBtn.addEventListener("click", () => {
-    if (selectedProfiles.length === 0) {
-      alert("Veuillez sélectionner au moins un profil.")
-      return
-    }
+  if (confirmModalBtn) {
+    confirmModalBtn.addEventListener("click", () => {
+      console.log("[v0] Confirm button clicked, selected profiles:", selectedProfiles)
+      if (selectedProfiles.length === 0) {
+        // Show error message if no profiles selected
+        const errorDiv = document.createElement("div")
+        errorDiv.className = "error-message"
+        errorDiv.style.cssText =
+          "color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 8px; margin-top: 1rem; text-align: center;"
+        errorDiv.textContent = "⚠️ Veuillez sélectionner au moins une offre d'emploi"
 
-    updateProfileSelector()
-    closeModal()
-  })
+        // Remove existing error message if any
+        const existingError = document.querySelector(".error-message")
+        if (existingError) {
+          existingError.remove()
+        }
+
+        // Add error message to modal footer
+        const modalFooter = document.querySelector(".modal-footer")
+        if (modalFooter) {
+          modalFooter.insertBefore(errorDiv, modalFooter.firstChild)
+        }
+
+        // Remove error message after 3 seconds
+        setTimeout(() => {
+          if (errorDiv.parentNode) {
+            errorDiv.remove()
+          }
+        }, 3000)
+
+        return // Don't close modal
+      }
+
+      updateProfileSelector()
+      closeModal()
+    })
+  }
 
   function updateSelectedProfiles() {
     const selectedContainer = document.getElementById("selectedProfiles")
@@ -164,14 +192,20 @@ function initializeProfileModal() {
     selectedCount.textContent = selectedProfiles.length
 
     if (selectedProfiles.length === 0) {
-      selectedContainer.innerHTML = '<div class="no-selection">Aucun profil sélectionné</div>'
+      selectedContainer.innerHTML = '<div class="no-selection">Aucune offre sélectionnée</div>'
     } else {
       selectedContainer.innerHTML = selectedProfiles
         .map(
           (profile) => `
-                <div class="selected-tag">
-                    ${profile.name}
-                    <button class="remove-tag" onclick="removeProfile('${profile.id}')">×</button>
+                <div class="selected-profile-item">
+                    <div class="selected-profile-info">
+                        <div class="profile-icon">💼</div>
+                        <div>
+                            <div class="profile-name">${profile.name}</div>
+                            ${profile.company ? `<div class="profile-company">${profile.company} - ${profile.department || ""}</div>` : ""}
+                        </div>
+                    </div>
+                    <button class="remove-profile-btn" onclick="removeProfile('${profile.id}')">✕</button>
                 </div>
             `,
         )
@@ -184,11 +218,11 @@ function initializeProfileModal() {
     const selectedProfilesInput = document.getElementById("selectedProfilesInput")
 
     if (selectedProfiles.length === 0) {
-      selectorSubtitle.textContent = "Cliquez pour choisir un ou plusieurs profils"
+      selectorSubtitle.textContent = "Cliquez pour choisir une ou plusieurs offres d'emploi"
     } else if (selectedProfiles.length === 1) {
-      selectorSubtitle.textContent = `1 profil sélectionné: ${selectedProfiles[0].name}`
+      selectorSubtitle.textContent = `1 offre sélectionnée: ${selectedProfiles[0].name}`
     } else {
-      selectorSubtitle.textContent = `${selectedProfiles.length} profils sélectionnés`
+      selectorSubtitle.textContent = `${selectedProfiles.length} offres sélectionnées`
     }
 
     selectedProfilesInput.value = JSON.stringify(selectedProfiles)
@@ -205,12 +239,161 @@ function initializeProfileModal() {
     }
 
     updateSelectedProfiles()
+    updateProfileSelector()
   }
 
   // Make fillCustomExample global
   window.fillCustomExample = (example) => {
     customProfileInput.value = example
     customProfileInput.focus()
+  }
+}
+
+async function loadJobProfiles() {
+  try {
+    const response = await fetch("/api/job-profiles")
+    const data = await response.json()
+
+    if (data.success) {
+      availableJobProfiles = data.profiles
+      renderJobProfiles(availableJobProfiles)
+    } else {
+      console.error("Failed to load job profiles:", data.error)
+      showFallbackProfiles()
+    }
+  } catch (error) {
+    console.error("Error loading job profiles:", error)
+    showFallbackProfiles()
+  }
+}
+
+function renderJobProfiles(profiles) {
+  const profilesGrid = document.getElementById("profilesGrid")
+  const loadingMessage = document.getElementById("loadingProfiles")
+
+  loadingMessage.style.display = "none"
+  profilesGrid.style.display = "grid"
+
+  profilesGrid.innerHTML = profiles
+    .map(
+      (profile) => `
+        <div class="profile-card ${selectedProfiles.some((p) => p.id === profile.id.toString()) ? "selected" : ""}" 
+             data-profile="${profile.id}" 
+             data-job-title="${profile.title}"
+             data-job-company="${profile.company}"
+             data-job-department="${profile.department}">
+            <div class="profile-icon">💼</div>
+            <div class="profile-name">${profile.title}</div>
+            <div class="profile-company">${profile.company} - ${profile.department}</div>
+            <div class="profile-description">${profile.description}</div>
+            <div class="profile-skills">
+                ${profile.skills
+                  .slice(0, 3)
+                  .map((skill) => `<span class="skill-tag">${skill}</span>`)
+                  .join("")}
+                ${profile.skills.length > 3 ? `<span class="skill-more">+${profile.skills.length - 3}</span>` : ""}
+            </div>
+        </div>
+    `,
+    )
+    .join("")
+
+  profilesGrid.querySelectorAll(".profile-card").forEach((card) => {
+    card.addEventListener("click", function () {
+      const profileId = this.dataset.profile
+      const jobData = profiles.find((p) => p.id.toString() === profileId)
+      console.log("[v0] Profile card clicked:", profileId, jobData)
+
+      if (this.classList.contains("selected")) {
+        // Deselect
+        this.classList.remove("selected")
+        selectedProfiles = selectedProfiles.filter((p) => p.id !== profileId)
+      } else {
+        // Select
+        this.classList.add("selected")
+        selectedProfiles.push({
+          id: profileId,
+          name: jobData.title,
+          company: jobData.company,
+          department: jobData.department,
+          skills: jobData.skills,
+          requirements: jobData.requirements,
+        })
+      }
+
+      window.updateSelectedProfiles() // Ensure the function is called globally
+    })
+  })
+}
+
+function filterProfiles(searchTerm) {
+  const filteredProfiles = availableJobProfiles.filter(
+    (profile) =>
+      profile.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.skills.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase())),
+  )
+  renderJobProfiles(filteredProfiles)
+}
+
+function showFallbackProfiles() {
+  const profilesGrid = document.getElementById("profilesGrid")
+  const loadingMessage = document.getElementById("loadingProfiles")
+
+  loadingMessage.textContent = "⚠️ Utilisation des profils par défaut"
+
+  const fallbackProfiles = [
+    {
+      id: "cybersecurity",
+      title: "Expert en Cybersécurité",
+      description: "Sécurité informatique, audit, protection des données",
+      company: "Entreprise",
+      department: "IT",
+      skills: ["Cybersécurité", "Audit", "Protection données"],
+    },
+    {
+      id: "webdev",
+      title: "Développeur Full-Stack",
+      description: "Développement web, frontend, backend",
+      company: "Entreprise",
+      department: "IT",
+      skills: ["JavaScript", "React", "Node.js"],
+    },
+    {
+      id: "datascientist",
+      title: "Data Scientist",
+      description: "Analyse de données, machine learning, IA",
+      company: "Entreprise",
+      department: "Data",
+      skills: ["Python", "Machine Learning", "IA"],
+    },
+  ]
+
+  availableJobProfiles = fallbackProfiles
+  renderJobProfiles(fallbackProfiles)
+  profilesGrid.style.display = "grid"
+}
+
+async function loadHeaderComponent() {
+  try {
+    const response = await fetch("/static/client-dep/components/header.html")
+    if (response.ok) {
+      const headerHTML = await response.text()
+      const container = document.getElementById("header-component")
+      container.innerHTML = headerHTML
+
+      // Execute scripts from the loaded HTML
+      const scripts = container.querySelectorAll("script")
+      scripts.forEach((oldScript) => {
+        const newScript = document.createElement("script")
+        newScript.textContent = oldScript.textContent
+        oldScript.parentNode.removeChild(oldScript)
+        document.body.appendChild(newScript)
+      })
+    }
+  } catch (error) {
+    console.error("Failed to load header component:", error)
   }
 }
 
@@ -223,6 +406,8 @@ function initializeFormSubmission() {
   const progressText = document.getElementById("progressText")
 
   uploadForm.addEventListener("submit", (e) => {
+    console.log("[v0] Form submit, selected profiles:", selectedProfiles)
+
     // Validate form
     const fileInput = document.getElementById("filetoscan")
     const selectedProfilesInput = document.getElementById("selectedProfilesInput")
@@ -233,11 +418,23 @@ function initializeFormSubmission() {
       return
     }
 
-    if (!selectedProfilesInput.value) {
+    if (selectedProfiles.length === 0) {
       e.preventDefault()
-      alert("Veuillez sélectionner au moins un profil.")
+      alert("Veuillez sélectionner au moins un profil d'emploi avant de continuer.")
       return
     }
+
+    const selectedJobsData = selectedProfiles.map((profile) => ({
+      id: profile.id,
+      title: profile.name,
+      requirements: profile.requirements || "",
+      skills: profile.skills || [],
+      company: profile.company || "",
+      department: profile.department || "",
+    }))
+
+    console.log("[v0] Submitting with job data:", selectedJobsData)
+    document.getElementById("selectedJobsData").value = JSON.stringify(selectedJobsData)
 
     // Show loading state
     submitBtn.classList.add("loading")
@@ -245,7 +442,6 @@ function initializeFormSubmission() {
     progressContainer.style.display = "block"
 
     // Simulate progress
-    const progress = 0
     const progressSteps = [
       { progress: 20, text: "Téléchargement du fichier..." },
       { progress: 40, text: "Extraction du texte..." },
@@ -268,4 +464,33 @@ function initializeFormSubmission() {
       }
     }, 800)
   })
+}
+
+// Declare the function globally
+window.updateSelectedProfiles = function updateSelectedProfiles() {
+  const selectedContainer = document.getElementById("selectedProfiles")
+  const selectedCount = document.getElementById("selectedCount")
+
+  selectedCount.textContent = selectedProfiles.length
+
+  if (selectedProfiles.length === 0) {
+    selectedContainer.innerHTML = '<div class="no-selection">Aucune offre sélectionnée</div>'
+  } else {
+    selectedContainer.innerHTML = selectedProfiles
+      .map(
+        (profile) => `
+                <div class="selected-profile-item">
+                    <div class="selected-profile-info">
+                        <div class="profile-icon">💼</div>
+                        <div>
+                            <div class="profile-name">${profile.name}</div>
+                            ${profile.company ? `<div class="profile-company">${profile.company} - ${profile.department || ""}</div>` : ""}
+                        </div>
+                    </div>
+                    <button class="remove-profile-btn" onclick="removeProfile('${profile.id}')">✕</button>
+                </div>
+            `,
+      )
+      .join("")
+  }
 }

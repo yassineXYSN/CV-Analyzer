@@ -2,7 +2,7 @@ import json
 from fastapi import APIRouter, Request, Query, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from database import SessionLocal
-from databaseclient.models import Job, Company, Department, Application, ProfileCandidat, SavedJob, JobSkill
+from databaseclient.models import *
 from routers.client_dep.dependencies import get_db, get_current_user
 import math
 from pydantic import BaseModel
@@ -11,6 +11,8 @@ from sqlalchemy import desc, or_, and_
 from fastapi.templating import Jinja2Templates
 from typing import Optional
 import os
+import requests
+
 
 router = APIRouter()
 # Templates
@@ -673,14 +675,35 @@ async def apply_to_job(job_id: int, application_data: ApplicationRequest, reques
         
         if existing_application:
             return {"success": False, "message": "Vous avez déjà postulé à cette offre"}
+
+        URL = os.getenv("N8N_COMP_WEBHOOK_URL")
+        print("Sending variable to n8n...")
+
+        # Example variable (can be dict, list, etc.)
+        data = get_compatibility_data(job_id, current_user.id)
+
+        # Send JSON payload
+        response = requests.post(URL, json=data)
+
+        print("Status Code:", response.status_code)
+        print("Response:", response.text)
         
+        if response.status_code == 200:
+            n8n_webhook_triggered = True
+            compatibility_score = response.json().get("compatibility_score")
+            compatibility_reason = response.json().get("reason")
+            
+
         # Create new application
         new_application = Application(
             job_id=job_id,
             candidate_profile_id=candidate_profile.id,
             status='pending',
             source='job_portal',
-            user_id=current_user.id
+            user_id=current_user.id,
+            compatibility_score=compatibility_score,
+            n8n_webhook_triggered=n8n_webhook_triggered,
+            compatibility_reason=compatibility_reason
         )
         
         db.add(new_application)
@@ -761,3 +784,72 @@ async def withdraw_application(application_id: int, request: Request, db: Sessio
         db.rollback()
         print(f"Error withdrawing application: {str(e)}")
         return {"success": False, "message": "Erreur lors du retrait de la candidature"}
+
+
+
+def get_compatibility_data(job_id: int, user_id: int):
+    try:
+        from database import SessionLocal
+        db = SessionLocal()
+        
+        # Get job with related data
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            return {"error": "Job not found"}
+        
+        job_skills = db.query(JobSkill).filter(JobSkill.job_id == job_id).all()
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return {"error": "User not found"}
+            
+        candidate_profile = db.query(ProfileCandidat).filter(ProfileCandidat.user_id == user_id).first()
+        if not candidate_profile:
+            return {"error": "User profile not found"}
+        
+        company = db.query(Company).filter(Company.id == job.company_id).first()
+        department = db.query(Department).filter(Department.id == job.department_id).first()
+        
+        # Build dictionary
+        data = {
+            "job": {
+                "title": job.title,
+                "company": company.company_name if company else None,
+                "department": department.name if department else None,
+                "industry": company.industry if company else None,
+                "employment_type": job.employment_type,
+                "priority_level": job.priority,
+                "salary_range": f"{job.salary_min or 'N/A'} - {job.salary_max or 'N/A'} {job.currency}"
+                                if job.salary_min or job.salary_max else None,
+                "description": job.description,
+                "requirements": job.requirements,
+                "responsibilities": job.responsibilities,
+                "skills": [
+                    {
+                        "name": skill.skill_name,
+                        "level": skill.skill_level,
+                        "status": "REQUIRED" if skill.is_required else "PREFERRED"
+                    }
+                    for skill in job_skills
+                ]
+            },
+            "candidate": {
+                "name": candidate_profile.name or f"{user.first_name} {user.last_name}",
+                "title": candidate_profile.title or None,
+                "years_of_experience": candidate_profile.yearOfExperience or 0,
+                "summary": candidate_profile.profile or None,
+                "education": candidate_profile.education if candidate_profile.education else [],
+                "skills": candidate_profile.skills if candidate_profile.skills else [],
+                "languages": candidate_profile.languages if candidate_profile.languages else [],
+                "certifications": candidate_profile.certificates if candidate_profile.certificates else []
+            }
+        }
+        
+        return data
+    
+    except Exception as e:
+        return {"error": str(e)}
+    
+    finally:
+        if 'db' in locals():
+            db.close()
