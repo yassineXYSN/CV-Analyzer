@@ -710,8 +710,9 @@ function renderApplicationsWithCompatibility(filter = "all") {
           </div>
           
           <div class="compatibility-actions">
-            <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
+            <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id}, ${app.compatibility_percentage || 0}, '${app.compatibility_source || 'calculated'}', '${app.compatibility_reason || ''}')">
               <i class="fas fa-search"></i> Détails compatibilité
+              ${app.compatibility_source === 'ai' ? ' <i class="fas fa-robot" title="Analyse IA"></i>' : ''}
             </button>
           </div>
         </div>
@@ -799,7 +800,7 @@ function filterApplicationsByCompatibility(minCompatibility) {
 }
 
 // NOUVELLE FONCTION: Voir les détails de compatibilité avec thème sombre
-async function viewCompatibilityDetails(applicationId) {
+async function viewCompatibilityDetails(applicationId, compatibilityPercentage, compatibilitySource, compatibilityReason) {
   console.log("🔍 Affichage détails compatibilité pour candidature:", applicationId)
 
   try {
@@ -811,7 +812,7 @@ async function viewCompatibilityDetails(applicationId) {
     hideLoading()
 
     if (result.success) {
-      showDarkCompatibilityModal(result)
+      showDarkCompatibilityModal(result, compatibilityPercentage, compatibilitySource, compatibilityReason)
     } else {
       showNotification("Erreur lors du chargement des détails de compatibilité", "error")
     }
@@ -823,7 +824,7 @@ async function viewCompatibilityDetails(applicationId) {
 }
 
 // NOUVELLE FONCTION: Afficher la modal de détails de compatibilité avec thème sombre
-function showDarkCompatibilityModal(compatibilityData) {
+function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, compatibilitySource, compatibilityReason) {
   console.log("🔍 Affichage modal compatibilité sombre:", compatibilityData)
 
   const modal = document.createElement("div")
@@ -896,7 +897,7 @@ function showDarkCompatibilityModal(compatibilityData) {
           border-radius: 16px;
         ">
           <div class="compatibility-score">
-            <div class="score-circle ${getCompatibilityClass(compatibilityData.compatibility_percentage)}" style="
+            <div class="score-circle ${getCompatibilityClass(compatibilityPercentage)}" style="
               width: 120px;
               height: 120px;
               border-radius: 50%;
@@ -906,15 +907,15 @@ function showDarkCompatibilityModal(compatibilityData) {
               justify-content: center;
               background: conic-gradient(
                 ${
-                  compatibilityData.compatibility_percentage >= 75
+                  compatibilityPercentage >= 75
                     ? "#10b981"
-                    : compatibilityData.compatibility_percentage >= 50
+                    : compatibilityPercentage >= 50
                       ? "#f59e0b"
-                      : compatibilityData.compatibility_percentage >= 25
+                      : compatibilityPercentage >= 25
                         ? "#ef4444"
                         : "#6b7280"
                 } 
-                ${compatibilityData.compatibility_percentage * 3.6}deg,
+                ${compatibilityPercentage * 3.6}deg,
                 rgba(255, 255, 255, 0.1) 0deg
               );
               position: relative;
@@ -922,29 +923,27 @@ function showDarkCompatibilityModal(compatibilityData) {
               <div style="
                 position: absolute;
                 inset: 8px;
-                background: linear-gradient(145deg, #0f172a, #1e293b);
+                background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
                 border-radius: 50%;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
+                color: white;
               ">
-                <span class="score-number" style="
-                  font-size: 2rem;
-                  font-weight: bold;
-                  color: white;
-                ">${compatibilityData.compatibility_percentage}%</span>
-                <span class="score-label" style="
-                  font-size: 0.8rem;
-                  color: #cbd5e1;
-                  text-transform: uppercase;
-                  letter-spacing: 1px;
-                ">Compatibilité</span>
+                <div style="font-size: 1.5rem; font-weight: 700;">${compatibilityPercentage}%</div>
+                <div style="font-size: 0.8rem; opacity: 0.8;">Compatibilité</div>
               </div>
             </div>
           </div>
           
           <div class="compatibility-summary">
+            <h4 style="margin: 0 0 1rem 0; color: #f8fafc; display: flex; align-items: center; gap: 0.75rem;">
+              <i class="fas fa-chart-pie" style="color: #3b82f6;"></i>
+              Résumé de Compatibilité
+              ${compatibilitySource === 'ai' ? '<i class="fas fa-robot" style="color: #10b981; margin-left: 0.5rem;" title="Analyse IA"></i>' : ''}
+            </h4>
+            
             <div class="summary-stat" style="
               display: flex;
               align-items: center;
@@ -993,6 +992,55 @@ function showDarkCompatibilityModal(compatibilityData) {
           </div>
         </div>
         
+        ${compatibilitySource === 'ai' && compatibilityReason ? `
+        <!-- AI Analysis Section -->
+        <div class="ai-analysis-section" style="
+          margin-bottom: 2rem;
+          padding: 2rem;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          border-radius: 16px;
+        ">
+          <div class="ai-analysis-header" style="
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+          ">
+            <i class="fas fa-robot" style="color: #10b981; font-size: 1.5rem;"></i>
+            <h4 style="margin: 0; color: #f8fafc; font-size: 1.3rem;">
+              Analyse IA de Compatibilité
+            </h4>
+            <span class="ai-badge" style="
+              background: linear-gradient(135deg, #10b981, #059669);
+              color: white;
+              padding: 0.25rem 0.75rem;
+              border-radius: 20px;
+              font-size: 0.8rem;
+              font-weight: 600;
+            ">
+              IA
+            </span>
+          </div>
+          
+          <div class="ai-analysis-content" style="
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+          ">
+            <p style="
+              color: #f8fafc;
+              line-height: 1.6;
+              margin: 0;
+              font-size: 1rem;
+            ">
+              ${compatibilityReason}
+            </p>
+          </div>
+        </div>
+        ` : `
+        <!-- Skills Breakdown Section (for calculated compatibility) -->
         <div class="skills-breakdown" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
           <div class="skills-section">
             <div class="skills-breakdown-header" style="
@@ -1172,6 +1220,7 @@ function showDarkCompatibilityModal(compatibilityData) {
             </div>
           </div>
         </div>
+        `}
       </div>
       
       <div class="modal-footer" style="
