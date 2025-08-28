@@ -7,6 +7,10 @@ function openAddRecruiterModal() {
   const modal = document.getElementById("addRecruiterModal")
   if (modal) {
     modal.classList.add("show")
+    // Set mode to create by default
+    modal.setAttribute('data-mode', 'create')
+    const submitBtn = modal.querySelector('.modal-actions .btn-create')
+    if (submitBtn) submitBtn.textContent = 'Créer recruteur'
   } else {
     showNotification("Accès refusé. Seuls les super administrateurs peuvent créer des comptes recruteur.", "error")
   }
@@ -18,6 +22,12 @@ function closeAddRecruiterModal() {
     modal.classList.remove("show")
     const form = document.getElementById("addRecruiterForm")
     if (form) form.reset()
+    // Restore default submit handler
+    if (form) form.onsubmit = null
+    // Reset button label
+    const submitBtn = modal.querySelector('.modal-actions .btn-create')
+    if (submitBtn) submitBtn.textContent = 'Créer recruteur'
+    modal.removeAttribute('data-mode')
   }
 }
 
@@ -25,6 +35,9 @@ function openAddDepartmentHeadModal() {
   const modal = document.getElementById("addDepartmentHeadModal")
   if (modal) {
     modal.classList.add("show")
+    modal.setAttribute('data-mode', 'create')
+    const submitBtn = modal.querySelector('.modal-actions .btn-create')
+    if (submitBtn) submitBtn.textContent = 'Créer chef département'
   } else {
     showNotification(
       "Accès refusé. Seuls les super administrateurs peuvent créer des comptes chef de département.",
@@ -39,6 +52,10 @@ function closeAddDepartmentHeadModal() {
     modal.classList.remove("show")
     const form = document.getElementById("addDepartmentHeadForm")
     if (form) form.reset()
+    if (form) form.onsubmit = null
+    const submitBtn = modal.querySelector('.modal-actions .btn-create')
+    if (submitBtn) submitBtn.textContent = 'Créer chef département'
+    modal.removeAttribute('data-mode')
   }
 }
 
@@ -126,15 +143,130 @@ async function createUser(userData) {
 }
 
 // Fonctions pour la gestion des utilisateurs (seulement pour super admins)
-function editUser(userId) {
-  console.log("✏️ Édition utilisateur:", userId)
-  showNotification("Fonctionnalité en cours de développement", "info")
+async function editUser(userId) {
+  try {
+    const res = await fetch(`/api/users/${userId}`)
+    const data = await res.json()
+    if (!data.success) {
+      showNotification(data.message || "Impossible de charger l'utilisateur", "error")
+      return
+    }
+
+    // Ouvrir le modal existant selon le rôle
+    const user = data.user
+    if (user.role === 'recruiter') {
+      openAddRecruiterModal()
+      const form = document.getElementById("addRecruiterForm")
+      if (form) {
+        // Indicate update mode and adjust CTA
+        const modal = document.getElementById('addRecruiterModal')
+        if (modal) modal.setAttribute('data-mode', 'update')
+        const submitBtn = modal?.querySelector('.modal-actions .btn-create')
+        if (submitBtn) submitBtn.textContent = 'Modifier'
+        form.querySelector('#recruiterEmail').value = user.email || ''
+        form.querySelector('#recruiterFirstName').value = user.first_name || ''
+        form.querySelector('#recruiterLastName').value = user.last_name || ''
+        form.querySelector('#recruiterPassword').value = ''
+        form.querySelector("input[name='can_manage_applications']").checked = !!user.permissions?.can_manage_applications
+        form.querySelector("input[name='can_recommend_candidates']").checked = !!user.permissions?.can_recommend_candidates
+
+        // Remplacer le submit pour faire une mise à jour
+        form.onsubmit = async function (e) {
+          e.preventDefault()
+          const payload = {
+            email: form.querySelector('#recruiterEmail').value.trim(),
+            first_name: form.querySelector('#recruiterFirstName').value.trim(),
+            last_name: form.querySelector('#recruiterLastName').value.trim(),
+            password: form.querySelector('#recruiterPassword').value.trim() || undefined,
+            role: 'recruiter',
+            permissions: {
+              can_manage_applications: form.querySelector("input[name='can_manage_applications']").checked,
+              can_recommend_candidates: form.querySelector("input[name='can_recommend_candidates']").checked,
+            },
+          }
+          await updateUser(userId, payload)
+        }
+      }
+    } else if (user.role === 'department_head') {
+      openAddDepartmentHeadModal()
+      const form = document.getElementById("addDepartmentHeadForm")
+      if (form) {
+        const modal = document.getElementById('addDepartmentHeadModal')
+        if (modal) modal.setAttribute('data-mode', 'update')
+        const submitBtn = modal?.querySelector('.modal-actions .btn-create')
+        if (submitBtn) submitBtn.textContent = 'Modifier'
+        form.querySelector('#headEmail').value = user.email || ''
+        form.querySelector('#headFirstName').value = user.first_name || ''
+        form.querySelector('#headLastName').value = user.last_name || ''
+        form.querySelector('#headPassword').value = ''
+        form.querySelector("input[name='can_add_department']").checked = !!user.permissions?.can_add_department
+        form.querySelector("input[name='can_manage_applications']").checked = !!user.permissions?.can_manage_applications
+
+        // Précocher les départements
+        const checkboxes = form.querySelectorAll("input[name='departments']")
+        checkboxes.forEach(cb => {
+          cb.checked = (user.departments || []).includes(parseInt(cb.value))
+        })
+
+        // Remplacer le submit pour faire une mise à jour
+        form.onsubmit = async function (e) {
+          e.preventDefault()
+          const departments = Array.from(form.querySelectorAll("input[name='departments']:checked")).map(cb => parseInt(cb.value))
+          const payload = {
+            email: form.querySelector('#headEmail').value.trim(),
+            first_name: form.querySelector('#headFirstName').value.trim(),
+            last_name: form.querySelector('#headLastName').value.trim(),
+            password: form.querySelector('#headPassword').value.trim() || undefined,
+            role: 'department_head',
+            permissions: {
+              can_add_department: form.querySelector("input[name='can_add_department']").checked,
+              can_manage_applications: form.querySelector("input[name='can_manage_applications']").checked,
+            },
+            departments: departments,
+          }
+          await updateUser(userId, payload)
+        }
+      }
+    } else {
+      showNotification("Rôle non pris en charge pour l'édition", "warning")
+    }
+  } catch (e) {
+    showNotification("Erreur de connexion lors du chargement de l'utilisateur", "error")
+  }
 }
 
-function deactivateUser(userId) {
-  if (confirm("Êtes-vous sûr de vouloir désactiver cet utilisateur ?")) {
-    console.log("🚫 Désactivation utilisateur:", userId)
-    showNotification("Fonctionnalité en cours de développement", "info")
+async function updateUser(userId, payload) {
+  try {
+    const res = await fetch(`/api/users/${userId}/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json()
+    if (data.success) {
+      showNotification(data.message || 'Utilisateur mis à jour', 'success')
+      setTimeout(() => window.location.reload(), 1200)
+    } else {
+      showNotification(data.message || 'Erreur lors de la mise à jour', 'error')
+    }
+  } catch (e) {
+    showNotification('Erreur réseau lors de la mise à jour', 'error')
+  }
+}
+
+async function deactivateUser(userId) {
+  if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return
+  try {
+    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (data.success) {
+      showNotification(data.message || 'Utilisateur supprimé', 'success')
+      setTimeout(() => window.location.reload(), 1200)
+    } else {
+      showNotification(data.message || 'Suppression échouée', 'error')
+    }
+  } catch (e) {
+    showNotification('Erreur réseau lors de la suppression', 'error')
   }
 }
 

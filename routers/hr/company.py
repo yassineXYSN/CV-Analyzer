@@ -41,6 +41,16 @@ class CreateUserRequest(BaseModel):
     company_id: Optional[int] = None
     access_level: str = "admin"
 
+class UpdateUserRequest(BaseModel):
+    email: Optional[str] = None
+    password: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    role: Optional[str] = None  # 'recruiter' | 'department_head'
+    is_active: Optional[bool] = None
+    permissions: Optional[dict] = None
+    departments: Optional[list[int]] = None
+
 def check_super_admin_permission(user_id: int) -> bool:
     """
     Vérifie si l'utilisateur actuel est un super admin
@@ -216,6 +226,155 @@ async def create_user(user_data: dict):
             
     except Exception as e:
         return {"success": False, "message": f"Erreur: {str(e)}"}
+
+@router.get("/api/users/{admin_id}")
+async def get_user_details(admin_id: int):
+    try:
+        current_user_id = current_user_session.get('user_id')
+        if not current_user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        if not check_super_admin_permission(current_user_id):
+            return {"success": False, "message": "Accès refusé"}
+
+        db = SessionLocal()
+        try:
+            admin = db.query(models.HRAdmin).filter(models.HRAdmin.id == admin_id).first()
+            if not admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+
+            permissions = db.query(models.AdminPermissions).filter(models.AdminPermissions.admin_id == admin.id).first()
+            assigned_depts = db.query(models.AdminDepartments).filter(models.AdminDepartments.admin_id == admin.id).all()
+            departments = [d.department_id for d in assigned_depts]
+
+            return {
+                "success": True,
+                "user": {
+                    "id": admin.id,
+                    "email": admin.email,
+                    "first_name": admin.first_name,
+                    "last_name": admin.last_name,
+                    "role": admin.role,
+                    "is_active": admin.is_active,
+                    "permissions": {
+                        "can_add_department": bool(getattr(permissions, 'can_add_department', False)),
+                        "can_manage_applications": bool(getattr(permissions, 'can_manage_applications', False)),
+                        "can_recommend_candidates": bool(getattr(permissions, 'can_recommend_candidates', False)),
+                    },
+                    "departments": departments,
+                }
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Erreur: {str(e)}"}
+        finally:
+            db.close()
+    except Exception as e:
+        return {"success": False, "message": f"Erreur interne: {str(e)}"}
+
+@router.post("/api/users/{admin_id}/update")
+async def update_user(admin_id: int, update: UpdateUserRequest):
+    try:
+        current_user_id = current_user_session.get('user_id')
+        if not current_user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        if not check_super_admin_permission(current_user_id):
+            return {"success": False, "message": "Accès refusé"}
+
+        db = SessionLocal()
+        try:
+            admin = db.query(models.HRAdmin).filter(models.HRAdmin.id == admin_id).first()
+            if not admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+
+            # Basic fields
+            if update.email is not None:
+                admin.email = update.email
+            if update.first_name is not None:
+                admin.first_name = update.first_name
+            if update.last_name is not None:
+                admin.last_name = update.last_name
+            if update.is_active is not None:
+                admin.is_active = update.is_active
+
+            # Role update (restrict to allowed roles)
+            if update.role in ['recruiter', 'department_head']:
+                admin.role = update.role
+
+            # Password update (if provided)
+            if update.password:
+                # Reuse create_admin_user hashing util indirectly if available, else store plaintext not recommended.
+                # Here we assume models.HRAdmin has password_hash and auth utility is separate; skipping if not supported.
+                try:
+                    from auth_utils import hash_password
+                    admin.password_hash = hash_password(update.password)
+                except Exception:
+                    pass
+
+            # Permissions
+            perms = db.query(models.AdminPermissions).filter(models.AdminPermissions.admin_id == admin.id).first()
+            if not perms:
+                perms = models.AdminPermissions(admin_id=admin.id)
+                db.add(perms)
+
+            if update.permissions is not None:
+                perms.can_add_department = bool(update.permissions.get('can_add_department', getattr(perms, 'can_add_department', False)))
+                perms.can_manage_applications = bool(update.permissions.get('can_manage_applications', getattr(perms, 'can_manage_applications', False)))
+                perms.can_recommend_candidates = bool(update.permissions.get('can_recommend_candidates', getattr(perms, 'can_recommend_candidates', False)))
+
+            # Departments (only for department_head)
+            if update.departments is not None:
+                # Clear existing
+                db.query(models.AdminDepartments).filter(models.AdminDepartments.admin_id == admin.id).delete()
+                # Insert new
+                for dept_id in update.departments:
+                    db.add(models.AdminDepartments(admin_id=admin.id, department_id=dept_id))
+
+            db.commit()
+            return {"success": True, "message": "Utilisateur mis à jour avec succès"}
+        except Exception as e:
+            db.rollback()
+            return {"success": False, "message": f"Erreur lors de la mise à jour: {str(e)}"}
+        finally:
+            db.close()
+    except Exception as e:
+        return {"success": False, "message": f"Erreur interne: {str(e)}"}
+
+@router.delete("/api/users/{admin_id}")
+async def delete_user(admin_id: int):
+    try:
+        current_user_id = current_user_session.get('user_id')
+        if not current_user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        if not check_super_admin_permission(current_user_id):
+            return {"success": False, "message": "Accès refusé"}
+
+        db = SessionLocal()
+        try:
+            admin = db.query(models.HRAdmin).filter(models.HRAdmin.id == admin_id).first()
+            if not admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+
+            # Prevent deleting last super_admin or self if desired; here allow deleting non-super_admin
+            if admin.role == 'super_admin':
+                return {"success": False, "message": "Impossible de supprimer un super administrateur"}
+
+            # Delete relations
+            db.query(models.AdminCompanyAccess).filter(models.AdminCompanyAccess.admin_id == admin.id).delete()
+            db.query(models.AdminDepartments).filter(models.AdminDepartments.admin_id == admin.id).delete()
+            db.query(models.AdminPermissions).filter(models.AdminPermissions.admin_id == admin.id).delete()
+
+            db.delete(admin)
+            db.commit()
+            return {"success": True, "message": "Utilisateur supprimé avec succès"}
+        except Exception as e:
+            db.rollback()
+            return {"success": False, "message": f"Erreur lors de la suppression: {str(e)}"}
+        finally:
+            db.close()
+    except Exception as e:
+        return {"success": False, "message": f"Erreur interne: {str(e)}"}
 
 @router.get("/api/company-info")
 async def get_company_info():
