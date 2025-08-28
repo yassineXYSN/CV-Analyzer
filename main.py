@@ -1,11 +1,10 @@
 import json
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Request, Query
+from fastapi import FastAPI, Request, Query, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
@@ -283,6 +282,26 @@ async def multi_quiz_results(request: Request, attempt_ids: str):
         })
     finally:
         db.close()
+
+# 404 Error Handler
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Handle 404 and other HTTP errors with custom error pages"""
+    if exc.status_code == 404:
+        # Determine which template to use based on the request path
+        if request.url.path.startswith('/hr') or request.url.path.startswith('/api/hr'):
+            return templates.TemplateResponse("HR-dep/404.html", {"request": request})
+        else:
+            return templates.TemplateResponse("client-dep/404.html", {"request": request})
+    
+    # For other HTTP errors, return a generic error
+    return templates.TemplateResponse("client-dep/404.html", {"request": request})
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors"""
+    return templates.TemplateResponse("client-dep/404.html", {"request": request})
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
