@@ -7,10 +7,12 @@ from utils import add_user_to_company
 
 from databasehr.session_manager import current_user_session
 from auth_utils import create_admin_user
+from .email_service import EmailService, generate_verification_token, save_verification_token, verify_token
 from typing import Optional 
 import os 
 from fastapi.templating import Jinja2Templates
 import databasehr.models as models
+from datetime import datetime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates_dir = os.path.join(current_dir, '../../templates')
@@ -40,6 +42,16 @@ class CreateUserRequest(BaseModel):
     role: str = "hr_admin"
     company_id: Optional[int] = None
     access_level: str = "admin"
+
+class UpdateUserRequest(BaseModel):
+    email: Optional[str] = None
+    password: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    role: Optional[str] = None  # 'recruiter' | 'department_head'
+    is_active: Optional[bool] = None
+    permissions: Optional[dict] = None
+    departments: Optional[list[int]] = None
 
 def check_super_admin_permission(user_id: int) -> bool:
     """
@@ -151,20 +163,34 @@ async def create_user(user_data: dict):
                 "message": "Rôle non autorisé. Seuls les rôles 'recruiter' et 'department_head' peuvent être créés."
             }
         
-        # Création de l'utilisateur
-        new_user_id = create_admin_user(
-            email=user_data['email'],
-            password=user_data['password'],
-            first_name=user_data['first_name'],
-            last_name=user_data['last_name'],
-            role=requested_role  # Utiliser le rôle demandé au lieu de 'super_admin'
-        )
-        
-        if not new_user_id:
-            return {"success": False, "message": "Erreur lors de la création de l'utilisateur"}
-        
         db = SessionLocal()
         try:
+            existing_user = db.query(models.HRAdmin).filter(models.HRAdmin.email == user_data.get("email")).first()
+            if existing_user:
+                return {"success": False, "message": "Un utilisateur avec cet email existe déjà"}
+            
+            from auth_utils import hash_password
+            password_hash = hash_password(user_data.get("password"))
+            
+            db_admin = models.HRAdmin(
+                first_name=user_data.get("first_name"),
+                last_name=user_data.get("last_name"),
+                email=user_data.get("email"),
+                password_hash=password_hash,
+                role=requested_role,
+                is_active=False,  # Compte désactivé jusqu'à vérification
+                is_verified=False,
+                last_login=datetime.now()
+            )
+            
+            db.add(db_admin)
+            db.commit()
+            db.refresh(db_admin)
+            new_user_id = db_admin.id
+            
+            if not new_user_id:
+                return {"success": False, "message": "Erreur lors de la création de l'utilisateur"}
+            
             # Création des permissions
             permissions_data = user_data.get('permissions', {})
             permissions = models.AdminPermissions(
@@ -196,6 +222,17 @@ async def create_user(user_data: dict):
                 )
                 db.add(company_access)
             
+            token = generate_verification_token()
+            save_verification_token(db, new_user_id, token)
+            
+            email_service = EmailService()
+            email_sent = email_service.send_verification_email(db_admin.email, token)
+            
+            if not email_sent:
+                # Rollback si l'email n'a pas pu être envoyé
+                db.rollback()
+                return {"success": False, "message": "Erreur lors de l'envoi de l'email de vérification"}
+            
             db.commit()
             
             role_names = {
@@ -205,17 +242,166 @@ async def create_user(user_data: dict):
             
             return {
                 "success": True, 
-                "message": f"{role_names.get(requested_role, 'Utilisateur')} créé avec succès"
+                "message": f"{role_names.get(requested_role, 'Utilisateur')} créé avec succès. Un email de vérification a été envoyé à {db_admin.email}."
             }
             
         except Exception as e:
             db.rollback()
-            return {"success": False, "message": f"Erreur création permissions: {str(e)}"}
+            return {"success": False, "message": f"Erreur création utilisateur: {str(e)}"}
         finally:
             db.close()
             
     except Exception as e:
         return {"success": False, "message": f"Erreur: {str(e)}"}
+
+@router.get("/api/users/{admin_id}")
+async def get_user_details(admin_id: int):
+    try:
+        current_user_id = current_user_session.get('user_id')
+        if not current_user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        if not check_super_admin_permission(current_user_id):
+            return {"success": False, "message": "Accès refusé"}
+
+        db = SessionLocal()
+        try:
+            admin = db.query(models.HRAdmin).filter(models.HRAdmin.id == admin_id).first()
+            if not admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+
+            permissions = db.query(models.AdminPermissions).filter(models.AdminPermissions.admin_id == admin.id).first()
+            assigned_depts = db.query(models.AdminDepartments).filter(models.AdminDepartments.admin_id == admin.id).all()
+            departments = [d.department_id for d in assigned_depts]
+
+            return {
+                "success": True,
+                "user": {
+                    "id": admin.id,
+                    "email": admin.email,
+                    "first_name": admin.first_name,
+                    "last_name": admin.last_name,
+                    "role": admin.role,
+                    "is_active": admin.is_active,
+                    "permissions": {
+                        "can_add_department": bool(getattr(permissions, 'can_add_department', False)),
+                        "can_manage_applications": bool(getattr(permissions, 'can_manage_applications', False)),
+                        "can_recommend_candidates": bool(getattr(permissions, 'can_recommend_candidates', False)),
+                    },
+                    "departments": departments,
+                }
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Erreur: {str(e)}"}
+        finally:
+            db.close()
+    except Exception as e:
+        return {"success": False, "message": f"Erreur interne: {str(e)}"}
+
+@router.post("/api/users/{admin_id}/update")
+async def update_user(admin_id: int, update: UpdateUserRequest):
+    try:
+        current_user_id = current_user_session.get('user_id')
+        if not current_user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        if not check_super_admin_permission(current_user_id):
+            return {"success": False, "message": "Accès refusé"}
+
+        db = SessionLocal()
+        try:
+            admin = db.query(models.HRAdmin).filter(models.HRAdmin.id == admin_id).first()
+            if not admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+
+            # Basic fields
+            if update.email is not None:
+                admin.email = update.email
+            if update.first_name is not None:
+                admin.first_name = update.first_name
+            if update.last_name is not None:
+                admin.last_name = update.last_name
+            if update.is_active is not None:
+                admin.is_active = update.is_active
+
+            # Role update (restrict to allowed roles)
+            if update.role in ['recruiter', 'department_head']:
+                admin.role = update.role
+
+            # Password update (if provided)
+            if update.password:
+                # Reuse create_admin_user hashing util indirectly if available, else store plaintext not recommended.
+                # Here we assume models.HRAdmin has password_hash and auth utility is separate; skipping if not supported.
+                try:
+                    from auth_utils import hash_password
+                    admin.password_hash = hash_password(update.password)
+                except Exception:
+                    pass
+
+            # Permissions
+            perms = db.query(models.AdminPermissions).filter(models.AdminPermissions.admin_id == admin.id).first()
+            if not perms:
+                perms = models.AdminPermissions(admin_id=admin.id)
+                db.add(perms)
+
+            if update.permissions is not None:
+                perms.can_add_department = bool(update.permissions.get('can_add_department', getattr(perms, 'can_add_department', False)))
+                perms.can_manage_applications = bool(update.permissions.get('can_manage_applications', getattr(perms, 'can_manage_applications', False)))
+                perms.can_recommend_candidates = bool(update.permissions.get('can_recommend_candidates', getattr(perms, 'can_recommend_candidates', False)))
+
+            # Departments (only for department_head)
+            if update.departments is not None:
+                # Clear existing
+                db.query(models.AdminDepartments).filter(models.AdminDepartments.admin_id == admin.id).delete()
+                # Insert new
+                for dept_id in update.departments:
+                    db.add(models.AdminDepartments(admin_id=admin.id, department_id=dept_id))
+
+            db.commit()
+            return {"success": True, "message": "Utilisateur mis à jour avec succès"}
+        except Exception as e:
+            db.rollback()
+            return {"success": False, "message": f"Erreur lors de la mise à jour: {str(e)}"}
+        finally:
+            db.close()
+    except Exception as e:
+        return {"success": False, "message": f"Erreur interne: {str(e)}"}
+
+@router.delete("/api/users/{admin_id}")
+async def delete_user(admin_id: int):
+    try:
+        current_user_id = current_user_session.get('user_id')
+        if not current_user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        if not check_super_admin_permission(current_user_id):
+            return {"success": False, "message": "Accès refusé"}
+
+        db = SessionLocal()
+        try:
+            admin = db.query(models.HRAdmin).filter(models.HRAdmin.id == admin_id).first()
+            if not admin:
+                return {"success": False, "message": "Utilisateur non trouvé"}
+
+            # Prevent deleting last super_admin or self if desired; here allow deleting non-super_admin
+            if admin.role == 'super_admin':
+                return {"success": False, "message": "Impossible de supprimer un super administrateur"}
+
+            # Delete relations
+            db.query(models.AdminCompanyAccess).filter(models.AdminCompanyAccess.admin_id == admin.id).delete()
+            db.query(models.AdminDepartments).filter(models.AdminDepartments.admin_id == admin.id).delete()
+            db.query(models.AdminPermissions).filter(models.AdminPermissions.admin_id == admin.id).delete()
+
+            db.delete(admin)
+            db.commit()
+            return {"success": True, "message": "Utilisateur supprimé avec succès"}
+        except Exception as e:
+            db.rollback()
+            return {"success": False, "message": f"Erreur lors de la suppression: {str(e)}"}
+        finally:
+            db.close()
+    except Exception as e:
+        return {"success": False, "message": f"Erreur interne: {str(e)}"}
 
 @router.get("/api/company-info")
 async def get_company_info():

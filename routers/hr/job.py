@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from databasehr.database import SessionLocal
-from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin, JobSkill
+from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin, JobSkill, Notification, User
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
@@ -211,7 +211,7 @@ async def get_jobs():
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
-@router.get("/api/job/{job_id}")
+@router.get("/api/job-basic/{job_id}")
 async def get_job_details(job_id: int):
     try:
         user_id = current_user_session.get('user_id')
@@ -274,6 +274,12 @@ async def get_job_details(job_id: int):
                     ).first()
                 
                 if candidate:
+                    # Déterminer la compatibilité (IA vs calculée ultérieurement côté client)
+                    has_ai = app.compatibility_score is not None and app.compatibility_reason is not None
+                    compatibility_percentage = float(app.compatibility_score) if has_ai else None
+                    compatibility_source = "ai" if has_ai else None
+                    compatibility_reason = app.compatibility_reason if has_ai else None
+
                     applications_list.append({
                         "id": app.id,
                         "name": candidate.name,
@@ -288,7 +294,11 @@ async def get_job_details(job_id: int):
                         "recommendation_priority": app.recommendation_priority,
                         "recommendation_comment": app.recommendation_comment,
                         "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
-                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None
+                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None,
+                        # Champs de compatibilité pour le front
+                        "compatibility_percentage": compatibility_percentage,
+                        "compatibility_source": compatibility_source,
+                        "compatibility_reason": compatibility_reason
                     })
             
             days_remaining = None
@@ -332,3 +342,120 @@ async def get_job_details(job_id: int):
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
+@router.post("/api/accept-application/{application_id}")
+async def accept_application(application_id: int, status_data: dict):
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+        
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
+        
+        db = SessionLocal()
+        try:
+            application = db.query(Application).filter(
+                Application.id == application_id,
+                Application.job.has(company_id=company.id)
+            ).first()
+            
+            if not application:
+                return {"success": False, "message": "Candidature non trouvée"}
+            
+            # Vérifier les permissions
+            admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+            if not admin:
+                return {"success": False, "message": "Droits insuffisants"}
+            
+            status = status_data.get("status", "accepted_pending_validation")
+            
+            # Seuls les super admins peuvent accepter définitivement
+            if status == "accepted" and admin.role != "super_admin":
+                return {"success": False, "message": "Seuls les administrateurs peuvent valider définitivement"}
+            
+            application.status = status
+            application.decision_date = datetime.now()
+            
+            # Si acceptation définitive, créer l'employé et la notification
+            if status == "accepted":
+                candidate = application.candidate_profile
+                
+                # Vérifier si l'employé existe déjà
+                existing_employee = db.query(Employee).filter(
+                    Employee.company_id == company.id,
+                    Employee.email == candidate.contact.email
+                ).first()
+                
+                if not existing_employee:
+                    new_employee = Employee(
+                        company_id=company.id,
+                        department_id=application.job.department_id,
+                        first_name=candidate.name.split(' ')[0],
+                        last_name=' '.join(candidate.name.split(' ')[1:]),
+                        email=candidate.contact.email,
+                        phone=candidate.contact.phone,
+                        position=application.job.title,
+                        hire_date=date.today(),
+                        employment_type=application.job.employment_type,
+                        status='active',
+                        candidate_profile_id=candidate.id
+                    )
+                    db.add(new_employee)
+                    
+                    # Marquer le poste comme pourvu
+                    application.job.status = "filled"
+                
+                # Chercher l'utilisateur par email plutôt que par profile_id
+                user = db.query(User).filter(User.email == candidate.contact.email).first()
+                
+                if not user:
+                    print(f"[v0] User not found, creating new user for candidate: {candidate.name}")
+                    # Create a new user for the candidate
+                    user = User(
+                        email=candidate.contact.email,
+                        first_name=candidate.name.split(' ')[0] if candidate.name else "Unknown",
+                        last_name=' '.join(candidate.name.split(' ')[1:]) if len(candidate.name.split(' ')) > 1 else "",
+                        password_hash="",  # Empty password hash for now
+                        is_active=True,
+                        is_verified=False,
+                        created_at=datetime.now()
+                    )
+                    db.add(user)
+                    db.commit()  # Commit to get the user.id
+                    db.refresh(user)
+                    print(f"[v0] Created new user with id: {user.id}")
+                
+                print(f"[v0] Creating notification for user_id: {user.id}")
+                notification = Notification(
+                    user_id=user.id,
+                    type="application_accepted",
+                    title="Candidature acceptée !",
+                    message=f"Félicitations ! Votre candidature pour le poste de {application.job.title} chez {company.company_name} a été acceptée. Vous recevrez bientôt plus d'informations concernant les prochaines étapes.",
+                    is_read=False,
+                    application_id=application.id,
+                    job_id=application.job.id,
+                    status="accepted",
+                    company_name=company.company_name,
+                    job_title=application.job.title,
+                    admin_name=f"{admin.first_name} {admin.last_name}"
+                )
+                db.add(notification)
+                print(f"[v0] Notification created successfully for user_id: {user.id}")
+            
+            db.commit()
+            
+            return {
+                "success": True, 
+                "message": f"Candidature {'acceptée' if status == 'accepted' else 'en attente de validation'}"
+            }
+            
+        except Exception as e:
+            db.rollback()
+            print(f"[v0] Error in accept_application: {str(e)}")
+            return {"success": False, "message": f"Erreur: {str(e)}"}
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[v0] Internal error in accept_application: {str(e)}")
+        return {"success": False, "message": f"Erreur interne: {str(e)}"}

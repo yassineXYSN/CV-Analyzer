@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum,TIMESTAMP
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum,Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from databasehr.database import Base
@@ -44,9 +44,13 @@ class HRAdmin(Base):
     last_name = Column(String(100), nullable=False)
     role = Column(Enum('super_admin', 'recruiter', 'department_head'), default='recruiter')
     is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)  # Nouveau champ
     last_login = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    verification_token = Column(String(255), nullable=True)
+    token_expires = Column(DateTime, nullable=True)
 
 class Company(Base):
     __tablename__ = "companies"
@@ -55,7 +59,7 @@ class Company(Base):
     company_name = Column(String(255), nullable=False)
     industry = Column(String(100))
     company_size = Column(Enum('1-10', '11-50', '51-200', '201-1000', '1000+'))
-    founded_year = Column(Integer)
+    founded_year = Column(DateTime)
     description = Column(Text)
     logo_url = Column(String(500))
     
@@ -71,7 +75,7 @@ class Company(Base):
     facebook_url = Column(String(255))
     
     # Métadonnées
-    setup_completed = Column(Boolean, default=False)
+    setup_completed = Column(Integer, default=0)
     created_by = Column(Integer, ForeignKey("hr_admins.id"))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -86,7 +90,6 @@ class AdminCompanyAccess(Base):
     granted_at = Column(DateTime, default=func.now())
     granted_by = Column(Integer, ForeignKey("hr_admins.id"))
     
-
 
 class Department(Base):
     __tablename__ = "departments"
@@ -194,7 +197,7 @@ class Application(Base):
     
     # Informations de candidature
     application_date = Column(DateTime, default=func.now())
-    status = Column(Enum('pending', 'reviewed', 'interview_scheduled', 'interview_completed', 'accepted', 'rejected', 'withdrawn'), default='pending')
+    status = Column(Enum('pending', 'reviewed', 'interview_scheduled', 'interview_completed', 'accepted', 'rejected', 'withdrawn','accepted_pending_validation'), default='pending')
     
     # Évaluation
     hr_rating = Column(DECIMAL(3,2))
@@ -229,6 +232,10 @@ class Application(Base):
     # Relationships
     job = relationship("Job")
     candidate_profile = relationship("ProfileCandidat")
+    
+    compatibility_score = Column(Numeric(5, 2), comment="Compatibility score between candidate and job (0-100)")
+    compatibility_reason = Column(Text, comment="Detailed reason for compatibility score from AI analysis")
+    n8n_webhook_triggered = Column(Boolean, default=False, comment="Flag to track if n8n webhook was triggered")
 
 # NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
 class ActivityLog(Base):
@@ -266,14 +273,57 @@ class AdminPermissions(Base):
     can_recommend_candidates = Column(Boolean, default=False)
     # Relations
     admin = relationship("HRAdmin")
-    
+
 class AdminDepartments(Base):
     __tablename__ = "admin_departments"
-
+    
     id = Column(Integer, primary_key=True, index=True)
     admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
+    
     # Relations
     admin = relationship("HRAdmin")
     department = relationship("Department")
 
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), nullable=False, unique=True)
+    password_hash = Column(String(255))
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    google_id = Column(String(255), unique=True)
+    profile_picture = Column(String(500))
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    profile_id = Column(Integer, ForeignKey("profile_candidat.id"))
+    verification_token = Column(String(255))
+    verification_token_expires = Column(DateTime)
+    
+    # Relations
+    profile = relationship("ProfileCandidat")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(String(50), nullable=False)
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
+    status = Column(String(50), nullable=True)
+    company_name = Column(String(200), nullable=True)
+    job_title = Column(String(200), nullable=True)
+    admin_name = Column(String(100), nullable=True)
+    
+    # Relations
+    user = relationship("User")
+    application = relationship("Application")
+    job = relationship("Job")

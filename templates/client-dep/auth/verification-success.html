@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Vérifié - CV Analyzer Pro</title>
+    <link rel="stylesheet" href="/static/client-dep/css/auth.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-container success-layout">
+        <div class="success-content">
+            <div class="success-icon">
+                <i class="fas fa-check-circle fa-4x"></i>
+            </div>
+            <h1>Email vérifié avec succès !</h1>
+            <p>Votre compte a été activé. Vous pouvez maintenant continuer et compléter votre profil.</p>
+            
+            <div class="success-actions">
+                <a href="/signup/step2" class="continue-btn">
+                    <i class="fas fa-arrow-right"></i>
+                    Continuer vers l'étape 2
+                </a>
+                <a href="/" class="home-btn">
+                    <i class="fas fa-home"></i>
+                    Retour à l'accueil
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .success-layout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .success-content {
+            max-width: 500px;
+            padding: 3rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .success-icon {
+            color: #10b981;
+            margin-bottom: 2rem;
+        }
+
+        .success-content h1 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+
+        .success-content p {
+            color: #64748b;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .success-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .continue-btn, .home-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .continue-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .continue-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .home-btn {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .home-btn:hover {
+            background: #e2e8f0;
+            color: #475569;
+        }
+    </style>
+
+    <script>
+        // Auto-redirect after 5 seconds
+        setTimeout(() => {
+            window.location.href = '/signup/step2';
+        }, 5000);
+    </script>
+</body>
+</html>

@@ -249,6 +249,8 @@ async def get_applications():
                 Application.compatibility_percentage,
                 Application.matched_skills_count,
                 Application.total_job_skills,
+                Application.compatibility_score,
+                Application.compatibility_reason,
                 ProfileCandidat.name.label("candidate_name"),
                 Contact.email.label("candidate_email"),
                 Job.title.label("job_title"),
@@ -275,6 +277,18 @@ async def get_applications():
                 if app.application_date:
                     days_since = (date.today() - app.application_date).days
                 
+                has_ai_compatibility = app.compatibility_score is not None and app.compatibility_reason is not None
+                
+                # Use AI data if available, otherwise use calculated data
+                if has_ai_compatibility:
+                    compatibility_percentage = float(app.compatibility_score) if app.compatibility_score else 0
+                    compatibility_source = "ai"
+                    compatibility_reason = app.compatibility_reason
+                else:
+                    compatibility_percentage = app.compatibility_percentage or 0
+                    compatibility_source = "calculated"
+                    compatibility_reason = None
+                
                 applications_list.append({
                     "id": app.id,
                     "candidate_id": app.candidate_profile_id,
@@ -292,7 +306,9 @@ async def get_applications():
                     "recommended_by": app.recommended_by,
                     "recommendation_comment": app.recommendation_comment,
                     "recommendation_date": app.recommendation_date.strftime("%Y-%m-%d") if app.recommendation_date else None,
-                    "compatibility_percentage": app.compatibility_percentage or 0,
+                    "compatibility_percentage": compatibility_percentage,
+                    "compatibility_source": compatibility_source,
+                    "compatibility_reason": compatibility_reason,
                     "matched_skills_count": app.matched_skills_count or 0,
                     "total_job_skills": app.total_job_skills or 0
                 })
