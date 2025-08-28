@@ -211,7 +211,7 @@ async def get_jobs():
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
-@router.get("/api/job/{job_id}")
+@router.get("/api/job-basic/{job_id}")
 async def get_job_details(job_id: int):
     try:
         user_id = current_user_session.get('user_id')
@@ -274,6 +274,12 @@ async def get_job_details(job_id: int):
                     ).first()
                 
                 if candidate:
+                    # Déterminer la compatibilité (IA vs calculée ultérieurement côté client)
+                    has_ai = app.compatibility_score is not None and app.compatibility_reason is not None
+                    compatibility_percentage = float(app.compatibility_score) if has_ai else None
+                    compatibility_source = "ai" if has_ai else None
+                    compatibility_reason = app.compatibility_reason if has_ai else None
+
                     applications_list.append({
                         "id": app.id,
                         "name": candidate.name,
@@ -288,7 +294,11 @@ async def get_job_details(job_id: int):
                         "recommendation_priority": app.recommendation_priority,
                         "recommendation_comment": app.recommendation_comment,
                         "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
-                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None
+                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None,
+                        # Champs de compatibilité pour le front
+                        "compatibility_percentage": compatibility_percentage,
+                        "compatibility_source": compatibility_source,
+                        "compatibility_reason": compatibility_reason
                     })
             
             days_remaining = None

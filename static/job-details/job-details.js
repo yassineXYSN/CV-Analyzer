@@ -4,6 +4,24 @@ let applications = []
 let allCandidates = []
 let currentUser = null
 
+// Focused date debugging and safe formatting helpers
+const DATE_DEBUG = true
+const dateLog = (...args) => { if (DATE_DEBUG) console.log(...args) }
+function formatDateSafe(input, locale = "fr-FR") {
+  try {
+    if (!input) return "--"
+    let value = input
+    if (typeof value === "string" && value.indexOf(" ") > -1 && value.indexOf("T") === -1) {
+      value = value.replace(" ", "T")
+    }
+    const d = new Date(value)
+    if (isNaN(d.getTime())) return "--"
+    return d.toLocaleDateString(locale)
+  } catch (_e) {
+    return "--"
+  }
+}
+
 // Charger les données du job au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🚀 Page job-details chargée avec compatibilité")
@@ -105,7 +123,7 @@ async function loadJobFromAPI(jobId) {
     console.log(`🔄 Chargement job ID: ${jobId}`)
     showLoading("Chargement des détails du poste...")
 
-    const response = await fetch(`/api/job/${jobId}`)
+    const response = await fetch(`/api/job-basic/${jobId}`)
     console.log("📡 Réponse API:", response.status)
 
     if (response.ok) {
@@ -382,9 +400,9 @@ function displayJobInfo() {
 
     const deadlineElement = document.getElementById("jobDeadline")
     if (deadlineElement) {
-      deadlineElement.textContent = currentJob.deadline
-        ? new Date(currentJob.deadline).toLocaleDateString("fr-FR")
-        : "Non définie"
+      const formattedDeadline = currentJob.deadline ? formatDateSafe(currentJob.deadline) : "Non définie"
+      deadlineElement.textContent = formattedDeadline
+      dateLog("[DATE] deadline:", currentJob.deadline, "->", formattedDeadline)
     }
 
     const statusElement = document.getElementById("jobStatus")
@@ -411,7 +429,9 @@ function displayJobInfo() {
 
     const jobCreatedElement = document.getElementById("jobCreated")
     if (jobCreatedElement) {
-      jobCreatedElement.textContent = new Date(currentJob.created_at).toLocaleDateString("fr-FR")
+      const formattedCreated = formatDateSafe(currentJob.created_at)
+      jobCreatedElement.textContent = formattedCreated
+      dateLog("[DATE] created_at:", currentJob.created_at, "->", formattedCreated)
     }
 
     const assignedEmployeeElement = document.getElementById("assignedEmployee")
@@ -421,14 +441,38 @@ function displayJobInfo() {
 
     const applicationsElement = document.getElementById("jobApplications")
     if (applicationsElement) {
-      applicationsElement.textContent = currentJob.applications_count || 0
+      const count = (typeof currentJob.applications_count === "number" && !isNaN(currentJob.applications_count))
+        ? currentJob.applications_count
+        : (Array.isArray(applications) ? applications.length : 0)
+      applicationsElement.textContent = count
+      if (typeof currentJob.applications_count === "undefined") {
+        console.warn("⚠️ applications_count missing, using applications.length:", count)
+      }
     }
 
     const daysRemainingElement = document.getElementById("daysRemaining")
     if (daysRemainingElement) {
-      if (currentJob.days_remaining !== null && currentJob.days_remaining !== undefined) {
-        daysRemainingElement.textContent = currentJob.days_remaining
-      } else {
+      try {
+        let days = currentJob.days_remaining
+        if (days === null || days === undefined) {
+          // Fallback: compute from deadline
+          if (currentJob.deadline) {
+            let deadlineStr = currentJob.deadline
+            if (typeof deadlineStr === "string" && deadlineStr.indexOf(" ") > -1 && deadlineStr.indexOf("T") === -1) {
+              deadlineStr = deadlineStr.replace(" ", "T")
+            }
+            const deadlineDate = new Date(deadlineStr)
+            if (!isNaN(deadlineDate.getTime())) {
+              const today = new Date()
+              const diffMs = deadlineDate.setHours(0,0,0,0) - today.setHours(0,0,0,0)
+              days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+              console.warn("ℹ️ days_remaining missing, computed from deadline:", days)
+            }
+          }
+        }
+        daysRemainingElement.textContent = (days !== null && days !== undefined) ? days : "--"
+      } catch (e) {
+        console.error("❌ Error computing days_remaining:", e)
         daysRemainingElement.textContent = "--"
       }
     }
@@ -608,7 +652,8 @@ function renderApplicationsWithCompatibility(filter = "all") {
       const candidateName = app.name || app.candidate_name || "Candidat inconnu"
       const candidateTitle = app.title || app.candidate_title || "Candidat"
       const candidateEmail = app.email || app.candidate_email || "Email non disponible"
-      const applicationDate = app.application_date || app.application_date || new Date().toISOString()
+      const applicationDateRaw = app.application_date || null
+      const applicationDate = formatDateSafe(applicationDateRaw)
       const hrRating = app.hr_rating || app.hr_rating || null
       const isRecommended = app.is_recommended || false
       const recommendationPriority = app.recommendation_priority || "normal"
@@ -663,15 +708,13 @@ function renderApplicationsWithCompatibility(filter = "all") {
             
             <div class="candidate-title">${candidateTitle}</div>
             <div class="candidate-meta">
-              <span class="application-date">
-                Candidature: ${new Date(applicationDate).toLocaleDateString("fr-FR")}
-              </span>
+              <span class="application-date">Candidature: ${applicationDate}</span>
               ${hrRating ? `<span class="hr-rating">Note HR: ${hrRating}/5 ⭐</span>` : ""}
               ${
                 isRecommended && recommendedBy
                   ? `<span class="recommendation-info">
                       <i class="fas fa-user-tie"></i> Recommandé par ${recommendedBy}
-                      ${app.recommendation_date ? ` le ${new Date(app.recommendation_date).toLocaleDateString("fr-FR")}` : ""}
+                      ${app.recommendation_date ? ` le ${formatDateSafe(app.recommendation_date)}` : ""}
                     </span>`
                   : ""
               }

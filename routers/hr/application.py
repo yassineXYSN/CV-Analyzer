@@ -819,12 +819,24 @@ async def get_job_with_applications(job_id: int, db: Session = Depends(get_db)):
             "size": company.size
         }
 
+        # Calculer days_remaining si une deadline est définie
+        days_remaining = None
+        if job.deadline:
+            try:
+                # Jours restants = deadline - aujourd'hui (valeur >= 0)
+                days_remaining = (job.deadline - date.today()).days
+                days_remaining = max(0, days_remaining)
+            except Exception:
+                days_remaining = None
+
         # Construire la réponse avec les informations du job
         job_data = {
             "id": job.id,
             "title": job.title,
             "company": company_data,
+            # Garder l'ancien champ et ajouter celui attendu par le front
             "department": job.department.name if job.department else "N/A",
+            "department_name": job.department.name if job.department else "N/A",
             "description": job.description,
             "requirements": job.requirements,
             "responsibilities": job.responsibilities,
@@ -835,8 +847,11 @@ async def get_job_with_applications(job_id: int, db: Session = Depends(get_db)):
             "priority": job.priority,
             "experience_level": job.experience_level,
             "status": job.status,
+            "deadline": job.deadline.isoformat() if job.deadline else None,
+            "days_remaining": days_remaining,
+            "applications_count": len(applications_list),
             "created_at": job.created_at.isoformat() if job.created_at else None,
-            "applications": applications_list  # This is the key fix - applications are now included
+            "applications": applications_list
         }
 
         print(f"By yassine {job_data}")
