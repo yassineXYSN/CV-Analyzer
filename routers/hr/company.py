@@ -7,10 +7,12 @@ from utils import add_user_to_company
 
 from databasehr.session_manager import current_user_session
 from auth_utils import create_admin_user
+from .email_service import EmailService, generate_verification_token, save_verification_token, verify_token
 from typing import Optional 
 import os 
 from fastapi.templating import Jinja2Templates
 import databasehr.models as models
+from datetime import datetime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates_dir = os.path.join(current_dir, '../../templates')
@@ -151,20 +153,34 @@ async def create_user(user_data: dict):
                 "message": "Rôle non autorisé. Seuls les rôles 'recruiter' et 'department_head' peuvent être créés."
             }
         
-        # Création de l'utilisateur
-        new_user_id = create_admin_user(
-            email=user_data['email'],
-            password=user_data['password'],
-            first_name=user_data['first_name'],
-            last_name=user_data['last_name'],
-            role=requested_role  # Utiliser le rôle demandé au lieu de 'super_admin'
-        )
-        
-        if not new_user_id:
-            return {"success": False, "message": "Erreur lors de la création de l'utilisateur"}
-        
         db = SessionLocal()
         try:
+            existing_user = db.query(models.HRAdmin).filter(models.HRAdmin.email == user_data.get("email")).first()
+            if existing_user:
+                return {"success": False, "message": "Un utilisateur avec cet email existe déjà"}
+            
+            from auth_utils import hash_password
+            password_hash = hash_password(user_data.get("password"))
+            
+            db_admin = models.HRAdmin(
+                first_name=user_data.get("first_name"),
+                last_name=user_data.get("last_name"),
+                email=user_data.get("email"),
+                password_hash=password_hash,
+                role=requested_role,
+                is_active=False,  # Compte désactivé jusqu'à vérification
+                is_verified=False,
+                last_login=datetime.now()
+            )
+            
+            db.add(db_admin)
+            db.commit()
+            db.refresh(db_admin)
+            new_user_id = db_admin.id
+            
+            if not new_user_id:
+                return {"success": False, "message": "Erreur lors de la création de l'utilisateur"}
+            
             # Création des permissions
             permissions_data = user_data.get('permissions', {})
             permissions = models.AdminPermissions(
@@ -196,6 +212,17 @@ async def create_user(user_data: dict):
                 )
                 db.add(company_access)
             
+            token = generate_verification_token()
+            save_verification_token(db, new_user_id, token)
+            
+            email_service = EmailService()
+            email_sent = email_service.send_verification_email(db_admin.email, token)
+            
+            if not email_sent:
+                # Rollback si l'email n'a pas pu être envoyé
+                db.rollback()
+                return {"success": False, "message": "Erreur lors de l'envoi de l'email de vérification"}
+            
             db.commit()
             
             role_names = {
@@ -205,12 +232,12 @@ async def create_user(user_data: dict):
             
             return {
                 "success": True, 
-                "message": f"{role_names.get(requested_role, 'Utilisateur')} créé avec succès"
+                "message": f"{role_names.get(requested_role, 'Utilisateur')} créé avec succès. Un email de vérification a été envoyé à {db_admin.email}."
             }
             
         except Exception as e:
             db.rollback()
-            return {"success": False, "message": f"Erreur création permissions: {str(e)}"}
+            return {"success": False, "message": f"Erreur création utilisateur: {str(e)}"}
         finally:
             db.close()
             
