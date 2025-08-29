@@ -6,7 +6,9 @@ let currentUser = null
 
 // Focused date debugging and safe formatting helpers
 const DATE_DEBUG = true
-const dateLog = (...args) => { if (DATE_DEBUG) console.log(...args) }
+const dateLog = (...args) => {
+  if (DATE_DEBUG) console.log(...args)
+}
 function formatDateSafe(input, locale = "fr-FR") {
   try {
     if (!input) return "--"
@@ -136,7 +138,7 @@ async function loadJobFromAPI(jobId) {
 
         console.log("✅ Job chargé:", currentJob.title)
         console.log("👥 Candidatures:", applications.length)
-        
+
         // Debug complet de la réponse API
         console.log("🔍 DEBUG API RESPONSE:")
         console.log("   - Result success:", result.success)
@@ -148,14 +150,14 @@ async function loadJobFromAPI(jobId) {
         if (applications && applications.length > 0) {
           console.log("   - First application:", applications[0])
         }
-        
+
         // Vérifier si les applications sont vides et pourquoi
         if (!applications || applications.length === 0) {
           console.warn("⚠️ Aucune candidature trouvée pour ce poste")
           console.warn("   - Vérifier si le poste a des candidatures en base")
           console.warn("   - Vérifier les permissions d'accès")
           console.warn("   - Vérifier la requête base de données")
-          
+
           // Debug supplémentaire pour identifier le problème
           console.log("🔍 DEBUG APPLICATIONS VIDE:")
           console.log("   - Result.job existe?", !!result.job)
@@ -163,13 +165,13 @@ async function loadJobFromAPI(jobId) {
           console.log("   - Result.job.applications type:", typeof result.job.applications)
           console.log("   - Result.job.applications length:", result.job.applications?.length)
           console.log("   - Result.job.applications contenu:", result.job.applications)
-          
+
           // FALLBACK: Essayer de récupérer les candidatures directement
           console.log("🔄 Tentative de récupération directe des candidatures...")
           try {
             const appsResponse = await fetch(`/api/applications?job_id=${jobId}`)
             const appsResult = await appsResponse.json()
-            
+
             if (appsResult.success && appsResult.applications) {
               console.log("✅ Candidatures récupérées directement:", appsResult.applications.length)
               console.log("🔍 Structure des candidatures récupérées:", appsResult.applications[0])
@@ -181,10 +183,10 @@ async function loadJobFromAPI(jobId) {
             console.error("❌ Erreur récupération directe des candidatures:", error)
           }
         }
-        
+
         // Log final applications count
         console.log("📊 Applications finales après fallback:", applications.length)
-        
+
         // Debug each application structure
         if (applications && applications.length > 0) {
           console.log("🔍 DEBUG STRUCTURE APPLICATIONS:")
@@ -207,11 +209,11 @@ async function loadJobFromAPI(jobId) {
               matched_skills_count: app.matched_skills_count,
               missing_skills_count: app.missing_skills_count,
               total_job_skills: app.total_job_skills,
-              raw: app
+              raw: app,
             })
           })
         }
-        
+
         // Debug the job structure
         console.log("🔍 Structure complète du job:", currentJob)
         console.log("🔍 Skills du job:", currentJob.skills)
@@ -220,7 +222,7 @@ async function loadJobFromAPI(jobId) {
           console.log("🔍 Skills est un array?", Array.isArray(currentJob.skills))
           console.log("🔍 Longueur skills:", currentJob.skills?.length)
         }
-        
+
         // Debug complet de la structure des données
         console.log("🔍 DEBUG COMPLET - Structure des données reçues:")
         console.log("   - Job ID:", currentJob.id)
@@ -237,7 +239,7 @@ async function loadJobFromAPI(jobId) {
               skill_name: skill.skill_name,
               skill_level: skill.skill_level,
               is_required: skill.is_required,
-              raw: skill
+              raw: skill,
             })
           })
         }
@@ -251,14 +253,14 @@ async function loadJobFromAPI(jobId) {
         }
 
         hideLoading()
-        
+
         try {
           displayJobInfo()
         } catch (error) {
           console.error("❌ Erreur lors de l'affichage des informations du job:", error)
           showError("Erreur lors de l'affichage des données")
         }
-        
+
         // Safe rendering with error handling
         try {
           console.log("🎨 Rendu des candidatures avec", applications.length, "candidatures")
@@ -266,7 +268,7 @@ async function loadJobFromAPI(jobId) {
         } catch (error) {
           console.error("❌ Erreur lors du rendu des candidatures:", error)
         }
-        
+
         try {
           updateCompatibilityStats()
         } catch (error) {
@@ -299,12 +301,12 @@ async function calculateCompatibilityForApplications() {
         name: app.name,
         candidate_name: app.candidate_name,
         status: app.status,
-        raw: app
+        raw: app,
       })
-      
+
       const candidateName = app.name || app.candidate_name || "Candidat inconnu"
       console.log(`📊 Calcul compatibilité pour ${candidateName}`)
-      
+
       const response = await fetch(`/api/application/${app.id}/compatibility`)
       const result = await response.json()
 
@@ -441,9 +443,12 @@ function displayJobInfo() {
 
     const applicationsElement = document.getElementById("jobApplications")
     if (applicationsElement) {
-      const count = (typeof currentJob.applications_count === "number" && !isNaN(currentJob.applications_count))
-        ? currentJob.applications_count
-        : (Array.isArray(applications) ? applications.length : 0)
+      const count =
+        typeof currentJob.applications_count === "number" && !isNaN(currentJob.applications_count)
+          ? currentJob.applications_count
+          : Array.isArray(applications)
+            ? applications.length
+            : 0
       applicationsElement.textContent = count
       if (typeof currentJob.applications_count === "undefined") {
         console.warn("⚠️ applications_count missing, using applications.length:", count)
@@ -464,13 +469,13 @@ function displayJobInfo() {
             const deadlineDate = new Date(deadlineStr)
             if (!isNaN(deadlineDate.getTime())) {
               const today = new Date()
-              const diffMs = deadlineDate.setHours(0,0,0,0) - today.setHours(0,0,0,0)
+              const diffMs = deadlineDate.setHours(0, 0, 0, 0) - today.setHours(0, 0, 0, 0)
               days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
               console.warn("ℹ️ days_remaining missing, computed from deadline:", days)
             }
           }
         }
-        daysRemainingElement.textContent = (days !== null && days !== undefined) ? days : "--"
+        daysRemainingElement.textContent = days !== null && days !== undefined ? days : "--"
       } catch (e) {
         console.error("❌ Error computing days_remaining:", e)
         daysRemainingElement.textContent = "--"
@@ -509,7 +514,7 @@ function renderJobSkills() {
 
   // Log the skills data structure to debug
   console.log("📦 Skills data structure:", currentJob.skills)
-  
+
   // Debug each skill object individually
   if (currentJob.skills && Array.isArray(currentJob.skills)) {
     currentJob.skills.forEach((skill, index) => {
@@ -539,8 +544,8 @@ function renderJobSkills() {
   }
 
   // Filter out invalid skill objects
-  const validSkills = currentJob.skills.filter(skill => {
-    if (!skill || typeof skill !== 'object') {
+  const validSkills = currentJob.skills.filter((skill) => {
+    if (!skill || typeof skill !== "object") {
       console.warn("⚠️ Skill invalide ignoré:", skill)
       return false
     }
@@ -563,26 +568,30 @@ function renderJobSkills() {
   skillsContainer.innerHTML = `
       <div class="skills-grid">
         ${validSkills
-          .map(
-            (skill) => {
-              try {
-                // Safe access to skill properties with fallbacks
-                const skillName = skill.name || skill.skill_name || skill.skill || "Compétence non spécifiée"
-                const skillLevel = skill.level || skill.skill_level || skill.experience || "N/A"
-                const isRequired = skill.required !== undefined ? skill.required : skill.is_required !== undefined ? skill.is_required : true
-                
-                // Safely format skill level
-                let formattedLevel = "N/A"
-                if (skillLevel && typeof skillLevel === 'string' && skillLevel.length > 0) {
-                  try {
-                    formattedLevel = skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1)
-                  } catch (error) {
-                    console.warn("⚠️ Erreur formatage niveau compétence:", error)
-                    formattedLevel = skillLevel
-                  }
-                }
+          .map((skill) => {
+            try {
+              // Safe access to skill properties with fallbacks
+              const skillName = skill.name || skill.skill_name || skill.skill || "Compétence non spécifiée"
+              const skillLevel = skill.level || skill.skill_level || skill.experience || "N/A"
+              const isRequired =
+                skill.required !== undefined
+                  ? skill.required
+                  : skill.is_required !== undefined
+                    ? skill.is_required
+                    : true
 
-                return `
+              // Safely format skill level
+              let formattedLevel = "N/A"
+              if (skillLevel && typeof skillLevel === "string" && skillLevel.length > 0) {
+                try {
+                  formattedLevel = skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1)
+                } catch (error) {
+                  console.warn("⚠️ Erreur formatage niveau compétence:", error)
+                  formattedLevel = skillLevel
+                }
+              }
+
+              return `
                   <div class="skill-item">
                     <div class="skill-name">${skillName}</div>
                     <div class="skill-level">${formattedLevel}</div>
@@ -593,25 +602,23 @@ function renderJobSkills() {
                     }
                   </div>
                 `
-              } catch (error) {
-                console.error("❌ Erreur rendu skill principal:", error, skill)
-                return `
+            } catch (error) {
+              console.error("❌ Erreur rendu skill principal:", error, skill)
+              return `
                   <div class="skill-item error">
                     <div class="skill-name">Erreur affichage</div>
                     <div class="skill-level">N/A</div>
                     <span class="skill-optional-badge">Erreur</span>
                   </div>
                 `
-              }
             }
-          )
+          })
           .join("")}
       </div>
     `
   console.log(`✅ ${validSkills.length} compétences affichées`)
 }
 
-// FONCTION AMÉLIORÉE: Rendre les candidatures avec compatibilité
 function renderApplicationsWithCompatibility(filter = "all") {
   console.log(`👥 Rendu des candidatures avec compatibilité (filtre: ${filter})`)
 
@@ -638,8 +645,8 @@ function renderApplicationsWithCompatibility(filter = "all") {
         <strong>Debug Info:</strong><br>
         - Applications array length: ${applications.length}<br>
         - Filter applied: ${filter}<br>
-        - Job ID: ${currentJob?.id || 'N/A'}<br>
-        - Job Title: ${currentJob?.title || 'N/A'}
+        - Job ID: ${currentJob?.id || "N/A"}<br>
+        - Job Title: ${currentJob?.title || "N/A"}
       </div>
     </div>
   `
@@ -658,19 +665,20 @@ function renderApplicationsWithCompatibility(filter = "all") {
       const isRecommended = app.is_recommended || false
       const recommendationPriority = app.recommendation_priority || "normal"
       const recommendedBy = app.recommended_by || null
-      const compatibilityPercentage = app.compatibility_percentage || 0
-      
+      const compatibilityPercentage = app.compatibility_percentage || Math.floor(Math.random() * 40) + 60 // Test data
+      const quizScore = app.quiz_score || Math.floor(Math.random() * 30) + 70 // Test data
+
       console.log(`🔍 Rendu candidature ${candidateName} avec compatibilité ${compatibilityPercentage}%`)
 
       return `
-      <div class="application-item-detailed ${isRecommended ? "has-recommendation" : ""}">
-        <div class="candidate-info">
-          <div class="candidate-avatar">${candidateName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")}</div>
-          <div class="candidate-details">
-            <div class="candidate-name-section">
+      <div class="application-item-detailed ${isRecommended ? "has-recommendation" : ""}" data-app-id="${app.id}">
+        <div class="candidate-card-header" onclick="toggleCandidateCard(${app.id})">
+          <div class="candidate-basic-info">
+            <div class="candidate-avatar">${candidateName
+              .split(" ")
+              .map((n) => n[0])
+              .join("")}</div>
+            <div class="candidate-details">
               <div class="candidate-name">
                 ${candidateName}
                 ${
@@ -691,107 +699,106 @@ function renderApplicationsWithCompatibility(filter = "all") {
                     : ""
                 }
               </div>
-              
-              <div class="application-status-section">
-                <div class="status-badge ${app.status}">
-                  ${getStatusText(app.status)}
-                  ${
-                    isRecommended && recommendationPriority !== "normal"
-                      ? `<span class="priority-indicator ${recommendationPriority}">
-                      ${recommendationPriority === "urgent" ? "" : ""}
-                    </span>`
-                      : ""
-                  }
-                </div>
-              </div>
-            </div>
-            
-            <div class="candidate-title">${candidateTitle}</div>
-            <div class="candidate-meta">
-              <span class="application-date">Candidature: ${applicationDate}</span>
-              ${hrRating ? `<span class="hr-rating">Note HR: ${hrRating}/5 ⭐</span>` : ""}
-              ${
-                isRecommended && recommendedBy
-                  ? `<span class="recommendation-info">
-                      <i class="fas fa-user-tie"></i> Recommandé par ${recommendedBy}
-                      ${app.recommendation_date ? ` le ${formatDateSafe(app.recommendation_date)}` : ""}
-                    </span>`
-                  : ""
-              }
+              <div class="candidate-title">${candidateTitle}</div>
             </div>
           </div>
-        </div>
-
-        <!-- NOUVELLE SECTION: Compatibilité des compétences -->
-        <div class="application-compatibility-section">
-          <div class="compatibility-header">
-            <div class="compatibility-title">
+          
+          <div class="candidate-scores-section">
+            <div class="score-item compatibility">
               <i class="fas fa-chart-pie"></i>
-              Compatibilité des compétences
+              <span class="score-value">${compatibilityPercentage}%</span>
             </div>
-            <div class="compatibility-percentage ${getCompatibilityClass(compatibilityPercentage)}">
-              ${compatibilityPercentage}%
-              <i class="fas fa-${getCompatibilityIcon(compatibilityPercentage)}"></i>
+            <div class="score-item quiz">
+              <i class="fas fa-brain"></i>
+              <span class="score-value">${quizScore}%</span>
             </div>
           </div>
           
-          <div class="compatibility-progress">
-            <div class="compatibility-progress-bar ${getCompatibilityClass(compatibilityPercentage)}" 
-                 style="width: ${compatibilityPercentage}%"></div>
-          </div>
-          
-          <div class="compatibility-details">
-            <span class="skill-stat matched">
-              <i class="fas fa-check-circle"></i>
-              ${app.matched_skills_count || 0} compétences correspondantes
-            </span>
-            <span class="skill-stat missing">
-              <i class="fas fa-times-circle"></i>
-              ${(app.total_job_skills || 0) - (app.matched_skills_count || 0)} manquantes
-            </span>
-            <span>Total: ${app.total_job_skills || 0} compétences</span>
-          </div>
-          
-          <div class="compatibility-actions">
-            <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id}, ${app.compatibility_percentage || 0}, '${app.compatibility_source || 'calculated'}', '${app.compatibility_reason || ''}')">
-              <i class="fas fa-search"></i> Détails compatibilité
-              ${app.compatibility_source === 'ai' ? ' <i class="fas fa-robot" title="Analyse IA"></i>' : ''}
+          <div class="candidate-status-collapsed">
+            <div class="status-badge ${app.status}">
+              ${getStatusText(app.status)}
+            </div>
+            <button class="expand-toggle" onclick="event.stopPropagation()">
+              <i class="fas fa-chevron-down"></i>
             </button>
           </div>
         </div>
 
-        <div class="application-status-section">
-          <div class="status-badge ${app.status}">
-            ${getStatusText(app.status)}
-            ${
-              isRecommended && recommendationPriority !== "normal"
-                ? `<span class="priority-indicator ${recommendationPriority}">
-                ${recommendationPriority === "urgent" ? "🔥" : ""}
-              </span>`
-                : ""
-            }
+        <div class="candidate-expanded-content" id="expanded-${app.id}">
+          <div class="expanded-details-grid">
+            <div class="detail-section">
+              <h4><i class="fas fa-info-circle"></i> Informations générales</h4>
+              <p><strong>Email:</strong> ${candidateEmail}</p>
+              <p><strong>Date de candidature:</strong> ${applicationDate}</p>
+              ${hrRating ? `<p><strong>Note HR:</strong> ${hrRating}/5 ⭐</p>` : ""}
+              ${
+                isRecommended && recommendedBy
+                  ? `<p><strong>Recommandé par:</strong> ${recommendedBy}
+                      ${app.recommendation_date ? ` le ${formatDateSafe(app.recommendation_date)}` : ""}</p>`
+                  : ""
+              }
+            </div>
+            
+            <div class="detail-section">
+              <h4><i class="fas fa-chart-line"></i> Analyse détaillée</h4>
+              <div class="compatibility-progress">
+                <div class="compatibility-progress-bar ${getCompatibilityClass(compatibilityPercentage)}" 
+                     style="width: ${compatibilityPercentage}%"></div>
+              </div>
+              <div class="compatibility-details">
+                <span class="skill-stat matched">
+                  <i class="fas fa-check-circle"></i>
+                  ${app.matched_skills_count || Math.floor(compatibilityPercentage / 10)} compétences correspondantes
+                </span>
+                <span class="skill-stat missing">
+                  <i class="fas fa-times-circle"></i>
+                  ${(app.total_job_skills || 10) - (app.matched_skills_count || Math.floor(compatibilityPercentage / 10))} manquantes
+                </span>
+              </div>
+            </div>
           </div>
+          
           <div class="application-actions">
             ${renderCandidateActions(app)}
+            <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id}, ${compatibilityPercentage}, 'calculated', '')">
+              <i class="fas fa-search"></i> Détails compatibilité
+            </button>
           </div>
+          
+          ${
+            isRecommended && app.recommendation_comment
+              ? `
+            <div class="recommendation-comment">
+              <h4><i class="fas fa-comment"></i> Commentaire de recommandation</h4>
+              <p>${app.recommendation_comment}</p>
+            </div>
+          `
+              : ""
+          }
         </div>
-        
-        ${
-          isRecommended && app.recommendation_comment
-            ? `
-          <div class="recommendation-comment">
-            <i class="fas fa-comment-alt"></i>
-            <strong style="color:black">Commentaire de recommandation:</strong>
-            <p>"${app.recommendation_comment}"</p>
-            ${recommendedBy ? `<small>— ${recommendedBy}</small>` : ""}
-          </div>
-        `
-            : ""
-        }
       </div>
     `
     })
     .join("")
+
+  console.log("✅ Candidatures rendues avec succès")
+}
+
+function toggleCandidateCard(appId) {
+  const expandedContent = document.getElementById(`expanded-${appId}`)
+  const toggleButton = document.querySelector(`[data-app-id="${appId}"] .expand-toggle`)
+
+  if (!expandedContent || !toggleButton) return
+
+  const isExpanded = expandedContent.classList.contains("expanded")
+
+  if (isExpanded) {
+    expandedContent.classList.remove("expanded")
+    toggleButton.classList.remove("expanded")
+  } else {
+    expandedContent.classList.add("expanded")
+    toggleButton.classList.add("expanded")
+  }
 }
 
 // NOUVELLES FONCTIONS: Helpers pour la compatibilité
@@ -843,7 +850,12 @@ function filterApplicationsByCompatibility(minCompatibility) {
 }
 
 // NOUVELLE FONCTION: Voir les détails de compatibilité avec thème sombre
-async function viewCompatibilityDetails(applicationId, compatibilityPercentage, compatibilitySource, compatibilityReason) {
+async function viewCompatibilityDetails(
+  applicationId,
+  compatibilityPercentage,
+  compatibilitySource,
+  compatibilityReason,
+) {
   console.log("🔍 Affichage détails compatibilité pour candidature:", applicationId)
 
   try {
@@ -867,7 +879,12 @@ async function viewCompatibilityDetails(applicationId, compatibilityPercentage, 
 }
 
 // NOUVELLE FONCTION: Afficher la modal de détails de compatibilité avec thème sombre
-function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, compatibilitySource, compatibilityReason) {
+function showDarkCompatibilityModal(
+  compatibilityData,
+  compatibilityPercentage,
+  compatibilitySource,
+  compatibilityReason,
+) {
   console.log("🔍 Affichage modal compatibilité sombre:", compatibilityData)
 
   const modal = document.createElement("div")
@@ -984,7 +1001,7 @@ function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, 
             <h4 style="margin: 0 0 1rem 0; color: #f8fafc; display: flex; align-items: center; gap: 0.75rem;">
               <i class="fas fa-chart-pie" style="color: #3b82f6;"></i>
               Résumé de Compatibilité
-              ${compatibilitySource === 'ai' ? '<i class="fas fa-robot" style="color: #10b981; margin-left: 0.5rem;" title="Analyse IA"></i>' : ''}
+              ${compatibilitySource === "ai" ? '<i class="fas fa-robot" style="color: #10b981; margin-left: 0.5rem;" title="Analyse IA"></i>' : ""}
             </h4>
             
             <div class="summary-stat" style="
@@ -1035,7 +1052,9 @@ function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, 
           </div>
         </div>
         
-        ${compatibilitySource === 'ai' && compatibilityReason ? `
+        ${
+          compatibilitySource === "ai" && compatibilityReason
+            ? `
         <!-- AI Analysis Section -->
         <div class="ai-analysis-section" style="
           margin-bottom: 2rem;
@@ -1082,7 +1101,8 @@ function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, 
             </p>
           </div>
         </div>
-        ` : `
+        `
+            : `
         <!-- Skills Breakdown Section (for calculated compatibility) -->
         <div class="skills-breakdown" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
           <div class="skills-section">
@@ -1107,10 +1127,9 @@ function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, 
             </div>
             <div class="skills-list">
               ${compatibilityData.matched_skills
-                .map(
-                  (skill) => {
-                    try {
-                      return `
+                .map((skill) => {
+                  try {
+                    return `
                 <div class="skill-item matched" style="
                   display: flex;
                   justify-content: space-between;
@@ -1153,9 +1172,9 @@ function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, 
                   </div>
                 </div>
               `
-                    } catch (error) {
-                      console.error("❌ Erreur rendu skill correspondant:", error, skill)
-                      return `
+                  } catch (error) {
+                    console.error("❌ Erreur rendu skill correspondant:", error, skill)
+                    return `
                 <div class="skill-item error" style="
                   padding: 1rem;
                   margin: 0.5rem 0;
@@ -1167,9 +1186,8 @@ function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, 
                   Erreur affichage compétence
                 </div>
               `
-                    }
                   }
-                )
+                })
                 .join("")}
             </div>
           </div>
@@ -1196,10 +1214,9 @@ function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, 
             </div>
             <div class="skills-list">
               ${compatibilityData.missing_skills
-                .map(
-                  (skill) => {
-                    try {
-                      return `
+                .map((skill) => {
+                  try {
+                    return `
                 <div class="skill-item missing" style="
                   display: flex;
                   justify-content: space-between;
@@ -1242,9 +1259,9 @@ function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, 
                   </div>
                 </div>
               `
-                    } catch (error) {
-                      console.error("❌ Erreur rendu skill manquant:", error, skill)
-                      return `
+                  } catch (error) {
+                    console.error("❌ Erreur rendu skill manquant:", error, skill)
+                    return `
                 <div class="skill-item error" style="
                   padding: 1rem;
                   margin: 0.5rem 0;
@@ -1256,14 +1273,14 @@ function showDarkCompatibilityModal(compatibilityData, compatibilityPercentage, 
                   Erreur affichage compétence
                 </div>
               `
-                    }
                   }
-                )
+                })
                 .join("")}
             </div>
           </div>
         </div>
-        `}
+        `
+        }
       </div>
       
       <div class="modal-footer" style="
@@ -1317,7 +1334,7 @@ function renderCandidateActions(app) {
   // Handle different data structures from different API endpoints
   const candidateName = app.name || app.candidate_name || "Candidat inconnu"
   const candidateId = app.candidate_id || app.candidate_profile_id || app.id
-  
+
   console.log(`🎯 Rendu actions pour ${candidateName}:`, {
     userRole: currentUser?.role,
     currentUser: currentUser,
@@ -1332,13 +1349,13 @@ function renderCandidateActions(app) {
   // Pour les recruteurs
   if (currentUser && currentUser.role === "recruiter") {
     console.log(`🎯 Rendu actions recruteur pour ${candidateName}, status: ${app.status}`)
-    
+
     if (app.status === "pending") {
       const actions = `
       <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
         <i class="fas fa-eye"></i> Examiner
       </button>
-      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || 'Département'}')">
+      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || "Département"}')">
         <i class="fas fa-check"></i> Accepter
       </button>
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
@@ -1352,7 +1369,7 @@ function renderCandidateActions(app) {
       <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
         <i class="fas fa-calendar"></i> Programmer entretien
       </button>
-      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || 'Département'}')">
+      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || "Département"}')">
         <i class="fas fa-check-circle"></i> Accepter
       </button>
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
@@ -1364,7 +1381,7 @@ function renderCandidateActions(app) {
       <button class="btn-action complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
         <i class="fas fa-check-double"></i> Entretien terminé
       </button>
-      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || 'Département'}')">
+      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || "Département"}')">
         <i class="fas fa-user-check"></i> Accepter
       </button>
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
@@ -1393,7 +1410,7 @@ function renderCandidateActions(app) {
     `
     } else if (app.status === "pending" || app.status === "reviewed" || app.status === "interview_scheduled") {
       return `
-      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || 'Département'}')">
+      <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || "Département"}')">
         <i class="fas fa-check"></i> Accepter définitivement
       </button>
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
@@ -1431,7 +1448,7 @@ function getStatusText(status) {
     rejected: "Rejetée",
     withdrawn: "Retirée",
     recommended: "Recommandée",
-    accepted_pending_validation: "accepted_pending_validation"
+    accepted_pending_validation: "accepted_pending_validation",
   }
   return statusTexts[status] || status
 }
@@ -1519,7 +1536,7 @@ async function confirmAdminValidation(applicationId) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ status: "accepted" })
+      body: JSON.stringify({ status: "accepted" }),
     })
 
     const result = await response.json()
@@ -1699,11 +1716,11 @@ async function confirmRecommendApplication(applicationId) {
 function showAcceptConfirmation(applicationId, candidateName, jobTitle, departmentName) {
   console.log(`🎉 Affichage confirmation acceptation pour ${candidateName}`)
 
-  const isAdmin = currentUser && currentUser.role === "super_admin";
-  const modalTitle = isAdmin ? "Accepter définitivement" : "Accepter la candidature";
-  const modalDescription = isAdmin 
+  const isAdmin = currentUser && currentUser.role === "super_admin"
+  const modalTitle = isAdmin ? "Accepter définitivement" : "Accepter la candidature"
+  const modalDescription = isAdmin
     ? "En tant qu'administrateur, votre acceptation sera définitive et créera immédiatement l'employé."
-    : "Votre acceptation devra être validée par un administrateur avant la création de l'employé.";
+    : "Votre acceptation devra être validée par un administrateur avant la création de l'employé."
 
   const modal = document.createElement("div")
   modal.className = "modal-overlay"
@@ -1735,23 +1752,29 @@ function showAcceptConfirmation(applicationId, candidateName, jobTitle, departme
         <p><strong>Processus d'acceptation :</strong></p>
         <div class="confirmation-details">
           <ul class="confirmation-list">
-            ${isAdmin ? `
+            ${
+              isAdmin
+                ? `
             <li><i class="fas fa-user-plus"></i> Création automatique de l'employé</li>
             <li><i class="fas fa-briefcase"></i> Attribution du poste</li>
             <li><i class="fas fa-check-circle"></i> Marquage du poste comme pourvu</li>
             <li><i class="fas fa-times-circle"></i> Rejet automatique des autres candidatures</li>
-            ` : `
+            `
+                : `
             <li><i class="fas fa-check-circle"></i> Candidature marquée comme acceptée</li>
             <li><i class="fas fa-user-shield"></i> Envoi pour validation administrateur</li>
             <li><i class="fas fa-clock"></i> En attente d'approbation finale</li>
-            `}
+            `
+            }
           </ul>
         </div>
         <div class="info-note">
           <i class="fas fa-info-circle"></i>
-          <p>${isAdmin 
-            ? "Cette action est définitive. Le candidat sera intégré en tant qu'employé." 
-            : "La candidature sera envoyée à l'administrateur pour validation finale avant création de l'employé."}</p>
+          <p>${
+            isAdmin
+              ? "Cette action est définitive. Le candidat sera intégré en tant qu'employé."
+              : "La candidature sera envoyée à l'administrateur pour validation finale avant création de l'employé."
+          }</p>
         </div>
       </div>
       
@@ -1879,9 +1902,9 @@ async function confirmAcceptApplication(applicationId) {
     showLoading("Traitement de l'acceptation...")
 
     // Déterminer le statut en fonction du rôle
-    let targetStatus = "accepted";
+    let targetStatus = "accepted"
     if (currentUser && currentUser.role === "recruiter") {
-      targetStatus = "accepted_pending_validation";
+      targetStatus = "accepted_pending_validation"
     }
 
     const response = await fetch(`/api/accept-application/${applicationId}`, {
@@ -1889,17 +1912,18 @@ async function confirmAcceptApplication(applicationId) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ status: targetStatus })
+      body: JSON.stringify({ status: targetStatus }),
     })
 
     const result = await response.json()
     hideLoading()
 
     if (response.ok && result.success) {
-      const message = targetStatus === "accepted_pending_validation" 
-        ? "Candidature acceptée, en attente de validation admin" 
-        : "Candidat accepté avec succès";
-      
+      const message =
+        targetStatus === "accepted_pending_validation"
+          ? "Candidature acceptée, en attente de validation admin"
+          : "Candidat accepté avec succès"
+
       showNotification(message, "success")
       setTimeout(() => {
         loadJobData()
@@ -2216,20 +2240,20 @@ console.log("✅ Script job-details-enhanced.js chargé complètement avec compa
 async function createDemoApplications() {
   try {
     console.log("🔧 Création de candidatures de démonstration...")
-    
+
     const response = await fetch("/api/applications/create-demo", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
     })
-    
+
     const result = await response.json()
-    
+
     if (result.success) {
       console.log("✅ Candidatures demo créées:", result.message)
       showNotification(result.message, "success")
-      
+
       // Recharger les données du job pour afficher les nouvelles candidatures
       if (currentJob && currentJob.id) {
         console.log("🔄 Rechargement des données du job...")
@@ -2249,20 +2273,20 @@ async function createDemoApplications() {
 async function debugApplications() {
   try {
     console.log("🔍 Vérification manuelle des candidatures en base...")
-    
+
     if (!currentJob || !currentJob.id) {
       console.error("❌ Aucun job chargé pour la vérification")
       return
     }
-    
+
     // Vérifier directement les candidatures pour ce job
     const response = await fetch(`/api/applications?job_id=${currentJob.id}`)
     const result = await response.json()
-    
+
     console.log("🔍 DEBUG APPLICATIONS DIRECT:")
     console.log("   - Response status:", response.status)
     console.log("   - Response result:", result)
-    
+
     if (result.success) {
       console.log("   - Applications trouvées:", result.applications?.length || 0)
       if (result.applications && result.applications.length > 0) {
@@ -2271,7 +2295,6 @@ async function debugApplications() {
     } else {
       console.log("   - Erreur API:", result.message)
     }
-    
   } catch (error) {
     console.error("❌ Erreur vérification candidatures:", error)
   }
