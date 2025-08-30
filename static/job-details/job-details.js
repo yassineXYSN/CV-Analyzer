@@ -2916,3 +2916,238 @@ async function debugApplications() {
     console.error("❌ Erreur vérification candidatures:", error)
   }
 }
+
+// ===== QUIZ MODAL FUNCTIONS =====
+
+// Ouvrir le modal de création de quiz
+async function openCreateQuizModal() {
+  console.log("🎯 Ouverture du modal de création de quiz")
+  const modal = document.getElementById('createQuizModal')
+  
+  if (!modal) {
+    console.error("❌ Modal non trouvé")
+    return
+  }
+
+  // Afficher le modal
+  modal.classList.add('show')
+  
+  // Empêcher le scroll du body
+  document.body.style.overflow = 'hidden'
+
+  // Générer la configuration des compétences (async)
+  await generateSkillsQuizConfig()
+}
+
+// Fermer le modal de création de quiz
+function closeCreateQuizModal() {
+  console.log("❌ Fermeture du modal de création de quiz")
+  const modal = document.getElementById('createQuizModal')
+  
+  if (modal) {
+    modal.classList.remove('show')
+  }
+  
+  // Restaurer le scroll du body
+  document.body.style.overflow = 'auto'
+}
+
+// Générer la configuration des compétences pour le quiz
+async function generateSkillsQuizConfig() {
+  console.log("🔧 Génération de la configuration des compétences")
+  const container = document.getElementById('skillsQuizConfig')
+  
+  if (!container) {
+    console.error("❌ Container skillsQuizConfig non trouvé")
+    return
+  }
+
+  // Afficher un message de chargement
+  container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Chargement des compétences...</p>'
+
+  try {
+    // Récupérer les compétences du job
+    let jobSkills = []
+    
+    if (currentJob && currentJob.id) {
+      console.log("🔍 Récupération des compétences pour le job ID:", currentJob.id)
+      console.log("🔍 Job complet:", currentJob)
+      
+      // Essayer de récupérer depuis les données du job existantes
+      if (currentJob.skills && Array.isArray(currentJob.skills)) {
+        jobSkills = currentJob.skills
+        console.log("✅ Compétences trouvées dans currentJob.skills:", jobSkills)
+      } else if (currentJob.required_skills && Array.isArray(currentJob.required_skills)) {
+        jobSkills = currentJob.required_skills
+        console.log("✅ Compétences trouvées dans currentJob.required_skills:", jobSkills)
+      } else if (currentJob.job_skills && Array.isArray(currentJob.job_skills)) {
+        jobSkills = currentJob.job_skills
+        console.log("✅ Compétences trouvées dans currentJob.job_skills:", jobSkills)
+      } else if (currentJob.skills_list && Array.isArray(currentJob.skills_list)) {
+        jobSkills = currentJob.skills_list
+        console.log("✅ Compétences trouvées dans currentJob.skills_list:", jobSkills)
+      }
+    }
+    
+
+    
+    // Fallback: essayer de récupérer depuis le DOM
+    if (jobSkills.length === 0) {
+      console.log("🔍 Fallback: récupération depuis le DOM")
+      const skillsContainer = document.getElementById('jobSkillsContainer')
+      if (skillsContainer) {
+        const skillElements = skillsContainer.querySelectorAll('.skill-tag, .skill-item, [data-skill], .skill')
+        jobSkills = Array.from(skillElements).map(el => {
+          return el.textContent?.trim() || el.getAttribute('data-skill') || el.innerText?.trim()
+        }).filter(skill => skill && skill.length > 0)
+      }
+    }
+    
+    console.log("🔍 Compétences finales trouvées:", jobSkills)
+    
+    if (jobSkills.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Aucune compétence trouvée pour ce poste. Veuillez d\'abord ajouter des compétences au poste.</p>'
+      return
+    }
+
+    // Générer le HTML pour chaque compétence
+    const skillsHTML = jobSkills.map(skill => {
+      // Gérer différents formats de compétences (string ou object)
+      let skillName = ''
+      if (typeof skill === 'string') {
+        skillName = skill.trim()
+      } else if (skill && typeof skill === 'object') {
+        skillName = skill.name || skill.skill || skill.title || skill.text || 'Compétence inconnue'
+      } else {
+        skillName = String(skill) || 'Compétence inconnue'
+      }
+      
+      // Créer un ID sécurisé pour les inputs
+      const skillId = skillName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()
+      
+      return `
+        <div class="skill-quiz-config">
+          <div class="skill-quiz-header">
+            <span class="skill-quiz-name">${skillName}</span>
+          </div>
+          <div class="skill-quiz-controls">
+            <div class="form-group">
+              <label for="questions_${skillId}">Nombre de questions</label>
+              <input type="number" id="questions_${skillId}" name="questions_${skillId}" min="1" max="20" value="5" required>
+            </div>
+            <div class="form-group">
+              <label for="difficulty_${skillId}">Niveau de difficulté</label>
+              <select id="difficulty_${skillId}" name="difficulty_${skillId}" required>
+                <option value="easy">Facile</option>
+                <option value="medium" selected>Moyen</option>
+                <option value="hard">Difficile</option>
+                <option value="expert">Expert</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      `
+    }).join('')
+
+    container.innerHTML = skillsHTML
+    
+  } catch (error) {
+    console.error("❌ Erreur lors de la récupération des compétences:", error)
+    container.innerHTML = '<p style="color: var(--error-red); text-align: center; padding: 2rem;">Erreur lors du chargement des compétences. Veuillez réessayer.</p>'
+  }
+}
+
+// Gérer la soumission du formulaire de création de quiz
+document.addEventListener('DOMContentLoaded', function() {
+  const quizForm = document.getElementById('createQuizForm')
+  
+  if (quizForm) {
+    quizForm.addEventListener('submit', function(e) {
+      e.preventDefault()
+      console.log("📝 Soumission du formulaire de création de quiz")
+      
+      // Récupérer les données du formulaire
+      const formData = new FormData(quizForm)
+      const quizData = {
+        title: formData.get('quizTitle'),
+        timeLimit: parseInt(formData.get('quizTime')),
+        skills: []
+      }
+
+      // Récupérer les compétences du job avec la même logique
+      let jobSkills = []
+      
+      if (currentJob) {
+        if (currentJob.skills && Array.isArray(currentJob.skills)) {
+          jobSkills = currentJob.skills
+        } else if (currentJob.required_skills && Array.isArray(currentJob.required_skills)) {
+          jobSkills = currentJob.required_skills
+        } else if (currentJob.job_skills && Array.isArray(currentJob.job_skills)) {
+          jobSkills = currentJob.job_skills
+        } else if (currentJob.skills_list && Array.isArray(currentJob.skills_list)) {
+          jobSkills = currentJob.skills_list
+        }
+        
+        // Si toujours vide, essayer de récupérer depuis les éléments DOM
+        if (jobSkills.length === 0) {
+          const skillsContainer = document.getElementById('jobSkillsContainer')
+          if (skillsContainer) {
+            const skillElements = skillsContainer.querySelectorAll('.skill-tag, .skill-item, [data-skill]')
+            jobSkills = Array.from(skillElements).map(el => {
+              return el.textContent?.trim() || el.getAttribute('data-skill') || el.innerText?.trim()
+            }).filter(skill => skill && skill.length > 0)
+          }
+        }
+      }
+      
+      // Ajouter les configurations de chaque compétence
+      jobSkills.forEach(skill => {
+        // Gérer différents formats de compétences (string ou object)
+        let skillName = ''
+        if (typeof skill === 'string') {
+          skillName = skill.trim()
+        } else if (skill && typeof skill === 'object') {
+          skillName = skill.name || skill.skill || skill.title || skill.text || 'Compétence inconnue'
+        } else {
+          skillName = String(skill) || 'Compétence inconnue'
+        }
+        
+        // Créer un ID sécurisé pour les inputs
+        const skillId = skillName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()
+        
+        const questions = parseInt(formData.get(`questions_${skillId}`)) || 0
+        const difficulty = formData.get(`difficulty_${skillId}`) || 'medium'
+        
+        if (questions > 0) {
+          quizData.skills.push({
+            name: skillName,
+            questions: questions,
+            difficulty: difficulty
+          })
+        }
+      })
+
+      console.log("📊 Données du quiz:", quizData)
+      
+      // TODO: Implémenter la création du quiz
+      // createQuiz(quizData)
+      
+      // Pour l'instant, afficher un message de succès
+      showNotification("Quiz créé avec succès ! (Fonctionnalité à implémenter)", "success")
+      closeCreateQuizModal()
+    })
+  }
+})
+
+// Fermer le modal en cliquant à l'extérieur
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('createQuizModal')
+  
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeCreateQuizModal()
+      }
+    })
+  }
+})

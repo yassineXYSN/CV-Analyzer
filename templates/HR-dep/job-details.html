@@ -138,6 +138,25 @@
               </div>
           </section>
 
+          <!-- Quiz Section -->
+          <section class="job-section quiz-section">
+              <div class="section-header">
+                  <h3><i class="fas fa-question-circle"></i> Quiz et Évaluations</h3>
+              </div>
+              <div class="quiz-content">
+                  <p>Aucun quiz créé pour ce poste. Créez un quiz pour évaluer les compétences des candidats.</p>
+              </div>
+          </section>
+
+          <!-- Create Quiz Button Section -->
+          <div class="create-quiz-section">
+              <button class="create-quiz-btn-large" onclick="openCreateQuizModal()">
+                  <i class="fas fa-plus-circle"></i>
+                  <span>Créer un Quiz pour ce Poste</span>
+                  <small>Évaluer les compétences des candidats</small>
+              </button>
+          </div>
+
       <!-- Applications et Candidats disponibles -->
       <div class="job-section applications-section">
           <div class="section-header">
@@ -164,6 +183,49 @@
           <!-- Candidatures existantes -->
           <div class="applications-list" id="applicationsList">
               <!-- Applications will be loaded dynamically by JavaScript -->
+          </div>
+      </div>
+  </div>
+
+  <!-- Create Quiz Modal -->
+  <div id="createQuizModal" class="modal">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h2><i class="fas fa-question-circle"></i> Créer un Quiz</h2>
+              <button class="close-btn" onclick="closeCreateQuizModal()">
+                  <i class="fas fa-times"></i>
+              </button>
+          </div>
+          <div class="modal-body">
+              <form id="createQuizForm">
+                  <div class="form-section">
+                      <h3>Configuration Générale</h3>
+                      <div class="form-group">
+                          <label for="quizTitle">Titre du Quiz</label>
+                          <input type="text" id="quizTitle" name="quizTitle" placeholder="Ex: Quiz Développeur Full-Stack" required>
+                      </div>
+                      <div class="form-group">
+                          <label for="quizTime">Temps limite (minutes)</label>
+                          <input type="number" id="quizTime" name="quizTime" min="5" max="180" value="30" required>
+                      </div>
+                  </div>
+
+                  <div class="form-section">
+                      <h3>Questions par Compétence</h3>
+                      <div id="skillsQuizConfig">
+                          <!-- Skills configuration will be dynamically generated here -->
+                      </div>
+                  </div>
+
+                  <div class="form-actions">
+                      <button type="button" class="btn-secondary" onclick="closeCreateQuizModal()">
+                          <i class="fas fa-times"></i> Annuler
+                      </button>
+                      <button type="submit" class="btn-primary">
+                          <i class="fas fa-save"></i> Créer le Quiz
+                      </button>
+                  </div>
+              </form>
           </div>
       </div>
   </div>
