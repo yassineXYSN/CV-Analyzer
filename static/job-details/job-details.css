@@ -2574,6 +2574,30 @@ body {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* ===== NUMBER INPUT STYLING ===== */
+.form-group input[type="number"] {
+  /* Keep default appearance but add some styling */
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  appearance: auto;
+}
+
+/* Simple styling for number input arrows */
+.form-group input[type="number"]::-webkit-outer-spin-button,
+.form-group input[type="number"]::-webkit-inner-spin-button {
+  background: var(--primary-blue);
+  border-radius: 4px;
+  margin: 2px;
+  opacity: 0.7;
+  transition: var(--transition-standard);
+}
+
+.form-group input[type="number"]::-webkit-outer-spin-button:hover,
+.form-group input[type="number"]::-webkit-inner-spin-button:hover {
+  background: var(--primary-blue-dark);
+  opacity: 1;
+}
+
 .skill-quiz-config {
   background: var(--bg-card);
   border-radius: var(--border-radius-md);

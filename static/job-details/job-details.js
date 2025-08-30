@@ -3017,7 +3017,8 @@ async function generateSkillsQuizConfig() {
       if (typeof skill === 'string') {
         skillName = skill.trim()
       } else if (skill && typeof skill === 'object') {
-        skillName = skill.name || skill.skill || skill.title || skill.text || 'Compétence inconnue'
+        // Utiliser skill_name en priorité (structure trouvée dans les données)
+        skillName = skill.skill_name || skill.name || skill.skill || skill.title || skill.text || 'Compétence inconnue'
       } else {
         skillName = String(skill) || 'Compétence inconnue'
       }
@@ -3107,7 +3108,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof skill === 'string') {
           skillName = skill.trim()
         } else if (skill && typeof skill === 'object') {
-          skillName = skill.name || skill.skill || skill.title || skill.text || 'Compétence inconnue'
+          // Utiliser skill_name en priorité (structure trouvée dans les données)
+          skillName = skill.skill_name || skill.name || skill.skill || skill.title || skill.text || 'Compétence inconnue'
         } else {
           skillName = String(skill) || 'Compétence inconnue'
         }
