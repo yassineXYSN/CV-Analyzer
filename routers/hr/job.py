@@ -280,26 +280,28 @@ async def get_job_details(job_id: int):
                     compatibility_source = "ai" if has_ai else None
                     compatibility_reason = app.compatibility_reason if has_ai else None
 
-                    applications_list.append({
-                        "id": app.id,
-                        "name": candidate.name,
-                        "title": candidate.title,
-                        "status": app.status,
-                        "application_date": app.application_date.isoformat() if app.application_date else None,
-                        "hr_rating": float(app.hr_rating) if app.hr_rating else None,
-                        "hr_notes": app.hr_notes,
-                        "candidate_id": candidate.id,
-                        # Informations de recommandation
-                        "is_recommended": app.is_recommended or False,
-                        "recommendation_priority": app.recommendation_priority,
-                        "recommendation_comment": app.recommendation_comment,
-                        "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
-                        "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None,
-                        # Champs de compatibilité pour le front
-                        "compatibility_percentage": compatibility_percentage,
-                        "compatibility_source": compatibility_source,
-                        "compatibility_reason": compatibility_reason
-                    })
+                    # Ajoutez ce champ dans la réponse des candidatures
+            applications_list.append({
+                "id": app.id,
+                "name": candidate.name,
+                "title": candidate.title,
+                "status": app.status,
+                "application_date": app.application_date.isoformat() if app.application_date else None,
+                "hr_rating": float(app.hr_rating) if app.hr_rating else None,
+                "hr_notes": app.hr_notes,
+                "candidate_id": candidate.id,
+                # Informations de recommandation
+                "is_recommended": app.is_recommended or False,
+                "recommendation_priority": app.recommendation_priority,
+                "recommendation_comment": app.recommendation_comment,
+                "recommended_by": f"{recommended_by_admin.first_name} {recommended_by_admin.last_name}" if recommended_by_admin else None,
+                "recommendation_date": app.recommendation_date.isoformat() if app.recommendation_date else None,
+                # Champs de compatibilité pour le front
+                "compatibility_percentage": compatibility_percentage,
+                "compatibility_source": compatibility_source,
+                "compatibility_reason": compatibility_reason,
+                # Ajoutez le vrai score de quiz
+            })
             
             days_remaining = None
             if job.deadline:

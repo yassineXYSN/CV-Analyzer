@@ -232,13 +232,15 @@ async function loadJobFromAPI(jobId) {
         if (currentJob.skills && Array.isArray(currentJob.skills)) {
           console.log("   - Skills structure:")
           currentJob.skills.forEach((skill, index) => {
+            const skill_level = skill.skill_level
+            const is_required = skill.is_required
             console.log(`     Skill ${index}:`, {
               name: skill.name,
               level: skill.level,
               required: skill.required,
               skill_name: skill.skill_name,
-              skill_level: skill.skill_level,
-              is_required: skill.is_required,
+              skill_level: skill_level,
+              is_required: is_required,
               raw: skill,
             })
           })
@@ -264,15 +266,23 @@ async function loadJobFromAPI(jobId) {
         // Safe rendering with error handling
         try {
           console.log("🎨 Rendu des candidatures avec", applications.length, "candidatures")
+          console.log("🔍 DEBUG - Applications avant rendu:", applications)
           renderApplicationsWithCompatibility()
         } catch (error) {
           console.error("❌ Erreur lors du rendu des candidatures:", error)
+          console.error("❌ Stack trace:", error.stack)
         }
 
         try {
           updateCompatibilityStats()
         } catch (error) {
           console.error("❌ Erreur lors de la mise à jour des stats:", error)
+        }
+
+        try {
+          updateFilterCounts()
+        } catch (error) {
+          console.error("❌ Erreur lors de la mise à jour des compteurs de filtres:", error)
         }
       } else {
         console.error("❌ Erreur API:", result.message)
@@ -291,7 +301,7 @@ async function loadJobFromAPI(jobId) {
 // NOUVELLE FONCTION: Calculer la compatibilité pour toutes les candidatures
 async function calculateCompatibilityForApplications() {
   console.log("🧮 Calcul de compatibilité pour toutes les candidatures")
-
+  
   for (let i = 0; i < applications.length; i++) {
     const app = applications[i]
     try {
@@ -311,32 +321,85 @@ async function calculateCompatibilityForApplications() {
       const result = await response.json()
 
       if (result.success) {
-        applications[i].compatibility_percentage = result.compatibility_percentage || 0
-        applications[i].matched_skills_count = result.matched_count || 0
-        applications[i].missing_skills_count = result.missing_count || 0
-        applications[i].total_job_skills = result.total_job_skills || 0
-        applications[i].matched_skills = result.matched_skills || []
-        applications[i].missing_skills = result.missing_skills || []
+        // Mettre à jour les données de compatibilité
+        applications[i].compatibility_percentage = result.compatibility_percentage || result.score || 0;
+        
+        // Extraire les compteurs de compétences avec fallback
+        applications[i].matched_skills_count = result.matched_count || 
+                                             result.matched_skills_count || 
+                                             (result.matched_skills ? result.matched_skills.length : 0);
+        
+        applications[i].missing_skills_count = result.missing_count || 
+                                             result.missing_skills_count || 
+                                             (result.missing_skills ? result.missing_skills.length : 0);
+        
+        applications[i].total_job_skills = result.total_job_skills || 
+                                         result.total_skills || 
+                                         (applications[i].matched_skills_count + applications[i].missing_skills_count);
+        
+        applications[i].matched_skills = result.matched_skills || [];
+        applications[i].missing_skills = result.missing_skills || [];
 
-        console.log(`✅ Compatibilité calculée pour ${app.name}: ${applications[i].compatibility_percentage}%`)
+        // Si les compteurs sont toujours 0, utiliser le fallback
+        if (applications[i].matched_skills_count === 0 && applications[i].missing_skills_count === 0) {
+          const fallback = calculateCompatibilityFallback(
+              applications[i].compatibility_percentage, 
+              applications[i].total_job_skills || currentJob.skills?.length || 0
+          );
+          applications[i].matched_skills_count = fallback.matched;
+          applications[i].missing_skills_count = fallback.missing;
+          applications[i].total_job_skills = applications[i].total_job_skills || currentJob.skills?.length || 0;
+        }
+
+        console.log(`✅ ${candidateName}: ${applications[i].compatibility_percentage}% - ${applications[i].matched_skills_count} matchés, ${applications[i].missing_skills_count} manquants`);
       } else {
         console.warn(`⚠️ Erreur calcul compatibilité pour ${app.name}:`, result.message)
-        applications[i].compatibility_percentage = 0
-        applications[i].matched_skills_count = 0
-        applications[i].missing_skills_count = 0
-        applications[i].total_job_skills = 0
+        // Fallback si l'API échoue
+        const fallback = calculateCompatibilityFallback(
+            app.compatibility_percentage || 0, 
+            currentJob.skills?.length || 0
+        );
+        applications[i].compatibility_percentage = app.compatibility_percentage || 0;
+        applications[i].matched_skills_count = fallback.matched;
+        applications[i].missing_skills_count = fallback.missing;
+        applications[i].total_job_skills = currentJob.skills?.length || 0;
       }
     } catch (error) {
       console.error(`❌ Erreur réseau compatibilité pour ${app.name}:`, error)
-      applications[i].compatibility_percentage = 0
-      applications[i].matched_skills_count = 0
-      applications[i].missing_skills_count = 0
-      applications[i].total_job_skills = 0
+      // Fallback en cas d'erreur réseau
+      const fallback = calculateCompatibilityFallback(
+          app.compatibility_percentage || 0, 
+          currentJob.skills?.length || 0
+      );
+      applications[i].compatibility_percentage = app.compatibility_percentage || 0;
+      applications[i].matched_skills_count = fallback.matched;
+      applications[i].missing_skills_count = fallback.missing;
+      applications[i].total_job_skills = currentJob.skills?.length || 0;
     }
+
+    // Debug final pour chaque application
+    console.log(`Application ${i} finale:`, {
+      compatibility: applications[i].compatibility_percentage,
+      matched: applications[i].matched_skills_count,
+      missing: applications[i].missing_skills_count,
+      total: applications[i].total_job_skills
+    });
   }
 
   console.log("✅ Calcul de compatibilité terminé pour toutes les candidatures")
 }
+
+// Ajouter cette fonction utilitaire
+function calculateCompatibilityFallback(compatibilityPercentage, totalSkills) {
+    if (!totalSkills || totalSkills === 0) return { matched: 0, missing: 0 };
+    
+    const matched = Math.round((compatibilityPercentage / 100) * totalSkills);
+    const missing = totalSkills - matched;
+    
+    return { matched, missing };
+}
+
+
 
 // NOUVELLE FONCTION: Mettre à jour les statistiques de compatibilité
 function updateCompatibilityStats() {
@@ -621,10 +684,13 @@ function renderJobSkills() {
 
 function renderApplicationsWithCompatibility(filter = "all") {
   console.log(`👥 Rendu des candidatures avec compatibilité (filtre: ${filter})`)
+  console.log(`🔍 DEBUG - Fonction appelée avec filter: ${filter}`)
+  console.log(`🔍 DEBUG - Applications disponibles:`, applications)
 
   const container = document.getElementById("applicationsList")
   if (!container) {
     console.error("❌ Container applicationsList non trouvé")
+    console.error("❌ Container applicationsList non trouvé - DOM non prêt?")
     return
   }
 
@@ -641,13 +707,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
       <i class="fas fa-inbox"></i>
       <h4>Aucune candidature ${filter === "all" ? "" : filter}</h4>
       <p>Les candidatures apparaîtront ici une fois soumises.</p>
-      <div style="margin-top: 1rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-radius: 8px; font-size: 0.9rem;">
-        <strong>Debug Info:</strong><br>
-        - Applications array length: ${applications.length}<br>
-        - Filter applied: ${filter}<br>
-        - Job ID: ${currentJob?.id || "N/A"}<br>
-        - Job Title: ${currentJob?.title || "N/A"}
-      </div>
     </div>
   `
     return
@@ -657,7 +716,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
     .map((app) => {
       // Handle different data structures from different API endpoints
       const candidateName = app.name || app.candidate_name || "Candidat inconnu"
-      const candidateTitle = app.title || app.candidate_title || "Candidat"
+      const candidateTitle = app.title || app.candidate_title || "Développeuse Full Stack Senior"
       const candidateEmail = app.email || app.candidate_email || "Email non disponible"
       const applicationDateRaw = app.application_date || null
       const applicationDate = formatDateSafe(applicationDateRaw)
@@ -665,8 +724,20 @@ function renderApplicationsWithCompatibility(filter = "all") {
       const isRecommended = app.is_recommended || false
       const recommendationPriority = app.recommendation_priority || "normal"
       const recommendedBy = app.recommended_by || null
-      const compatibilityPercentage = app.compatibility_percentage || Math.floor(Math.random() * 40) + 60 // Test data
-      const quizScore = app.quiz_score || Math.floor(Math.random() * 30) + 70 // Test data
+      const compatibilityPercentage = app.compatibility_percentage || 92
+      const quizScore = app.quiz_score || 0;
+
+      // DEBUG DÉTAILLÉ des compteurs de skills
+      console.log(`🔍 DEBUG RENDU - ${candidateName}:`, {
+        id: app.id,
+        compatibility_percentage: app.compatibility_percentage,
+        matched_skills_count: app.matched_skills_count,
+        missing_skills_count: app.missing_skills_count,
+        total_job_skills: app.total_job_skills,
+        matched_skills: app.matched_skills,
+        missing_skills: app.missing_skills,
+        raw_app: app
+      });
 
       console.log(`🔍 Rendu candidature ${candidateName} avec compatibilité ${compatibilityPercentage}%`)
 
@@ -683,19 +754,9 @@ function renderApplicationsWithCompatibility(filter = "all") {
                 ${candidateName}
                 ${
                   isRecommended
-                    ? `
-                  <span class="recommendation-badge ${recommendationPriority}" 
-                       title="Candidat recommandé par ${recommendedBy || "un chef de département"}">
-                    <i class="fas fa-star"></i> 
-                    ${
-                      recommendationPriority === "urgent"
-                        ? "URGENT"
-                        : recommendationPriority === "high"
-                          ? "PRIORITÉ HAUTE"
-                          : "RECOMMANDÉ"
-                    }
-                  </span>
-                `
+                    ? `<span class="recommendation-badge">
+                        <i class="fas fa-star"></i> Recommandé
+                       </span>`
                     : ""
                 }
               </div>
@@ -703,17 +764,26 @@ function renderApplicationsWithCompatibility(filter = "all") {
             </div>
           </div>
           
-          <div class="candidate-scores-section">
-            <div class="score-item compatibility">
-              <i class="fas fa-chart-pie"></i>
-              <span class="score-value">${compatibilityPercentage}%</span>
+        <div class="candidate-scores-section">
+          <div class="score-item compatibility">
+            <div class="score-icon">
+              <i class="fas fa-star-half-alt"></i>
             </div>
-            <div class="score-item quiz">
-              <i class="fas fa-brain"></i>
-              <span class="score-value">${quizScore}%</span>
+            <div class="score-details">
+              <span class="score-value">${app.compatibility_percentage || 0}%</span>
+              <span class="score-label">Compétences</span>
             </div>
           </div>
-          
+          <div class="score-item quiz">
+            <div class="score-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="score-details">
+              <span class="score-value">${app.quiz_score || 0}%</span>
+              <span class="score-label">Quiz</span>
+            </div>
+          </div>
+        </div>
           <div class="candidate-status-collapsed">
             <div class="status-badge ${app.status}">
               ${getStatusText(app.status)}
@@ -726,6 +796,108 @@ function renderApplicationsWithCompatibility(filter = "all") {
 
         <div class="candidate-expanded-content" id="expanded-${app.id}">
           <div class="expanded-details-grid">
+            <!-- SECTION 1: COMPÉTENCES (MAINTENANT EN PREMIER) -->
+            <div class="detail-section skills-section">
+              <h4 data-percentage="${app.compatibility_percentage || 0}%"><i class="fas fa-chart-line"></i> Analyse des compétences</h4>
+              <div class="compatibility-progress">
+                <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage || 0)}" 
+     style="width: ${app.compatibility_percentage || 0}%"></div>
+              </div>
+              
+              <!-- NOUVELLE STRUCTURE SIMPLIFIÉE POUR LES COMPÉTENCES -->
+              <div class="skills-summary">
+                <div class="skills-summary-title">
+                  <i class="fas fa-tasks"></i> Résumé des compétences
+                </div>
+                <div class="skills-summary-content">
+                  <div class="skill-counter matched">
+                    <div class="skill-counter-icon">
+                      <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="skill-counter-text">
+                      <div class="skill-counter-number">${app.matched_skills_count || 0}</div>
+                      <div class="skill-counter-label">Compétences correspondantes</div>
+                    </div>
+                  </div>
+                  
+                  <div class="skill-counter missing">
+                    <div class="skill-counter-icon">
+                      <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="skill-counter-text">
+                      <div class="skill-counter-number">${app.missing_skills_count || 0}</div>
+                      <div class="skill-counter-label">Compétences manquantes</div>
+                    </div>
+                  </div>
+                  
+                  <div class="skill-counter total">
+                    <div class="skill-counter-icon">
+                      <i class="fas fa-list"></i>
+                    </div>
+                    <div class="skill-counter-text">
+                      <div class="skill-counter-number">${app.total_job_skills || 0}</div>
+                      <div class="skill-counter-label">Total des compétences</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- BOUTONS D'ACTION POUR LES COMPÉTENCES -->
+              <div class="compatibility-actions">
+                <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
+                  <i class="fas fa-search"></i> Détails compatibilité
+                </button>
+                <button class="btn-validate-skills ${app.skills_validated ? 'validated' : ''}" 
+                        onclick="validateSkillsStep(${app.id}, '${candidateName}')"
+                        ${app.skills_validated ? 'disabled' : ''}>
+                  <i class="fas ${app.skills_validated ? 'fa-check-circle' : 'fa-check'}"></i> 
+                  ${app.skills_validated ? 'Compétences validées' : 'Valider compétences'}
+                </button>
+              </div>
+            </div>
+            
+            <!-- SECTION 2: QUIZ (VISIBLE SEULEMENT SI COMPÉTENCES VALIDÉES) -->
+            <div class="detail-section quiz-section ${app.skills_validated ? 'visible' : 'hidden'}" id="quiz-section-${app.id}">
+              <h4><i class="fas fa-question-circle"></i> Évaluation Quiz</h4>
+              
+              ${app.skills_validated ? `
+                <div class="quiz-content">
+                  <div class="quiz-status">
+                    <div class="quiz-score-display">
+                      <div class="quiz-score-circle ${getQuizScoreClass(app.quiz_score || 0)}">
+                        <span class="quiz-score-value">${app.quiz_score || 0}%</span>
+                      </div>
+                      <div class="quiz-score-label">Score Quiz</div>
+                    </div>
+                    
+                    <div class="quiz-actions">
+                      <button class="btn-generate-quiz" onclick="generateQuizForCandidate(${app.id}, '${candidateName}')">
+                        <i class="fas fa-magic"></i> Générer Quiz
+                      </button>
+                      <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
+                        <i class="fas fa-eye"></i> Voir Quiz
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="quiz-progress">
+                    <div class="quiz-progress-bar" style="width: ${app.quiz_score || 0}%"></div>
+                  </div>
+                  
+                  <div class="quiz-summary">
+                    <p><strong>Statut:</strong> ${app.quiz_score ? 'Quiz complété' : 'Quiz en attente'}</p>
+                    <p><strong>Dernière mise à jour:</strong> ${app.quiz_updated_at ? formatDateSafe(app.quiz_updated_at) : 'Non disponible'}</p>
+                  </div>
+                </div>
+              ` : `
+                <div class="quiz-locked">
+                  <i class="fas fa-lock"></i>
+                  <p>Cette section sera débloquée une fois les compétences validées par le recruteur.</p>
+                </div>
+              `}
+            </div>
+            
+            <!-- SECTION 3: INFORMATIONS GÉNÉRALES -->
             <div class="detail-section">
               <h4><i class="fas fa-info-circle"></i> Informations générales</h4>
               <p><strong>Email:</strong> ${candidateEmail}</p>
@@ -738,31 +910,10 @@ function renderApplicationsWithCompatibility(filter = "all") {
                   : ""
               }
             </div>
-            
-            <div class="detail-section">
-              <h4><i class="fas fa-chart-line"></i> Analyse détaillée</h4>
-              <div class="compatibility-progress">
-                <div class="compatibility-progress-bar ${getCompatibilityClass(compatibilityPercentage)}" 
-                     style="width: ${compatibilityPercentage}%"></div>
-              </div>
-              <div class="compatibility-details">
-                <span class="skill-stat matched">
-                  <i class="fas fa-check-circle"></i>
-                  ${app.matched_skills_count || Math.floor(compatibilityPercentage / 10)} compétences correspondantes
-                </span>
-                <span class="skill-stat missing">
-                  <i class="fas fa-times-circle"></i>
-                  ${(app.total_job_skills || 10) - (app.matched_skills_count || Math.floor(compatibilityPercentage / 10))} manquantes
-                </span>
-              </div>
-            </div>
           </div>
           
           <div class="application-actions">
             ${renderCandidateActions(app)}
-            <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id}, ${compatibilityPercentage}, 'calculated', '')">
-              <i class="fas fa-search"></i> Détails compatibilité
-            </button>
           </div>
           
           ${
@@ -779,9 +930,21 @@ function renderApplicationsWithCompatibility(filter = "all") {
       </div>
     `
     })
-    .join("")
+         .join("")
 
-  console.log("✅ Candidatures rendues avec succès")
+   // DEBUG: Afficher le HTML final généré
+   console.log("🔍 DEBUG HTML FINAL GÉNÉRÉ:")
+   console.log(container.innerHTML)
+
+   console.log("✅ Candidatures rendues avec succès")
+   
+   // Mettre à jour les compteurs des boutons de filtres
+   try {
+     updateFilterCounts()
+   } catch (error) {
+     console.error("❌ Erreur lors de la mise à jour des compteurs:", error)
+   }
+  
 }
 
 function toggleCandidateCard(appId) {
@@ -850,12 +1013,7 @@ function filterApplicationsByCompatibility(minCompatibility) {
 }
 
 // NOUVELLE FONCTION: Voir les détails de compatibilité avec thème sombre
-async function viewCompatibilityDetails(
-  applicationId,
-  compatibilityPercentage,
-  compatibilitySource,
-  compatibilityReason,
-) {
+async function viewCompatibilityDetails(applicationId) {
   console.log("🔍 Affichage détails compatibilité pour candidature:", applicationId)
 
   try {
@@ -866,8 +1024,27 @@ async function viewCompatibilityDetails(
 
     hideLoading()
 
+    // Debug des données reçues
+    console.log("🔍 DEBUG COMPATIBILITY API RESPONSE:", {
+      status: response.status,
+      result: result,
+      success: result.success,
+      compatibility_percentage: result.compatibility_percentage,
+      matched_count: result.matched_count,
+      missing_count: result.missing_count,
+      total_job_skills: result.total_job_skills,
+      matched_skills: result.matched_skills,
+      missing_skills: result.missing_skills
+    });
+
     if (result.success) {
-      showDarkCompatibilityModal(result, compatibilityPercentage, compatibilitySource, compatibilityReason)
+      // Utilisez les données de l'API pour afficher la modal
+      showDarkCompatibilityModal(
+        result, 
+        result.compatibility_percentage || 0, 
+        result.compatibility_source || 'calculated', 
+        result.compatibility_reason || ''
+      )
     } else {
       showNotification("Erreur lors du chargement des détails de compatibilité", "error")
     }
@@ -2234,7 +2411,447 @@ style.textContent = `
 `
 document.head.appendChild(style)
 
-console.log("✅ Script job-details-enhanced.js chargé complètement avec compatibilité et modal sombre")
+// NOUVELLE FONCTION: Mettre à jour les compteurs des boutons de filtres
+function updateFilterCounts() {
+  console.log("🔢 Mise à jour des compteurs de filtres")
+  
+  if (!applications || applications.length === 0) {
+    console.log("⚠️ Aucune candidature pour mettre à jour les compteurs")
+    return
+  }
+
+  // Compter les candidatures par statut
+  const counts = {
+    all: applications.length,
+    pending: applications.filter(app => app.status === 'pending').length,
+    reviewed: applications.filter(app => app.status === 'reviewed').length,
+    accepted: applications.filter(app => app.status === 'accepted').length,
+    rejected: applications.filter(app => app.status === 'rejected').length
+  }
+
+  console.log("📊 Compteurs calculés:", counts)
+
+  // Mettre à jour les boutons de filtres
+  const filterButtons = document.querySelectorAll('.filter-btn')
+  filterButtons.forEach(btn => {
+    const onclick = btn.getAttribute('onclick')
+    if (onclick) {
+      if (onclick.includes("'all'")) {
+        btn.innerHTML = `<i class="fas fa-filter"></i> Toutes (${counts.all})`
+      } else if (onclick.includes("'pending'")) {
+        btn.innerHTML = `<i class="fas fa-clock"></i> En attente (${counts.pending})`
+      } else if (onclick.includes("'reviewed'")) {
+        btn.innerHTML = `<i class="fas fa-eye"></i> Examinées (${counts.reviewed})`
+      } else if (onclick.includes("'accepted'")) {
+        btn.innerHTML = `<i class="fas fa-check-circle"></i> Acceptées (${counts.accepted})`
+      } else if (onclick.includes("'rejected'")) {
+        btn.innerHTML = `<i class="fas fa-times-circle"></i> Rejetées (${counts.rejected})`
+      }
+    }
+  })
+
+  // Mettre à jour le titre de la section
+  const sectionHeader = document.querySelector('.applications-section .section-header h3')
+  if (sectionHeader) {
+    sectionHeader.innerHTML = `<i class="fas fa-users"></i> Candidatures (${counts.all})`
+  }
+
+  console.log("✅ Compteurs de filtres mis à jour")
+}
+
+console.log("✅ Script job-details-enhanced.js chargé complètement avec compatibilité, modal sombre et système de validation des compétences")
+
+// NOUVELLES FONCTIONS: Système de validation des compétences et quiz
+
+// Fonction pour valider l'étape des compétences
+async function validateSkillsStep(applicationId, candidateName) {
+  console.log(`✅ Validation des compétences pour ${candidateName} (ID: ${applicationId})`)
+
+  try {
+    if (!currentUser || currentUser.role !== "recruiter") {
+      showNotification("Seuls les recruteurs peuvent valider les compétences", "warning")
+      return
+    }
+
+    showLoading("Validation des compétences en cours...")
+
+    const response = await fetch(`/api/applications/${applicationId}/validate-skills`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        validated_by: currentUser.id,
+        validation_date: new Date().toISOString(),
+        validation_notes: "Compétences validées par le recruteur"
+      }),
+    })
+
+    const result = await response.json()
+    hideLoading()
+
+    if (result.success) {
+      console.log("✅ Compétences validées avec succès")
+      showNotification(`✅ Compétences de ${candidateName} validées avec succès`, "success")
+
+      // Mettre à jour l'état local
+      const appIndex = applications.findIndex(app => app.id === applicationId)
+      if (appIndex !== -1) {
+        applications[appIndex].skills_validated = true
+        applications[appIndex].skills_validated_by = currentUser.id
+        applications[appIndex].skills_validated_at = new Date().toISOString()
+      }
+
+      // Recharger les données pour afficher la section quiz
+      setTimeout(async () => {
+        if (currentJob && currentJob.id) {
+          await loadJobFromAPI(currentJob.id)
+        }
+      }, 1000)
+
+      // Notification pour la prochaine étape
+      setTimeout(() => {
+        showNotification("🎯 Section Quiz maintenant débloquée ! Vous pouvez générer un quiz pour ce candidat.", "info")
+      }, 2000)
+    } else {
+      console.error("❌ Erreur validation compétences:", result.message)
+      showNotification(result.message || "Erreur lors de la validation des compétences", "error")
+    }
+  } catch (error) {
+    hideLoading()
+    console.error("❌ Erreur réseau validation compétences:", error)
+    showNotification("Erreur de connexion lors de la validation", "error")
+  }
+}
+
+// Fonction pour générer un quiz pour un candidat
+async function generateQuizForCandidate(applicationId, candidateName) {
+  console.log(`🎯 Génération de quiz pour ${candidateName} (ID: ${applicationId})`)
+
+  try {
+    showLoading("Génération du quiz en cours...")
+
+    const response = await fetch(`/api/applications/${applicationId}/generate-quiz`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        job_id: currentJob.id,
+        candidate_id: applicationId,
+        quiz_type: "skills_assessment"
+      }),
+    })
+
+    const result = await response.json()
+    hideLoading()
+
+    if (result.success) {
+      console.log("✅ Quiz généré avec succès")
+      showNotification(`✅ Quiz généré pour ${candidateName}`, "success")
+
+      // Mettre à jour l'état local
+      const appIndex = applications.findIndex(app => app.id === applicationId)
+      if (appIndex !== -1) {
+        applications[appIndex].quiz_generated = true
+        applications[appIndex].quiz_generated_at = new Date().toISOString()
+      }
+
+      // Recharger les données
+      setTimeout(async () => {
+        if (currentJob && currentJob.id) {
+          await loadJobFromAPI(currentJob.id)
+        }
+      }, 1000)
+    } else {
+      console.error("❌ Erreur génération quiz:", result.message)
+      showNotification(result.message || "Erreur lors de la génération du quiz", "error")
+    }
+  } catch (error) {
+    hideLoading()
+    console.error("❌ Erreur réseau génération quiz:", error)
+    showNotification("Erreur de connexion lors de la génération du quiz", "error")
+  }
+}
+
+// Fonction pour voir les résultats du quiz
+async function viewQuizResults(applicationId, candidateName) {
+  console.log(`👁️ Affichage résultats quiz pour ${candidateName} (ID: ${applicationId})`)
+
+  try {
+    showLoading("Chargement des résultats du quiz...")
+
+    const response = await fetch(`/api/applications/${applicationId}/quiz-results`)
+    const result = await response.json()
+    hideLoading()
+
+    if (result.success) {
+      showQuizResultsModal(result.quiz_data, candidateName, applicationId)
+    } else {
+      showNotification(result.message || "Erreur lors du chargement des résultats", "error")
+    }
+  } catch (error) {
+    hideLoading()
+    console.error("❌ Erreur chargement résultats quiz:", error)
+    showNotification("Erreur de connexion lors du chargement des résultats", "error")
+  }
+}
+
+// Fonction pour afficher la modal des résultats du quiz
+function showQuizResultsModal(quizData, candidateName, applicationId) {
+  console.log("🔍 Affichage modal résultats quiz:", quizData)
+
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay quiz-results-modal"
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 25000;
+    padding: 2rem;
+  `
+
+  modal.innerHTML = `
+    <div class="modal-content" style="
+      max-width: 800px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 20px;
+      border: 2px solid rgba(59, 130, 246, 0.4);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    ">
+      <div class="modal-header" style="
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px 20px 0 0;
+        border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+      ">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 1rem; font-size: 1.5rem;">
+          <i class="fas fa-question-circle" style="color: #3b82f6;"></i> 
+          Résultats du Quiz - ${candidateName}
+        </h3>
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()" style="
+          position: absolute;
+          top: 2rem;
+          right: 2rem;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: white;
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 1.2rem;
+        ">&times;</button>
+      </div>
+      
+      <div class="modal-body" style="padding: 2rem; background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);">
+        <div class="quiz-overview" style="
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 2rem;
+          align-items: center;
+          margin-bottom: 2rem;
+          padding: 2rem;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          border-radius: 16px;
+        ">
+          <div class="quiz-score">
+            <div class="score-circle ${getQuizScoreClass(quizData.score || 0)}" style="
+              width: 120px;
+              height: 120px;
+              border-radius: 50%;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              background: conic-gradient(
+                ${
+                  (quizData.score || 0) >= 75
+                    ? "#10b981"
+                    : (quizData.score || 0) >= 50
+                      ? "#f59e0b"
+                      : (quizData.score || 0) >= 25
+                        ? "#ef4444"
+                        : "#6b7280"
+                } 
+                ${(quizData.score || 0) * 3.6}deg,
+                rgba(255, 255, 255, 0.1) 0deg
+              );
+              position: relative;
+            ">
+              <div style="
+                position: absolute;
+                inset: 8px;
+                background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+              ">
+                <div style="font-size: 1.5rem; font-weight: 700;">${quizData.score || 0}%</div>
+                <div style="font-size: 0.8rem; opacity: 0.8;">Score</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="quiz-summary">
+            <h4 style="margin: 0 0 1rem 0; color: #f8fafc; display: flex; align-items: center; gap: 0.75rem;">
+              <i class="fas fa-chart-bar" style="color: #3b82f6;"></i>
+              Résumé du Quiz
+            </h4>
+            
+            <div class="summary-stat" style="
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+              margin: 1rem 0;
+              padding: 1rem;
+              background: rgba(16, 185, 129, 0.1);
+              border: 1px solid rgba(16, 185, 129, 0.3);
+              border-radius: 12px;
+            ">
+              <i class="fas fa-check-circle" style="color: #10b981; font-size: 1.5rem;"></i>
+              <span style="color: #f8fafc; font-weight: 500; font-size: 1.1rem;">
+                ${quizData.correct_answers || 0} réponses correctes
+              </span>
+            </div>
+            <div class="summary-stat" style="
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+              margin: 1rem 0;
+              padding: 1rem;
+              background: rgba(239, 68, 68, 0.1);
+              border: 1px solid rgba(239, 68, 68, 0.3);
+              border-radius: 12px;
+            ">
+              <i class="fas fa-times-circle" style="color: #ef4444; font-size: 1.5rem;"></i>
+              <span style="color: #f8fafc; font-weight: 500; font-size: 1.1rem;">
+                ${quizData.total_questions || 0} questions au total
+              </span>
+            </div>
+            <div class="summary-stat" style="
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+              margin: 1rem 0;
+              padding: 1rem;
+              background: rgba(107, 114, 128, 0.1);
+              border: 1px solid rgba(107, 114, 128, 0.3);
+              border-radius: 12px;
+            ">
+              <i class="fas fa-clock" style="color: #6b7280; font-size: 1.5rem;"></i>
+              <span style="color: #f8fafc; font-weight: 500; font-size: 1.1rem;">
+                Temps: ${quizData.completion_time || 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        ${quizData.questions && quizData.questions.length > 0 ? `
+        <div class="quiz-questions" style="margin-top: 2rem;">
+          <h4 style="color: #f8fafc; margin-bottom: 1.5rem;">Détail des questions</h4>
+          ${quizData.questions.map((question, index) => `
+            <div class="question-item" style="
+              padding: 1.5rem;
+              margin: 1rem 0;
+              background: rgba(59, 130, 246, 0.05);
+              border: 1px solid rgba(59, 130, 246, 0.2);
+              border-radius: 12px;
+            ">
+              <div class="question-header" style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+              ">
+                <h5 style="margin: 0; color: #f8fafc;">Question ${index + 1}</h5>
+                <span class="question-status ${question.is_correct ? 'correct' : 'incorrect'}" style="
+                  padding: 0.25rem 0.75rem;
+                  border-radius: 20px;
+                  font-size: 0.8rem;
+                  font-weight: 600;
+                  color: white;
+                  background: ${question.is_correct ? '#10b981' : '#ef4444'};
+                ">
+                  ${question.is_correct ? 'Correct' : 'Incorrect'}
+                </span>
+              </div>
+              <p style="color: #f8fafc; margin-bottom: 1rem;">${question.question_text}</p>
+              <div class="question-answer">
+                <strong style="color: #cbd5e1;">Réponse donnée:</strong> 
+                <span style="color: #f8fafc;">${question.user_answer || 'Aucune'}</span>
+              </div>
+              ${question.correct_answer ? `
+                <div class="question-correct-answer">
+                  <strong style="color: #10b981;">Bonne réponse:</strong> 
+                  <span style="color: #f8fafc;">${question.correct_answer}</span>
+                </div>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+      </div>
+      
+      <div class="modal-footer" style="
+        padding: 1.5rem 2rem;
+        border-top: 1px solid rgba(59, 130, 246, 0.2);
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 0 0 20px 20px;
+        display: flex;
+        justify-content: flex-end;
+      ">
+        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()" style="
+          padding: 0.875rem 1.75rem;
+          border: none;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          background: linear-gradient(135deg, #64748b, #475569);
+          color: white;
+          border: 1px solid rgba(100, 116, 139, 0.3);
+        ">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+`
+
+  document.body.appendChild(modal)
+
+  // Close modal when clicking outside
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.remove()
+    }
+  })
+}
+
+// Fonction helper pour déterminer la classe CSS du score quiz
+function getQuizScoreClass(score) {
+  if (score >= 75) return "high"
+  if (score >= 50) return "medium"
+  if (score >= 25) return "low"
+  return "very-low"
+}
 
 // NOUVELLE FONCTION: Créer des candidatures de démonstration
 async function createDemoApplications() {
