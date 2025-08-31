@@ -382,20 +382,16 @@ class QuizQuestion(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
-    skill_name = Column(String(100), nullable=False)
+    skill = Column(String(100), nullable=False)
     question_text = Column(Text, nullable=False)
-    question_type = Column(Enum('multiple_choice', 'true_false', 'short_answer', 'code'), default='multiple_choice')
-    difficulty = Column(Enum('easy', 'medium', 'hard', 'expert'), nullable=False)
     
     # Question options and answers
     options = Column(JSON)  # For multiple choice questions
     correct_answer = Column(Text, nullable=False)
     explanation = Column(Text)
-    points = Column(Integer, default=1)
     
     # Order and metadata
     question_order = Column(Integer, default=0)
-    estimated_time_seconds = Column(Integer, default=60)
     
     # Timestamps
     created_at = Column(DateTime, default=func.now())

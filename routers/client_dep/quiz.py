@@ -9,8 +9,8 @@ import logging
 from typing import Optional
 
 from databasehr.database import get_db
-from models import Quiz, QuizQuestion, QuizAttempt, QuizAnswer, User, ProfileCandidat
-from client_dep.auth import get_current_user, require_auth
+from databaseclient.models import Quiz, QuizQuestion, QuizAttempt, QuizAnswer, User, ProfileCandidat
+from routers.client_dep.dependencies import get_db, get_current_user,require_auth
 
 # Setup
 router = APIRouter()

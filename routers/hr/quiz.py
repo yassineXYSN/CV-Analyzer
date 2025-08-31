@@ -158,15 +158,11 @@ async def process_n8n_quiz_response(db: Session, quiz_id: int, n8n_response: Lis
             for question_data in questions:
                 quiz_question = QuizQuestion(
                     quiz_id=quiz_id,
-                    skill_name=skill_name,
+                    skill=skill_name,
                     question_text=question_data.get("question", ""),
-                    question_type='multiple_choice',
-                    difficulty=difficulty,
                     options=question_data.get("options", []),
                     correct_answer=str(question_data.get("correctAnswerNumber", 1)),
                     question_order=question_order,
-                    points=1,
-                    estimated_time_seconds=60
                 )
                 
                 db.add(quiz_question)
