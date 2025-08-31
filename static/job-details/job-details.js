@@ -860,6 +860,15 @@ function renderApplicationsWithCompatibility(filter = "all") {
             <div class="detail-section quiz-section ${app.skills_validated ? 'visible' : 'hidden'}" id="quiz-section-${app.id}">
               <h4><i class="fas fa-question-circle"></i> Évaluation Quiz</h4>
               
+              <!-- Quiz Creation Button for this specific candidate -->
+              <div class="quiz-creation-section">
+                <button class="create-quiz-btn-large" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
+                  <i class="fas fa-plus-circle"></i>
+                  <span>Créer un Quiz pour ${candidateName}</span>
+                  <small>Évaluer les compétences de ce candidat</small>
+                </button>
+              </div>
+              
               ${app.skills_validated ? `
                 <div class="quiz-content">
                   <div class="quiz-status">
@@ -2920,13 +2929,27 @@ async function debugApplications() {
 // ===== QUIZ MODAL FUNCTIONS =====
 
 // Ouvrir le modal de création de quiz
-async function openCreateQuizModal() {
+async function openCreateQuizModal(candidateId = null, candidateName = null) {
   console.log("🎯 Ouverture du modal de création de quiz")
+  console.log("👤 Candidat sélectionné:", candidateId, candidateName)
+  
+  // Store the candidate ID globally for the form submission
+  window.currentQuizCandidateId = candidateId
+  window.currentQuizCandidateName = candidateName
+  
   const modal = document.getElementById('createQuizModal')
   
   if (!modal) {
     console.error("❌ Modal non trouvé")
     return
+  }
+
+  // Update modal header to show candidate name if available
+  const modalHeader = modal.querySelector('.modal-header h2')
+  if (modalHeader && candidateName) {
+    modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz pour ${candidateName}`
+  } else if (modalHeader) {
+    modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz`
   }
 
   // Afficher le modal
@@ -2950,7 +2973,19 @@ function closeCreateQuizModal() {
   
   // Restaurer le scroll du body
   document.body.style.overflow = 'auto'
+  
+  // Reset modal header and clear stored candidate info
+  const modalHeader = modal.querySelector('.modal-header h2')
+  if (modalHeader) {
+    modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz`
+  }
+  
+  // Clear stored candidate information
+  window.currentQuizCandidateId = null
+  window.currentQuizCandidateName = null
 }
+
+
 
 // Générer la configuration des compétences pour le quiz
 async function generateSkillsQuizConfig() {
@@ -3063,7 +3098,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const quizForm = document.getElementById('createQuizForm')
   
   if (quizForm) {
-    quizForm.addEventListener('submit', function(e) {
+    quizForm.addEventListener('submit', async function(e) {
       e.preventDefault()
       console.log("📝 Soumission du formulaire de création de quiz")
       
@@ -3131,12 +3166,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
       console.log("📊 Données du quiz:", quizData)
       
-      // TODO: Implémenter la création du quiz
-      // createQuiz(quizData)
+      // Get candidate ID from the stored global variable
+      const candidateId = window.currentQuizCandidateId || null
+      console.log("👤 ID du candidat pour le quiz:", candidateId)
       
-      // Pour l'instant, afficher un message de succès
-      showNotification("Quiz créé avec succès ! (Fonctionnalité à implémenter)", "success")
-      closeCreateQuizModal()
+      // Send quiz data to the quiz router
+      try {
+        const response = await fetch('/api/hr/quiz/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: quizData.title,
+            time_limit: quizData.timeLimit,
+            skills: quizData.skills,
+            job_id: currentJob ? currentJob.id || currentJob.job_id : null,
+            candidate_id: candidateId
+          })
+        })
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          showNotification("Quiz créé avec succès !", "success")
+          closeCreateQuizModal()
+        } else {
+          showNotification("Erreur lors de la création du quiz", "error")
+        }
+      } catch (error) {
+        console.error("❌ Erreur lors de la création du quiz:", error)
+        showNotification("Erreur lors de la création du quiz", "error")
+      }
     })
   }
 })

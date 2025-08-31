@@ -2379,44 +2379,71 @@ body {
   background: linear-gradient(135deg, var(--success-green-dark), var(--success-green));
 }
 
-.quiz-content {
+/* Quiz Creation Section Styles */
+.quiz-creation-section {
   text-align: center;
-  padding: 2rem;
-  color: var(--text-secondary);
+  padding: 1.5rem;
   background: rgba(255, 255, 255, 0.05);
   border-radius: var(--border-radius-md);
   border: 2px dashed var(--border-color);
+  margin: 1rem 0;
 }
 
-/* ===== CREATE QUIZ BUTTON SECTION ===== */
-.create-quiz-section {
-  display: flex;
-  justify-content: center;
-  margin: 2rem 0;
+/* Quiz Creation Section within detail sections */
+.detail-section.quiz-section .quiz-creation-section {
   padding: 1rem;
+  margin: 0.75rem 0;
+  background: rgba(59, 130, 246, 0.05);
+  border: 2px dashed rgba(59, 130, 246, 0.3);
 }
 
-.create-quiz-btn-large {
+.quiz-creation-section .create-quiz-btn-large {
   background: linear-gradient(135deg, var(--success-green), var(--success-green-dark));
   color: white;
   border: none;
-  padding: 2rem 3rem;
+  padding: 1.5rem 2.5rem;
   border-radius: var(--border-radius-lg);
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-standard);
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
   box-shadow: var(--shadow-lg);
-  min-width: 300px;
+  min-width: 280px;
   position: relative;
   overflow: hidden;
 }
 
-.create-quiz-btn-large::before {
+/* Smaller button for detail sections */
+.detail-section.quiz-section .quiz-creation-section .create-quiz-btn-large {
+  padding: 1rem 1.5rem;
+  min-width: 220px;
+  font-size: 0.9rem;
+}
+
+.detail-section.quiz-section .quiz-creation-section .create-quiz-btn-large i {
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
+}
+
+.detail-section.quiz-section .quiz-creation-section .create-quiz-btn-large span {
+  font-size: 1rem;
+}
+
+.detail-section.quiz-section .quiz-creation-section .create-quiz-btn-large small {
+  font-size: 0.75rem;
+}
+
+.quiz-creation-section .create-quiz-btn-large:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+  background: linear-gradient(135deg, var(--success-green-dark), var(--success-green));
+}
+
+.quiz-creation-section .create-quiz-btn-large::before {
   content: '';
   position: absolute;
   top: 0;
@@ -2427,31 +2454,30 @@ body {
   transition: left 0.5s;
 }
 
-.create-quiz-btn-large:hover::before {
+.quiz-creation-section .create-quiz-btn-large:hover::before {
   left: 100%;
 }
 
-.create-quiz-btn-large:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-xl);
-  background: linear-gradient(135deg, var(--success-green-dark), var(--success-green));
-}
-
-.create-quiz-btn-large i {
-  font-size: 2rem;
+.quiz-creation-section .create-quiz-btn-large i {
+  font-size: 1.5rem;
   margin-bottom: 0.5rem;
 }
 
-.create-quiz-btn-large span {
-  font-size: 1.2rem;
+.quiz-creation-section .create-quiz-btn-large span {
+  font-size: 1.1rem;
   font-weight: 700;
 }
 
-.create-quiz-btn-large small {
-  font-size: 0.9rem;
+.quiz-creation-section .create-quiz-btn-large small {
+  font-size: 0.85rem;
   opacity: 0.9;
   font-weight: 400;
 }
+
+/* ===== CREATE QUIZ BUTTON SECTION ===== */
+/* Note: The create quiz button is now integrated into the applications section */
+
+
 
 /* ===== MODAL STYLES ===== */
 .modal {

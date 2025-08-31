@@ -12,7 +12,7 @@ import databasehr.models as models
 from routers.hr import (
     authhr, company, department, 
     employee, job, application, candidate, 
-    dashboard,admin_router
+    dashboard, admin_router, quiz
 )
 from database import engine
 import databaseclient.models as models
@@ -57,6 +57,7 @@ app.include_router(application.router)
 app.include_router(candidate.router)
 app.include_router(dashboard.router)
 app.include_router(admin_router.router)
+app.include_router(quiz.router)
 
 # 404 Error Handler
 @app.exception_handler(StarletteHTTPException)
