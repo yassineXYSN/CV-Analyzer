@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DateTime, Numeric, Enum, Date, Boolean
+from sqlalchemy.types import DECIMAL
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -67,18 +68,24 @@ class ProfileCandidat(Base):
     contact = relationship("Contact")
     analyse = relationship("AnalyseCandidat")
 
-class HrAdmin(Base):
+class HRAdmin(Base):
     __tablename__ = "hr_admins"
+    
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    role = Column(Enum('super_admin', 'hr_admin', 'hr_manager', name='admin_role'), default='hr_admin')
-    is_active = Column(Integer, default=1)
+    role = Column(Enum('super_admin', 'recruiter', 'department_head'), default='recruiter')
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)  # Nouveau champ
     last_login = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    verification_token = Column(String(255), nullable=True)
+    token_expires = Column(DateTime, nullable=True)
+
 
 class Company(Base):
     __tablename__ = "companies"
@@ -259,6 +266,129 @@ class Notification(Base):
 
 # Add this to your User model if it doesn't exist
 # User.notifications = relationship("Notification", back_populates="user")
+class Quiz(Base):
+    __tablename__ = "quizzes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    time_limit	 = Column(Integer, nullable=False)
+    total_questions = Column(Integer, default=0)
+    
+    # Relations
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
+    candidate_id = Column(Integer, ForeignKey("profile_candidat.id"), nullable=True)
+    created_by_admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    
+    # Status and metadata
+    status = Column(Enum('draft', 'active', 'completed', 'archived'), default='draft')
+    n8n_webhook_url = Column(String(500))
+    n8n_response = Column(JSON)
+    n8n_webhook_triggered = Column(Boolean, default=False)
+    webhook_error = Column(Text)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    job = relationship("Job")
+    candidate = relationship("ProfileCandidat")
+    created_by = relationship("HRAdmin")
+
+class QuizSkill(Base):
+    __tablename__ = "quiz_skills"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
+    skill_name = Column(String(100), nullable=False)
+    questions_count = Column(Integer, nullable=False)
+    difficulty = Column(Enum('beginner', 'intermediate', 'advanced', 'expert'), nullable=False)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=func.now())
+    
+    # Relationships
+    quiz = relationship("Quiz", backref="skills")
+
+class QuizQuestion(Base):
+    __tablename__ = "quiz_questions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
+    skill_name = Column(String(100), nullable=False)
+    question_text = Column(Text, nullable=False)
+    question_type = Column(Enum('multiple_choice', 'true_false', 'short_answer', 'code'), default='multiple_choice')
+    difficulty = Column(Enum('easy', 'medium', 'hard', 'expert'), nullable=False)
+    
+    # Question options and answers
+    options = Column(JSON)  # For multiple choice questions
+    correct_answer = Column(Text, nullable=False)
+    explanation = Column(Text)
+    points = Column(Integer, default=1)
+    
+    # Order and metadata
+    question_order = Column(Integer, default=0)
+    estimated_time_seconds = Column(Integer, default=60)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=func.now())
+    
+    # Relationships
+    quiz = relationship("Quiz", backref="questions")
+
+class QuizAttempt(Base):
+    __tablename__ = "quiz_attempts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
+    candidate_id = Column(Integer, ForeignKey("profile_candidat.id"), nullable=False)
+    
+    # Attempt details
+    started_at = Column(DateTime, default=func.now())
+    completed_at = Column(DateTime)
+    time_taken_seconds = Column(Integer)
+    status = Column(Enum('in_progress', 'completed', 'abandoned', 'expired'), default='in_progress')
+    
+    # Scoring
+    total_score = Column(DECIMAL(5,2), default=0.00)
+    max_possible_score = Column(DECIMAL(5,2), default=0.00)
+    percentage_score = Column(DECIMAL(5,2), default=0.00)
+    
+    # Metadata
+    ip_address = Column(String(45))
+    user_agent = Column(Text)
+    browser_info = Column(JSON)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    quiz = relationship("Quiz")
+    candidate = relationship("ProfileCandidat")
+
+class QuizAnswer(Base):
+    __tablename__ = "quiz_answers"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    attempt_id = Column(Integer, ForeignKey("quiz_attempts.id"), nullable=False)
+    question_id = Column(Integer, ForeignKey("quiz_questions.id"), nullable=False)
+    
+    # Answer details
+    answer_text = Column(Text)
+    selected_options = Column(JSON)  # For multiple choice
+    is_correct = Column(Boolean, default=False)
+    points_earned = Column(DECIMAL(5,2), default=0.00)
+    
+    # Timing
+    time_taken_seconds = Column(Integer)
+    answered_at = Column(DateTime, default=func.now())
+    
+    # Relationships
+    attempt = relationship("QuizAttempt", backref="answers")
+    question = relationship("QuizQuestion")
+
 
 
 # Helper functions for job operations

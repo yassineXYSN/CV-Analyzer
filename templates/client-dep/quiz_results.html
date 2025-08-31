@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats - {{ quiz.title }}</title>
+    <link rel="stylesheet" href="/static/client-dep/css/analyze.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .results-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .results-header {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .results-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .stat-card {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+     Background Effects 
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="results-container">
+            <div class="results-header">
+                <div class="score-circle">
+                    {{ "%.0f"|format(attempt.percentage_score) }}%
+                </div>
+                <h1 style="font-size: 2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
+                    Quiz Terminé !
+                </h1>
+                <p style="color: var(--text-secondary);">{{ quiz.title }}</p>
+            </div>
+            
+            <div class="results-stats">
+                <div class="stat-card">
+                    <div class="stat-value">{{ attempt.total_score }}/{{ attempt.max_possible_score }}</div>
+                    <div class="stat-label">Score Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ "%.1f"|format(attempt.percentage_score) }}%</div>
+                    <div class="stat-label">Pourcentage</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ (attempt.time_taken_seconds // 60) }}:{{ '{:02d}'.format(attempt.time_taken_seconds % 60) }}</div>
+                    <div class="stat-label">Temps Utilisé</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ answers|length }}</div>
+                    <div class="stat-label">Questions Répondues</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 2rem;">
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    Merci d'avoir passé ce quiz. Vos résultats ont été enregistrés.
+                </p>
+                <a href="/" class="submit-btn" style="display: inline-block; text-decoration: none;">
+                    🏠 Retour à l'accueil
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
