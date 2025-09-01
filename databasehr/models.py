@@ -218,6 +218,12 @@ class Application(Base):
     recommendation_priority = Column(Enum('normal', 'high', 'urgent'), default='normal')
     recommendation_date = Column(DateTime)
     
+    # NOUVEAUX CHAMPS DE VALIDATION DES COMPÉTENCES
+    skills_validated = Column(Boolean, default=False)
+    skills_validated_by = Column(Integer, ForeignKey("hr_admins.id"))
+    skills_validated_at = Column(DateTime)
+    skills_validated_notes = Column(Text)
+    
     # Métadonnées
     source = Column(String(100))
     created_at = Column(DateTime, default=func.now())
@@ -228,6 +234,7 @@ class Application(Base):
     candidate_profile = relationship("ProfileCandidat")
     reviewed_by_admin = relationship("HRAdmin", foreign_keys=[reviewed_by])
     recommended_by_admin = relationship("HRAdmin", foreign_keys=[recommended_by_admin_id])
+    skills_validated_by_admin = relationship("HRAdmin", foreign_keys=[skills_validated_by])
 
     # Relationships
     job = relationship("Job")

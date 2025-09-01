@@ -6,6 +6,120 @@
     <title>Inscription Client - CV Analyzer Pro</title>
     <link rel="stylesheet" href="/static/client-dep/css/auth.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Améliorations pour la barre de progression du mot de passe */
+        .password-strength {
+            margin-top: 0.75rem;
+        }
+        
+        .strength-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+            position: relative;
+        }
+        
+        .strength-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .strength-fill.weak {
+            background: linear-gradient(90deg, #ff4757, #ff3838);
+        }
+        
+        .strength-fill.medium {
+            background: linear-gradient(90deg, #ffa502, #ff6348);
+        }
+        
+        .strength-fill.good {
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+        }
+        
+        .strength-fill.strong {
+            background: linear-gradient(90deg, #00ff88, #00d4ff);
+        }
+        
+        .strength-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        
+        /* Améliorations pour les checkboxes */
+        .checkbox-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            padding: 0.5rem 0;
+        }
+        
+        .checkbox-text {
+            flex: 1;
+            word-wrap: break-word;
+        }
+        
+        .checkmark {
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        
+        .checkbox-container:hover .checkmark {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+        
+        .checkbox-container input[type="checkbox"]:checked + .checkmark {
+            background: var(--accent-gradient);
+            border-color: transparent;
+            transform: scale(1.05);
+        }
+        
+        .checkbox-container input[type="checkbox"]:checked + .checkmark::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        /* Animation pour la barre de progression */
+        .strength-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+    </style>
 </head>
 <body>
     <!-- Background Effects -->
@@ -152,13 +266,13 @@
                 <label class="checkbox-container">
                     <input type="checkbox" id="acceptTerms" name="acceptTerms" required>
                     <span class="checkmark"></span>
-                    J'accepte les <a href="#" class="terms-link">conditions d'utilisation</a> et la <a href="#" class="terms-link">politique de confidentialité</a>
+                    <span class="checkbox-text">J'accepte les <a href="#" class="terms-link">conditions d'utilisation</a> et la <a href="#" class="terms-link">politique de confidentialité</a></span>
                 </label>
 
                 <label class="checkbox-container">
                     <input type="checkbox" id="newsletter" name="newsletter">
                     <span class="checkmark"></span>
-                    Recevoir les actualités et conseils CV par email
+                    <span class="checkbox-text">Recevoir les actualités et conseils CV par email</span>
                 </label>
             </div>
 
@@ -272,42 +386,131 @@
                 const strength = calculatePasswordStrength(password)
 
                 updatePasswordStrengthUI(strength, strengthFill, strengthText)
+                
+                // Mettre à jour la validation en temps réel
+                updatePasswordValidation(password, strength)
             })
+            
+            // Validation initiale
+            updatePasswordValidation(passwordInput.value, calculatePasswordStrength(passwordInput.value))
+        }
+        
+        function updatePasswordValidation(password, strength) {
+            const confirmPasswordInput = document.getElementById("confirmPassword")
+            const submitBtn = document.getElementById("submitBtn")
+            
+            if (confirmPasswordInput && confirmPasswordInput.value) {
+                if (password !== confirmPasswordInput.value) {
+                    confirmPasswordInput.style.borderColor = "#ff4757"
+                    confirmPasswordInput.setCustomValidity("Les mots de passe ne correspondent pas")
+                } else {
+                    confirmPasswordInput.style.borderColor = ""
+                    confirmPasswordInput.setCustomValidity("")
+                }
+            }
+            
+            // Désactiver le bouton si le mot de passe est trop faible
+            if (strength.level === "weak" && password.length > 0) {
+                submitBtn.disabled = true
+                submitBtn.style.opacity = "0.6"
+                submitBtn.title = "Le mot de passe doit être plus fort"
+            } else {
+                submitBtn.disabled = false
+                submitBtn.style.opacity = "1"
+                submitBtn.title = ""
+            }
         }
 
         function calculatePasswordStrength(password) {
             let score = 0
+            const criteria = {
+                length: false,
+                lowercase: false,
+                uppercase: false,
+                numbers: false,
+                special: false
+            }
 
             if (password.length === 0) {
-                return { score: 0, level: "none", feedback: "Entrez un mot de passe" }
+                return { 
+                    score: 0, 
+                    level: "none", 
+                    feedback: "Entrez un mot de passe",
+                    criteria: criteria
+                }
             }
 
-            // Length check
-            if (password.length >= 8) score += 25
-            if (password.length >= 12) score += 10
+            // Length check (8+ chars = 20 points, 12+ chars = +10 points)
+            if (password.length >= 8) {
+                score += 20
+                criteria.length = true
+                if (password.length >= 12) score += 10
+            }
 
             // Character variety checks
-            if (/[a-z]/.test(password)) score += 15
-            if (/[A-Z]/.test(password)) score += 15
-            if (/[0-9]/.test(password)) score += 15
-            if (/[^A-Za-z0-9]/.test(password)) score += 20
+            if (/[a-z]/.test(password)) {
+                score += 15
+                criteria.lowercase = true
+            }
+            if (/[A-Z]/.test(password)) {
+                score += 15
+                criteria.uppercase = true
+            }
+            if (/[0-9]/.test(password)) {
+                score += 15
+                criteria.numbers = true
+            }
+            if (/[^A-Za-z0-9]/.test(password)) {
+                score += 20
+                criteria.special = true
+            }
+
+            // Bonus for meeting all criteria
+            if (criteria.length && criteria.lowercase && criteria.uppercase && criteria.numbers && criteria.special) {
+                score += 10
+            }
 
             // Determine level and feedback
+            let level, feedback
             if (score < 30) {
-                return { score, level: "weak", feedback: "Mot de passe faible" }
+                level = "weak"
+                feedback = "Mot de passe faible"
             } else if (score < 60) {
-                return { score, level: "medium", feedback: "Mot de passe moyen" }
+                level = "medium"
+                feedback = "Mot de passe moyen"
             } else if (score < 80) {
-                return { score, level: "good", feedback: "Bon mot de passe" }
+                level = "good"
+                feedback = "Bon mot de passe"
             } else {
-                return { score, level: "strong", feedback: "Mot de passe fort" }
+                level = "strong"
+                feedback = "Mot de passe fort"
             }
+
+            return { score, level, feedback, criteria }
         }
 
         function updatePasswordStrengthUI(strength, fillElement, textElement) {
-            fillElement.style.width = strength.score + "%"
+            // Mettre à jour la barre de progression
+            fillElement.style.width = Math.min(strength.score, 100) + "%"
             fillElement.className = `strength-fill ${strength.level}`
-            textElement.textContent = strength.feedback
+            
+            // Mettre à jour le texte avec les critères détaillés
+            let feedbackText = strength.feedback
+            
+            if (strength.criteria) {
+                const criteriaList = []
+                if (!strength.criteria.length) criteriaList.push("8+ caractères")
+                if (!strength.criteria.lowercase) criteriaList.push("lettres minuscules")
+                if (!strength.criteria.uppercase) criteriaList.push("lettres majuscules")
+                if (!strength.criteria.numbers) criteriaList.push("chiffres")
+                if (!strength.criteria.special) criteriaList.push("caractères spéciaux")
+                
+                if (criteriaList.length > 0) {
+                    feedbackText += ` - Manque: ${criteriaList.join(", ")}`
+                }
+            }
+            
+            textElement.textContent = feedbackText
         }
 
         function initializeFormValidation() {
@@ -344,10 +547,17 @@
                 errors.push("Adresse email invalide")
             }
 
-            // Password validation
+            // Password validation with detailed criteria
             const password = formData.get("password")
-            if (!password || password.length < 8) {
+            if (!password) {
+                errors.push("Le mot de passe est requis")
+            } else if (password.length < 8) {
                 errors.push("Le mot de passe doit contenir au moins 8 caractères")
+            } else {
+                const passwordStrength = calculatePasswordStrength(password)
+                if (passwordStrength.level === "weak") {
+                    errors.push("Le mot de passe est trop faible. Il doit contenir au moins 8 caractères, des lettres majuscules et minuscules, des chiffres et des caractères spéciaux.")
+                }
             }
 
             // Confirm password validation

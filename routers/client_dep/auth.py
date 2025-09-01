@@ -454,3 +454,276 @@ async def auth_status(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Auth status error: {str(e)}")
         return {"authenticated": False}
+
+# Social Authentication Routes
+@router.get("/auth/google")
+async def google_auth_redirect():
+    """Redirect to Google OAuth"""
+    try:
+        # Google OAuth configuration
+        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+        google_redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+        
+        if not google_client_id:
+            return {"success": False, "message": "Google OAuth non configuré"}
+        
+        # Google OAuth URL
+        google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth"
+        params = {
+            "client_id": google_client_id,
+            "redirect_uri": google_redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "access_type": "offline",
+            "prompt": "consent"
+        }
+        
+        # Build URL with parameters
+        from urllib.parse import urlencode
+        auth_url = f"{google_auth_url}?{urlencode(params)}"
+        
+        return RedirectResponse(url=auth_url)
+        
+    except Exception as e:
+        print(f"Google auth error: {str(e)}")
+        return {"success": False, "message": "Erreur lors de l'authentification Google"}
+
+@router.get("/auth/google/callback")
+async def google_auth_callback(request: Request, db: Session = Depends(get_db)):
+    """Handle Google OAuth callback"""
+    try:
+        # Get authorization code from query parameters
+        code = request.query_params.get("code")
+        if not code:
+            return {"success": False, "message": "Code d'autorisation manquant"}
+        
+        # Exchange code for access token
+        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+        google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        google_redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+        
+        if not google_client_id or not google_client_secret:
+            return {"success": False, "message": "Google OAuth non configuré"}
+        
+        # Exchange code for tokens
+        token_url = "https://oauth2.googleapis.com/token"
+        token_data = {
+            "client_id": google_client_id,
+            "client_secret": google_client_secret,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": google_redirect_uri
+        }
+        
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(token_url, data=token_data)
+            
+            if token_response.status_code != 200:
+                return {"success": False, "message": "Erreur lors de l'échange du code"}
+            
+            token_info = token_response.json()
+            access_token = token_info.get("access_token")
+            
+            if not access_token:
+                return {"success": False, "message": "Token d'accès manquant"}
+            
+            # Get user info from Google
+            userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            
+            userinfo_response = await client.get(userinfo_url, headers=headers)
+            
+            if userinfo_response.status_code != 200:
+                return {"success": False, "message": "Erreur lors de la récupération des informations utilisateur"}
+            
+            user_info = userinfo_response.json()
+            
+            # Extract user data
+            google_id = user_info.get("id")
+            email = user_info.get("email")
+            first_name = user_info.get("given_name", "")
+            last_name = user_info.get("family_name", "")
+            profile_picture = user_info.get("picture")
+            
+            if not google_id or not email:
+                return {"success": False, "message": "Informations utilisateur incomplètes"}
+            
+            # Check if user exists
+            existing_user = db.query(User).filter(
+                (User.email == email) | (User.google_id == google_id)
+            ).first()
+            
+            if existing_user:
+                # Update existing user with Google info
+                existing_user.google_id = google_id
+                existing_user.profile_picture = profile_picture
+                existing_user.is_verified = True
+                db.commit()
+                user = existing_user
+            else:
+                # Create new user
+                new_user = User(
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    google_id=google_id,
+                    profile_picture=profile_picture,
+                    is_verified=True,
+                    is_active=True
+                )
+                db.add(new_user)
+                db.commit()
+                db.refresh(new_user)
+                user = new_user
+            
+            # Create session
+            session_token = create_user_session(db, user.id, True)
+            
+            # Redirect to dashboard with session
+            response = RedirectResponse(url="/analyze")
+            response.set_cookie(
+                key="session_token",
+                value=session_token,
+                max_age=30 * 24 * 60 * 60,  # 30 days
+                httponly=True,
+                secure=False,
+                samesite="lax"
+            )
+            
+            return response
+            
+    except Exception as e:
+        print(f"Google callback error: {str(e)}")
+        return {"success": False, "message": "Erreur lors de l'authentification Google"}
+
+@router.get("/auth/microsoft")
+async def microsoft_auth_redirect():
+    """Redirect to Microsoft OAuth"""
+    try:
+        # Microsoft OAuth configuration
+        microsoft_client_id = os.getenv("MICROSOFT_CLIENT_ID")
+        microsoft_redirect_uri = os.getenv("MICROSOFT_REDIRECT_URI", "http://localhost:8000/auth/microsoft/callback")
+        
+        if not microsoft_client_id:
+            return {"success": False, "message": "Microsoft OAuth non configuré"}
+        
+        # Microsoft OAuth URL
+        microsoft_auth_url = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+        params = {
+            "client_id": microsoft_client_id,
+            "redirect_uri": microsoft_redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "response_mode": "query"
+        }
+        
+        # Build URL with parameters
+        from urllib.parse import urlencode
+        auth_url = f"{microsoft_auth_url}?{urlencode(params)}"
+        
+        return RedirectResponse(url=auth_url)
+        
+    except Exception as e:
+        print(f"Microsoft auth error: {str(e)}")
+        return {"success": False, "message": "Erreur lors de l'authentification Microsoft"}
+
+@router.get("/auth/microsoft/callback")
+async def microsoft_auth_callback(request: Request, db: Session = Depends(get_db)):
+    """Handle Microsoft OAuth callback"""
+    try:
+        # Get authorization code from query parameters
+        code = request.query_params.get("code")
+        if not code:
+            return {"success": False, "message": "Code d'autorisation manquant"}
+        
+        # Exchange code for access token
+        microsoft_client_id = os.getenv("MICROSOFT_CLIENT_ID")
+        microsoft_client_secret = os.getenv("MICROSOFT_CLIENT_SECRET")
+        microsoft_redirect_uri = os.getenv("MICROSOFT_REDIRECT_URI", "http://localhost:8000/auth/microsoft/callback")
+        
+        if not microsoft_client_id or not microsoft_client_secret:
+            return {"success": False, "message": "Microsoft OAuth non configuré"}
+        
+        # Exchange code for tokens
+        token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+        token_data = {
+            "client_id": microsoft_client_id,
+            "client_secret": microsoft_client_secret,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": microsoft_redirect_uri
+        }
+        
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(token_url, data=token_data)
+            
+            if token_response.status_code != 200:
+                return {"success": False, "message": "Erreur lors de l'échange du code"}
+            
+            token_info = token_response.json()
+            access_token = token_info.get("access_token")
+            
+            if not access_token:
+                return {"success": False, "message": "Token d'accès manquant"}
+            
+            # Get user info from Microsoft
+            userinfo_url = "https://graph.microsoft.com/v1.0/me"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            
+            userinfo_response = await client.get(userinfo_url, headers=headers)
+            
+            if userinfo_response.status_code != 200:
+                return {"success": False, "message": "Erreur lors de la récupération des informations utilisateur"}
+            
+            user_info = userinfo_response.json()
+            
+            # Extract user data
+            microsoft_id = user_info.get("id")
+            email = user_info.get("mail") or user_info.get("userPrincipalName")
+            first_name = user_info.get("givenName", "")
+            last_name = user_info.get("surname", "")
+            
+            if not microsoft_id or not email:
+                return {"success": False, "message": "Informations utilisateur incomplètes"}
+            
+            # Check if user exists
+            existing_user = db.query(User).filter(User.email == email).first()
+            
+            if existing_user:
+                # Update existing user
+                existing_user.is_verified = True
+                db.commit()
+                user = existing_user
+            else:
+                # Create new user
+                new_user = User(
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_verified=True,
+                    is_active=True
+                )
+                db.add(new_user)
+                db.commit()
+                db.refresh(new_user)
+                user = new_user
+            
+            # Create session
+            session_token = create_user_session(db, user.id, True)
+            
+            # Redirect to dashboard with session
+            response = RedirectResponse(url="/analyze")
+            response.set_cookie(
+                key="session_token",
+                value=session_token,
+                max_age=30 * 24 * 60 * 60,  # 30 days
+                httponly=True,
+                secure=False,
+                samesite="lax"
+            )
+            
+            return response
+            
+    except Exception as e:
+        print(f"Microsoft callback error: {str(e)}")
+        return {"success": False, "message": "Erreur lors de l'authentification Microsoft"}

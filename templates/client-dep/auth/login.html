@@ -6,6 +6,115 @@
     <title>Connexion Client - CV Analyzer Pro</title>
     <link rel="stylesheet" href="/static/client-dep/css/auth.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Améliorations pour les boutons de connexion sociale */
+        .social-login {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .social-btn {
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .social-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .social-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .google-btn {
+            border-color: rgba(234, 67, 53, 0.3);
+        }
+
+        .google-btn:hover:not(:disabled) {
+            border-color: #db4437;
+            background: rgba(219, 68, 55, 0.1);
+            box-shadow: 0 8px 25px rgba(219, 68, 55, 0.2);
+        }
+
+        .microsoft-btn {
+            border-color: rgba(0, 120, 212, 0.3);
+        }
+
+        .microsoft-btn:hover:not(:disabled) {
+            border-color: #00a1f1;
+            background: rgba(0, 161, 241, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 161, 241, 0.2);
+        }
+
+        .linkedin-btn {
+            border-color: rgba(0, 119, 181, 0.3);
+        }
+
+        .linkedin-btn:hover:not(:disabled) {
+            border-color: #0077b5;
+            background: rgba(0, 119, 181, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 119, 181, 0.2);
+        }
+
+        /* Animation de chargement pour les boutons sociaux */
+        .social-btn.loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: loading-shimmer 1.5s infinite;
+        }
+
+        @keyframes loading-shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* Icônes des boutons sociaux */
+        .social-btn i {
+            font-size: 1.1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .social-btn:hover:not(:disabled) i {
+            transform: scale(1.1);
+        }
+
+        /* Responsive pour les boutons sociaux */
+        @media (max-width: 480px) {
+            .social-login {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            .social-btn {
+                padding: 1rem;
+                font-size: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Background Effects -->
@@ -143,17 +252,18 @@
 
             <!-- Social Login -->
             <div class="social-login">
-                <button type="button" class="social-btn google-btn">
+                <button type="button" class="social-btn google-btn" id="googleBtn">
                     <i class="fab fa-google"></i>
-                    Google
+                    <span>Google</span>
                 </button>
-                <button type="button" class="social-btn microsoft-btn">
+                <button type="button" class="social-btn microsoft-btn" id="microsoftBtn">
                     <i class="fab fa-microsoft"></i>
-                    Microsoft
+                    <span>Microsoft</span>
                 </button>
-                <button type="button" class="social-btn linkedin-btn">
+                <button type="button" class="social-btn linkedin-btn" id="linkedinBtn" disabled>
                     <i class="fab fa-linkedin"></i>
-                    LinkedIn
+                    <span>LinkedIn</span>
+                    <small style="font-size: 0.7rem; opacity: 0.7;">(Bientôt)</small>
                 </button>
             </div>
 
@@ -168,14 +278,7 @@
         </form>
 
         <!-- Demo Credentials -->
-        <div class="demo-hint">
-            <i class="fas fa-info-circle"></i>
-            <strong>Créez votre compte</strong>
-            <br>ou utilisez les identifiants de test
-            <br>Email: test@example.com
-            <br>Mot de passe: password123
-        </div>
-    </div>
+
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -183,6 +286,7 @@
             initializePasswordToggles()
             initializeFormValidation()
             initializeSocialLogin()
+            checkOAuthConfiguration()
         })
 
         function initializeAuthPage() {
@@ -310,14 +414,39 @@
             const socialButtons = document.querySelectorAll(".social-btn")
 
             socialButtons.forEach((button) => {
-                button.addEventListener("click", () => {
-                    const provider = button.classList.contains("google-btn")
-                        ? "Google"
-                        : button.classList.contains("microsoft-btn")
-                          ? "Microsoft"
-                          : "LinkedIn"
+                button.addEventListener("click", async () => {
+                    const isGoogle = button.classList.contains("google-btn")
+                    const isMicrosoft = button.classList.contains("microsoft-btn")
+                    const isLinkedIn = button.classList.contains("linkedin-btn")
 
-                    showFormError(`Connexion ${provider} temporairement indisponible`)
+                    // Désactiver le bouton pendant le traitement
+                    button.disabled = true
+                    button.style.opacity = "0.6"
+                    button.style.pointerEvents = "none"
+
+                    try {
+                        if (isGoogle) {
+                            // Redirection vers Google OAuth
+                            window.location.href = "/auth/google"
+                        } else if (isMicrosoft) {
+                            // Redirection vers Microsoft OAuth
+                            window.location.href = "/auth/microsoft"
+                        } else if (isLinkedIn) {
+                            // LinkedIn non disponible pour l'instant
+                            showFormError("Connexion LinkedIn temporairement indisponible")
+                            // Réactiver le bouton
+                            button.disabled = false
+                            button.style.opacity = "1"
+                            button.style.pointerEvents = "auto"
+                        }
+                    } catch (error) {
+                        console.error("Social login error:", error)
+                        showFormError("Erreur lors de la connexion sociale")
+                        // Réactiver le bouton
+                        button.disabled = false
+                        button.style.opacity = "1"
+                        button.style.pointerEvents = "auto"
+                    }
                 })
             })
         }
@@ -350,6 +479,38 @@
                 if (errorElement) {
                     errorElement.style.display = "none"
                 }
+            }
+        }
+
+        async function checkOAuthConfiguration() {
+            try {
+                // Vérifier la configuration Google
+                const googleBtn = document.getElementById("googleBtn")
+                if (googleBtn) {
+                    const response = await fetch("/auth/google")
+                    if (response.status === 200) {
+                        googleBtn.title = "Se connecter avec Google"
+                    } else {
+                        googleBtn.disabled = true
+                        googleBtn.title = "Google OAuth non configuré"
+                        googleBtn.style.opacity = "0.5"
+                    }
+                }
+
+                // Vérifier la configuration Microsoft
+                const microsoftBtn = document.getElementById("microsoftBtn")
+                if (microsoftBtn) {
+                    const response = await fetch("/auth/microsoft")
+                    if (response.status === 200) {
+                        microsoftBtn.title = "Se connecter avec Microsoft"
+                    } else {
+                        microsoftBtn.disabled = true
+                        microsoftBtn.title = "Microsoft OAuth non configuré"
+                        microsoftBtn.style.opacity = "0.5"
+                    }
+                }
+            } catch (error) {
+                console.log("OAuth configuration check failed:", error)
             }
         }
     </script>

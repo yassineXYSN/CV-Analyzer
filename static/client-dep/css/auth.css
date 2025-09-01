@@ -676,19 +676,7 @@ body {
 }
 
 /* Demo Hint */
-.demo-hint {
-  position: absolute;
-  bottom: 2rem;
-  left: 2rem;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
+
 
 .demo-hint i {
   color: #00d4ff;
