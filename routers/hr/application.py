@@ -796,7 +796,8 @@ async def get_job_with_applications(job_id: int, db: Session = Depends(get_db)):
                 "matched_skills_count": matched_skills_count,
                 "total_job_skills": total_job_skills,
                 "compatibility_source": compatibility_source,
-                "compatibility_reason": compatibility_reason
+                "compatibility_reason": compatibility_reason,
+
             }
             
             applications_list.append(app_data)
@@ -958,60 +959,9 @@ async def create_demo_applications():
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
-class SkillValidationRequest(BaseModel):
-    validated_by: int
-    validation_date: str
-    validation_notes: Optional[str] = ""
 
-@router.post("/api/applications/{application_id}/validate-skills")
-def validate_application_skills(
-    application_id: int, 
-    request: SkillValidationRequest,
-    db: Session = Depends(get_db)
-):
-    """Valider les compétences d'un candidat pour une candidature"""
-    try:
-        # Vérifier que l'utilisateur est connecté et a les droits
-        user_id = current_user_session.get('user_id')
-        if not user_id:
-            return {"success": False, "message": "Utilisateur non connecté"}
-        
-        # Récupérer l'utilisateur actuel pour vérifier son rôle
-        current_admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
-        if not current_admin:
-            return {"success": False, "message": "Utilisateur non trouvé"}
-        
-        # Vérifier que l'utilisateur a les droits (admin ou recruteur)
-        if current_admin.role not in ['super_admin', 'department_head', 'recruiter']:
-            return {"success": False, "message": "Permissions insuffisantes pour valider les compétences"}
-        
-        # Récupérer la candidature
-        application = db.query(Application).filter(Application.id == application_id).first()
-        if not application:
-            return {"success": False, "message": "Candidature non trouvée"}
-        
-        # Vérifier que la candidature n'est pas déjà validée
-        if application.skills_validated:
-            return {"success": False, "message": "Les compétences de cette candidature sont déjà validées"}
-        
-        # Mettre à jour la candidature
-        application.skills_validated = True
-        application.skills_validated_by = user_id
-        application.skills_validated_at = datetime.now()
-        application.skills_validated_notes = request.validation_notes
-        
-        db.commit()
-        
-        return {
-            "success": True, 
-            "message": "Compétences validées avec succès",
-            "validated_by": user_id,
-            "validated_at": application.skills_validated_at.isoformat()
-        }
-        
-    except Exception as e:
-        db.rollback()
-        return {"success": False, "message": f"Erreur lors de la validation: {str(e)}"}
+
+
 
 @router.post("/api/accept-application/{application_id}")
 def accept_application(application_id: int):

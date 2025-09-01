@@ -310,7 +310,8 @@ async def get_applications():
                     "compatibility_source": compatibility_source,
                     "compatibility_reason": compatibility_reason,
                     "matched_skills_count": app.matched_skills_count or 0,
-                    "total_job_skills": app.total_job_skills or 0
+                    "total_job_skills": app.total_job_skills or 0,
+
                 })
             
             return JSONResponse(

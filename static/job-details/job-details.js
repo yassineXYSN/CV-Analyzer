@@ -24,17 +24,28 @@ function formatDateSafe(input, locale = "fr-FR") {
   }
 }
 
+// Fonction pour formater la durée du quiz
+function formatDuration(seconds) {
+  if (!seconds || seconds === 0) return "N/A"
+  
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  
+  if (minutes === 0) {
+    return `${remainingSeconds}s`
+  } else if (remainingSeconds === 0) {
+    return `${minutes}min`
+  } else {
+    return `${minutes}min ${remainingSeconds}s`
+  }
+}
+
 // Charger les données du job au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🚀 Page job-details chargée avec compatibilité")
   loadCurrentUser()
   loadJobData()
   loadAllCandidates()
-
-  // Refresh UI state after a short delay to ensure all elements are rendered
-  setTimeout(() => {
-    refreshValidationButtonStates()
-  }, 1000)
 })
 
 // Charger l'utilisateur actuel
@@ -113,11 +124,6 @@ function loadJobData() {
         console.log("✅ Données chargées depuis localStorage:", currentJob)
         displayJobInfo()
         renderApplicationsWithCompatibility()
-        
-        // Refresh validation button states after applications are loaded
-        setTimeout(() => {
-          refreshValidationButtonStates()
-        }, 200)
       } catch (error) {
         console.error("❌ Erreur parsing localStorage:", error)
         showError("Erreur lors du chargement des données du poste")
@@ -244,11 +250,12 @@ async function loadJobFromAPI(jobId) {
           currentJob.skills.forEach((skill, index) => {
             const skill_level = skill.skill_level
             const is_required = skill.is_required
+            const skill_name = skill.skill_name
             console.log(`     Skill ${index}:`, {
               name: skill.name,
               level: skill.level,
               required: skill.required,
-              skill_name: skill.skill_name,
+              skill_name: skill_name,
               skill_level: skill_level,
               is_required: is_required,
               raw: skill,
@@ -296,13 +303,9 @@ async function loadJobFromAPI(jobId) {
         }
 
         // Refresh validation button states after applications are loaded
-        try {
-          setTimeout(() => {
-            refreshValidationButtonStates()
-          }, 200)
-        } catch (error) {
-          console.error("❌ Erreur lors du rafraîchissement des états de validation:", error)
-        }
+        setTimeout(() => {
+          // Validation button states removed
+        }, 200)
       } else {
         console.error("❌ Erreur API:", result.message)
         showError(result.message || "Erreur lors du chargement du poste")
@@ -706,14 +709,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
   console.log(`🔍 DEBUG - Fonction appelée avec filter: ${filter}`)
   console.log(`🔍 DEBUG - Applications disponibles:`, applications)
 
-  // Debug skills validation status
-  applications.forEach((app) => {
-    const skillsValidated = Boolean(app.skills_validated)
-    console.log(
-      `🔍 DEBUG APP ${app.id}: skills_validated = ${app.skills_validated}, type = ${typeof app.skills_validated}, converted = ${skillsValidated}`,
-    )
-  })
-
   const container = document.getElementById("applicationsList")
   if (!container) {
     console.error("❌ Container applicationsList non trouvé")
@@ -754,9 +749,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
       const compatibilityPercentage = app.compatibility_percentage || 92
       const quizScore = app.quiz_score || 0
 
-      // Ensure skills_validated is a boolean
-      const skillsValidated = Boolean(app.skills_validated)
-
       // DEBUG DÉTAILLÉ des compteurs de skills
       console.log(`🔍 DEBUG RENDU - ${candidateName}:`, {
         id: app.id,
@@ -766,9 +758,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
         total_job_skills: app.total_job_skills,
         matched_skills: app.matched_skills,
         missing_skills: app.missing_skills,
-        skills_validated: skillsValidated,
-        skills_validated_by: app.skills_validated_by,
-        skills_validated_at: app.skills_validated_at,
         raw_app: app,
       })
 
@@ -776,17 +765,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
 
       // Debug quiz section state
       console.log(`🔍 DEBUG QUIZ SECTION ${app.id}:`, {
-        skills_validated: skillsValidated,
-        quiz_class: skillsValidated ? "quiz-unlocked" : "quiz-locked",
         element_id: `quiz-section-${app.id}`,
-      })
-
-      // Debug button state
-      console.log(`🔍 DEBUG BUTTON STATE ${app.id}:`, {
-        skills_validated: skillsValidated,
-        button_class: skillsValidated ? "validated" : "pending",
-        button_disabled: skillsValidated,
-        button_text: skillsValidated ? "Compétences validées ✓" : "Valider",
       })
 
       return `
@@ -896,97 +875,86 @@ function renderApplicationsWithCompatibility(filter = "all") {
                   <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
                     <i class="fas fa-search"></i> Détails compatibilité
                   </button>
-                  
-                  <!-- BOUTON VALIDATION DES COMPÉTENCES AMÉLIORÉ -->
-                  <div class="skills-validation-container">
-                    <button class="btn-validate-skills ${skillsValidated ? "validated" : "pending"}" 
-                            onclick="validateSkillsStep(${app.id}, '${candidateName}')"
-                            ${skillsValidated ? "disabled" : ""}
-                            title="${skillsValidated ? "Compétences déjà validées" : "Cliquez pour valider les compétences de ce candidat"}"
-                            data-skills-validated="${skillsValidated}">
-                      <div class="btn-validate-content">
-                        <i class="fas ${skillsValidated ? "fa-check-circle" : "fa-clipboard-check"}"></i> 
-                        <span class="btn-validate-text">
-                          ${skillsValidated ? "Compétences validées ✓" : "Valider"}
-                        </span>
+                  <button class="btn-validate-skills" onclick="validateSkillsAnalysis(${app.id}, '${candidateName}')" id="validate-btn-${app.id}">
+                    <i class="fas fa-check-double"></i> Valider l'analyse
+                  </button>
+                </div>
+                <!-- Added validation status display -->
+                <div class="skills-validation-status" id="validation-status-${app.id}">
+                  <i class="fas fa-check-circle"></i>
+                  Analyse des compétences validée par l'équipe RH
+                </div>
+              </div>
+            </div>
+            
+            <!-- SECTION 2: QUIZ (VISIBLE SEULEMENT SI COMPÉTENCES VALIDÉES) -->
+            <!-- SECTION 2: QUIZ -->
+            <div class="detail-section quiz-section" id="quiz-section-${app.id}">
+              
+              
+
+              
+              <div class="quiz-content">
+                <div class="quiz-status">
+                  <div class="quiz-content-wrapper">
+                    <div class="quiz-score-section">
+                      <div class="quiz-section-header">
+                        <h6 class="quiz-title">Évaluation Quiz</h6>
                       </div>
-                    </button>
+                      
+                      <div class="quiz-content-main">
+                        <div class="quiz-score-circle ${getQuizScoreClass(app.quiz_score || 0)}">
+                          <span class="quiz-score-value">${app.quiz_score || 0}%</span>
+                          <div class="quiz-score-label">Score</div>
+                        </div>
+                        
+                        <div class="quiz-metrics">
+                          <div class="quiz-metric-item">
+                            <div class="metric-icon">
+                              <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="metric-content">
+                              <div class="metric-value">${app.quiz_duration ? formatDuration(app.quiz_duration) : "N/A"}</div>
+                              <div class="metric-label">Durée</div>
+                            </div>
+                          </div>
+                          
+                          <div class="quiz-metric-item">
+                            <div class="metric-icon">
+                              <i class="fas fa-question-circle"></i>
+                            </div>
+                            <div class="metric-content">
+                              <div class="metric-value">${app.quiz_questions_count || 0}</div>
+                              <div class="metric-label">Questions</div>
+                            </div>
+                          </div>
+                          
+                          <div class="quiz-metric-item">
+                            <div class="metric-icon">
+                              <i class="fas fa-check-double"></i>
+                            </div>
+                            <div class="metric-content">
+                              <div class="metric-value">${app.quiz_correct_answers || 0}</div>
+                              <div class="metric-label">Correctes</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="quiz-actions">
+                        <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
+                          <i class="fas fa-magic"></i> Générer Quiz
+                        </button>
+                        <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
+                          <i class="fas fa-eye"></i> Voir Quiz
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
 
               </div>
-            </div>
-            
-            <!-- SECTION 2: QUIZ (VISIBLE SEULEMENT SI COMPÉTENCES VALIDÉES) -->
-            <div class="detail-section quiz-section ${skillsValidated ? "quiz-unlocked" : "quiz-locked"}" id="quiz-section-${app.id}" data-skills-validated="${skillsValidated}">
-              <div class="quiz-section-header">
-                <h4>
-                  <i class="fas ${skillsValidated ? "fa-unlock" : "fa-lock"}"></i> 
-                  Évaluation Quiz
-                  ${skillsValidated ? '<span class="quiz-status-badge unlocked">Débloqué</span>' : '<span class="quiz-status-badge locked">Verrouillé</span>'}
-                </h4>
-              </div>
-              
-              <!-- Quiz Creation Button for this specific candidate -->
-              <div class="quiz-creation-section">
-                <button class="create-quiz-btn-large" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
-                  <i class="fas fa-plus-circle"></i>
-                  <span>Créer un Quiz pour ${candidateName}</span>
-                  <small>Évaluer les compétences de ce candidat</small>
-                </button>
-              </div>
-              
-              ${app.skills_validated ? `
-                <div class="quiz-content">
-                  <div class="quiz-status">
-                    <div class="quiz-score-display">
-                      <div class="quiz-score-circle ${getQuizScoreClass(app.quiz_score || 0)}">
-                        <span class="quiz-score-value">${app.quiz_score || 0}%</span>
-                      </div>
-                      <div class="quiz-score-label">Score Quiz</div>
-                    </div>
-                    
-                    <div class="quiz-actions">
-                      <button class="btn-generate-quiz" onclick="generateQuizForCandidate(${app.id}, '${candidateName}')">
-                        <i class="fas fa-magic"></i> Générer Quiz
-                      </button>
-                      <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
-                        <i class="fas fa-eye"></i> Voir Quiz
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div class="quiz-progress">
-                    <div class="quiz-progress-bar" style="width: ${app.quiz_score || 0}%"></div>
-                  </div>
-                  
-                  <div class="quiz-summary">
-                    <p><strong>Statut:</strong> ${app.quiz_score ? "Quiz complété" : "Quiz en attente"}</p>
-                    <p><strong>Dernière mise à jour:</strong> ${app.quiz_updated_at ? formatDateSafe(app.quiz_updated_at) : "Non disponible"}</p>
-                  </div>
-                </div>
-              `
-                  : `
-                <div class="quiz-content locked">
-                  <div class="quiz-locked-message">
-                    <i class="fas fa-lock"></i>
-                    <h5>Section Quiz Verrouillée</h5>
-                    <p>Cette section sera débloquée une fois les compétences validées par un administrateur ou recruteur.</p>
-                    <div class="quiz-locked-requirements">
-                      <div class="requirement-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span>Valider les compétences du candidat</span>
-                      </div>
-                      <div class="requirement-item">
-                        <i class="fas fa-user-check"></i>
-                        <span>Accès: Administrateurs, Chefs de département et Recruteurs</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              `
-              }
             </div>
             
             <!-- SECTION 3: INFORMATIONS GÉNÉRALES -->
@@ -1036,11 +1004,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
   } catch (error) {
     console.error("❌ Erreur lors de la mise à jour des compteurs:", error)
   }
-
-  // Rafraîchir l'état des boutons de validation après le rendu
-  setTimeout(() => {
-    refreshValidationButtonStates()
-  }, 100)
 }
 
 function toggleCandidateCard(appId) {
@@ -2612,306 +2575,7 @@ function updateFilterCounts() {
   console.log("✅ Compteurs de filtres mis à jour")
 }
 
-console.log(
-  "✅ Script job-details-enhanced.js chargé complètement avec compatibilité, modal sombre et système de validation des compétences",
-)
-
-// NOUVELLES FONCTIONS: Système de validation des compétences et quiz
-
-// Fonction pour rafraîchir l'état des boutons de validation
-function refreshValidationButtonStates() {
-  console.log("🔄 Rafraîchissement de l'état des boutons de validation...")
-
-  applications.forEach((app) => {
-    const skillsValidated = Boolean(app.skills_validated)
-    console.log(`🔍 DEBUG REFRESH APP ${app.id}: skills_validated = ${app.skills_validated}, converted = ${skillsValidated}`)
-    
-    if (skillsValidated) {
-      // Mettre à jour le bouton de validation
-      const validateButton = document.querySelector(`[data-app-id="${app.id}"] .btn-validate-skills`)
-      if (validateButton) {
-        /* Enhanced button update with success styling and animation */
-        validateButton.className = "btn-validate-skills validated"
-        validateButton.disabled = true
-        validateButton.title = "Compétences validées avec succès"
-        validateButton.innerHTML = `
-          <div class="btn-validate-content">
-            <i class="fas fa-check-circle"></i> 
-            <span class="btn-validate-text">Compétences validées ✓</span>
-          </div>
-        `
-
-        // Add success animation
-        validateButton.style.animation = "pulse 0.6s ease-in-out"
-        setTimeout(() => {
-          validateButton.style.animation = ""
-        }, 600)
-
-        console.log("✅ Bouton de validation mis à jour avec succès")
-      } else {
-        console.warn("⚠️ Bouton de validation non trouvé")
-      }
-
-      // Mettre à jour la section quiz pour la débloquer
-      const quizSection = document.getElementById(`quiz-section-${app.id}`)
-      if (quizSection) {
-        quizSection.className = "detail-section quiz-section quiz-unlocked"
-        quizSection.setAttribute("data-skills-validated", "true")
-        
-        // Mettre à jour le contenu de la section quiz
-        const quizHeader = quizSection.querySelector('.quiz-section-header h4')
-        if (quizHeader) {
-          quizHeader.innerHTML = `
-            <i class="fas fa-unlock"></i> 
-            Évaluation Quiz
-            <span class="quiz-status-badge unlocked">Débloqué</span>
-          `
-        }
-        
-        // Remplacer le contenu verrouillé par le contenu débloqué
-        const existingContent = quizSection.querySelector('.quiz-content')
-        if (existingContent && existingContent.classList.contains('locked')) {
-          const unlockedContent = `
-            <div class="quiz-content unlocked">
-              <div class="quiz-status">
-                <div class="quiz-score-display">
-                  <div class="quiz-score-circle ${getQuizScoreClass(app.quiz_score || 0)}">
-                    <span class="quiz-score-value">${app.quiz_score || 0}%</span>
-                  </div>
-                  <div class="quiz-score-label">Score Quiz</div>
-                </div>
-                
-                <div class="quiz-actions">
-                  <button class="btn-generate-quiz" onclick="generateQuizForCandidate(${app.id}, '${app.name || app.candidate_name || 'Candidat'}')">
-                    <i class="fas fa-magic"></i> Générer Quiz
-                  </button>
-                  <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${app.name || app.candidate_name || 'Candidat'}')">
-                    <i class="fas fa-eye"></i> Voir Quiz
-                  </button>
-                </div>
-              </div>
-              
-              <div class="quiz-progress">
-                <div class="quiz-progress-bar" style="width: ${app.quiz_score || 0}%"></div>
-              </div>
-              
-              <div class="quiz-summary">
-                <p><strong>Statut:</strong> ${app.quiz_score ? "Quiz complété" : "Quiz en attente"}</p>
-                <p><strong>Dernière mise à jour:</strong> ${app.quiz_updated_at ? formatDateSafe(app.quiz_updated_at) : "Non disponible"}</p>
-              </div>
-            </div>
-          `
-          existingContent.outerHTML = unlockedContent
-        }
-        
-        console.log("✅ Section quiz débloquée avec succès")
-      } else {
-        console.warn("⚠️ Section quiz non trouvée")
-      }
-    }
-  })
-
-  console.log("✅ État des boutons de validation et sections quiz rafraîchi")
-}
-
-// Fonction pour valider l'étape des compétences
-async function validateSkillsStep(applicationId, candidateName) {
-  console.log(`✅ Validation des compétences pour ${candidateName} (ID: ${applicationId})`)
-
-  try {
-    // Vérifier que l'utilisateur est connecté et a les droits (admin ou recruteur)
-    if (
-      !currentUser ||
-      (currentUser.role !== "recruiter" && currentUser.role !== "super_admin" && currentUser.role !== "department_head")
-    ) {
-      showNotification("Seuls les administrateurs et recruteurs peuvent valider les compétences", "warning")
-      return
-    }
-
-    // Vérifier si les compétences sont déjà validées
-    const app = applications.find((app) => app.id === applicationId)
-    if (app && app.skills_validated) {
-      showNotification(`✅ Les compétences de ${candidateName} sont déjà validées`, "info")
-      return
-    }
-
-    showLoading("Validation des compétences en cours...")
-
-    const response = await fetch(`/api/applications/${applicationId}/validate-skills`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        validated_by: currentUser.id,
-        validation_date: new Date().toISOString(),
-        validation_notes: "Compétences validées par le recruteur",
-      }),
-    })
-
-    const result = await response.json()
-    hideLoading()
-
-    if (result.success) {
-      console.log("✅ Compétences validées avec succès")
-      showNotification(`✅ Compétences de ${candidateName} validées avec succès`, "success")
-
-      // Mettre à jour l'état local
-      const appIndex = applications.findIndex((app) => app.id === applicationId)
-      if (appIndex !== -1) {
-        applications[appIndex].skills_validated = true
-        applications[appIndex].skills_validated_by = currentUser.id
-        applications[appIndex].skills_validated_by_name = `${currentUser.first_name} ${currentUser.last_name}`
-        applications[appIndex].skills_validated_at = new Date().toISOString()
-      }
-
-      // Mettre à jour immédiatement l'interface pour débloquer la section quiz
-      const quizSection = document.getElementById(`quiz-section-${applicationId}`)
-      if (quizSection) {
-        quizSection.className = "detail-section quiz-section quiz-unlocked"
-        quizSection.innerHTML = `
-          <div class="quiz-section-header">
-            <h4>
-              <i class="fas fa-unlock"></i> 
-              Évaluation Quiz
-              <span class="quiz-status-badge unlocked">Débloqué</span>
-            </h4>
-          </div>
-          
-          <div class="quiz-content unlocked">
-            <div class="quiz-status">
-              <div class="quiz-score-display">
-                <div class="quiz-score-circle">
-                  <span class="quiz-score-value">0%</span>
-                </div>
-                <div class="quiz-score-label">Score Quiz</div>
-              </div>
-              
-              <div class="quiz-actions">
-                <button class="btn-generate-quiz" onclick="generateQuizForCandidate(${applicationId}, '${candidateName}')">
-                  <i class="fas fa-magic"></i> Générer Quiz
-                </button>
-                <button class="btn-view-quiz" onclick="viewQuizResults(${applicationId}, '${candidateName}')">
-                  <i class="fas fa-eye"></i> Voir Quiz
-                </button>
-              </div>
-            </div>
-            
-            <div class="quiz-progress">
-              <div class="quiz-progress-bar" style="width: 0%"></div>
-            </div>
-            
-            <div class="quiz-summary">
-              <p><strong>Statut:</strong> Quiz en attente</p>
-              <p><strong>Dernière mise à jour:</strong> Non disponible</p>
-            </div>
-          </div>
-        `
-      }
-
-      // Mettre à jour le bouton de validation
-      const validateButton = document.querySelector(`button[onclick*="validateSkillsStep(${applicationId}"]`)
-      if (validateButton) {
-        validateButton.className = "btn-validate-skills validated"
-        validateButton.disabled = true
-        validateButton.title = "Compétences validées avec succès"
-        validateButton.innerHTML = `
-          <div class="btn-validate-content">
-            <i class="fas fa-check-circle"></i> 
-            <span class="btn-validate-text">Compétences validées ✓</span>
-          </div>
-        `
-
-        // Add success animation
-        validateButton.style.animation = "pulse 0.6s ease-in-out"
-        setTimeout(() => {
-          validateButton.style.animation = ""
-        }, 600)
-
-        console.log("✅ Bouton de validation mis à jour avec succès")
-      } else {
-        console.warn("⚠️ Bouton de validation non trouvé")
-      }
-
-      // Notification pour la prochaine étape
-      setTimeout(() => {
-        showNotification(
-          "🎯 Compétences validées ! Vous pouvez maintenant créer un quiz pour évaluer ce candidat.",
-          "info",
-        )
-      }, 1000)
-
-      // Notification de succès avec rôle
-      const userRole =
-        currentUser.role === "super_admin"
-          ? "Administrateur"
-          : currentUser.role === "department_head"
-            ? "Chef de département"
-            : "Recruteur"
-      showNotification(
-        `✅ Compétences validées avec succès par ${userRole} ${currentUser.first_name} ${currentUser.last_name}`,
-        "success",
-      )
-    } else {
-      console.error("❌ Erreur validation compétences:", result.message)
-      showNotification(result.message || "Erreur lors de la validation des compétences", "error")
-    }
-  } catch (error) {
-    hideLoading()
-    console.error("❌ Erreur réseau validation compétences:", error)
-    showNotification("Erreur de connexion lors de la validation", "error")
-  }
-}
-
-// Fonction pour générer un quiz pour un candidat
-async function generateQuizForCandidate(applicationId, candidateName) {
-  console.log(`🎯 Génération de quiz pour ${candidateName} (ID: ${applicationId})`)
-
-  try {
-    showLoading("Génération du quiz en cours...")
-
-    const response = await fetch(`/api/applications/${applicationId}/generate-quiz`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        job_id: currentJob.id,
-        candidate_id: applicationId,
-        quiz_type: "skills_assessment",
-      }),
-    })
-
-    const result = await response.json()
-    hideLoading()
-
-    if (result.success) {
-      console.log("✅ Quiz généré avec succès")
-      showNotification(`✅ Quiz généré pour ${candidateName}`, "success")
-
-      // Mettre à jour l'état local
-      const appIndex = applications.findIndex((app) => app.id === applicationId)
-      if (appIndex !== -1) {
-        applications[appIndex].quiz_generated = true
-        applications[appIndex].quiz_generated_at = new Date().toISOString()
-      }
-
-      // Recharger les données
-      setTimeout(async () => {
-        if (currentJob && currentJob.id) {
-          await loadJobFromAPI(currentJob.id)
-        }
-      }, 1000)
-    } else {
-      console.error("❌ Erreur génération quiz:", result.message)
-      showNotification(result.message || "Erreur lors de la génération du quiz", "error")
-    }
-  } catch (error) {
-    hideLoading()
-    console.error("❌ Erreur réseau génération quiz:", error)
-    showNotification("Erreur de connexion lors de la génération du quiz", "error")
-  }
-}
+console.log("✅ Script job-details-enhanced.js chargé complètement avec compatibilité et modal sombre")
 
 // Fonction pour voir les résultats du quiz
 async function viewQuizResults(applicationId, candidateName) {
@@ -3269,30 +2933,53 @@ async function debugApplications() {
   }
 }
 
+function validateSkillsAnalysis(applicationId, candidateName) {
+  console.log(`✅ Validation de l'analyse des compétences pour ${candidateName} (ID: ${applicationId})`)
+
+  const validateBtn = document.getElementById(`validate-btn-${applicationId}`)
+  const validationStatus = document.getElementById(`validation-status-${applicationId}`)
+
+  if (validateBtn && validationStatus) {
+    // Update button state
+    validateBtn.classList.add("validated")
+    validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé'
+    validateBtn.disabled = true
+
+    // Show validation status
+    validationStatus.classList.add("success")
+
+    // Show success notification
+    showNotification(`Analyse des compétences validée pour ${candidateName}`, "success")
+
+    // Here you could add an API call to save the validation status
+    // saveSkillsValidation(applicationId)
+  }
+}
+
 // ===== QUIZ MODAL FUNCTIONS =====
 
 // Ouvrir le modal de création de quiz
 async function openCreateQuizModal(candidateId = null, candidateName = null) {
-  console.log("🎯 Ouverture du modal de création de quiz")
+  console.log("🎯 Ouverture du modal de création de quiz professionnel")
   console.log("👤 Candidat sélectionné:", candidateId, candidateName)
-  
+
   // Store the candidate ID globally for the form submission
   window.currentQuizCandidateId = candidateId
   window.currentQuizCandidateName = candidateName
-  
-  const modal = document.getElementById('createQuizModal')
-  
+
+  const modal = document.getElementById("createQuizModal")
+
   if (!modal) {
     console.error("❌ Modal non trouvé")
     return
   }
 
   // Update modal header to show candidate name if available
-  const modalHeader = modal.querySelector('.modal-header h2')
+  const modalHeader = modal.querySelector(".modal-header h2")
   if (modalHeader && candidateName) {
-    modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz pour ${candidateName}`
+    modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz d'Évaluation pour ${candidateName}`
   } else if (modalHeader) {
-    modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz`
+    modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz d'Évaluation`
   }
 
   // Afficher le modal
@@ -3315,20 +3002,18 @@ function closeCreateQuizModal() {
   }
 
   // Restaurer le scroll du body
-  document.body.style.overflow = 'auto'
-  
+  document.body.style.overflow = "auto"
+
   // Reset modal header and clear stored candidate info
-  const modalHeader = modal.querySelector('.modal-header h2')
+  const modalHeader = modal.querySelector(".modal-header h2")
   if (modalHeader) {
     modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz`
   }
-  
+
   // Clear stored candidate information
   window.currentQuizCandidateId = null
   window.currentQuizCandidateName = null
 }
-
-
 
 // Générer la configuration des compétences pour le quiz
 async function generateSkillsQuizConfig() {
@@ -3446,7 +3131,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const quizForm = document.getElementById("createQuizForm")
 
   if (quizForm) {
-    quizForm.addEventListener('submit', async function(e) {
+    quizForm.addEventListener("submit", async (e) => {
       e.preventDefault()
       console.log("📝 Soumission du formulaire de création de quiz")
 
@@ -3516,29 +3201,29 @@ document.addEventListener("DOMContentLoaded", () => {
       })
 
       console.log("📊 Données du quiz:", quizData)
-      
+
       // Get candidate ID from the stored global variable
       const candidateId = window.currentQuizCandidateId || null
       console.log("👤 ID du candidat pour le quiz:", candidateId)
-      
+
       // Send quiz data to the quiz router
       try {
-        const response = await fetch('/api/hr/quiz/create', {
-          method: 'POST',
+        const response = await fetch("/api/hr/quiz/create", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             title: quizData.title,
             time_limit: quizData.timeLimit,
             skills: quizData.skills,
             job_id: currentJob ? currentJob.id || currentJob.job_id : null,
-            candidate_id: candidateId
-          })
+            candidate_id: candidateId,
+          }),
         })
-        
+
         const result = await response.json()
-        
+
         if (result.success) {
           showNotification("Quiz créé avec succès !", "success")
           closeCreateQuizModal()

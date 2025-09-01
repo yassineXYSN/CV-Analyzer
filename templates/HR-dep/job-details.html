@@ -138,81 +138,91 @@
               </div>
           </section>
 
-          <!-- Quiz Section -->
-          <section class="job-section quiz-section">
+          <!-- Applications et Candidats disponibles -->
+          <div class="job-section applications-section">
               <div class="section-header">
-                  <h3><i class="fas fa-question-circle"></i> Quiz et Évaluations</h3>
-              </div>
-              <div class="quiz-content">
-                  <div class="create-quiz-section">
-                      <button class="create-quiz-btn-large" onclick="openCreateQuizModal()">
-                          <i class="fas fa-plus-circle"></i>
-                          <span>Créer un Quiz pour ce Poste</span>
-                          <small>Évaluer les compétences des candidats</small>
+                  <h3><i class="fas fa-users"></i> Candidatures (4)</h3>
+                  <div class="filter-buttons">
+                      <button class="filter-btn active" onclick="filterApplications('all')">
+                          <i class="fas fa-filter"></i> Toutes (4)
+                      </button>
+                      <button class="filter-btn" onclick="filterApplications('pending')">
+                          <i class="fas fa-clock"></i> En attente (1)
+                      </button>
+                      <button class="filter-btn" onclick="filterApplications('reviewed')">
+                          <i class="fas fa-eye"></i> Examinées (1)
+                      </button>
+                      <button class="filter-btn" onclick="filterApplications('accepted')">
+                          <i class="fas fa-check-circle"></i> Acceptées (1)
+                      </button>
+                      <button class="filter-btn" onclick="filterApplications('rejected')">
+                          <i class="fas fa-times-circle"></i> Rejetées (1)
                       </button>
                   </div>
               </div>
-          </section>
-
-      <!-- Applications et Candidats disponibles -->
-      <div class="job-section applications-section">
-          <div class="section-header">
-              <h3><i class="fas fa-users"></i> Candidatures (4)</h3>
-              <div class="filter-buttons">
-                  <button class="filter-btn active" onclick="filterApplications('all')">
-                      <i class="fas fa-filter"></i> Toutes (4)
-                  </button>
-                  <button class="filter-btn" onclick="filterApplications('pending')">
-                      <i class="fas fa-clock"></i> En attente (1)
-                  </button>
-                  <button class="filter-btn" onclick="filterApplications('reviewed')">
-                      <i class="fas fa-eye"></i> Examinées (1)
-                  </button>
-                  <button class="filter-btn" onclick="filterApplications('accepted')">
-                      <i class="fas fa-check-circle"></i> Acceptées (1)
-                  </button>
-                  <button class="filter-btn" onclick="filterApplications('rejected')">
-                      <i class="fas fa-times-circle"></i> Rejetées (1)
-                  </button>
+              <!-- Candidatures existantes -->
+              <div class="applications-list" id="applicationsList">
+                  <!-- Applications will be loaded dynamically by JavaScript -->
               </div>
           </div>
-          
-
-          
-          <!-- Candidatures existantes -->
-          <div class="applications-list" id="applicationsList">
-              <!-- Applications will be loaded dynamically by JavaScript -->
-          </div>
-      </div>
   </div>
 
   <!-- Create Quiz Modal -->
   <div id="createQuizModal" class="modal">
       <div class="modal-content">
           <div class="modal-header">
-              <h2><i class="fas fa-question-circle"></i> Créer un Quiz</h2>
+              <h2><i class="fas fa-question-circle"></i> Créer un Quiz d'Évaluation</h2>
               <button class="close-btn" onclick="closeCreateQuizModal()">
                   <i class="fas fa-times"></i>
               </button>
           </div>
           <div class="modal-body">
+              <div class="quiz-creation-intro">
+                  <div class="quiz-intro-card">
+                      <div class="quiz-intro-icon">
+                          <i class="fas fa-brain"></i>
+                      </div>
+                      <div class="quiz-intro-content">
+                          <h3>Évaluation Technique Personnalisée</h3>
+                          <p>Créez un quiz adapté aux compétences requises pour évaluer précisément les candidats.</p>
+                      </div>
+                  </div>
+              </div>
+
               <form id="createQuizForm">
                   <div class="form-section">
-                      <h3>Configuration Générale</h3>
-                      <div class="form-group">
-                          <label for="quizTitle">Titre du Quiz</label>
-                          <input type="text" id="quizTitle" name="quizTitle" placeholder="Ex: Quiz Développeur Full-Stack" required>
+                      <div class="section-title">
+                          <i class="fas fa-cog"></i>
+                          <h3>Configuration Générale</h3>
                       </div>
-                      <div class="form-group">
-                          <label for="quizTime">Temps limite (minutes)</label>
-                          <input type="number" id="quizTime" name="quizTime" min="5" max="180" value="30" required>
+                      <div class="form-grid">
+                          <div class="form-group">
+                              <label for="quizTitle">
+                                  <i class="fas fa-tag"></i>
+                                  Titre du Quiz
+                              </label>
+                              <input type="text" id="quizTitle" name="quizTitle" placeholder="Ex: Évaluation Développeur Full-Stack Senior" required>
+                          </div>
+                          <div class="form-group">
+                              <label for="quizTime">
+                                  <i class="fas fa-clock"></i>
+                                  Temps limite (minutes)
+                              </label>
+                              <input type="number" id="quizTime" name="quizTime" min="5" max="180" value="45" required>
+                              <small class="form-hint">Temps recommandé: 30-60 minutes</small>
+                          </div>
                       </div>
-
                   </div>
 
                   <div class="form-section">
-                      <h3>Questions par Compétence</h3>
-                      <div id="skillsQuizConfig">
+                      <div class="section-title">
+                          <i class="fas fa-tools"></i>
+                          <h3>Questions par Compétence</h3>
+                      </div>
+                      <div class="skills-config-intro">
+                          <p>Configurez le nombre de questions et la difficulté pour chaque compétence requise.</p>
+                      </div>
+                      <div id="skillsQuizConfig" class="skills-quiz-container">
                           <!-- Skills configuration will be dynamically generated here -->
                       </div>
                   </div>
@@ -221,8 +231,8 @@
                       <button type="button" class="btn-secondary" onclick="closeCreateQuizModal()">
                           <i class="fas fa-times"></i> Annuler
                       </button>
-                      <button type="submit" class="btn-primary">
-                          <i class="fas fa-save"></i> Créer le Quiz
+                      <button type="submit" class="btn-primary quiz-create-btn">
+                          <i class="fas fa-magic"></i> Générer le Quiz
                       </button>
                   </div>
               </form>
