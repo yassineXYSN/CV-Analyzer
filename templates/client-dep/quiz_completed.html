@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Déjà Terminé - {{ quiz.title }}</title>
+    <link rel="stylesheet" href="/static/client-dep/css/analyze.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+     Background Effects 
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="main-container">
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    ⚠️ Quiz Déjà Terminé
+                </div>
+                <h1 class="hero-title">{{ quiz.title }}</h1>
+                <p class="hero-subtitle">{{ message }}</p>
+                
+                {% if attempt.status == 'completed' %}
+                <div style="margin-top: 2rem;">
+                    <a href="/quiz/{{ quiz.id }}/results" class="submit-btn" style="display: inline-block; text-decoration: none;">
+                        📊 Voir mes résultats
+                    </a>
+                </div>
+                {% endif %}
+                
+                <div style="margin-top: 1rem;">
+                    <a href="/" class="nav-btn secondary" style="display: inline-block; text-decoration: none;">
+                        🏠 Retour à l'accueil
+                    </a>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
