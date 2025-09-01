@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from databasehr.session_manager import current_user_session
 from databasehr.database import SessionLocal
-from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCandidat
+from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCandidat, Notification, Job, Application, Company
 import os
 import requests
 from datetime import datetime, timezone
@@ -70,7 +70,6 @@ async def create_quiz(quiz_data: QuizCreateRequest, current_user=Depends(get_cur
         
         for skill in quiz_data.skills:
             if skill.questions > 0:
-                print('=>>>>>>>>>>>>>>>>>'+skill.difficulty+"<<<<<<<<<<<<<<<<<<<")
                 quiz_skill = QuizSkill(
                     quiz_id=quiz.id,
                     skill_name=skill.name,
@@ -117,6 +116,47 @@ async def create_quiz(quiz_data: QuizCreateRequest, current_user=Depends(get_cur
             else:
                 quiz.webhook_error = f"HTTP {response.status_code}: {response.text}"
                 
+        except Exception as webhook_error:
+            quiz.webhook_error = str(webhook_error)
+            print(f"Webhook error: {webhook_error}")
+        
+        db.commit()
+        
+        try:
+
+            candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == quiz.candidate_id).first()
+            admin = db.query(HRAdmin).filter(HRAdmin.id == current_user["id"]).first()
+            job = db.query(Job).filter(Job.id == quiz_data.job_id).first()
+            application = (db.query(Application).filter(Application.candidate_profile_id == candidat.id, Application.job_id == job.id).first())
+            company = db.query(Company).filter(Company.id == job.company_id).first()
+            notification = Notification(
+                user_id=candidat.user.id if candidat and candidat.user else None,
+                type='Quiz Exam',
+                title=quiz_data.title,
+                message='Your quiz has been created successfully.',
+                application_id=application.id if application else None,
+                job_id=quiz_data.job_id,
+                status='created',
+                company_name=company.company_name if company else None,
+                job_title=job.title if job else None,
+                admin_name=admin.first_name + ' ' + admin.last_name if admin else None
+                    )
+            db.add(notification)
+            db.commit()
+            db.refresh(quiz)
+            print('Notification data :', {
+                "quiz_id": quiz.id,
+                "user_id": candidat.user.id if candidat and candidat.user else None,
+                "type": 'Quiz Exam',
+                "title": quiz_data.title,
+                "message": 'Your quiz has been created successfully.',
+                "application_id": application.id if application else None,
+                "job_id": quiz_data.job_id,
+                "status": 'created',
+                "company_name": company.company_name if company else None,
+                "job_title": job.title if job else None,
+                "admin_name": admin.first_name + ' ' + admin.last_name if admin else None
+            })
         except Exception as webhook_error:
             quiz.webhook_error = str(webhook_error)
             print(f"Webhook error: {webhook_error}")

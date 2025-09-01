@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from databasehr.session_manager import current_user_session
 from databasehr.database import SessionLocal
-from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCandidat
+from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCandidat, Notification
 import os
 import requests
 from datetime import datetime
@@ -52,7 +52,7 @@ def get_db():
     finally:
         db.close()
 db = SessionLocal()   # create a real SQLAlchemy session
-try:
+'''try:
     candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == 31).first()
     if candidat:
         if candidat.user:  # Check if user exists
@@ -64,7 +64,53 @@ try:
 except Exception as e:
     print(f"Error: {e}")
 finally:
-    db.close()
+    db.close()'''
 
+def create_notification(
+    db: Session,
+    user_id: int,
+    type: str,
+    title: str,
+    message: str,
+    application_id: int = None,
+    job_id: int = None,
+    status: str = None,
+    company_name: str = None,
+    job_title: str = None,
+    admin_name: str = None
+) -> Notification:
+    """
+    Create and save a notification in the database.
+    """
+    notification = Notification(
+        user_id=user_id,
+        type=type,
+        title=title,
+        message=message,
+        application_id=application_id,
+        job_id=job_id,
+        status=status,
+        company_name=company_name,
+        job_title=job_title,
+        admin_name=admin_name
+    )
+    
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)  # refresh to get generated ID + created_at
+    
+    return notification
 
-
+create_notification(
+    db=db,
+    user_id=33,
+    type="application",
+    title="New Job Application",
+    message="You have a new job application.",
+    application_id=21,
+    job_id=32,
+    status="pending",
+    company_name="Tech Corp",
+    job_title="Software Engineer",
+    admin_name="John Doe"
+)
