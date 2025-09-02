@@ -95,6 +95,9 @@ class RecommendationRequest(BaseModel):
     comment: Optional[str] = ""
     priority: str = "normal"
 
+class SkillValidationRequest(BaseModel):
+    validation_notes: Optional[str] = ""
+
 @router.get("/api/applications")
 async def get_applications(
     status_filter: Optional[str] = Query("all"),
