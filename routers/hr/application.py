@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Query, Depends
+import os
+from fastapi import APIRouter, Query, Depends, requests
 from databasehr.database import SessionLocal
 from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments
 from databasehr.models import Application, Job, ProfileCandidat, Contact, Department, JobSkill, Company
@@ -1001,6 +1002,28 @@ def validate_application_skills(
         application.skills_validated_notes = request.validation_notes
         
         db.commit()
+        base_url = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
+        url = f"{base_url.rstrip('/')}/api/notifications/test-create"
+        job = db.query(Job).filter(Job.id == application.job_id).first()
+        company = db.query(Company).filter(Company.id == job.company_id).first()
+        payload = {
+            "user_id": application.user_id,
+            "type": 'validation',
+            "title": "Skills validation",
+            "message": 'Your skills have been validated successfully.',
+            "application_id": application.id if application else None,
+            "job_id": application.job_id if application else None,
+            "status": application.status,
+            "company_name": company.company_name if company else None,
+            "job_title": job.title if job else None,
+            "admin_name": current_admin.first_name + ' ' + current_admin.last_name if current_admin else None,
+        }
+        resp = requests.post(url, json=payload, timeout=10)
+        print("Status:", resp.status_code)
+        try:
+            print("Response:", resp.json())
+        except Exception:
+            print("Response text:", resp.text)
         
         return {
             "success": True, 

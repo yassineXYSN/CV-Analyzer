@@ -129,34 +129,26 @@ async def create_quiz(quiz_data: QuizCreateRequest, current_user=Depends(get_cur
             job = db.query(Job).filter(Job.id == quiz_data.job_id).first()
             application = (db.query(Application).filter(Application.candidate_profile_id == candidat.id, Application.job_id == job.id).first())
             company = db.query(Company).filter(Company.id == job.company_id).first()
-            notification = Notification(
-                user_id=candidat.user.id if candidat and candidat.user else None,
-                type='Quiz Exam',
-                title=quiz_data.title,
-                message='Your quiz has been created successfully.',
-                application_id=application.id if application else None,
-                job_id=quiz_data.job_id,
-                status='created',
-                company_name=company.company_name if company else None,
-                job_title=job.title if job else None,
-                admin_name=admin.first_name + ' ' + admin.last_name if admin else None
-                    )
-            db.add(notification)
-            db.commit()
-            db.refresh(quiz)
-            print('Notification data :', {
-                "quiz_id": quiz.id,
+            base_url = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
+            url = f"{base_url.rstrip('/')}/api/notifications/test-create"
+            payload = {
                 "user_id": candidat.user.id if candidat and candidat.user else None,
                 "type": 'Quiz Exam',
                 "title": quiz_data.title,
                 "message": 'Your quiz has been created successfully.',
                 "application_id": application.id if application else None,
-                "job_id": quiz_data.job_id,
+                "job_id": job.id if job else None,
                 "status": 'created',
                 "company_name": company.company_name if company else None,
                 "job_title": job.title if job else None,
-                "admin_name": admin.first_name + ' ' + admin.last_name if admin else None
-            })
+                "admin_name": admin.first_name + ' ' + admin.last_name if admin else None,
+            }
+            resp = requests.post(url, json=payload, timeout=10)
+            print("Status:", resp.status_code)
+            try:
+                print("Response:", resp.json())
+            except Exception:
+                print("Response text:", resp.text)
         except Exception as webhook_error:
             quiz.webhook_error = str(webhook_error)
             print(f"Webhook error: {webhook_error}")
