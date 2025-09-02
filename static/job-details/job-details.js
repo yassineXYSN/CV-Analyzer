@@ -124,6 +124,10 @@ function loadJobData() {
         console.log("✅ Données chargées depuis localStorage:", currentJob)
         displayJobInfo()
         renderApplicationsWithCompatibility()
+        // Initialiser l'état de validation des compétences après le rendu
+        setTimeout(() => {
+          initializeSkillsValidationState()
+        }, 100)
       } catch (error) {
         console.error("❌ Erreur parsing localStorage:", error)
         showError("Erreur lors du chargement des données du poste")
@@ -285,6 +289,10 @@ async function loadJobFromAPI(jobId) {
           console.log("🎨 Rendu des candidatures avec", applications.length, "candidatures")
           console.log("🔍 DEBUG - Applications avant rendu:", applications)
           renderApplicationsWithCompatibility()
+          // Initialiser l'état de validation des compétences après le rendu
+          setTimeout(() => {
+            initializeSkillsValidationState()
+          }, 100)
         } catch (error) {
           console.error("❌ Erreur lors du rendu des candidatures:", error)
           console.error("❌ Stack trace:", error.stack)
@@ -704,6 +712,38 @@ function renderJobSkills() {
   console.log(`✅ ${validSkills.length} compétences affichées`)
 }
 
+// Fonction pour initialiser l'état de validation des compétences
+function initializeSkillsValidationState() {
+  console.log("🔧 Initialisation de l'état de validation des compétences")
+  
+  applications.forEach(app => {
+    const quizSection = document.getElementById(`quiz-section-${app.id}`)
+    const validateBtn = document.getElementById(`validate-btn-${app.id}`)
+    const validationStatus = document.getElementById(`validation-status-${app.id}`)
+    
+    if (app.skills_validated) {
+      // Si les compétences sont déjà validées, retirer l'overlay et mettre à jour le bouton
+      if (quizSection) {
+        quizSection.classList.remove("locked")
+        const overlay = quizSection.querySelector(".quiz-validation-overlay")
+        if (overlay) {
+          overlay.remove()
+        }
+      }
+      
+      if (validateBtn) {
+        validateBtn.classList.add("validated")
+        validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé'
+        validateBtn.disabled = true
+      }
+      
+      if (validationStatus) {
+        validationStatus.classList.add("success")
+      }
+    }
+  })
+}
+
 function renderApplicationsWithCompatibility(filter = "all") {
   console.log(`👥 Rendu des candidatures avec compatibilité (filtre: ${filter})`)
   console.log(`🔍 DEBUG - Fonction appelée avec filter: ${filter}`)
@@ -825,7 +865,10 @@ function renderApplicationsWithCompatibility(filter = "all") {
           <div class="expanded-details-grid">
             <!-- SECTION 1: COMPÉTENCES (MAINTENANT EN PREMIER) -->
             <div class="detail-section skills-section">
-              <h4 data-percentage="${app.compatibility_percentage || 0}%"><i class="fas fa-chart-line"></i> Analyse des compétences</h4>
+              <h4>
+                <i class="fas fa-chart-line"></i> Analyse des compétences
+                <span class="percentage-display">${app.compatibility_percentage || 0}%</span>
+              </h4>
               <div class="compatibility-progress">
                 <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage || 0)}" 
      style="width: ${app.compatibility_percentage || 0}%"></div>
@@ -875,9 +918,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
                   <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
                     <i class="fas fa-search"></i> Détails compatibilité
                   </button>
-                  <button class="btn-validate-skills" onclick="validateSkillsAnalysis(${app.id}, '${candidateName}')" id="validate-btn-${app.id}">
-                    <i class="fas fa-check-double"></i> Valider l'analyse
-                  </button>
                 </div>
                 <!-- Added validation status display -->
                 <div class="skills-validation-status" id="validation-status-${app.id}">
@@ -889,67 +929,74 @@ function renderApplicationsWithCompatibility(filter = "all") {
             
             <!-- SECTION 2: QUIZ (VISIBLE SEULEMENT SI COMPÉTENCES VALIDÉES) -->
             <!-- SECTION 2: QUIZ -->
-            <div class="detail-section quiz-section" id="quiz-section-${app.id}">
+            <div class="detail-section quiz-section ${!app.skills_validated ? 'locked' : ''}" id="quiz-section-${app.id}">
               
-              
+              ${!app.skills_validated ? `
+                <div class="quiz-validation-overlay">
+                  <div class="quiz-validation-number">2</div>
+                  <div class="quiz-validation-message">En attente de validation des compétences</div>
+                  <button class="btn-validate-skills-overlay" onclick="removeQuizOverlay(${app.id})" id="validate-btn-overlay-${app.id}">
+                    <i class="fas fa-check-double"></i> Valider les compétences
+                  </button>
+                </div>
+              ` : ''}
 
               
               <div class="quiz-content">
                 <div class="quiz-status">
                   <div class="quiz-content-wrapper">
-                    <div class="quiz-score-section">
-                      <div class="quiz-section-header">
-                        <h6 class="quiz-title">Évaluation Quiz</h6>
-                      </div>
-                      
-                      <div class="quiz-content-main">
-                        <div class="quiz-score-circle ${getQuizScoreClass(app.quiz_score || 0)}">
-                          <span class="quiz-score-value">${app.quiz_score || 0}%</span>
-                          <div class="quiz-score-label">Score</div>
+                                          <div class="quiz-score-section">
+                        <div class="quiz-section-header">
+                          <h6 class="quiz-title">
+                            Évaluation Quiz
+                            <span class="percentage-display">${app.quiz_score || 0}%</span>
+                          </h6>
                         </div>
                         
-                        <div class="quiz-metrics">
-                          <div class="quiz-metric-item">
-                            <div class="metric-icon">
-                              <i class="fas fa-clock"></i>
+                        <div class="quiz-content">
+                          <div class="quiz-score-metrics-container">
+                            <div class="quiz-score-circle ${getQuizScoreClass(app.quiz_score || 0)}">
+                              <span class="quiz-score-value">${app.quiz_score || 0}%</span>
+                              <div class="quiz-score-label">Score</div>
                             </div>
-                            <div class="metric-content">
-                              <div class="metric-value">${app.quiz_duration ? formatDuration(app.quiz_duration) : "N/A"}</div>
-                              <div class="metric-label">Durée</div>
+                            
+                            <div class="quiz-metrics">
+                              <div class="quiz-metric-item">
+                                <div class="metric-icon">
+                                  <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="metric-value">${app.quiz_duration ? formatDuration(app.quiz_duration) : "N/A"}</div>
+                                <div class="metric-label"> Durée</div>
+                              </div>
+                              
+                              <div class="quiz-metric-item">
+                                <div class="metric-icon">
+                                  <i class="fas fa-question-circle"></i>
+                                </div>
+                                <div class="metric-value">${app.quiz_questions_count || 0}</div>
+                                <div class="metric-label">  Questions</div>
+                              </div>
+                              
+                              <div class="quiz-metric-item">
+                                <div class="metric-icon">
+                                  <i class="fas fa-check-double"></i>
+                                </div>
+                                <div class="metric-value">${app.quiz_correct_answers || 0}</div>
+                                <div class="metric-label">  Correctes</div>
+                              </div>
                             </div>
                           </div>
                           
-                          <div class="quiz-metric-item">
-                            <div class="metric-icon">
-                              <i class="fas fa-question-circle"></i>
-                            </div>
-                            <div class="metric-content">
-                              <div class="metric-value">${app.quiz_questions_count || 0}</div>
-                              <div class="metric-label">Questions</div>
-                            </div>
-                          </div>
-                          
-                          <div class="quiz-metric-item">
-                            <div class="metric-icon">
-                              <i class="fas fa-check-double"></i>
-                            </div>
-                            <div class="metric-content">
-                              <div class="metric-value">${app.quiz_correct_answers || 0}</div>
-                              <div class="metric-label">Correctes</div>
-                            </div>
+                          <div class="quiz-actions">
+                            <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
+                              <i class="fas fa-magic"></i> Générer Quiz
+                            </button>
+                            <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
+                              <i class="fas fa-eye"></i> Voir Quiz
+                            </button>
                           </div>
                         </div>
                       </div>
-                      
-                      <div class="quiz-actions">
-                        <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
-                          <i class="fas fa-magic"></i> Générer Quiz
-                        </button>
-                        <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
-                          <i class="fas fa-eye"></i> Voir Quiz
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 </div>
                 
@@ -2939,20 +2986,64 @@ function validateSkillsAnalysis(applicationId, candidateName) {
   const validateBtn = document.getElementById(`validate-btn-${applicationId}`)
   const validationStatus = document.getElementById(`validation-status-${applicationId}`)
 
-  if (validateBtn && validationStatus) {
-    // Update button state
+  // Update button state
+  if (validateBtn) {
     validateBtn.classList.add("validated")
     validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé'
     validateBtn.disabled = true
+  }
 
+  if (validationStatus) {
     // Show validation status
     validationStatus.classList.add("success")
+  }
 
-    // Show success notification
-    showNotification(`Analyse des compétences validée pour ${candidateName}`, "success")
+  // Remove overlay from quiz section
+  const quizSection = document.getElementById(`quiz-section-${applicationId}`)
+  if (quizSection) {
+    quizSection.classList.remove("locked")
+    const overlay = quizSection.querySelector(".quiz-validation-overlay")
+    if (overlay) {
+      overlay.remove()
+    }
+  }
 
-    // Here you could add an API call to save the validation status
-    // saveSkillsValidation(applicationId)
+  // Show success notification
+  showNotification(`Analyse des compétences validée pour ${candidateName}`, "success")
+
+  // Here you could add an API call to save the validation status
+  // saveSkillsValidation(applicationId)
+}
+
+// Fonction pour enlever seulement l'overlay du quiz (sans valider les compétences)
+function removeQuizOverlay(applicationId) {
+  console.log(`🔓 Suppression de l'overlay du quiz pour l'application ${applicationId}`)
+  console.log(`🔍 Application ID reçu:`, applicationId)
+
+  const quizSection = document.getElementById(`quiz-section-${applicationId}`)
+  console.log(`🔍 Section quiz trouvée:`, quizSection)
+  
+  if (quizSection) {
+    quizSection.classList.remove("locked")
+    console.log(`✅ Classe 'locked' supprimée`)
+    
+    const overlay = quizSection.querySelector(".quiz-validation-overlay")
+    console.log(`🔍 Overlay trouvé:`, overlay)
+    
+    if (overlay) {
+      overlay.remove()
+      console.log(`✅ Overlay supprimé`)
+    }
+  } else {
+    console.error(`❌ Section quiz non trouvée pour l'ID: ${applicationId}`)
+  }
+
+  // Show notification
+  try {
+    showNotification("Section quiz débloquée", "success")
+    console.log(`✅ Notification affichée`)
+  } catch (error) {
+    console.error(`❌ Erreur notification:`, error)
   }
 }
 
