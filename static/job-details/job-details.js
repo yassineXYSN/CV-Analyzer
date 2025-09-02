@@ -863,156 +863,194 @@ function renderApplicationsWithCompatibility(filter = "all") {
 
         <div class="candidate-expanded-content" id="expanded-${app.id}">
           <div class="expanded-details-grid">
-            <!-- SECTION 1: COMPÉTENCES (MAINTENANT EN PREMIER) -->
+            <!-- SECTION 1: ANALYSE DES COMPÉTENCES -->
             <div class="detail-section skills-section">
               <h4>
                 <i class="fas fa-chart-line"></i> Analyse des compétences
-                <span class="percentage-display">${app.compatibility_percentage || 0}%</span>
               </h4>
-              <div class="compatibility-progress">
-                <div class="compatibility-progress-bar ${getCompatibilityClass(app.compatibility_percentage || 0)}" 
-     style="width: ${app.compatibility_percentage || 0}%"></div>
-              </div>
               
-              <!-- NOUVELLE STRUCTURE SIMPLIFIÉE POUR LES COMPÉTENCES -->
-              <div class="skills-summary">
-                <div class="skills-summary-title">
-                  <i class="fas fa-tasks"></i> Résumé des compétences
-                </div>
-                <div class="skills-summary-content">
-                  <div class="skill-counter matched">
-                    <div class="skill-counter-icon">
-                      <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="skill-counter-text">
-                      <div class="skill-counter-number">${app.matched_skills_count || 0}</div>
-                      <div class="skill-counter-label">Compétences correspondantes</div>
+              <div class="skills-content">
+                <!-- Progress Bar Section -->
+                <div class="skills-progress-section">
+                  <div class="progress-header">
+                    <span class="progress-label">Niveau de compatibilité</span>
+                    <span class="progress-percentage">${app.compatibility_percentage || 0}%</span>
+                  </div>
+                  <div class="progress-bar-container">
+                    <div class="progress-bar ${getCompatibilityClass(app.compatibility_percentage || 0)}" 
+                         style="width: ${app.compatibility_percentage || 0}%">
+                      <div class="progress-bar-fill"></div>
                     </div>
                   </div>
-                  
-                  <div class="skill-counter missing">
-                    <div class="skill-counter-icon">
-                      <i class="fas fa-times-circle"></i>
-                    </div>
-                    <div class="skill-counter-text">
-                      <div class="skill-counter-number">${app.missing_skills_count || 0}</div>
-                      <div class="skill-counter-label">Compétences manquantes</div>
-                    </div>
-                  </div>
-                  
-                  <div class="skill-counter total">
-                    <div class="skill-counter-icon">
-                      <i class="fas fa-list"></i>
-                    </div>
-                    <div class="skill-counter-text">
-                      <div class="skill-counter-number">${app.total_job_skills || 0}</div>
-                      <div class="skill-counter-label">Total des compétences</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- BOUTONS D'ACTION POUR LES COMPÉTENCES -->
-              <div class="compatibility-actions">
-                <div class="compatibility-buttons-row">
-                  <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
-                    <i class="fas fa-search"></i> Détails compatibilité
-                  </button>
                 </div>
                 
+                <div class="skills-overview">
+                  <div class="skills-info-grid">
+                    <div class="skills-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-check-circle"></i>
+                      </div>
+                      <div class="info-content">
+                        <div class="info-label">Correspondantes</div>
+                        <div class="info-value">${app.matched_skills_count || 0}</div>
+                      </div>
+                    </div>
+                    
+                    <div class="skills-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-times-circle"></i>
+                      </div>
+                      <div class="info-content">
+                        <div class="info-label">Manquantes</div>
+                        <div class="info-value">${app.missing_skills_count || 0}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="skills-actions">
+                  <div class="skills-actions-row">
+                    <button class="btn-compatibility-details" onclick="viewCompatibilityDetails(${app.id})">
+                      <i class="fas fa-chart-bar"></i> Détails compatibilité
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             
             <!-- SECTION 2: QUIZ (VISIBLE SEULEMENT SI COMPÉTENCES VALIDÉES) -->
-            <!-- SECTION 2: QUIZ -->
             <div class="detail-section quiz-section ${!app.skills_validated ? 'locked' : ''}" id="quiz-section-${app.id}">
               
               ${!app.skills_validated ? `
                 <div class="quiz-validation-overlay">
                   <div class="quiz-validation-number">2</div>
                   <div class="quiz-validation-message">En attente de validation des compétences</div>
-                  <button class="btn-validate-skills-overlay" onclick="validateSkillsAndRemoveOverlay(${app.id})" id="validate-btn-overlay-${app.id}">
+                  <button class="btn-validate-skills-overlay" onclick="removeQuizOverlay(${app.id})" id="validate-btn-overlay-${app.id}">
                     <i class="fas fa-check-double"></i> Valider les compétences
                   </button>
                 </div>
               ` : ''}
 
+              <h4>
+                <i class="fas fa-chart-bar"></i> Évaluation Quiz
+              </h4>
               
               <div class="quiz-content">
-                <div class="quiz-status">
-                  <div class="quiz-content-wrapper">
-                                          <div class="quiz-score-section">
-                        <div class="quiz-section-header">
-                          <h6 class="quiz-title">
-                            Évaluation Quiz
-                            
-                          </h6>
-                        </div>
-                        
-                        <div class="quiz-content">
-                          <div class="quiz-score-metrics-container">
-                            <div class="quiz-score-circle ${getQuizScoreClass(app.quiz_score || 0)}">
-                              <span class="quiz-score-value">${app.quiz_score || 0}%</span>
-                              <div class="quiz-score-label">Score</div>
-                            </div>
-                            
-                            <div class="quiz-metrics">
-                              <div class="quiz-metric-item">
-                                <div class="metric-icon">
-                                  <i class="fas fa-clock"></i>
-                                </div>
-                                <div class="metric-value">${app.quiz_duration ? formatDuration(app.quiz_duration) : "N/A"}</div>
-                                <div class="metric-label"> Durée</div>
-                              </div>
-                              
-                              <div class="quiz-metric-item">
-                                <div class="metric-icon">
-                                  <i class="fas fa-question-circle"></i>
-                                </div>
-                                <div class="metric-value">${app.quiz_questions_count || 0}</div>
-                                <div class="metric-label">  Questions</div>
-                              </div>
-                              
-                              <div class="quiz-metric-item">
-                                <div class="metric-icon">
-                                  <i class="fas fa-check-double"></i>
-                                </div>
-                                <div class="metric-value">${app.quiz_correct_answers || 0}</div>
-                                <div class="metric-label">  Correctes</div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div class="quiz-actions">
-                            <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
-                              <i class="fas fa-magic"></i> Générer Quiz
-                            </button>
-                            <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
-                              <i class="fas fa-eye"></i> Voir Quiz
-                            </button>
-                          </div>
-                        </div>
+                <div class="quiz-overview">
+                  <div class="quiz-info-grid">
+                    <div class="quiz-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-chart-pie"></i>
                       </div>
+                      <div class="info-content">
+                        <div class="info-label">Score</div>
+                        <div class="info-value">${app.quiz_score || 0}%</div>
+                      </div>
+                    </div>
+                    
+                    <div class="quiz-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-clock"></i>
+                      </div>
+                      <div class="info-content">
+                        <div class="info-label">Durée</div>
+                        <div class="info-value">${app.quiz_duration ? formatDuration(app.quiz_duration) : "N/A"}</div>
+                      </div>
+                    </div>
+                    
+
+                    
+                    <div class="quiz-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-check-double"></i>
+                      </div>
+                      <div class="info-content">
+                        <div class="info-label">Correctes</div>
+                        <div class="info-value">${app.quiz_correct_answers || 0}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
-
+                <div class="quiz-actions">
+                  <div class="quiz-actions-row">
+                    <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
+                      <i class="fas fa-magic"></i> Générer Quiz
+                    </button>
+                    <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
+                      <i class="fas fa-eye"></i> Voir Quiz
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <!-- SECTION 3: INFORMATIONS GÉNÉRALES -->
-            <div class="detail-section">
-              <h4><i class="fas fa-info-circle"></i> Informations générales</h4>
-              <p><strong>Email:</strong> ${candidateEmail}</p>
-              <p><strong>Date de candidature:</strong> ${applicationDate}</p>
-              ${hrRating ? `<p><strong>Note HR:</strong> ${hrRating}/5 ⭐</p>` : ""}
-              ${
-                isRecommended && recommendedBy
-                  ? `<p><strong>Recommandé par:</strong> ${recommendedBy}
-                      ${app.recommendation_date ? ` le ${formatDateSafe(app.recommendation_date)}` : ""}</p>`
-                  : ""
-              }
+            <!-- SECTION 3: PROGRAMMATION D'ENTRETIEN -->
+            <div class="detail-section interview-section" id="interview-section-${app.id}">
+              <h4>
+                <i class="fas fa-calendar-alt"></i> Programmation d'entretien
+                <span class="interview-status-badge ${getInterviewStatusClass(app.interview_status || 'not_scheduled')}">${getInterviewStatusText(app.interview_status || 'not_scheduled')}</span>
+              </h4>
+              
+              <div class="interview-content">
+                <div class="interview-overview">
+                  <div class="interview-info-grid">
+                    <div class="interview-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-calendar-check"></i>
+                      </div>
+                      <div class="info-content">
+                        <div class="info-label">Date prévue</div>
+                        <div class="info-value">${app.interview_date ? formatDate(app.interview_date) : 'Non programmé'}</div>
+                      </div>
+                    </div>
+                    
+                    <div class="interview-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-clock"></i>
+                      </div>
+                      <div class="info-content">
+                        <div class="info-label">Heure</div>
+                        <div class="info-value">${app.interview_time || 'Non définie'}</div>
+                      </div>
+                    </div>
+                    
+
+                    
+                    <div class="interview-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-users"></i>
+                      </div>
+                      <div class="info-content">
+                        <div class="info-label">Type</div>
+                        <div class="info-value">${app.interview_type || 'À définir'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="interview-actions">
+                  <div class="interview-actions-row">
+                    <button class="btn-schedule-interview" onclick="openScheduleInterviewModal(${app.id}, '${candidateName}')">
+                      <i class="fas fa-calendar-plus"></i> Programmer un entretien
+                    </button>
+
+                    <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})" ${!app.interview_date ? 'disabled' : ''}>
+                      <i class="fas fa-calendar-times"></i> Reprogrammer
+                    </button>
+                  </div>
+                </div>
+                
+                ${app.interview_notes ? `
+                <div class="interview-notes">
+                  <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
+                  <p>${app.interview_notes}</p>
+                </div>
+                ` : ''}
+              </div>
             </div>
+            
+
           </div>
           
           <div class="application-actions">
@@ -3395,3 +3433,271 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 })
+
+// ===== FONCTIONS POUR LA PROGRAMMATION D'ENTRETIEN =====
+
+// Fonction pour obtenir la classe CSS du statut d'entretien
+function getInterviewStatusClass(status) {
+  const statusClasses = {
+    'not_scheduled': 'status-not-scheduled',
+    'scheduled': 'status-scheduled',
+    'completed': 'status-completed',
+    'cancelled': 'status-cancelled',
+    'rescheduled': 'status-rescheduled'
+  }
+  return statusClasses[status] || 'status-not-scheduled'
+}
+
+// Fonction pour obtenir le texte du statut d'entretien
+function getInterviewStatusText(status) {
+  const statusTexts = {
+    'not_scheduled': 'Non programmé',
+    'scheduled': 'Programmé',
+    'completed': 'Terminé',
+    'cancelled': 'Annulé',
+    'rescheduled': 'Reprogrammé'
+  }
+  return statusTexts[status] || 'Non programmé'
+}
+
+// Fonction pour formater une date
+function formatDate(dateString) {
+  if (!dateString) return 'Non défini'
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch (error) {
+    return 'Date invalide'
+  }
+}
+
+// Fonction pour ouvrir le modal de programmation d'entretien
+function openScheduleInterviewModal(applicationId, candidateName) {
+  console.log(`📅 Ouverture du modal de programmation d'entretien pour ${candidateName}`)
+  
+  // Créer le modal
+  const modal = document.createElement('div')
+  modal.className = 'modal-overlay interview-modal-overlay'
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 25000;
+    padding: 2rem;
+  `
+
+  modal.innerHTML = `
+    <div class="modal-content" style="
+      max-width: 600px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 20px;
+      border: 2px solid rgba(59, 130, 246, 0.4);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    ">
+      <div class="modal-header" style="
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px 20px 0 0;
+        border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+      ">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 1rem; font-size: 1.5rem;">
+          <i class="fas fa-calendar-plus" style="color: #3b82f6;"></i> 
+          Programmer un entretien
+        </h3>
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()" style="
+          position: absolute;
+          top: 2rem;
+          right: 2rem;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: white;
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 1.2rem;
+        ">&times;</button>
+      </div>
+      
+      <div class="modal-body" style="padding: 2rem;">
+        <div class="candidate-info" style="
+          background: rgba(59, 130, 246, 0.1);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          border-radius: 12px;
+          padding: 1rem;
+          margin-bottom: 2rem;
+        ">
+          <h4 style="margin: 0 0 0.5rem 0; color: #f8fafc;">
+            <i class="fas fa-user" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+            ${candidateName}
+          </h4>
+          <p style="margin: 0; color: #cbd5e1; font-size: 0.9rem;">
+            Application ID: ${applicationId}
+          </p>
+        </div>
+        
+        <form id="interview-form" style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <div class="form-group">
+            <label style="display: block; color: #f8fafc; font-weight: 600; margin-bottom: 0.5rem;">
+              <i class="fas fa-calendar" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+              Date de l'entretien
+            </label>
+            <input type="date" id="interview-date" required style="
+              width: 100%;
+              padding: 0.75rem;
+              border: 1px solid rgba(59, 130, 246, 0.3);
+              border-radius: 8px;
+              background: rgba(15, 23, 42, 0.8);
+              color: #f8fafc;
+              font-size: 1rem;
+            ">
+          </div>
+          
+          <div class="form-group">
+            <label style="display: block; color: #f8fafc; font-weight: 600; margin-bottom: 0.5rem;">
+              <i class="fas fa-clock" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+              Heure de l'entretien
+            </label>
+            <input type="time" id="interview-time" required style="
+              width: 100%;
+              padding: 0.75rem;
+              border: 1px solid rgba(59, 130, 246, 0.3);
+              border-radius: 8px;
+              background: rgba(15, 23, 42, 0.8);
+              color: #f8fafc;
+              font-size: 1rem;
+            ">
+          </div>
+          
+
+          
+          <div class="form-group">
+            <label style="display: block; color: #f8fafc; font-weight: 600; margin-bottom: 0.5rem;">
+              <i class="fas fa-users" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+              Type d'entretien
+            </label>
+            <select id="interview-type" required style="
+              width: 100%;
+              padding: 0.75rem;
+              border: 1px solid rgba(59, 130, 246, 0.3);
+              border-radius: 8px;
+              background: rgba(15, 23, 42, 0.8);
+              color: #f8fafc;
+              font-size: 1rem;
+            ">
+              <option value="">Sélectionner un type</option>
+              <option value="premier_contact">Premier contact</option>
+              <option value="technique">Entretien technique</option>
+              <option value="rh">Entretien RH</option>
+              <option value="final">Entretien final</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label style="display: block; color: #f8fafc; font-weight: 600; margin-bottom: 0.5rem;">
+              <i class="fas fa-sticky-note" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+              Notes (optionnel)
+            </label>
+            <textarea id="interview-notes" rows="3" style="
+              width: 100%;
+              padding: 0.75rem;
+              border: 1px solid rgba(59, 130, 246, 0.3);
+              border-radius: 8px;
+              background: rgba(15, 23, 42, 0.8);
+              color: #f8fafc;
+              font-size: 1rem;
+              resize: vertical;
+            " placeholder="Ajoutez des notes ou instructions pour l'entretien..."></textarea>
+          </div>
+          
+          <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
+            <button type="button" onclick="this.closest('.modal-overlay').remove()" style="
+              padding: 0.75rem 1.5rem;
+              border: 1px solid rgba(107, 114, 128, 0.3);
+              border-radius: 8px;
+              background: transparent;
+              color: #9ca3af;
+              cursor: pointer;
+              font-weight: 600;
+            ">Annuler</button>
+            <button type="submit" style="
+              padding: 0.75rem 1.5rem;
+              border: none;
+              border-radius: 8px;
+              background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+              color: white;
+              cursor: pointer;
+              font-weight: 600;
+              box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            ">Programmer l'entretien</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  // Gérer la soumission du formulaire
+  const form = modal.querySelector('#interview-form')
+  form.addEventListener('submit', function(e) {
+    e.preventDefault()
+    scheduleInterview(applicationId, candidateName, form)
+  })
+}
+
+// Fonction pour programmer l'entretien
+function scheduleInterview(applicationId, candidateName, form) {
+  const formData = {
+    date: form.querySelector('#interview-date').value,
+    time: form.querySelector('#interview-time').value,
+    type: form.querySelector('#interview-type').value,
+    notes: form.querySelector('#interview-notes').value
+  }
+
+  console.log(`📅 Programmation d'entretien pour ${candidateName}:`, formData)
+
+  // Ici vous pouvez ajouter l'appel API pour sauvegarder l'entretien
+  // await saveInterviewToAPI(applicationId, formData)
+
+  // Fermer le modal
+  form.closest('.modal-overlay').remove()
+
+  // Afficher une notification de succès
+  showNotification(`Entretien programmé pour ${candidateName}`, "success")
+
+  // Mettre à jour l'affichage (optionnel)
+  // updateInterviewDisplay(applicationId, formData)
+}
+
+// Fonction pour voir les détails d'un entretien
+function viewInterviewDetails(applicationId) {
+  console.log(`👁️ Affichage des détails de l'entretien pour l'application ${applicationId}`)
+  showNotification("Fonctionnalité en cours de développement", "info")
+}
+
+// Fonction pour reprogrammer un entretien
+function rescheduleInterview(applicationId) {
+  console.log(`🔄 Reprogrammation de l'entretien pour l'application ${applicationId}`)
+  showNotification("Fonctionnalité en cours de développement", "info")
+}
