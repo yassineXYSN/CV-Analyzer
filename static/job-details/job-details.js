@@ -326,6 +326,10 @@ async function loadJobFromAPI(jobId) {
     console.error("❌ Erreur critique:", error)
     showError("Erreur lors du chargement des données")
   }
+  setTimeout(() => {
+    initializeSkillsValidationState()
+    initializeQuizValidationState() // Ajoutez cette ligne
+  }, 100)
 }
 
 // NOUVELLE FONCTION: Calculer la compatibilité pour toutes les candidatures
@@ -925,7 +929,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                 <div class="quiz-validation-overlay">
                   <div class="quiz-validation-number">2</div>
                   <div class="quiz-validation-message">En attente de validation des compétences</div>
-                  <button class="btn-validate-skills-overlay" onclick="removeQuizOverlay(${app.id})" id="validate-btn-overlay-${app.id}">
+                  <button class="btn-validate-skills-overlay" onclick="validateSkillsAndRemoveOverlay(${app.id})" id="validate-btn-overlay-${app.id}">
                     <i class="fas fa-check-double"></i> Valider les compétences
                   </button>
                 </div>
@@ -986,7 +990,18 @@ function renderApplicationsWithCompatibility(filter = "all") {
             </div>
             
             <!-- SECTION 3: PROGRAMMATION D'ENTRETIEN -->
-            <div class="detail-section interview-section" id="interview-section-${app.id}">
+            <div class="detail-section interview-section ${!app.quiz_validated ? 'locked' : ''}" id="interview-section-${app.id}">
+              
+              ${!app.quiz_validated ? `
+                <div class="interview-validation-overlay">
+                  <div class="interview-validation-number">3</div>
+                  <div class="interview-validation-message">En attente de validation du quiz</div>
+                  <button class="btn-schedule-interview-overlay" onclick="validateQuizAndRemoveOverlay(${app.id})" id="validate-quiz-btn-overlay-${app.id}">
+                    <i class="fas fa-check-double"></i> Valider le quiz
+                  </button>
+                </div>
+              ` : ''}
+                
               <h4>
                 <i class="fas fa-calendar-alt"></i> Programmation d'entretien
                 <span class="interview-status-badge ${getInterviewStatusClass(app.interview_status || 'not_scheduled')}">${getInterviewStatusText(app.interview_status || 'not_scheduled')}</span>
@@ -1084,6 +1099,48 @@ function renderApplicationsWithCompatibility(filter = "all") {
     updateFilterCounts()
   } catch (error) {
     console.error("❌ Erreur lors de la mise à jour des compteurs:", error)
+  }
+}
+
+async function validateQuizAndRemoveOverlay(applicationId) {
+  console.log(`✅ Validation du quiz pour l'application ${applicationId}`)
+  
+  try {
+    const app = applications.find(a => a.id === applicationId);
+    if (!app) {
+      console.error("❌ Application non trouvée");
+      return;
+    }
+    
+    const candidateName = app.name || app.candidate_name || "Candidat";
+    
+    showLoading("Validation du quiz en cours...");
+    
+    setTimeout(() => {
+      // Mettre à jour l'état local
+      app.quiz_score = app.quiz_score || 0; // Score par défaut si aucun
+      
+      // Supprimer l'overlay et débloquer la section
+      const interviewSection = document.getElementById(`interview-section-${applicationId}`);
+      if (interviewSection) {
+        interviewSection.classList.remove('locked');
+        const overlay = interviewSection.querySelector('.interview-validation-overlay');
+        if (overlay) {
+          overlay.remove();
+        }
+      }
+      
+      hideLoading();
+      showNotification(`✅ Quiz validé pour ${candidateName}`, "success");
+      
+      // Recharger les détails pour afficher le score
+      loadJobData(); // ← ICI: Changement de loadJobDetails() à loadJobData()
+    }, 1000);
+    
+  } catch (error) {
+    hideLoading();
+    console.error("❌ Erreur validation quiz:", error);
+    showNotification("Erreur lors de la validation du quiz", "error");
   }
 }
 
@@ -1827,6 +1884,31 @@ function getStatusText(status) {
   return statusTexts[status] || status
 }
 
+// Fonction pour initialiser l'état de validation du quiz
+function initializeQuizValidationState() {
+  console.log("🔧 Initialisation de l'état de validation du quiz")
+  
+  applications.forEach(app => {
+    const interviewSection = document.getElementById(`interview-section-${app.id}`)
+    const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${app.id}`)
+    
+    if (app.quiz_validated) {
+      // Si le quiz est déjà validé, retirer l'overlay
+      if (interviewSection) {
+        interviewSection.classList.remove("locked")
+        const overlay = interviewSection.querySelector(".interview-validation-overlay")
+        if (overlay) {
+          overlay.remove()
+        }
+      }
+      
+      if (validateQuizBtn) {
+        validateQuizBtn.disabled = true
+        validateQuizBtn.innerHTML = '<i class="fas fa-check"></i> Quiz Validé'
+      }
+    }
+  })
+}
 // Fonction pour afficher la modal de validation admin
 function showAdminValidationModal(applicationId, candidateName, jobTitle) {
   console.log(`👑 Affichage validation admin pour ${candidateName}`)
@@ -3139,7 +3221,102 @@ async function validateSkillsAndRemoveOverlay(applicationId) {
   }
 }
 
-// ===== QUIZ MODAL FUNCTIONS =====
+// Fonction pour valider le quiz et enlever l'overlay de la section entretien
+async function validateQuizAndRemoveOverlay(applicationId) {
+  console.log(`✅ Validation du quiz pour l'application ${applicationId}`)
+  
+  try {
+    const app = applications.find(a => a.id === applicationId);
+    if (!app) {
+      console.error("❌ Application non trouvée");
+      return;
+    }
+    
+    const candidateName = app.name || app.candidate_name || "Candidat";
+    
+    showLoading("Validation du quiz en cours...");
+    
+    // Appel API pour valider le quiz
+    const response = await fetch(`/api/applications/${applicationId}/validate-quiz`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        validated: true,
+        notes: "Quiz validé par l'équipe RH"
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Mettre à jour l'état local
+      app.quiz_validated = true;
+      app.quiz_validated_at = new Date().toISOString();
+      
+      // Supprimer l'overlay et débloquer la section
+      const interviewSection = document.getElementById(`interview-section-${applicationId}`);
+      if (interviewSection) {
+        interviewSection.classList.remove('locked');
+        const overlay = interviewSection.querySelector('.interview-validation-overlay');
+        if (overlay) {
+          overlay.remove();
+        }
+      }
+      
+      hideLoading();
+      showNotification(`✅ Quiz validé pour ${candidateName}`, "success");
+      
+      // Mettre à jour l'interface pour refléter la validation
+      const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${applicationId}`);
+      if (validateQuizBtn) {
+        validateQuizBtn.disabled = true;
+        validateQuizBtn.innerHTML = '<i class="fas fa-check"></i> Quiz Validé';
+      }
+      
+    } else {
+      hideLoading();
+      showNotification(result.message || "Erreur lors de la validation", "error");
+    }
+  } catch (error) {
+    hideLoading();
+    console.error("❌ Erreur validation quiz:", error);
+    showNotification("Erreur de connexion lors de la validation", "error");
+  }
+}
+
+// Fonction pour initialiser l'état de validation du quiz
+function initializeQuizValidationState() {
+  console.log("🔧 Initialisation de l'état de validation du quiz")
+  
+  applications.forEach(app => {
+    const interviewSection = document.getElementById(`interview-section-${app.id}`)
+    const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${app.id}`)
+    
+    if (app.quiz_validated) {
+      // Si le quiz est déjà validé, retirer l'overlay
+      if (interviewSection) {
+        interviewSection.classList.remove("locked")
+        const overlay = interviewSection.querySelector(".interview-validation-overlay")
+        if (overlay) {
+          overlay.remove()
+        }
+      }
+      
+      if (validateQuizBtn) {
+        validateQuizBtn.disabled = true
+        validateQuizBtn.innerHTML = '<i class="fas fa-check"></i> Quiz Validé'
+      }
+    }
+  })
+}
+
+// Appeler cette fonction après le chargement des applications
+setTimeout(() => {
+  initializeSkillsValidationState()
+  initializeQuizValidationState() // ← Ajouter cette ligne
+}, 100)
 
 // Ouvrir le modal de création de quiz
 async function openCreateQuizModal(candidateId = null, candidateName = null) {

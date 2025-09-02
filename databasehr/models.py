@@ -240,6 +240,13 @@ class Application(Base):
     skills_validated_notes = Column(Text)
     
     skills_validated_by_admin = relationship("HRAdmin", foreign_keys=[skills_validated_by])
+    quiz_validated = Column(Boolean, default=False)
+    quiz_validated_by = Column(Integer, ForeignKey("hr_admins.id"))
+    quiz_validated_at = Column(DateTime)
+    quiz_validated_notes = Column(Text)
+    
+    # Relations
+    quiz_validated_by_admin = relationship("HRAdmin", foreign_keys=[quiz_validated_by])
 
 
     # Relationships
