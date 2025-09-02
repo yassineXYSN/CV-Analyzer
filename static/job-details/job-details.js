@@ -919,11 +919,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                     <i class="fas fa-search"></i> Détails compatibilité
                   </button>
                 </div>
-                <!-- Added validation status display -->
-                <div class="skills-validation-status" id="validation-status-${app.id}">
-                  <i class="fas fa-check-circle"></i>
-                  Analyse des compétences validée par l'équipe RH
-                </div>
+                
               </div>
             </div>
             
@@ -935,7 +931,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                 <div class="quiz-validation-overlay">
                   <div class="quiz-validation-number">2</div>
                   <div class="quiz-validation-message">En attente de validation des compétences</div>
-                  <button class="btn-validate-skills-overlay" onclick="removeQuizOverlay(${app.id})" id="validate-btn-overlay-${app.id}">
+                  <button class="btn-validate-skills-overlay" onclick="validateSkillsAndRemoveOverlay(${app.id})" id="validate-btn-overlay-${app.id}">
                     <i class="fas fa-check-double"></i> Valider les compétences
                   </button>
                 </div>
@@ -949,7 +945,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                         <div class="quiz-section-header">
                           <h6 class="quiz-title">
                             Évaluation Quiz
-                            <span class="percentage-display">${app.quiz_score || 0}%</span>
+                            
                           </h6>
                         </div>
                         
@@ -2980,70 +2976,128 @@ async function debugApplications() {
   }
 }
 
-function validateSkillsAnalysis(applicationId, candidateName) {
+async function validateSkillsAnalysis(applicationId, candidateName) {
   console.log(`✅ Validation de l'analyse des compétences pour ${candidateName} (ID: ${applicationId})`)
 
-  const validateBtn = document.getElementById(`validate-btn-${applicationId}`)
-  const validationStatus = document.getElementById(`validation-status-${applicationId}`)
+  try {
+      showLoading("Validation en cours...")
 
-  // Update button state
-  if (validateBtn) {
-    validateBtn.classList.add("validated")
-    validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé'
-    validateBtn.disabled = true
+      const response = await fetch(`/api/applications/${applicationId}/validate-skills`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+              validated: true,
+              notes: "Compétences validées par l'équipe RH"
+          })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+          // Mettre à jour l'interface utilisateur
+          const validateBtn = document.getElementById(`validate-btn-${applicationId}`)
+          const validationStatus = document.getElementById(`validation-status-${applicationId}`)
+          const quizSection = document.getElementById(`quiz-section-${applicationId}`)
+
+          if (validateBtn) {
+              validateBtn.classList.add("validated")
+              validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé'
+              validateBtn.disabled = true
+          }
+
+          if (validationStatus) {
+              validationStatus.classList.add("success")
+          }
+
+          if (quizSection) {
+              quizSection.classList.remove("locked")
+              const overlay = quizSection.querySelector(".quiz-validation-overlay")
+              if (overlay) {
+                  overlay.remove()
+              }
+          }
+
+          showNotification(`Analyse des compétences validée pour ${candidateName}`, "success")
+      } else {
+          showNotification(result.message || "Erreur lors de la validation", "error")
+      }
+  } catch (error) {
+      console.error("Erreur lors de la validation des compétences:", error)
+      showNotification("Erreur de connexion lors de la validation", "error")
+  } finally {
+      hideLoading()
   }
-
-  if (validationStatus) {
-    // Show validation status
-    validationStatus.classList.add("success")
-  }
-
-  // Remove overlay from quiz section
-  const quizSection = document.getElementById(`quiz-section-${applicationId}`)
-  if (quizSection) {
-    quizSection.classList.remove("locked")
-    const overlay = quizSection.querySelector(".quiz-validation-overlay")
-    if (overlay) {
-      overlay.remove()
-    }
-  }
-
-  // Show success notification
-  showNotification(`Analyse des compétences validée pour ${candidateName}`, "success")
-
-  // Here you could add an API call to save the validation status
-  // saveSkillsValidation(applicationId)
 }
 
 // Fonction pour enlever seulement l'overlay du quiz (sans valider les compétences)
-function removeQuizOverlay(applicationId) {
-  console.log(`🔓 Suppression de l'overlay du quiz pour l'application ${applicationId}`)
-  console.log(`🔍 Application ID reçu:`, applicationId)
-
-  const quizSection = document.getElementById(`quiz-section-${applicationId}`)
-  console.log(`🔍 Section quiz trouvée:`, quizSection)
+async function validateSkillsAndRemoveOverlay(applicationId) {
+  console.log(`✅ Validation des compétences pour l'application ${applicationId}`)
   
-  if (quizSection) {
-    quizSection.classList.remove("locked")
-    console.log(`✅ Classe 'locked' supprimée`)
-    
-    const overlay = quizSection.querySelector(".quiz-validation-overlay")
-    console.log(`🔍 Overlay trouvé:`, overlay)
-    
-    if (overlay) {
-      overlay.remove()
-      console.log(`✅ Overlay supprimé`)
-    }
-  } else {
-    console.error(`❌ Section quiz non trouvée pour l'ID: ${applicationId}`)
-  }
-
-  // Show notification
   try {
-    showNotification("Section quiz débloquée", "success")
-    console.log(`✅ Notification affichée`)
+    // Trouver l'application correspondante
+    const app = applications.find(a => a.id === applicationId);
+    if (!app) {
+      console.error("❌ Application non trouvée");
+      return;
+    }
+    
+    const candidateName = app.name || app.candidate_name || "Candidat";
+    
+    showLoading("Validation des compétences en cours...");
+    
+    const response = await fetch(`/api/applications/${applicationId}/validate-skills`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        validated: true,
+        notes: "Compétences validées par l'équipe RH"
+      })
+    });
+    
+    const result = await response.json();
+    hideLoading();
+    
+    if (result.success) {
+      // Mettre à jour l'état local
+      app.skills_validated = true;
+      app.skills_validated_at = new Date().toISOString();
+      
+      // Mettre à jour l'interface
+      const validateBtn = document.getElementById(`validate-btn-${applicationId}`);
+      const validationStatus = document.getElementById(`validation-status-${applicationId}`);
+      const quizSection = document.getElementById(`quiz-section-${applicationId}`);
+      
+      if (validateBtn) {
+        validateBtn.classList.add("validated");
+        validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé';
+        validateBtn.disabled = true;
+      }
+      
+      if (validationStatus) {
+        validationStatus.classList.add("success");
+        validationStatus.style.display = 'block';
+      }
+      
+      if (quizSection) {
+        quizSection.classList.remove("locked");
+        const overlay = quizSection.querySelector(".quiz-validation-overlay");
+        if (overlay) {
+          overlay.remove();
+        }
+      }
+      
+      showNotification(`✅ Analyse des compétences validée pour ${candidateName}`, "success");
+    } else {
+      showNotification(result.message || "Erreur lors de la validation", "error");
+    }
   } catch (error) {
-    console.error(`❌ Erreur notification:`, error)
+    hideLoading();
+    console.error("❌ Erreur validation compétences:", error);
+    showNotification("Erreur de connexion lors de la validation", "error");
   }
 }
 

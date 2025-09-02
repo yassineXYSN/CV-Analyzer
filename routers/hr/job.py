@@ -300,6 +300,10 @@ async def get_job_details(job_id: int):
                 "compatibility_percentage": compatibility_percentage,
                 "compatibility_source": compatibility_source,
                 "compatibility_reason": compatibility_reason,
+                "skills_validated": app.skills_validated,
+                "skills_validated_by": app.skills_validated_by,
+                "skills_validated_at": app.skills_validated_at.isoformat() if app.skills_validated_at else None,
+                "skills_validated_notes": app.skills_validated_notes,
                 # Ajoutez le vrai score de quiz
             })
             
@@ -461,3 +465,44 @@ async def accept_application(application_id: int, status_data: dict):
     except Exception as e:
         print(f"[v0] Internal error in accept_application: {str(e)}")
         return {"success": False, "message": f"Erreur interne: {str(e)}"}
+
+@router.post("/api/applications/{application_id}/validate-skills")
+async def validate_application_skills(application_id: int, validation_data: dict):
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        company = get_user_company(user_id)
+        if not company:
+            return {"success": False, "message": "Aucune entreprise associée"}
+
+        db = SessionLocal()
+        try:
+            application = db.query(Application).filter(
+                Application.id == application_id,
+                Application.job.has(company_id=company.id)
+            ).first()
+
+            if not application:
+                return {"success": False, "message": "Candidature non trouvée"}
+
+            # Mettre à jour la validation des compétences
+            application.skills_validated = validation_data.get('validated', False)
+            application.skills_validated_by = user_id
+            application.skills_validated_at = datetime.now()
+            application.skills_validated_notes = validation_data.get('notes', '')
+
+            db.commit()
+
+            return {
+                "success": True,
+                "message": "Compétences validées avec succès"
+            }
+        except Exception as e:
+            db.rollback()
+            return {"success": False, "message": f"Erreur lors de la validation: {str(e)}"}
+        finally:
+            db.close()
+    except Exception as e:
+        return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
