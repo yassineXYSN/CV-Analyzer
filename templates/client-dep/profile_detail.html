@@ -713,15 +713,9 @@
             </div>
             {% endif %}
 
-            {% if profile.languages %}
 
 
             <div class="sidebar-section">
-                <h4>Langues</h4>
-                <div class="languages-sidebar">
-                    {% for language in profile.languages %}
-                    <span class="language-pill">{{ language }}</span>
-                    {% endfor %}
                 <h4>Quiz & Évaluations</h4>
                 <div class="quick-contact">
                     <a href="/quizzes" class="contact-item-sidebar" style="text-decoration: none; color: inherit;">
@@ -730,7 +724,6 @@
                     </a>
                 </div>
             </div>
-            {% endif %}
         </div>
 
         <!-- Main Content -->
