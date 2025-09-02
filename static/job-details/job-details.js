@@ -3485,7 +3485,9 @@ async function generateSkillsQuizConfig() {
           <div class="skill-quiz-controls">
             <div class="form-group">
               <label for="questions_${skillId}">Nombre de questions</label>
-              <input type="number" id="questions_${skillId}" name="questions_${skillId}" min="0" max="20" value="5" required>
+              <div class="salary-range">
+                <input type="number" id="questions_${skillId}" name="questions_${skillId}" min="0" max="20" value="5" required>
+              </div>
             </div>
             <div class="form-group">
               <label for="difficulty_${skillId}">Niveau de difficulté</label>
@@ -3523,7 +3525,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const formData = new FormData(quizForm)
       const quizData = {
         title: formData.get("quizTitle"),
-        timeLimit: Number.parseInt(formData.get("quizTime")),
+        timeLimit: Number.parseInt(formData.get("quizTime")) || 45,
         skills: [],
       }
 
