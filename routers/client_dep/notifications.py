@@ -253,6 +253,7 @@ class NotificationCreatePayload(BaseModel):
 async def test_create_notification(payload: NotificationCreatePayload, db: Session = Depends(get_db)):
     """Utility endpoint to create a notification (for n8n testing) and broadcast via WebSocket if user connected."""
     try:
+        print("Creating test notification...")
         notification = Notification(
             user_id=payload.user_id,
             type=payload.type,
@@ -267,8 +268,11 @@ async def test_create_notification(payload: NotificationCreatePayload, db: Sessi
             is_read=False,
         )
         db.add(notification)
+        print("Test notification created:", notification.id)
         db.commit()
+        print("Test notification committed")
         db.refresh(notification)
+        print("Test notification refreshed:", notification.id)
 
         message = {
             "type": notification.type,
@@ -283,12 +287,16 @@ async def test_create_notification(payload: NotificationCreatePayload, db: Sessi
             "notification_id": notification.id,
             "admin_name": notification.admin_name,
         }
+        print("Sending WebSocket notification to user:", notification.user_id)
 
         await manager.send_personal_message(message, notification.user_id)
+        print("WebSocket notification sent successfully")
         return {"success": True, "notification_id": notification.id}
     except Exception as e:
         db.rollback()
+        print(f"Error creating test notification: {e}")
         return {"success": False, "error": str(e)}
+    
 
 @router.get("/api/notifications/count")
 async def get_notification_count(

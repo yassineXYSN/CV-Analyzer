@@ -3519,6 +3519,19 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault()
       console.log("📝 Soumission du formulaire de création de quiz")
 
+      // Prevent double submit and show loading state
+      if (quizForm.dataset.submitting === "true") {
+        return
+      }
+      quizForm.dataset.submitting = "true"
+      const submitBtn = quizForm.querySelector(".quiz-create-btn, .btn-primary")
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : null
+      if (submitBtn) {
+        submitBtn.disabled = true
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…'
+      }
+      // Note: do NOT disable inputs yet; FormData ignores disabled controls
+
       // Récupérer les données du formulaire
       const formData = new FormData(quizForm)
       const quizData = {
@@ -3586,6 +3599,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
       console.log("📊 Données du quiz:", quizData)
 
+      // Basic validation before sending to API to avoid 422
+      if (!quizData.title || !quizData.timeLimit || Number.isNaN(quizData.timeLimit)) {
+        showNotification("Veuillez renseigner le titre et le temps limite.", "error")
+        if (submitBtn) {
+          submitBtn.disabled = false
+          if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
+        }
+        quizForm.dataset.submitting = "false"
+        return
+      }
+      if (quizData.skills.length === 0) {
+        showNotification("Veuillez configurer au moins une compétence avec des questions.", "error")
+        if (submitBtn) {
+          submitBtn.disabled = false
+          if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
+        }
+        quizForm.dataset.submitting = "false"
+        return
+      }
+
+      // Now disable controls during the network request
+      const formControls = quizForm.querySelectorAll("input, select, textarea, button")
+      formControls.forEach((el) => {
+        if (el !== submitBtn) el.disabled = true
+      })
+
       // Get candidate ID from the stored global variable
       const candidateId = window.currentQuizCandidateId || null
       console.log("👤 ID du candidat pour le quiz:", candidateId)
@@ -3617,6 +3656,16 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (error) {
         console.error("❌ Erreur lors de la création du quiz:", error)
         showNotification("Erreur lors de la création du quiz", "error")
+      } finally {
+        // Restore form state
+        if (submitBtn) {
+          submitBtn.disabled = false
+          if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
+        }
+        formControls.forEach((el) => {
+          if (el !== submitBtn) el.disabled = false
+        })
+        quizForm.dataset.submitting = "false"
       }
     })
   }

@@ -8,6 +8,8 @@ import os
 import requests
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+import threading
+from fastapi import BackgroundTasks
 
 router = APIRouter(prefix="/api/hr/quiz", tags=["Quiz"])
 
@@ -47,13 +49,23 @@ class QuizCreateRequest(BaseModel):
     job_id: Optional[int] = None
     candidate_id: Optional[int] = None
 
+
+def _post_in_background(url: str, json_payload: dict, timeout: int = 3):
+    def _run():
+        try:
+            requests.post(url, json=json_payload, timeout=timeout)
+        except Exception as e:
+            # Avoid raising inside background thread; just log
+            print(f"Background POST to {url} failed: {e}")
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
 @router.post("/create")
-async def create_quiz(quiz_data: QuizCreateRequest, current_user=Depends(get_current_hr_user), db: Session = Depends(get_db)):
+async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRequest, current_user=Depends(get_current_hr_user), db: Session = Depends(get_db)):
     """
     Create a new quiz based on form data and store in database
     """
     try:
-
         quiz = Quiz(
             title=quiz_data.title,
             time_limit=quiz_data.time_limit,
@@ -92,18 +104,16 @@ async def create_quiz(quiz_data: QuizCreateRequest, current_user=Depends(get_cur
             ]
         }
 
-        url = os.getenv("N8N_QUIZ_WEBHOOK_URL")
+        n8nurl = os.getenv("N8N_QUIZ_WEBHOOK_URL")
         print("=============================")
         print(quiz_request)
         print("=============================")
         
-        quiz.n8n_webhook_url = url
+        quiz.n8n_webhook_url = n8nurl
         quiz.n8n_webhook_triggered = True
         
         try:
-            response = requests.post(url, json=quiz_request)
-            print("Status Code:", response.status_code)
-            print("Response:", response.text)
+            response = requests.post(n8nurl, json=quiz_request)
             
             if response.status_code == 200:
                 response_data = response.json()
@@ -122,39 +132,29 @@ async def create_quiz(quiz_data: QuizCreateRequest, current_user=Depends(get_cur
         
         db.commit()
         
-        try:
 
+        db.commit()
+
+        try:
             candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == quiz.candidate_id).first()
             admin = db.query(HRAdmin).filter(HRAdmin.id == current_user["id"]).first()
             job = db.query(Job).filter(Job.id == quiz_data.job_id).first()
             application = (db.query(Application).filter(Application.candidate_profile_id == candidat.id, Application.job_id == job.id).first())
             company = db.query(Company).filter(Company.id == job.company_id).first()
             base_url = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
-            url = f"{base_url.rstrip('/')}/api/notifications/test-create"
-            payload = {
-                "user_id": candidat.user.id if candidat and candidat.user else None,
-                "type": 'Quiz Exam',
-                "title": quiz_data.title,
-                "message": 'Your quiz has been created successfully.',
-                "application_id": application.id if application else None,
-                "job_id": job.id if job else None,
-                "status": 'created',
-                "company_name": company.company_name if company else None,
-                "job_title": job.title if job else None,
-                "admin_name": admin.first_name + ' ' + admin.last_name if admin else None,
-            }
-            resp = requests.post(url, json=payload, timeout=10)
-            print("Status:", resp.status_code)
-            try:
-                print("Response:", resp.json())
-            except Exception:
-                print("Response text:", resp.text)
-        except Exception as webhook_error:
-            quiz.webhook_error = str(webhook_error)
-            print(f"Webhook error: {webhook_error}")
-        
-        db.commit()
-
+            background_tasks.add_task(send_test_notification_via_api,
+                base_url,
+                user_id=candidat.user.id if candidat and candidat.user else None,
+                application_id=application.id if application else None,
+                job_id=job.id if job else None,
+                company_name=company.company_name if company else None,
+                job_title=job.title if job else None,
+                admin_name=f"{admin.first_name} {admin.last_name}" if admin else None,
+            )
+        except Exception as notification_error:
+            quiz.webhook_error = str(notification_error)
+            print(f"Notification error: {notification_error}")
+            
         return {
             "success": True,
             "message": "Quiz created and stored successfully",
@@ -295,3 +295,36 @@ async def get_quiz(quiz_id: int, db: Session = Depends(get_db), current_user=Dep
     except Exception as e:
         print(f"Error getting quiz: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error retrieving quiz: {str(e)}")
+
+def send_test_notification_via_api(
+    base_url: str,
+    user_id: int = 33,
+    type: str = "application_status_change",
+    title: str = "Test from script",
+    message: str = "This is a real-time test",
+    application_id: int | None = 22,
+    job_id: int | None = 34,
+    status: str | None = "pending",
+    company_name: str | None = "Tech Corp",
+    job_title: str | None = "Software Engineer",
+    admin_name: str | None = "John Doe",
+):
+    url = f"{base_url.rstrip('/')}/api/notifications/test-create"
+    payload = {
+        "user_id": user_id,
+        "type": type,
+        "title": title,
+        "message": message,
+        "application_id": application_id,
+        "job_id": job_id,
+        "status": status,
+        "company_name": company_name,
+        "job_title": job_title,
+        "admin_name": admin_name,
+    }
+    resp = requests.post(url, json=payload, timeout=10)
+    print("Status:", resp.status_code)
+    try:
+        print("Response:", resp.json())
+    except Exception:
+        print("Response text:", resp.text)
