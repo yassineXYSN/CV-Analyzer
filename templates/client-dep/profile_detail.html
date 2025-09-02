@@ -713,16 +713,17 @@
             </div>
             {% endif %}
 
-            {% if profile.languages %}
+
+
             <div class="sidebar-section">
-                <h4>Langues</h4>
-                <div class="languages-sidebar">
-                    {% for language in profile.languages %}
-                    <span class="language-pill">{{ language }}</span>
-                    {% endfor %}
+                <h4>Quiz & Évaluations</h4>
+                <div class="quick-contact">
+                    <a href="/quizzes" class="contact-item-sidebar" style="text-decoration: none; color: inherit;">
+                        <span class="contact-icon-sidebar">🧠</span>
+                        <span>Mes Quiz</span>
+                    </a>
                 </div>
             </div>
-            {% endif %}
         </div>
 
         <!-- Main Content -->
@@ -791,53 +792,21 @@
                     </div>
                     {% endif %}
 
-                    <!-- Contact Information -->
-                    {% if contact %}
+                    <!-- Languages Section -->
+                    {% if profile.languages %}
                     <div class="info-card">
                         <div class="card-header">
-                            <span class="card-icon">📞</span>
-                            <h3 class="card-title">Informations de Contact</h3>
+                            <span class="card-icon">🌍</span>
+                            <h3 class="card-title">Langues</h3>
                         </div>
-                        <div class="contact-grid-main">
-                            {% if contact.email %}
-                            <div class="contact-card-main">
-                                <span class="contact-icon-main">📧</span>
-                                <div class="contact-info-main">
-                                    <div class="contact-label-main">Email</div>
-                                    <div class="contact-value-main">{{ contact.email }}</div>
-                                </div>
-                            </div>
-                            {% endif %}
-                            {% if contact.phone %}
-                            <div class="contact-card-main">
-                                <span class="contact-icon-main">📱</span>
-                                <div class="contact-info-main">
-                                    <div class="contact-label-main">Téléphone</div>
-                                    <div class="contact-value-main">{{ contact.phone }}</div>
-                                </div>
-                            </div>
-                            {% endif %}
-                            {% if contact.linkedin %}
-                            <div class="contact-card-main">
-                                <span class="contact-icon-main">💼</span>
-                                <div class="contact-info-main">
-                                    <div class="contact-label-main">LinkedIn</div>
-                                    <div class="contact-value-main">{{ contact.linkedin }}</div>
-                                </div>
-                            </div>
-                            {% endif %}
-                            {% if contact.address %}
-                            <div class="contact-card-main">
-                                <span class="contact-icon-main">📍</span>
-                                <div class="contact-info-main">
-                                    <div class="contact-label-main">Adresse</div>
-                                    <div class="contact-value-main">{{ contact.address }}</div>
-                                </div>
-                            </div>
-                            {% endif %}
+                        <div class="skills-compact">
+                            {% for language in profile.languages %}
+                            <span class="skill-tag">{{ language }}</span>
+                            {% endfor %}
                         </div>
                     </div>
                     {% endif %}
+
                 </div>
 
                 <!-- Side Column -->

@@ -1,3 +1,4 @@
+import os
 import requests
 from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCandidat
 from fastapi import APIRouter, HTTPException, Depends
@@ -5,9 +6,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from databasehr.session_manager import current_user_session
 from databasehr.database import SessionLocal
-from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCandidat
-import os
-import requests
+from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCandidat, Notification
 from datetime import datetime
 from sqlalchemy.orm import Session
 
@@ -52,7 +51,7 @@ def get_db():
     finally:
         db.close()
 db = SessionLocal()   # create a real SQLAlchemy session
-try:
+'''try:
     candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == 31).first()
     if candidat:
         if candidat.user:  # Check if user exists
@@ -64,7 +63,42 @@ try:
 except Exception as e:
     print(f"Error: {e}")
 finally:
-    db.close()
+    db.close()'''
+
+def send_test_notification_via_api(
+    base_url: str,
+    user_id: int = 33,
+    type: str = "application_status_change",
+    title: str = "Test from script",
+    message: str = "This is a real-time test",
+    application_id: int | None = 21,
+    job_id: int | None = 32,
+    status: str | None = "pending",
+    company_name: str | None = "Tech Corp",
+    job_title: str | None = "Software Engineer",
+    admin_name: str | None = "John Doe",
+):
+    url = f"{base_url.rstrip('/')}/api/notifications/test-create"
+    payload = {
+        "user_id": user_id,
+        "type": type,
+        "title": title,
+        "message": message,
+        "application_id": application_id,
+        "job_id": job_id,
+        "status": status,
+        "company_name": company_name,
+        "job_title": job_title,
+        "admin_name": admin_name,
+    }
+    resp = requests.post(url, json=payload, timeout=10)
+    print("Status:", resp.status_code)
+    try:
+        print("Response:", resp.json())
+    except Exception:
+        print("Response text:", resp.text)
 
 
-
+if __name__ == "__main__":
+    base_url = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
+    send_test_notification_via_api(base_url)

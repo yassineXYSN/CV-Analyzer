@@ -303,7 +303,7 @@ class QuizSkill(Base):
     quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
     skill_name = Column(String(100), nullable=False)
     questions_count = Column(Integer, nullable=False)
-    difficulty = Column(Enum('beginner', 'intermediate', 'advanced', 'expert'), nullable=False)
+    difficulty = Column(Enum('easy', 'medium', 'hard', 'expert'), nullable=False)
     
     # Timestamps
     created_at = Column(DateTime, default=func.now())
@@ -316,20 +316,16 @@ class QuizQuestion(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
-    skill_name = Column(String(100), nullable=False)
+    skill = Column(String(100), nullable=False)
     question_text = Column(Text, nullable=False)
-    question_type = Column(Enum('multiple_choice', 'true_false', 'short_answer', 'code'), default='multiple_choice')
-    difficulty = Column(Enum('easy', 'medium', 'hard', 'expert'), nullable=False)
     
     # Question options and answers
     options = Column(JSON)  # For multiple choice questions
     correct_answer = Column(Text, nullable=False)
     explanation = Column(Text)
-    points = Column(Integer, default=1)
     
     # Order and metadata
     question_order = Column(Integer, default=0)
-    estimated_time_seconds = Column(Integer, default=60)
     
     # Timestamps
     created_at = Column(DateTime, default=func.now())
@@ -344,25 +340,16 @@ class QuizAttempt(Base):
     quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
     candidate_id = Column(Integer, ForeignKey("profile_candidat.id"), nullable=False)
     
-    # Attempt details
-    started_at = Column(DateTime, default=func.now())
-    completed_at = Column(DateTime)
-    time_taken_seconds = Column(Integer)
+    # Attempt details - matching actual database schema
+    start_time = Column(DateTime, default=func.now())
+    end_time = Column(DateTime)
+    score = Column(DECIMAL(5,2), default=0.00)
+    total_correct = Column(Integer, default=0)
+    total_questions = Column(Integer, default=0)
     status = Column(Enum('in_progress', 'completed', 'abandoned', 'expired'), default='in_progress')
-    
-    # Scoring
-    total_score = Column(DECIMAL(5,2), default=0.00)
-    max_possible_score = Column(DECIMAL(5,2), default=0.00)
-    percentage_score = Column(DECIMAL(5,2), default=0.00)
-    
-    # Metadata
-    ip_address = Column(String(45))
-    user_agent = Column(Text)
-    browser_info = Column(JSON)
     
     # Timestamps
     created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     # Relationships
     quiz = relationship("Quiz")
@@ -375,19 +362,18 @@ class QuizAnswer(Base):
     attempt_id = Column(Integer, ForeignKey("quiz_attempts.id"), nullable=False)
     question_id = Column(Integer, ForeignKey("quiz_questions.id"), nullable=False)
     
-    # Answer details
-    answer_text = Column(Text)
-    selected_options = Column(JSON)  # For multiple choice
+    # Answer details - matching actual database schema
+    selected_answer_number = Column(Integer, nullable=False)
     is_correct = Column(Boolean, default=False)
-    points_earned = Column(DECIMAL(5,2), default=0.00)
+    time_taken = Column(Integer)
     
-    # Timing
-    time_taken_seconds = Column(Integer)
-    answered_at = Column(DateTime, default=func.now())
+    # Timestamps
+    created_at = Column(DateTime, default=func.now())
     
     # Relationships
     attempt = relationship("QuizAttempt", backref="answers")
     question = relationship("QuizQuestion")
+
 
 
 

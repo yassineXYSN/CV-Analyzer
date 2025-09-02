@@ -9,6 +9,7 @@ from typing import Dict, List
 import json
 import os
 from datetime import datetime
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -41,7 +42,9 @@ class ConnectionManager:
                 print(f"Error sending message to user {user_id}: {e}")
                 self.disconnect(user_id)
                 return False
-        return False
+        else:
+            print(f"No active WebSocket connection for user {user_id}")
+            return False
 
     async def broadcast_to_users(self, message: dict, user_ids: List[int]):
         for user_id in user_ids:
@@ -232,6 +235,61 @@ async def send_application_status_notification(
         db.rollback()
         return False
 
+# ----- n8n/test: create and broadcast a notification -----
+class NotificationCreatePayload(BaseModel):
+    user_id: int
+    type: str = "application_status_change"
+    title: str
+    message: str
+    application_id: int | None = None
+    job_id: int | None = None
+    status: str | None = None
+    company_name: str | None = None
+    job_title: str | None = None
+    admin_name: str | None = None
+
+
+@router.post("/api/notifications/test-create")
+async def test_create_notification(payload: NotificationCreatePayload, db: Session = Depends(get_db)):
+    """Utility endpoint to create a notification (for n8n testing) and broadcast via WebSocket if user connected."""
+    try:
+        notification = Notification(
+            user_id=payload.user_id,
+            type=payload.type,
+            title=payload.title,
+            message=payload.message,
+            application_id=payload.application_id,
+            job_id=payload.job_id,
+            status=payload.status,
+            company_name=payload.company_name,
+            job_title=payload.job_title,
+            admin_name=payload.admin_name,
+            is_read=False,
+        )
+        db.add(notification)
+        db.commit()
+        db.refresh(notification)
+
+        message = {
+            "type": notification.type,
+            "title": notification.title,
+            "message": notification.message,
+            "status": notification.status,
+            "job_title": notification.job_title,
+            "company_name": notification.company_name,
+            "timestamp": notification.created_at.isoformat(),
+            "job_id": notification.job_id,
+            "application_id": notification.application_id,
+            "notification_id": notification.id,
+            "admin_name": notification.admin_name,
+        }
+
+        await manager.send_personal_message(message, notification.user_id)
+        return {"success": True, "notification_id": notification.id}
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
 @router.get("/api/notifications/count")
 async def get_notification_count(
     request: Request,
@@ -289,3 +347,22 @@ async def get_recent_notifications(
         "success": True,
         "notifications": notification_list
     }
+
+# Quick ping endpoint to test WS without DB writes
+@router.post("/api/notifications/ping/{user_id}")
+async def ping_user_notification(user_id: int):
+    message = {
+        'type': 'test_ping',
+        'title': 'Ping',
+        'message': 'WebSocket ping notification',
+        'status': 'pending',
+        'job_title': 'N/A',
+        'company_name': 'N/A',
+        'timestamp': datetime.now().isoformat(),
+        'job_id': None,
+        'application_id': None,
+        'notification_id': None,
+        'admin_name': None,
+    }
+    success = await manager.send_personal_message(message, user_id)
+    return {"success": success}

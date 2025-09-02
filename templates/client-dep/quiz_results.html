@@ -81,7 +81,7 @@
         <div class="results-container">
             <div class="results-header">
                 <div class="score-circle">
-                    {{ "%.0f"|format(attempt.percentage_score) }}%
+                    {{ "%.0f"|format((attempt.total_correct / attempt.total_questions * 100) if attempt.total_questions > 0 else 0) }}%
                 </div>
                 <h1 style="font-size: 2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
                     Quiz Terminé !
@@ -91,16 +91,16 @@
             
             <div class="results-stats">
                 <div class="stat-card">
-                    <div class="stat-value">{{ attempt.total_score }}/{{ attempt.max_possible_score }}</div>
-                    <div class="stat-label">Score Total</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{{ "%.1f"|format(attempt.percentage_score) }}%</div>
-                    <div class="stat-label">Pourcentage</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{{ (attempt.time_taken_seconds // 60) }}:{{ '{:02d}'.format(attempt.time_taken_seconds % 60) }}</div>
-                    <div class="stat-label">Temps Utilisé</div>
+                                    <div class="stat-value">{{ attempt.total_correct }}/{{ attempt.total_questions }}</div>
+                <div class="stat-label">Score Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ "%.1f"|format((attempt.total_correct / attempt.total_questions * 100) if attempt.total_questions > 0 else 0) }}%</div>
+                <div class="stat-label">Pourcentage</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ (attempt.time_taken // 60) if attempt.time_taken else 0 }}:{{ '{:02d}'.format((attempt.time_taken % 60) if attempt.time_taken else 0) }}</div>
+                <div class="stat-label">Temps Utilisé</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">{{ answers|length }}</div>

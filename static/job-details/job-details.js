@@ -3318,6 +3318,30 @@ setTimeout(() => {
   initializeQuizValidationState() // ← Ajouter cette ligne
 }, 100)
 
+// Guarded click handler to prevent spamming the open button
+function handleOpenCreateQuizClick(buttonEl) {
+  if (!buttonEl) return
+  if (buttonEl.dataset.loading === "true") return
+  // set loading state
+  buttonEl.dataset.loading = "true"
+  buttonEl.disabled = true
+  const originalHtml = buttonEl.innerHTML
+  buttonEl.dataset.originalHtml = originalHtml
+  buttonEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Ouverture...</span>'
+  // open modal (no candidate preselected here)
+  openCreateQuizModal()
+  // restore the button state after modal is shown
+  setTimeout(() => {
+    try {
+      buttonEl.disabled = false
+      buttonEl.dataset.loading = "false"
+      if (buttonEl.dataset.originalHtml) {
+        buttonEl.innerHTML = buttonEl.dataset.originalHtml
+      }
+    } catch (e) {}
+  }, 600)
+}
+
 // Ouvrir le modal de création de quiz
 async function openCreateQuizModal(candidateId = null, candidateName = null) {
   console.log("🎯 Ouverture du modal de création de quiz professionnel")

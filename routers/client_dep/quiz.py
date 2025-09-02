@@ -8,14 +8,86 @@ import json
 import logging
 from typing import Optional
 
-from databasehr.database import get_db
 from databaseclient.models import Quiz, QuizQuestion, QuizAttempt, QuizAnswer, User, ProfileCandidat
-from routers.client_dep.dependencies import get_db, get_current_user,require_auth
+from routers.client_dep.dependencies import get_db, get_current_user, require_auth
 
 # Setup
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 logger = logging.getLogger(__name__)
+
+
+
+@router.get("/quizzes", response_class=HTMLResponse)
+async def quizzes_list(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
+):
+    """
+    Display list of available quizzes for the current user
+    """
+    try:
+        # Get all quizzes assigned to the current user
+        if not current_user.profile:
+            # User doesn't have a profile yet
+            return templates.TemplateResponse("client-dep/quizzes_list.html", {
+                "request": request,
+                "current_user": current_user,
+                "quizzes": [],
+                "no_profile": True
+            })
+            
+        quizzes = db.query(Quiz).filter(
+            and_(
+                Quiz.candidate_id == current_user.profile.id,
+                Quiz.status == 'active'
+            )
+        ).all()
+        
+        # Get quiz attempts for each quiz
+        quiz_data = []
+        for quiz in quizzes:
+            # Check if quiz is already completed
+            existing_attempt = db.query(QuizAttempt).filter(
+                and_(
+                    QuizAttempt.quiz_id == quiz.id,
+                    QuizAttempt.candidate_id == current_user.profile.id,
+                    QuizAttempt.status.in_(['completed', 'expired'])
+                )
+            ).first()
+            
+            # Check if there's an active attempt
+            active_attempt = db.query(QuizAttempt).filter(
+                and_(
+                    QuizAttempt.quiz_id == quiz.id,
+                    QuizAttempt.candidate_id == current_user.profile.id,
+                    QuizAttempt.status == 'in_progress'
+                )
+            ).first()
+            
+            quiz_info = {
+                'id': quiz.id,
+                'title': quiz.title,
+                'description': quiz.description,
+                'time_limit': quiz.time_limit,
+                'status': 'completed' if existing_attempt else 'active' if active_attempt else 'available',
+                'attempt_id': existing_attempt.id if existing_attempt else None,
+                'score': existing_attempt.score if existing_attempt else None,
+                'max_score': existing_attempt.total_questions if existing_attempt else None,
+                'completed_at': existing_attempt.end_time if existing_attempt else None
+            }
+            quiz_data.append(quiz_info)
+        
+        return templates.TemplateResponse("client-dep/quizzes_list.html", {
+            "request": request,
+            "current_user": current_user,
+            "quizzes": quiz_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error loading quizzes list: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/quiz/{quiz_id}", response_class=HTMLResponse)
 async def quiz_page(
@@ -32,7 +104,7 @@ async def quiz_page(
         quiz = db.query(Quiz).filter(
             and_(
                 Quiz.id == quiz_id,
-                Quiz.candidate_id == current_user.profile_id,
+                Quiz.candidate_id == current_user.profile.id,
                 Quiz.status == 'active'
             )
         ).first()
@@ -47,13 +119,13 @@ async def quiz_page(
         existing_attempt = db.query(QuizAttempt).filter(
             and_(
                 QuizAttempt.quiz_id == quiz_id,
-                QuizAttempt.candidate_id == current_user.profile_id,
+                QuizAttempt.candidate_id == current_user.profile.id,
                 QuizAttempt.status.in_(['completed', 'expired'])
             )
         ).first()
         
         if existing_attempt:
-            return templates.TemplateResponse("quiz_completed.html", {
+            return templates.TemplateResponse("client-dep/quiz_completed.html", {
                 "request": request,
                 "current_user": current_user,
                 "quiz": quiz,
@@ -65,7 +137,7 @@ async def quiz_page(
         active_attempt = db.query(QuizAttempt).filter(
             and_(
                 QuizAttempt.quiz_id == quiz_id,
-                QuizAttempt.candidate_id == current_user.profile_id,
+                QuizAttempt.candidate_id == current_user.profile.id,
                 QuizAttempt.status == 'in_progress'
             )
         ).first()
@@ -73,13 +145,15 @@ async def quiz_page(
         # Check if time has expired for existing attempt
         if active_attempt:
             time_limit = timedelta(minutes=quiz.time_limit	)
-            if datetime.now() > active_attempt.started_at + time_limit:
+            # Use start_time column from database
+            start_time = active_attempt.start_time
+            if datetime.now() > start_time + time_limit:
                 # Mark as expired
                 active_attempt.status = 'expired'
-                active_attempt.completed_at = datetime.now()
+                active_attempt.end_time = datetime.now()
                 db.commit()
-                
-                return templates.TemplateResponse("quiz_completed.html", {
+
+                return templates.TemplateResponse("client-dep/quiz_completed.html", {
                     "request": request,
                     "current_user": current_user,
                     "quiz": quiz,
@@ -98,13 +172,15 @@ async def quiz_page(
         # Calculate remaining time
         remaining_time = None
         if active_attempt:
-            elapsed = datetime.now() - active_attempt.started_at
+            # Use start_time column from database
+            start_time = active_attempt.start_time
+            elapsed = datetime.now() - start_time
             total_time = timedelta(minutes=quiz.time_limit	)
             remaining_time = max(0, int((total_time - elapsed).total_seconds()))
         else:
             remaining_time = quiz.time_limit * 60
         
-        return templates.TemplateResponse("quiz_take.html", {
+        return templates.TemplateResponse("client-dep/quiz_take.html", {
             "request": request,
             "current_user": current_user,
             "quiz": quiz,
@@ -133,7 +209,7 @@ async def start_quiz(
         quiz = db.query(Quiz).filter(
             and_(
                 Quiz.id == quiz_id,
-                Quiz.candidate_id == current_user.profile_id,
+                Quiz.candidate_id == current_user.profile.id,
                 Quiz.status == 'active'
             )
         ).first()
@@ -145,7 +221,7 @@ async def start_quiz(
         existing_attempt = db.query(QuizAttempt).filter(
             and_(
                 QuizAttempt.quiz_id == quiz_id,
-                QuizAttempt.candidate_id == current_user.profile_id
+                QuizAttempt.candidate_id == current_user.profile.id
             )
         ).first()
         
@@ -159,12 +235,9 @@ async def start_quiz(
         # Create new attempt
         new_attempt = QuizAttempt(
             quiz_id=quiz_id,
-            candidate_id=current_user.profile_id,
-            started_at=datetime.now(),
-            status='in_progress',
-            ip_address=request.client.host,
-            user_agent=request.headers.get('user-agent', ''),
-            max_possible_score=sum(q.points for q in quiz.questions)
+            candidate_id=current_user.profile.id,
+            # start_time will be set automatically by the model default
+            status='in_progress'
         )
         
         db.add(new_attempt)
@@ -194,7 +267,7 @@ async def submit_quiz(
         attempt = db.query(QuizAttempt).filter(
             and_(
                 QuizAttempt.quiz_id == quiz_id,
-                QuizAttempt.candidate_id == current_user.profile_id,
+                QuizAttempt.candidate_id == current_user.profile.id,
                 QuizAttempt.status == 'in_progress'
             )
         ).first()
@@ -214,8 +287,8 @@ async def submit_quiz(
         ).all()
         
         questions_dict = {q.id: q for q in questions}
-        total_score = 0
-        max_score = sum(q.points for q in questions)
+        total_correct = 0
+        total_questions = len(questions)
         
         # Process each answer
         for question_id_str, answer_data in answers_data.items():
@@ -227,47 +300,29 @@ async def submit_quiz(
             
             # Determine if answer is correct
             is_correct = False
-            points_earned = 0
+            selected_answer_number = answer_data.get('selected_option', 0)
             
-            if question.question_type == 'multiple_choice':
-                selected_option = answer_data.get('selected_option')
-                if selected_option == question.correct_answer:
-                    is_correct = True
-                    points_earned = question.points
-            elif question.question_type == 'true_false':
-                selected_answer = answer_data.get('answer', '').lower()
-                if selected_answer == question.correct_answer.lower():
-                    is_correct = True
-                    points_earned = question.points
-            elif question.question_type == 'short_answer':
-                user_answer = answer_data.get('answer', '').strip().lower()
-                correct_answer = question.correct_answer.strip().lower()
-                if user_answer == correct_answer:
-                    is_correct = True
-                    points_earned = question.points
-            
-            total_score += points_earned
+            # Check if answer is correct based on correct_answer column
+            if str(selected_answer_number) == str(question.correct_answer):
+                is_correct = True
+                total_correct += 1
             
             # Save answer
             quiz_answer = QuizAnswer(
                 attempt_id=attempt.id,
                 question_id=question_id,
-                answer_text=answer_data.get('answer', ''),
-                selected_options=answer_data.get('selected_option'),
+                selected_answer_number=selected_answer_number,
                 is_correct=is_correct,
-                points_earned=points_earned,
-                time_taken_seconds=answer_data.get('time_taken', 0),
-                answered_at=datetime.now()
+                time_taken=answer_data.get('time_taken', 0)
             )
             db.add(quiz_answer)
         
         # Update attempt
-        attempt.completed_at = datetime.now()
+        attempt.end_time = datetime.now()
         attempt.status = 'completed'
-        attempt.total_score = total_score
-        attempt.max_possible_score = max_score
-        attempt.percentage_score = (total_score / max_score * 100) if max_score > 0 else 0
-        attempt.time_taken_seconds = int((attempt.completed_at - attempt.started_at).total_seconds())
+        attempt.score = total_correct
+        attempt.total_correct = total_correct
+        attempt.total_questions = total_questions
         
         db.commit()
         
@@ -296,7 +351,7 @@ async def quiz_results(
         attempt = db.query(QuizAttempt).filter(
             and_(
                 QuizAttempt.quiz_id == quiz_id,
-                QuizAttempt.candidate_id == current_user.profile_id,
+                QuizAttempt.candidate_id == current_user.profile.id,
                 QuizAttempt.status.in_(['completed', 'expired'])
             )
         ).first()
@@ -312,7 +367,7 @@ async def quiz_results(
             QuizAnswer.attempt_id == attempt.id
         ).all()
         
-        return templates.TemplateResponse("quiz_results.html", {
+        return templates.TemplateResponse("client-dep/quiz_results.html", {
             "request": request,
             "current_user": current_user,
             "quiz": quiz,
@@ -337,7 +392,7 @@ async def check_time_remaining(
         attempt = db.query(QuizAttempt).filter(
             and_(
                 QuizAttempt.quiz_id == quiz_id,
-                QuizAttempt.candidate_id == current_user.profile_id,
+                QuizAttempt.candidate_id == current_user.profile.id,
                 QuizAttempt.status == 'in_progress'
             )
         ).first()
@@ -349,14 +404,16 @@ async def check_time_remaining(
         if not quiz:
             return {"success": False, "message": "Quiz not found"}
         
-        elapsed = datetime.now() - attempt.started_at
+        # Use start_time column from database
+        start_time = attempt.start_time
+        elapsed = datetime.now() - start_time
         total_time = timedelta(minutes=quiz.time_limit	)
         remaining = total_time - elapsed
         
         if remaining.total_seconds() <= 0:
             # Time expired, mark attempt as expired
             attempt.status = 'expired'
-            attempt.completed_at = datetime.now()
+            attempt.end_time = datetime.now()
             db.commit()
             return {"success": True, "time_remaining": 0, "expired": True}
         

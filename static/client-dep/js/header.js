@@ -279,26 +279,38 @@ class HeaderComponent {
           clearInterval(this.reconnectInterval)
           this.reconnectInterval = null
         }
+        // Start client heartbeat to keep connection alive
+        if (this._heartbeatTimer) {
+          clearInterval(this._heartbeatTimer)
+        }
+        this._heartbeatTimer = setInterval(() => {
+          try {
+            if (this.notificationWs && this.notificationWs.readyState === WebSocket.OPEN) {
+              this.notificationWs.send(JSON.stringify({ type: "heartbeat", at: new Date().toISOString() }))
+            }
+          } catch (e) {
+            // no-op
+          }
+        }, 25000)
       }
 
       this.notificationWs.onmessage = (event) => {
         const data = JSON.parse(event.data)
         console.log("Received notification via WebSocket (header):", data)
-        if (data.type === "application_status_change") {
-          // Increment notification count
-          this.updateNotificationCount(this.notificationCount + 1)
+        // Ignore pure heartbeat echoes
+        if (data && data.type === "heartbeat") return
 
-          // Show a brief visual indicator (optional)
-          this.showNotificationIndicator()
+        // Increment notification count for any incoming notification payload
+        this.updateNotificationCount(this.notificationCount + 1)
+        this.showNotificationIndicator()
 
-          // Dispatch custom event for other parts of the app (e.g., notifications page)
-          document.dispatchEvent(new CustomEvent("newNotificationReceived", { detail: data }))
+        // Dispatch custom event for other parts of the app (e.g., notifications page)
+        document.dispatchEvent(new CustomEvent("newNotificationReceived", { detail: data }))
 
-          // Update dropdown in real-time if it's open
-          const dropdown = document.getElementById("notificationDropdown")
-          if (dropdown && dropdown.classList.contains("show")) {
-            this.addNotificationToDropdown(data)
-          }
+        // Update dropdown in real-time if it's open
+        const dropdown = document.getElementById("notificationDropdown")
+        if (dropdown && dropdown.classList.contains("show")) {
+          this.addNotificationToDropdown(data)
         }
       }
 
@@ -310,6 +322,10 @@ class HeaderComponent {
       this.notificationWs.onclose = (event) => {
         console.log("Notification WebSocket disconnected (header):", event.code, event.reason)
         this.dispatchWebSocketStatus(false)
+        if (this._heartbeatTimer) {
+          clearInterval(this._heartbeatTimer)
+          this._heartbeatTimer = null
+        }
         // Attempt to reconnect after 5 seconds if user is still logged in
         if (this.currentUser && !this.reconnectInterval) {
           console.log("Attempting to reconnect WebSocket in 5 seconds...")
@@ -529,7 +545,8 @@ class HeaderComponent {
   }
 
   createNotificationMiniHtml(notification) {
-    const timeAgo = this.getTimeAgo(new Date(notification.created_at))
+    const createdAtStr = notification.created_at || notification.timestamp
+    const timeAgo = this.getTimeAgo(new Date(createdAtStr))
     const statusClass = `status-${notification.status}`
     const unreadClass = notification.is_read ? "" : "unread"
 
