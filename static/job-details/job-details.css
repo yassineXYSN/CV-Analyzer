@@ -4551,6 +4551,12 @@ body {
     padding: 0.7rem 1rem !important;
   }
 }
+
+/* Force green number styling (override any earlier blue rules) */
+.interview-validation-number {
+  color: #10b981 !important;
+  text-shadow: 0 0 20px rgba(16, 185, 129, 0.5) !important;
+}
 /* État de validation */
 .skills-validation-status {
   display: none;
@@ -4592,17 +4598,17 @@ body {
 }
 
 .interview-validation-number {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: bold;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: #3b82f6;
+  display: block;
+  font-size: 4rem;
+  font-weight: 900;
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
   margin-bottom: 1rem;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .interview-validation-message {
