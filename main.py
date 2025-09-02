@@ -1,7 +1,7 @@
 import json
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -58,6 +58,17 @@ app.include_router(candidate.router)
 app.include_router(dashboard.router)
 app.include_router(admin_router.router)
 app.include_router(quiz.router)
+
+# Favicon handler: serve static favicon if present, otherwise return a tiny placeholder
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    path = os.path.join(static_dir, "favicon.ico")
+    if os.path.exists(path):
+        return FileResponse(path)
+    # 1x1 transparent PNG (base64) to avoid 404s if no favicon provided
+    import base64
+    png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO3nSxkAAAAASUVORK5CYII="
+    return Response(content=base64.b64decode(png_b64), media_type="image/png")
 
 '''# 404 Error Handler
 @app.exception_handler(StarletteHTTPException)

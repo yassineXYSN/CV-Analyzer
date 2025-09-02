@@ -1814,8 +1814,8 @@ body {
   flex: 1;
   padding: 0.875rem 1.5rem;
   border: 2px solid rgba(156, 163, 175, 0.3);
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--text-dark-secondary);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   border-radius: 10px;
   font-weight: 600;
   font-size: 0.95rem;
@@ -1828,8 +1828,9 @@ body {
 }
 
 .btn-cancel:hover {
-  background: rgba(156, 163, 175, 0.1);
-  border-color: rgba(156, 163, 175, 0.5);
+  background: var(--bg-card);
+  border-color: var(--border-color-hover);
+  color: var(--text-primary);
   transform: translateY(-1px);
 }
 
@@ -2526,6 +2527,26 @@ body {
 .form-group input[type="number"]::-webkit-inner-spin-button:hover {
   background: var(--primary-blue-dark);
   opacity: 1;
+}
+
+/* Align number inputs to match dashboard salary-range style */
+.salary-range {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.salary-range input {
+  flex: 1;
+  background: rgba(248, 250, 252, 0.95);
+  color: #1e293b;
+}
+
+.salary-range span {
+  color: #cbd5e1;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .skill-quiz-config {
@@ -4530,6 +4551,12 @@ body {
     padding: 0.7rem 1rem !important;
   }
 }
+
+/* Force green number styling (override any earlier blue rules) */
+.interview-validation-number {
+  color: #10b981 !important;
+  text-shadow: 0 0 20px rgba(16, 185, 129, 0.5) !important;
+}
 /* État de validation */
 .skills-validation-status {
   display: none;
@@ -4571,17 +4598,17 @@ body {
 }
 
 .interview-validation-number {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: bold;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: #3b82f6;
+  display: block;
+  font-size: 4rem;
+  font-weight: 900;
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
   margin-bottom: 1rem;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .interview-validation-message {

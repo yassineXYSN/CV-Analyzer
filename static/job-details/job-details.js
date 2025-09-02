@@ -793,7 +793,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
       const compatibilityPercentage = app.compatibility_percentage || 92
       const quizScore = app.quiz_score || 0
 
-      // DEBUG DÉTAILLÉ des compteurs de skills
       console.log(`🔍 DEBUG RENDU - ${candidateName}:`, {
         id: app.id,
         compatibility_percentage: app.compatibility_percentage,
@@ -1102,6 +1101,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
   }
 }
 
+// Fonction pour valider le quiz et enlever l'overlay de la section entretien
 async function validateQuizAndRemoveOverlay(applicationId) {
   console.log(`✅ Validation du quiz pour l'application ${applicationId}`)
   
@@ -1114,11 +1114,32 @@ async function validateQuizAndRemoveOverlay(applicationId) {
     
     const candidateName = app.name || app.candidate_name || "Candidat";
     
+    // Vérifier si le quiz a déjà été fait (score existant)
+    if (!app.quiz_score && app.quiz_score !== 0) {
+      showNotification("Le quiz doit d'abord être complété avant de pouvoir être validé", "warning");
+      return;
+    }
+    
     showLoading("Validation du quiz en cours...");
     
-    setTimeout(() => {
+    // Appel API pour valider le quiz
+    const response = await fetch(`/api/applications/${applicationId}/validate-quiz`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        validated: true,
+        notes: "Quiz validé par l'équipe RH"
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
       // Mettre à jour l'état local
-      app.quiz_score = app.quiz_score || 0; // Score par défaut si aucun
+      app.quiz_validated = true;
+      app.quiz_validated_at = new Date().toISOString();
       
       // Supprimer l'overlay et débloquer la section
       const interviewSection = document.getElementById(`interview-section-${applicationId}`);
@@ -1133,14 +1154,21 @@ async function validateQuizAndRemoveOverlay(applicationId) {
       hideLoading();
       showNotification(`✅ Quiz validé pour ${candidateName}`, "success");
       
-      // Recharger les détails pour afficher le score
-      loadJobData(); // ← ICI: Changement de loadJobDetails() à loadJobData()
-    }, 1000);
-    
+      // Mettre à jour l'interface pour refléter la validation
+      const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${applicationId}`);
+      if (validateQuizBtn) {
+        validateQuizBtn.disabled = true;
+        validateQuizBtn.innerHTML = '<i class="fas fa-check"></i> Quiz Validé';
+      }
+      
+    } else {
+      hideLoading();
+      showNotification(result.message || "Erreur lors de la validation", "error");
+    }
   } catch (error) {
     hideLoading();
     console.error("❌ Erreur validation quiz:", error);
-    showNotification("Erreur lors de la validation du quiz", "error");
+    showNotification("Erreur de connexion lors de la validation", "error");
   }
 }
 
@@ -3485,7 +3513,9 @@ async function generateSkillsQuizConfig() {
           <div class="skill-quiz-controls">
             <div class="form-group">
               <label for="questions_${skillId}">Nombre de questions</label>
-              <input type="number" id="questions_${skillId}" name="questions_${skillId}" min="0" max="20" value="5" required>
+              <div class="salary-range">
+                <input type="number" id="questions_${skillId}" name="questions_${skillId}" min="0" max="20" value="5" required>
+              </div>
             </div>
             <div class="form-group">
               <label for="difficulty_${skillId}">Niveau de difficulté</label>
@@ -3536,7 +3566,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const formData = new FormData(quizForm)
       const quizData = {
         title: formData.get("quizTitle"),
-        timeLimit: Number.parseInt(formData.get("quizTime")),
+        timeLimit: Number.parseInt(formData.get("quizTime")) || 45,
         skills: [],
       }
 
