@@ -448,9 +448,9 @@ class QuizAnswer(Base):
     question_id = Column(Integer, ForeignKey("quiz_questions.id"), nullable=False)
     
     # Answer details - matching actual database schema
-    selected_answer_number = Column(Integer, nullable=False)
+    selected_options = Column(Integer, nullable=False)
     is_correct = Column(Boolean, default=False)
-    time_taken = Column(Integer)
+    time_taken_seconds = Column(Integer)
     
     # Timestamps
     created_at = Column(DateTime, default=func.now())

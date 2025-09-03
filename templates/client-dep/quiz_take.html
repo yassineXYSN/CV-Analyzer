@@ -278,7 +278,6 @@
                 <div class="question-card" data-question="{{ loop.index }}" data-question-id="{{ question.id }}">
                     <div class="question-header">
                         <div class="question-number">Question {{ loop.index }}</div>
-                        <div class="question-difficulty">{{ question.difficulty.title() }}</div>
                     </div>
                     
                     <div class="question-text">{{ question.question_text }}</div>
@@ -414,7 +413,7 @@
             answers[questionId] = {
                 selected_option: value,
                 answer: value,
-                time_taken: Math.floor((Date.now() - questionStartTime) / 1000)
+                time_taken_seconds: Math.floor((Date.now() - questionStartTime) / 1000)
             };
         }
         
@@ -426,7 +425,7 @@
                 const questionId = textInput.dataset.questionId;
                 answers[questionId] = {
                     answer: textInput.value,
-                    time_taken: Math.floor((Date.now() - questionStartTime) / 1000)
+                    time_taken_seconds: Math.floor((Date.now() - questionStartTime) / 1000)
                 };
             }
             
@@ -488,7 +487,7 @@
                 const questionId = textInput.dataset.questionId;
                 answers[questionId] = {
                     answer: textInput.value,
-                    time_taken: Math.floor((Date.now() - questionStartTime) / 1000)
+                    time_taken_seconds: Math.floor((Date.now() - questionStartTime) / 1000)
                 };
             }
             
@@ -511,7 +510,7 @@
                 const questionId = this.dataset.questionId;
                 answers[questionId] = {
                     answer: this.value,
-                    time_taken: Math.floor((Date.now() - questionStartTime) / 1000)
+                    time_taken_seconds: Math.floor((Date.now() - questionStartTime) / 1000)
                 };
             });
         });

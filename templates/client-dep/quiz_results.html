@@ -99,7 +99,7 @@
                 <div class="stat-label">Pourcentage</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{{ (attempt.time_taken // 60) if attempt.time_taken else 0 }}:{{ '{:02d}'.format((attempt.time_taken % 60) if attempt.time_taken else 0) }}</div>
+                <div class="stat-value">{{ (attempt.time_taken_seconds // 60) if attempt.time_taken_seconds else 0 }}:{{ '{:02d}'.format((attempt.time_taken_seconds % 60) if attempt.time_taken_seconds else 0) }}</div>
                 <div class="stat-label">Temps Utilisé</div>
                 </div>
                 <div class="stat-card">

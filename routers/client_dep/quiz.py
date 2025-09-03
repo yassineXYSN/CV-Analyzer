@@ -300,10 +300,10 @@ async def submit_quiz(
             
             # Determine if answer is correct
             is_correct = False
-            selected_answer_number = answer_data.get('selected_option', 0)
+            selected_options = answer_data.get('selected_option', 0)
             
             # Check if answer is correct based on correct_answer column
-            if str(selected_answer_number) == str(question.correct_answer):
+            if str(selected_options) == str(question.correct_answer):
                 is_correct = True
                 total_correct += 1
             
@@ -311,9 +311,9 @@ async def submit_quiz(
             quiz_answer = QuizAnswer(
                 attempt_id=attempt.id,
                 question_id=question_id,
-                selected_answer_number=selected_answer_number,
+                selected_options=selected_options,
                 is_correct=is_correct,
-                time_taken=answer_data.get('time_taken', 0)
+                time_taken_seconds=answer_data.get('time_taken_seconds', 0)
             )
             db.add(quiz_answer)
         
