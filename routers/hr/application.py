@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, Query, Depends, requests
 from databasehr.database import SessionLocal
-from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments
+from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments, Quiz, QuizAttempt
 from databasehr.models import Application, Job, ProfileCandidat, Contact, Department, JobSkill, Company
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
@@ -239,6 +239,55 @@ async def get_applications(
 
             days_since_application = (datetime.now() - app.application_date).days if app.application_date else 0
 
+            # Récupérer les données de quiz pour ce candidat et ce job
+            quiz_data = None
+            quiz_attempt = None
+            quiz = None
+            
+            # D'abord, chercher si un quiz existe pour ce job et ce candidat
+            quiz = db.query(Quiz).filter(
+                Quiz.job_id == job.id,
+                Quiz.candidate_id == candidate.id
+            ).first()
+            
+            if quiz:
+                # Ensuite, chercher une tentative complétée pour ce quiz
+                quiz_attempt = db.query(QuizAttempt).filter(
+                    QuizAttempt.quiz_id == quiz.id,
+                    QuizAttempt.candidate_id == candidate.id,
+                    QuizAttempt.status == 'completed'
+                ).order_by(QuizAttempt.created_at.desc()).first()
+                
+                if quiz_attempt:
+                    # Calculer la durée du quiz
+                    duration_seconds = None
+                    if quiz_attempt.start_time and quiz_attempt.end_time:
+                        duration_seconds = int((quiz_attempt.end_time - quiz_attempt.start_time).total_seconds())
+                    
+                    # Calculer le score en pourcentage
+                    quiz_score_percentage = 0
+                    if quiz_attempt.total_questions and quiz_attempt.total_questions > 0:
+                        quiz_score_percentage = (quiz_attempt.total_correct / quiz_attempt.total_questions) * 100
+                    
+                    quiz_data = {
+                        "quiz_score": round(quiz_score_percentage, 1),  # Score en pourcentage
+                        "quiz_duration": duration_seconds,
+                        "quiz_correct_answers": quiz_attempt.total_correct if quiz_attempt.total_correct else 0,
+                        "quiz_total_questions": quiz_attempt.total_questions if quiz_attempt.total_questions else 0,
+                        "quiz_attempt_id": quiz_attempt.id,
+                        "quiz_id": quiz.id
+                    }
+                else:
+                    # Quiz existe mais pas encore de tentative complétée
+                    quiz_data = {
+                        "quiz_score": None,
+                        "quiz_duration": None,
+                        "quiz_correct_answers": None,
+                        "quiz_total_questions": None,
+                        "quiz_attempt_id": None,
+                        "quiz_id": quiz.id
+                    }
+
             app_data = {
                 "id": app.id,
                 "job_id": job.id,
@@ -265,11 +314,35 @@ async def get_applications(
                 "matched_skills_count": matched_skills_count,
                 "total_job_skills": total_job_skills,
                 "compatibility_source": compatibility_source,
-                "compatibility_reason": compatibility_reason
+                "compatibility_reason": compatibility_reason,
+                # Données de quiz
+                "quiz_score": quiz_data["quiz_score"] if quiz_data else 0,
+                "quiz_duration": quiz_data["quiz_duration"] if quiz_data else None,
+                "quiz_correct_answers": quiz_data["quiz_correct_answers"] if quiz_data else 0,
+                "quiz_total_questions": quiz_data["quiz_total_questions"] if quiz_data else 0,
+                "quiz_attempt_id": quiz_data["quiz_attempt_id"] if quiz_data else None,
+                "quiz_id": quiz_data["quiz_id"] if quiz_data else None
             }
             
             applications_list.append(app_data)
             print(f"✅ [v0] API APPLICATIONS: Added application {app.id} to results")
+            
+            # Debug: Print quiz data for this application
+            if quiz_data:
+                print(f"DEBUG: Quiz data for candidate {candidate.name}: quiz_id={quiz_data['quiz_id']}, score={quiz_data['quiz_score']}%, duration={quiz_data['quiz_duration']}s, correct={quiz_data['quiz_correct_answers']}/{quiz_data['quiz_total_questions']}")
+            else:
+                print(f"DEBUG: No quiz data for candidate {candidate.name}")
+            
+            # Debug: Print the final application object being sent
+            final_app_data = {
+                "quiz_score": quiz_data["quiz_score"] if quiz_data else 0,
+                "quiz_duration": quiz_data["quiz_duration"] if quiz_data else None,
+                "quiz_correct_answers": quiz_data["quiz_correct_answers"] if quiz_data else 0,
+                "quiz_total_questions": quiz_data["quiz_total_questions"] if quiz_data else None,
+                "quiz_attempt_id": quiz_data["quiz_attempt_id"] if quiz_data else None,
+                "quiz_id": quiz_data["quiz_id"] if quiz_data else None
+            }
+            print(f"DEBUG: Final quiz fields for {candidate.name}: {final_app_data}")
 
         print(f"✅ [v0] API APPLICATIONS: {len(applications_list)} applications processed for user {current_admin.role}")
         
