@@ -49,17 +49,6 @@ class QuizCreateRequest(BaseModel):
     job_id: Optional[int] = None
     candidate_id: Optional[int] = None
 
-
-def _post_in_background(url: str, json_payload: dict, timeout: int = 3):
-    def _run():
-        try:
-            requests.post(url, json=json_payload, timeout=timeout)
-        except Exception as e:
-            # Avoid raising inside background thread; just log
-            print(f"Background POST to {url} failed: {e}")
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
-
 @router.post("/create")
 async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRequest, current_user=Depends(get_current_hr_user), db: Session = Depends(get_db)):
     """
@@ -142,11 +131,32 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
             application = (db.query(Application).filter(Application.candidate_profile_id == candidat.id, Application.job_id == job.id).first())
             company = db.query(Company).filter(Company.id == job.company_id).first()
             base_url = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
+            notification_payload = {
+                "user_id": candidat.user_id if candidat else None,
+                "type": "application_status_change",
+                "title": quiz_data.title,
+                "message": "A new quiz has been created for you. Please check your quizzes page to start.",
+                "application_id": application.id if application else None,
+                "job_id": job.id if job else None,
+                "status": "pending",
+                "company_name": company.company_name if company else None,
+                "job_title": job.title if job else None,
+                "admin_name": f"{admin.first_name} {admin.last_name}" if admin else None,
+            }
+
+            print("==== Notification Payload Before Sending ====")
+            for key, value in notification_payload.items():
+                print(f"{key}: {value}")
+            print("============================================")
             background_tasks.add_task(send_test_notification_via_api,
                 base_url,
-                user_id=candidat.user.id if candidat and candidat.user else None,
+                user_id=candidat.user_id if candidat else None,
+                type="application_status_change",
+                title=quiz_data.title,
+                message="A new quiz has been created for you. Please check your quizzes page to start.",
                 application_id=application.id if application else None,
                 job_id=job.id if job else None,
+                status="pending",
                 company_name=company.company_name if company else None,
                 job_title=job.title if job else None,
                 admin_name=f"{admin.first_name} {admin.last_name}" if admin else None,
@@ -298,16 +308,16 @@ async def get_quiz(quiz_id: int, db: Session = Depends(get_db), current_user=Dep
 
 def send_test_notification_via_api(
     base_url: str,
-    user_id: int = 33,
-    type: str = "application_status_change",
-    title: str = "Test from script",
-    message: str = "This is a real-time test",
-    application_id: int | None = 22,
-    job_id: int | None = 34,
-    status: str | None = "pending",
-    company_name: str | None = "Tech Corp",
-    job_title: str | None = "Software Engineer",
-    admin_name: str | None = "John Doe",
+    user_id: int,
+    type: str,
+    title: str,
+    message: str,
+    application_id: int,
+    job_id: int,
+    status: str,
+    company_name: str,
+    job_title: str,
+    admin_name: str,
 ):
     url = f"{base_url.rstrip('/')}/api/notifications/test-create"
     payload = {

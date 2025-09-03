@@ -99,9 +99,14 @@
                 <div class="stat-label">Pourcentage</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{{ (attempt.time_taken // 60) if attempt.time_taken else 0 }}:{{ '{:02d}'.format((attempt.time_taken % 60) if attempt.time_taken else 0) }}</div>
+                {% if attempt.end_time and attempt.start_time %}
+                    {% set time_taken_seconds = (attempt.end_time - attempt.start_time).total_seconds() %}
+                    <div class="stat-value">{{ (time_taken_seconds // 60)|int }}:{{ '{:02d}'.format((time_taken_seconds % 60)|int) }}</div>
+                {% else %}
+                    <div class="stat-value">0:00</div>
+                {% endif %}
                 <div class="stat-label">Temps Utilisé</div>
-                </div>
+            </div>
                 <div class="stat-card">
                     <div class="stat-value">{{ answers|length }}</div>
                     <div class="stat-label">Questions Répondues</div>

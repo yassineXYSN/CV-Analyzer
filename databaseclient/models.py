@@ -33,6 +33,7 @@ class AnalyseCandidat(Base):
 
 class User(Base):
     __tablename__ = "users"
+
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), nullable=False, unique=True)
     password_hash = Column(String(255))
@@ -40,20 +41,25 @@ class User(Base):
     last_name = Column(String(100), nullable=False)
     google_id = Column(String(255), unique=True)
     profile_picture = Column(String(500))
-    is_active = Column(Integer, default=1)
-    is_verified = Column(Integer, default=0)
-    verification_token = Column(String(255), nullable=True)
-    verification_token_expires = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    verification_token = Column(String(255))
+    verification_token_expires = Column(DateTime)
+
+    # Relations
     profile = relationship("ProfileCandidat", back_populates="user", uselist=False)
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
 
 class ProfileCandidat(Base):
     __tablename__ = "profile_candidat"
+
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(Text)
-    title = Column(Text)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+
+    name = Column(String(255))
+    title = Column(String(255))
     profile = Column(Text)
     contact_id = Column(Integer, ForeignKey("contact.id"))
     analyse_id = Column(Integer, ForeignKey("analyse_candidat.id"))
@@ -62,11 +68,12 @@ class ProfileCandidat(Base):
     languages = Column(JSON)
     certificates = Column(JSON)
     skills = Column(JSON)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    user = relationship("User", back_populates="profile")
     profile_picture = Column(String(500))
+
+    # Relations
     contact = relationship("Contact")
     analyse = relationship("AnalyseCandidat")
+    user = relationship("User", back_populates="profile")  # 👈 correct one
 
 class HRAdmin(Base):
     __tablename__ = "hr_admins"
@@ -363,9 +370,9 @@ class QuizAnswer(Base):
     question_id = Column(Integer, ForeignKey("quiz_questions.id"), nullable=False)
     
     # Answer details - matching actual database schema
-    selected_answer_number = Column(Integer, nullable=False)
+    selected_options = Column(Text, nullable=False)
     is_correct = Column(Boolean, default=False)
-    time_taken = Column(Integer)
+    time_taken_seconds = Column(Integer)
     
     # Timestamps
     created_at = Column(DateTime, default=func.now())

@@ -55,7 +55,7 @@ db = SessionLocal()   # create a real SQLAlchemy session
     candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == 31).first()
     if candidat:
         if candidat.user:  # Check if user exists
-            print(candidat.user.id)  # Access user ID through relationship
+            print(candidat.user_id)  # Access user ID through relationship
         else:
             print("No user associated with this profile")
     else:
@@ -65,7 +65,7 @@ except Exception as e:
 finally:
     db.close()'''
 
-def send_test_notification_via_api(
+'''def send_test_notification_via_api(
     base_url: str,
     user_id: int = 33,
     type: str = "application_status_change",
@@ -101,4 +101,9 @@ def send_test_notification_via_api(
 
 if __name__ == "__main__":
     base_url = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
-    send_test_notification_via_api(base_url)
+    send_test_notification_via_api(base_url)'''
+    
+
+
+candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == 35).first()
+print(candidat.user_id)

@@ -19,7 +19,10 @@ class AnalyseCandidat(Base):
 
 class ProfileCandidat(Base):
     __tablename__ = "profile_candidat"
+
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+
     name = Column(String(255))
     title = Column(String(255))
     profile = Column(Text)
@@ -30,10 +33,10 @@ class ProfileCandidat(Base):
     certificates = Column(JSON)
     skills = Column(JSON)
 
+    # Relations
     contact = relationship("Contact")
     analyse = relationship("AnalyseCandidat")
-
-    user = relationship("User", back_populates="profile", uselist=False)
+    user = relationship("User", back_populates="profile")  # 👈 correct one
 
 
 # NOUVEAUX MODÈLES HR
@@ -307,7 +310,7 @@ class AdminDepartments(Base):
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), nullable=False, unique=True)
     password_hash = Column(String(255))
@@ -319,12 +322,11 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    profile_id = Column(Integer, ForeignKey("profile_candidat.id"))
     verification_token = Column(String(255))
     verification_token_expires = Column(DateTime)
-    
+
     # Relations
-    profile = relationship("ProfileCandidat", back_populates="user")
+    profile = relationship("ProfileCandidat", back_populates="user", uselist=False)
     
 
 class Notification(Base):
@@ -446,9 +448,9 @@ class QuizAnswer(Base):
     question_id = Column(Integer, ForeignKey("quiz_questions.id"), nullable=False)
     
     # Answer details - matching actual database schema
-    selected_answer_number = Column(Integer, nullable=False)
+    selected_options = Column(Text, nullable=False)
     is_correct = Column(Boolean, default=False)
-    time_taken = Column(Integer)
+    time_taken_seconds = Column(Integer)
     
     # Timestamps
     created_at = Column(DateTime, default=func.now())
