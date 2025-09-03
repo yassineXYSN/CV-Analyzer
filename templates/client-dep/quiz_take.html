@@ -282,7 +282,7 @@
                     
                     <div class="question-text">{{ question.question_text }}</div>
                     
-                    {% if question.question_type == 'multiple_choice' %}
+                    {% if question.options and question.options|length > 0 %}
                         <div class="answer-options">
                             {% for option in question.options %}
                             <div class="answer-option" onclick="selectOption(this, '{{ option }}')">
@@ -291,18 +291,7 @@
                             </div>
                             {% endfor %}
                         </div>
-                    {% elif question.question_type == 'true_false' %}
-                        <div class="answer-options">
-                            <div class="answer-option" onclick="selectOption(this, 'true')">
-                                <div class="answer-radio"></div>
-                                <div>Vrai</div>
-                            </div>
-                            <div class="answer-option" onclick="selectOption(this, 'false')">
-                                <div class="answer-radio"></div>
-                                <div>Faux</div>
-                            </div>
-                        </div>
-                    {% elif question.question_type == 'short_answer' %}
+                    {% else %}
                         <input type="text" class="answer-text-input" placeholder="Tapez votre réponse ici..." 
                                data-question-id="{{ question.id }}">
                     {% endif %}

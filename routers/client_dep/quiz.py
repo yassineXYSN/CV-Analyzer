@@ -169,6 +169,23 @@ async def quiz_page(
         if not questions:
             raise HTTPException(status_code=404, detail="No questions found for this quiz")
         
+        # Debug: Print question data to understand the structure
+        for q in questions:
+            print(f"DEBUG: Question {q.id}: options={q.options}, type={type(q.options)}")
+            if q.options:
+                print(f"DEBUG: Options content: {q.options}")
+                print(f"DEBUG: Options length: {len(q.options) if isinstance(q.options, list) else 'Not a list'}")
+                
+                # Handle case where options might be stored as JSON string
+                if isinstance(q.options, str):
+                    try:
+                        import json
+                        q.options = json.loads(q.options)
+                        print(f"DEBUG: Parsed options from string: {q.options}")
+                    except json.JSONDecodeError:
+                        print(f"DEBUG: Failed to parse options as JSON: {q.options}")
+                        q.options = []
+        
         # Calculate remaining time
         remaining_time = None
         if active_attempt:
@@ -278,6 +295,7 @@ async def submit_quiz(
         # Parse answers
         try:
             answers_data = json.loads(answers)
+            print(f"DEBUG: Parsed answers data: {answers_data}")
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid answers format")
         
@@ -298,20 +316,66 @@ async def submit_quiz(
             if not question:
                 continue
             
+            # Get selected option(s) - handle different data formats
+            # Frontend sends 'selected_option' for multiple choice and 'answer' for text input
+            selected_options = answer_data.get('selected_option') or answer_data.get('answer', [])
+            print(f"DEBUG: Question {question_id} - Raw selected_options: {selected_options}, type: {type(selected_options)}")
+            
+            # Handle different data types that might be sent from frontend
+            # The database requires valid JSON in selected_options field
+            if isinstance(selected_options, str):
+                # Store as JSON string (wrapped in quotes)
+                selected_options_json = json.dumps(selected_options)
+            elif isinstance(selected_options, (list, tuple)):
+                # Store as JSON array
+                selected_options_json = json.dumps(selected_options)
+            elif isinstance(selected_options, (int, float)):
+                # Store as JSON number
+                selected_options_json = json.dumps(selected_options)
+            else:
+                # Fallback: convert to string and store as JSON
+                selected_options_json = json.dumps(str(selected_options))
+            
+            # Ensure we have valid JSON (database constraint requires this)
+            if not selected_options_json:
+                selected_options_json = json.dumps("No answer provided")
+            
+            print(f"DEBUG: Question {question_id} - Processed selected_options_json: {selected_options_json}")
+            print(f"DEBUG: Question {question_id} - JSON length: {len(selected_options_json)}")
+            print(f"DEBUG: Question {question_id} - JSON repr: {repr(selected_options_json)}")
+            
             # Determine if answer is correct
             is_correct = False
-            selected_options = answer_data.get('selected_option', 0)
-            
-            # Check if answer is correct based on correct_answer column
-            if str(selected_options) == str(question.correct_answer):
-                is_correct = True
-                total_correct += 1
-            
-            # Save answer
+            if question.correct_answer:
+                print(f"DEBUG: Question {question_id} - Correct answer: {question.correct_answer}, Options: {question.options}")
+                # The correct_answer is stored as a string representing the index (1-based)
+                # We need to compare the selected option with the correct option
+                try:
+                    correct_index = int(question.correct_answer) - 1  # Convert to 0-based index
+                    if question.options and correct_index >= 0 and correct_index < len(question.options):
+                        correct_option = question.options[correct_index]
+                        print(f"DEBUG: Question {question_id} - Correct option: {correct_option}")
+                        # Compare the selected option with the correct option (use original selected_options for comparison)
+                        if str(selected_options) == str(correct_option):
+                            is_correct = True
+                            total_correct += 1
+                            print(f"DEBUG: Question {question_id} - Answer is CORRECT!")
+                        else:
+                            print(f"DEBUG: Question {question_id} - Answer is INCORRECT. Selected: '{selected_options}', Expected: '{correct_option}'")
+                except (ValueError, IndexError, TypeError) as e:
+                    print(f"DEBUG: Question {question_id} - Error in answer checking: {e}")
+                    # Fallback: direct string comparison
+                    if str(selected_options) == str(question.correct_answer):
+                        is_correct = True
+                        total_correct += 1
+                        print(f"DEBUG: Question {question_id} - Answer is CORRECT (fallback)!")
+                    else:
+                        print(f"DEBUG: Question {question_id} - Answer is INCORRECT (fallback). Selected: '{selected_options}', Expected: '{question.correct_answer}'")
+
             quiz_answer = QuizAnswer(
                 attempt_id=attempt.id,
                 question_id=question_id,
-                selected_options=selected_options,
+                selected_options=selected_options_json,
                 is_correct=is_correct,
                 time_taken_seconds=answer_data.get('time_taken_seconds', 0)
             )
