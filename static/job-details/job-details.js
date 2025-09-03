@@ -1,14 +1,8 @@
-// Variables globales
+// Global variables
 let currentJob = null
 let applications = []
-let allCandidates = []
 let currentUser = null
 
-// Focused date debugging and safe formatting helpers
-const DATE_DEBUG = true
-const dateLog = (...args) => {
-  if (DATE_DEBUG) console.log(...args)
-}
 function formatDateSafe(input, locale = "fr-FR") {
   try {
     if (!input) return "--"
@@ -24,7 +18,6 @@ function formatDateSafe(input, locale = "fr-FR") {
   }
 }
 
-// Fonction pour formater la durée du quiz
 function formatDuration(seconds) {
   if (!seconds || seconds === 0) return "N/A"
   
@@ -40,344 +33,121 @@ function formatDuration(seconds) {
   }
 }
 
-// Charger les données du job au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 Page job-details chargée avec compatibilité")
   loadCurrentUser()
   loadJobData()
-  loadAllCandidates()
 })
 
-// Charger l'utilisateur actuel
 async function loadCurrentUser() {
   try {
-    console.log("👤 Chargement utilisateur actuel")
     const response = await fetch("/api/current-user")
     const result = await response.json()
 
     if (result.success) {
       currentUser = result.user
-      console.log("✅ Utilisateur chargé:", currentUser)
     } else {
-      console.error("❌ Erreur chargement utilisateur:", result.message)
+      console.error("Erreur chargement utilisateur:", result.message)
       if (result.message === "Utilisateur non connecté") {
         window.location.href = "/hr-login"
       }
     }
   } catch (error) {
-    console.error("❌ Erreur réseau chargement utilisateur:", error)
+    console.error("Erreur réseau chargement utilisateur:", error)
   }
 }
 
-// Charger tous les candidats disponibles
-async function loadAllCandidates() {
-  try {
-    console.log("👥 Chargement de tous les candidats")
-    allCandidates = [
-      {
-        id: 1,
-        name: "Marie Dubois",
-        title: "Développeuse Full-Stack",
-        email: "marie.dubois@email.com",
-        skills: ["React", "Node.js", "Python"],
-        experience: "3 ans",
-      },
-      {
-        id: 2,
-        name: "Pierre Martin",
-        title: "Designer UX/UI",
-        email: "pierre.martin@email.com",
-        skills: ["Figma", "Adobe XD", "Sketch"],
-        experience: "5 ans",
-      },
-      {
-        id: 3,
-        name: "Sophie Laurent",
-        title: "Data Scientist",
-        email: "sophie.laurent@email.com",
-        skills: ["Python", "R", "Machine Learning"],
-        experience: "4 ans",
-      },
-    ]
-    console.log(`✅ ${allCandidates.length} candidats chargés`)
-  } catch (error) {
-    console.error("❌ Erreur chargement candidats:", error)
-  }
-}
 
-// Charger les données du job depuis localStorage ou URL
+
 function loadJobData() {
-  console.log("📊 Début chargement des données")
   const urlParams = new URLSearchParams(window.location.search)
   const jobId = urlParams.get("id")
-  console.log("🔍 Job ID depuis URL:", jobId)
 
   if (jobId) {
-    console.log("🌐 Chargement depuis API")
     loadJobFromAPI(jobId)
   } else {
-    console.log("💾 Tentative chargement depuis localStorage")
     const jobData = localStorage.getItem("selectedJob")
     if (jobData) {
       try {
         currentJob = JSON.parse(jobData)
-        console.log("✅ Données chargées depuis localStorage:", currentJob)
         displayJobInfo()
         renderApplicationsWithCompatibility()
-        // Initialiser l'état de validation des compétences après le rendu
         setTimeout(() => {
           initializeSkillsValidationState()
         }, 100)
       } catch (error) {
-        console.error("❌ Erreur parsing localStorage:", error)
+        console.error("Erreur parsing localStorage:", error)
         showError("Erreur lors du chargement des données du poste")
       }
     } else {
-      console.log("❌ Aucune donnée trouvée")
       showError("Aucun poste sélectionné. Veuillez retourner au dashboard et sélectionner un poste.")
     }
   }
 }
 
-// FONCTION AMÉLIORÉE: Charger le job depuis l'API avec calcul de compatibilité
 async function loadJobFromAPI(jobId) {
   try {
-    console.log(`🔄 Chargement job ID: ${jobId}`)
     showLoading("Chargement des détails du poste...")
 
     const response = await fetch(`/api/job-basic/${jobId}`)
-    console.log("📡 Réponse API:", response.status)
-
     if (response.ok) {
       const result = await response.json()
-      console.log("📦 Données reçues:", result)
-
       if (result.success) {
         currentJob = result.job
         applications = result.job.applications || []
 
-        console.log("✅ Job chargé:", currentJob.title)
-        console.log("👥 Candidatures:", applications.length)
-
-        // Debug complet de la réponse API
-        console.log("🔍 DEBUG API RESPONSE:")
-        console.log("   - Result success:", result.success)
-        console.log("   - Result job:", result.job)
-        console.log("   - Result job.applications:", result.job.applications)
-        console.log("   - Applications variable:", applications)
-        console.log("   - Applications type:", typeof applications)
-        console.log("   - Applications is array:", Array.isArray(applications))
-        if (applications && applications.length > 0) {
-          console.log("   - First application:", applications[0])
-        }
-
-        // Vérifier si les applications sont vides et pourquoi
         if (!applications || applications.length === 0) {
-          console.warn("⚠️ Aucune candidature trouvée pour ce poste")
-          console.warn("   - Vérifier si le poste a des candidatures en base")
-          console.warn("   - Vérifier les permissions d'accès")
-          console.warn("   - Vérifier la requête base de données")
-
-          // Debug supplémentaire pour identifier le problème
-          console.log("🔍 DEBUG APPLICATIONS VIDE:")
-          console.log("   - Result.job existe?", !!result.job)
-          console.log("   - Result.job.applications existe?", !!result.job.applications)
-          console.log("   - Result.job.applications type:", typeof result.job.applications)
-          console.log("   - Result.job.applications length:", result.job.applications?.length)
-          console.log("   - Result.job.applications contenu:", result.job.applications)
-
-          // FALLBACK: Essayer de récupérer les candidatures directement
-          console.log("🔄 Tentative de récupération directe des candidatures...")
           try {
             const appsResponse = await fetch(`/api/applications?job_id=${jobId}`)
             const appsResult = await appsResponse.json()
-
             if (appsResult.success && appsResult.applications) {
-              console.log("✅ Candidatures récupérées directement:", appsResult.applications.length)
-              console.log("🔍 Structure des candidatures récupérées:", appsResult.applications[0])
               applications = appsResult.applications
-            } else {
-              console.warn("⚠️ Échec récupération directe des candidatures:", appsResult.message)
             }
           } catch (error) {
-            console.error("❌ Erreur récupération directe des candidatures:", error)
+            console.error("Erreur récupération candidatures:", error)
           }
         }
 
-        // Log final applications count
-        console.log("📊 Applications finales après fallback:", applications.length)
-
-        // Debug each application structure
         if (applications && applications.length > 0) {
-          console.log("🔍 DEBUG STRUCTURE APPLICATIONS:")
-          applications.forEach((app, index) => {
-            console.log(`   Application ${index}:`, {
-              id: app.id,
-              name: app.name,
-              candidate_name: app.candidate_name,
-              title: app.title,
-              candidate_title: app.candidate_title,
-              email: app.email,
-              candidate_email: app.candidate_email,
-              status: app.status,
-              application_date: app.application_date,
-              hr_rating: app.hr_rating,
-              is_recommended: app.is_recommended,
-              recommendation_priority: app.recommendation_priority,
-              recommended_by: app.recommended_by,
-              compatibility_percentage: app.compatibility_percentage,
-              matched_skills_count: app.matched_skills_count,
-              missing_skills_count: app.missing_skills_count,
-              total_job_skills: app.total_job_skills,
-              raw: app,
-            })
-          })
-        }
-
-        // Debug the job structure
-        console.log("🔍 Structure complète du job:", currentJob)
-        console.log("🔍 Skills du job:", currentJob.skills)
-        console.log("🔍 Type de skills:", typeof currentJob.skills)
-        if (currentJob.skills) {
-          console.log("🔍 Skills est un array?", Array.isArray(currentJob.skills))
-          console.log("🔍 Longueur skills:", currentJob.skills?.length)
-        }
-
-        // Debug complet de la structure des données
-        console.log("🔍 DEBUG COMPLET - Structure des données reçues:")
-        console.log("   - Job ID:", currentJob.id)
-        console.log("   - Job Title:", currentJob.title)
-        console.log("   - Job Skills:", currentJob.skills)
-        console.log("   - Applications count:", applications.length)
-        if (currentJob.skills && Array.isArray(currentJob.skills)) {
-          console.log("   - Skills structure:")
-          currentJob.skills.forEach((skill, index) => {
-            const skill_level = skill.skill_level
-            const is_required = skill.is_required
-            const skill_name = skill.skill_name
-            console.log(`     Skill ${index}:`, {
-              name: skill.name,
-              level: skill.level,
-              required: skill.required,
-              skill_name: skill_name,
-              skill_level: skill_level,
-              is_required: is_required,
-              raw: skill,
-            })
-          })
-        }
-
-        // NOUVEAU: Calculer la compatibilité pour chaque candidature
-        if (applications && applications.length > 0) {
-          console.log("🧮 Calcul de compatibilité pour", applications.length, "candidatures")
           await calculateCompatibilityForApplications()
-        } else {
-          console.log("⚠️ Aucune candidature à traiter pour la compatibilité")
         }
 
         hideLoading()
+        displayJobInfo()
+        renderApplicationsWithCompatibility()
+        updateCompatibilityStats()
+        updateFilterCounts()
 
-        try {
-          displayJobInfo()
-        } catch (error) {
-          console.error("❌ Erreur lors de l'affichage des informations du job:", error)
-          showError("Erreur lors de l'affichage des données")
-        }
-
-        // Safe rendering with error handling
-        try {
-          console.log("🎨 Rendu des candidatures avec", applications.length, "candidatures")
-          console.log("🔍 DEBUG - Applications avant rendu:", applications)
-          renderApplicationsWithCompatibility()
-          // Initialiser l'état de validation des compétences après le rendu
-          setTimeout(() => {
-            initializeSkillsValidationState()
-          }, 100)
-        } catch (error) {
-          console.error("❌ Erreur lors du rendu des candidatures:", error)
-          console.error("❌ Stack trace:", error.stack)
-        }
-
-        try {
-          updateCompatibilityStats()
-        } catch (error) {
-          console.error("❌ Erreur lors de la mise à jour des stats:", error)
-        }
-
-        try {
-          updateFilterCounts()
-        } catch (error) {
-          console.error("❌ Erreur lors de la mise à jour des compteurs de filtres:", error)
-        }
-
-        // Refresh validation button states after applications are loaded
         setTimeout(() => {
-          // Validation button states removed
-        }, 200)
+          initializeSkillsValidationState()
+          initializeQuizValidationState()
+        }, 100)
       } else {
-        console.error("❌ Erreur API:", result.message)
         showError(result.message || "Erreur lors du chargement du poste")
       }
     } else {
-      console.error("❌ Erreur HTTP:", response.status)
       showError("Erreur de connexion au serveur")
     }
   } catch (error) {
-    console.error("❌ Erreur critique:", error)
+    console.error("Erreur critique:", error)
     showError("Erreur lors du chargement des données")
   }
-  setTimeout(() => {
-    initializeSkillsValidationState()
-    initializeQuizValidationState() // Ajoutez cette ligne
-  }, 100)
 }
 
-// NOUVELLE FONCTION: Calculer la compatibilité pour toutes les candidatures
 async function calculateCompatibilityForApplications() {
-  console.log("🧮 Calcul de compatibilité pour toutes les candidatures")
-
   for (let i = 0; i < applications.length; i++) {
     const app = applications[i]
     try {
-      // Debug the application structure
-      console.log(`🔍 Application ${i}:`, {
-        id: app.id,
-        name: app.name,
-        candidate_name: app.candidate_name,
-        status: app.status,
-        raw: app,
-      })
-
-      const candidateName = app.name || app.candidate_name || "Candidat inconnu"
-      console.log(`📊 Calcul compatibilité pour ${candidateName}`)
-
       const response = await fetch(`/api/application/${app.id}/compatibility`)
       const result = await response.json()
 
       if (result.success) {
-        // Mettre à jour les données de compatibilité
         applications[i].compatibility_percentage = result.compatibility_percentage || result.score || 0
-
-        // Extraire les compteurs de compétences avec fallback
-        applications[i].matched_skills_count =
-          result.matched_count ||
-          result.matched_skills_count ||
-          (result.matched_skills ? result.matched_skills.length : 0)
-
-        applications[i].missing_skills_count =
-          result.missing_count ||
-          result.missing_skills_count ||
-          (result.missing_skills ? result.missing_skills.length : 0)
-
-        applications[i].total_job_skills =
-          result.total_job_skills ||
-          result.total_skills ||
-          applications[i].matched_skills_count + applications[i].missing_skills_count
-
+        applications[i].matched_skills_count = result.matched_count || result.matched_skills_count || 0
+        applications[i].missing_skills_count = result.missing_count || result.missing_skills_count || 0
+        applications[i].total_job_skills = result.total_job_skills || result.total_skills || 0
         applications[i].matched_skills = result.matched_skills || []
         applications[i].missing_skills = result.missing_skills || []
 
-        // Si les compteurs sont toujours 0, utiliser le fallback
         if (applications[i].matched_skills_count === 0 && applications[i].missing_skills_count === 0) {
           const fallback = calculateCompatibilityFallback(
             applications[i].compatibility_percentage,
@@ -387,13 +157,7 @@ async function calculateCompatibilityForApplications() {
           applications[i].missing_skills_count = fallback.missing
           applications[i].total_job_skills = applications[i].total_job_skills || currentJob.skills?.length || 0
         }
-
-        console.log(
-          `✅ ${candidateName}: ${applications[i].compatibility_percentage}% - ${applications[i].matched_skills_count} matchés, ${applications[i].missing_skills_count} manquants`,
-        )
       } else {
-        console.warn(`⚠️ Erreur calcul compatibilité pour ${app.name}:`, result.message)
-        // Fallback si l'API échoue
         const fallback = calculateCompatibilityFallback(
           app.compatibility_percentage || 0,
           currentJob.skills?.length || 0,
@@ -404,28 +168,15 @@ async function calculateCompatibilityForApplications() {
         applications[i].total_job_skills = currentJob.skills?.length || 0
       }
     } catch (error) {
-      console.error(`❌ Erreur réseau compatibilité pour ${app.name}:`, error)
-      // Fallback en cas d'erreur réseau
       const fallback = calculateCompatibilityFallback(app.compatibility_percentage || 0, currentJob.skills?.length || 0)
       applications[i].compatibility_percentage = app.compatibility_percentage || 0
       applications[i].matched_skills_count = fallback.matched
       applications[i].missing_skills_count = fallback.missing
       applications[i].total_job_skills = currentJob.skills?.length || 0
     }
-
-    // Debug final pour chaque application
-    console.log(`Application ${i} finale:`, {
-      compatibility: applications[i].compatibility_percentage,
-      matched: applications[i].matched_skills_count,
-      missing: applications[i].missing_skills_count,
-      total: applications[i].total_job_skills,
-    })
   }
-
-  console.log("✅ Calcul de compatibilité terminé pour toutes les candidatures")
 }
 
-// Ajouter cette fonction utilitaire
 function calculateCompatibilityFallback(compatibilityPercentage, totalSkills) {
   if (!totalSkills || totalSkills === 0) return { matched: 0, missing: 0 }
 
@@ -435,7 +186,6 @@ function calculateCompatibilityFallback(compatibilityPercentage, totalSkills) {
   return { matched, missing }
 }
 
-// NOUVELLE FONCTION: Mettre à jour les statistiques de compatibilité
 function updateCompatibilityStats() {
   if (applications.length === 0) {
     const avgElement = document.getElementById("averageCompatibility")
@@ -451,152 +201,81 @@ function updateCompatibilityStats() {
   const avgElement = document.getElementById("averageCompatibility")
   if (avgElement) {
     avgElement.textContent = `${averageCompatibility}%`
-    console.log(`📊 Compatibilité moyenne: ${averageCompatibility}%`)
-  } else {
-    console.warn("⚠️ Élément averageCompatibility non trouvé dans le DOM")
   }
 }
 
-// Afficher les informations du job
 function displayJobInfo() {
-  if (!currentJob) {
-    console.error("❌ Aucun job à afficher")
-    return
+  if (!currentJob) return
+
+  const elements = {
+    jobTitle: currentJob.title || "Titre non disponible",
+    jobDepartment: currentJob.department_name || "Département non spécifié",
+    jobDescription: currentJob.description || "Description non disponible",
+    jobResponsibilities: currentJob.responsibilities || "Aucune responsabilité spécifiée",
+    jobType: (currentJob.employment_type || "").toUpperCase(),
+    jobPriority: (currentJob.priority || "").toUpperCase(),
+    jobDeadline: currentJob.deadline ? formatDateSafe(currentJob.deadline) : "Non définie",
+    jobStatus: (currentJob.status || "").toUpperCase(),
+    jobSalary: getSalaryText(),
+    contractType: (currentJob.employment_type || "").toUpperCase(),
+    jobCreated: formatDateSafe(currentJob.created_at),
+    assignedEmployee: currentJob.assigned_employee_name || "Non assigné",
+    jobApplications: getApplicationsCount(),
+    daysRemaining: getDaysRemaining()
   }
 
-  console.log("🎨 Affichage des informations du job")
-
-  try {
-    const titleElement = document.getElementById("jobTitle")
-    if (titleElement) {
-      titleElement.textContent = currentJob.title || "Titre non disponible"
-    }
-
-    const departmentElement = document.getElementById("jobDepartment")
-    if (departmentElement) {
-      departmentElement.textContent = currentJob.department_name || "Département non spécifié"
-    }
-
-    const descriptionElement = document.getElementById("jobDescription")
-    if (descriptionElement) {
-      descriptionElement.textContent = currentJob.description || "Description non disponible"
-    }
-
-    const responsibilitiesElement = document.getElementById("jobResponsibilities")
-    if (responsibilitiesElement) {
-      responsibilitiesElement.textContent = currentJob.responsibilities || "Aucune responsabilité spécifiée"
-    }
-
-    const typeElement = document.getElementById("jobType")
-    if (typeElement) {
-      typeElement.textContent = (currentJob.employment_type || "").toUpperCase()
-    }
-
-    const priorityElement = document.getElementById("jobPriority")
-    if (priorityElement) {
-      priorityElement.textContent = (currentJob.priority || "").toUpperCase()
-    }
-
-    const deadlineElement = document.getElementById("jobDeadline")
-    if (deadlineElement) {
-      const formattedDeadline = currentJob.deadline ? formatDateSafe(currentJob.deadline) : "Non définie"
-      deadlineElement.textContent = formattedDeadline
-      dateLog("[DATE] deadline:", currentJob.deadline, "->", formattedDeadline)
-    }
-
-    const statusElement = document.getElementById("jobStatus")
-    if (statusElement) {
-      statusElement.textContent = (currentJob.status || "").toUpperCase()
-      statusElement.className = `status-badge ${currentJob.status || "draft"}`
-    }
-
-    const salaryElement = document.getElementById("jobSalary")
-    if (salaryElement) {
-      let salaryText = "Non spécifié"
-      if (currentJob.salary_min && currentJob.salary_max) {
-        salaryText = `€ ${currentJob.salary_min} - ${currentJob.salary_max}`
-      } else if (currentJob.salary_min) {
-        salaryText = `€ ${currentJob.salary_min}+`
-      }
-      salaryElement.textContent = salaryText
-    }
-
-    const contractTypeElement = document.getElementById("contractType")
-    if (contractTypeElement) {
-      contractTypeElement.textContent = (currentJob.employment_type || "").toUpperCase()
-    }
-
-    const jobCreatedElement = document.getElementById("jobCreated")
-    if (jobCreatedElement) {
-      const formattedCreated = formatDateSafe(currentJob.created_at)
-      jobCreatedElement.textContent = formattedCreated
-      dateLog("[DATE] created_at:", currentJob.created_at, "->", formattedCreated)
-    }
-
-    const assignedEmployeeElement = document.getElementById("assignedEmployee")
-    if (assignedEmployeeElement) {
-      assignedEmployeeElement.textContent = currentJob.assigned_employee_name || "Non assigné"
-    }
-
-    const applicationsElement = document.getElementById("jobApplications")
-    if (applicationsElement) {
-      const count =
-        typeof currentJob.applications_count === "number" && !isNaN(currentJob.applications_count)
-          ? currentJob.applications_count
-          : Array.isArray(applications)
-            ? applications.length
-            : 0
-      applicationsElement.textContent = count
-      if (typeof currentJob.applications_count === "undefined") {
-        console.warn("⚠️ applications_count missing, using applications.length:", count)
+  Object.entries(elements).forEach(([id, value]) => {
+    const element = document.getElementById(id)
+    if (element) {
+      if (id === "jobStatus") {
+        element.textContent = value
+        element.className = `status-badge ${currentJob.status || "draft"}`
+      } else {
+        element.textContent = value
       }
     }
+  })
 
-    const daysRemainingElement = document.getElementById("daysRemaining")
-    if (daysRemainingElement) {
-      try {
-        let days = currentJob.days_remaining
-        if (days === null || days === undefined) {
-          // Fallback: compute from deadline
-          if (currentJob.deadline) {
-            let deadlineStr = currentJob.deadline
-            if (typeof deadlineStr === "string" && deadlineStr.indexOf(" ") > -1 && deadlineStr.indexOf("T") === -1) {
-              deadlineStr = deadlineStr.replace(" ", "T")
-            }
-            const deadlineDate = new Date(deadlineStr)
-            if (!isNaN(deadlineDate.getTime())) {
-              const today = new Date()
-              const diffMs = deadlineDate.setHours(0, 0, 0, 0) - today.setHours(0, 0, 0, 0)
-              days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
-              console.warn("ℹ️ days_remaining missing, computed from deadline:", days)
-            }
-          }
-        }
-        daysRemainingElement.textContent = days !== null && days !== undefined ? days : "--"
-      } catch (e) {
-        console.error("❌ Error computing days_remaining:", e)
-        daysRemainingElement.textContent = "--"
-      }
-    }
-
-    console.log("📦 Skills data received:", currentJob.skills)
-    renderJobSkills()
-
-    console.log("✅ Informations affichées avec succès")
-  } catch (error) {
-    console.error("❌ Erreur lors de l'affichage:", error)
-    showError("Erreur lors de l'affichage des données")
-  }
+  renderJobSkills()
 }
 
-// Fonction pour afficher les compétences requises
-function renderJobSkills() {
-  console.log("🛠️ Affichage des compétences requises")
-  const skillsContainer = document.getElementById("jobSkillsContainer")
-  if (!skillsContainer) {
-    console.error("❌ Container jobSkillsContainer non trouvé")
-    return
+function getSalaryText() {
+  if (currentJob.salary_min && currentJob.salary_max) {
+    return `€ ${currentJob.salary_min} - ${currentJob.salary_max}`
+  } else if (currentJob.salary_min) {
+    return `€ ${currentJob.salary_min}+`
   }
+  return "Non spécifié"
+}
+
+function getApplicationsCount() {
+  return typeof currentJob.applications_count === "number" && !isNaN(currentJob.applications_count)
+    ? currentJob.applications_count
+    : Array.isArray(applications) ? applications.length : 0
+}
+
+function getDaysRemaining() {
+  let days = currentJob.days_remaining
+  if (days === null || days === undefined) {
+    if (currentJob.deadline) {
+      let deadlineStr = currentJob.deadline
+      if (typeof deadlineStr === "string" && deadlineStr.indexOf(" ") > -1 && deadlineStr.indexOf("T") === -1) {
+        deadlineStr = deadlineStr.replace(" ", "T")
+      }
+      const deadlineDate = new Date(deadlineStr)
+      if (!isNaN(deadlineDate.getTime())) {
+        const today = new Date()
+        const diffMs = deadlineDate.setHours(0, 0, 0, 0) - today.setHours(0, 0, 0, 0)
+        days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+      }
+    }
+  }
+  return days !== null && days !== undefined ? days : "--"
+}
+
+function renderJobSkills() {
+  const skillsContainer = document.getElementById("jobSkillsContainer")
+  if (!skillsContainer) return
 
   if (!currentJob.skills || currentJob.skills.length === 0) {
     skillsContainer.innerHTML = `
@@ -609,27 +288,7 @@ function renderJobSkills() {
     return
   }
 
-  // Log the skills data structure to debug
-  console.log("📦 Skills data structure:", currentJob.skills)
-
-  // Debug each skill object individually
-  if (currentJob.skills && Array.isArray(currentJob.skills)) {
-    currentJob.skills.forEach((skill, index) => {
-      console.log(`🔍 Skill ${index}:`, skill)
-      console.log(`   - Type:`, typeof skill)
-      console.log(`   - Keys:`, Object.keys(skill || {}))
-      console.log(`   - name:`, skill?.name)
-      console.log(`   - level:`, skill?.level)
-      console.log(`   - required:`, skill?.required)
-      console.log(`   - skill_name (legacy):`, skill?.skill_name)
-      console.log(`   - skill_level (legacy):`, skill?.skill_level)
-      console.log(`   - is_required (legacy):`, skill?.is_required)
-    })
-  }
-
-  // Validate skills data structure
   if (!Array.isArray(currentJob.skills)) {
-    console.warn("⚠️ Skills data is not an array:", typeof currentJob.skills)
     skillsContainer.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-exclamation-triangle"></i>
@@ -640,14 +299,7 @@ function renderJobSkills() {
     return
   }
 
-  // Filter out invalid skill objects
-  const validSkills = currentJob.skills.filter((skill) => {
-    if (!skill || typeof skill !== "object") {
-      console.warn("⚠️ Skill invalide ignoré:", skill)
-      return false
-    }
-    return true
-  })
+  const validSkills = currentJob.skills.filter(skill => skill && typeof skill === "object")
 
   if (validSkills.length === 0) {
     skillsContainer.innerHTML = `
@@ -660,73 +312,43 @@ function renderJobSkills() {
     return
   }
 
-  console.log(`🔍 ${validSkills.length} compétences valides trouvées sur ${currentJob.skills.length} total`)
-
   skillsContainer.innerHTML = `
       <div class="skills-grid">
         ${validSkills
           .map((skill) => {
-            try {
-              // Safe access to skill properties with fallbacks
-              const skillName = skill.name || skill.skill_name || skill.skill || "Compétence non spécifiée"
-              const skillLevel = skill.level || skill.skill_level || skill.experience || "N/A"
-              const isRequired =
-                skill.required !== undefined
-                  ? skill.required
-                  : skill.is_required !== undefined
-                    ? skill.is_required
-                    : true
+            const skillName = skill.name || skill.skill_name || skill.skill || "Compétence non spécifiée"
+            const skillLevel = skill.level || skill.skill_level || skill.experience || "N/A"
+            const isRequired = skill.required !== undefined ? skill.required : skill.is_required !== undefined ? skill.is_required : true
 
-              // Safely format skill level
-              let formattedLevel = "N/A"
-              if (skillLevel && typeof skillLevel === "string" && skillLevel.length > 0) {
-                try {
-                  formattedLevel = skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1)
-                } catch (error) {
-                  console.warn("⚠️ Erreur formatage niveau compétence:", error)
-                  formattedLevel = skillLevel
-                }
-              }
-
-              return `
-                  <div class="skill-item">
-                    <div class="skill-name">${skillName}</div>
-                    <div class="skill-level">${formattedLevel}</div>
-                    ${
-                      isRequired
-                        ? `<span class="skill-required-badge">Requis</span>`
-                        : `<span class="skill-optional-badge">Optionnel</span>`
-                    }
-                  </div>
-                `
-            } catch (error) {
-              console.error("❌ Erreur rendu skill principal:", error, skill)
-              return `
-                  <div class="skill-item error">
-                    <div class="skill-name">Erreur affichage</div>
-                    <div class="skill-level">N/A</div>
-                    <span class="skill-optional-badge">Erreur</span>
-                  </div>
-                `
+            let formattedLevel = "N/A"
+            if (skillLevel && typeof skillLevel === "string" && skillLevel.length > 0) {
+              formattedLevel = skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1)
             }
+
+            return `
+                <div class="skill-item">
+                  <div class="skill-name">${skillName}</div>
+                  <div class="skill-level">${formattedLevel}</div>
+                  ${
+                    isRequired
+                      ? `<span class="skill-required-badge">Requis</span>`
+                      : `<span class="skill-optional-badge">Optionnel</span>`
+                  }
+                </div>
+              `
           })
           .join("")}
       </div>
     `
-  console.log(`✅ ${validSkills.length} compétences affichées`)
 }
 
-// Fonction pour initialiser l'état de validation des compétences
 function initializeSkillsValidationState() {
-  console.log("🔧 Initialisation de l'état de validation des compétences")
-  
   applications.forEach(app => {
     const quizSection = document.getElementById(`quiz-section-${app.id}`)
     const validateBtn = document.getElementById(`validate-btn-${app.id}`)
     const validationStatus = document.getElementById(`validation-status-${app.id}`)
     
     if (app.skills_validated) {
-      // Si les compétences sont déjà validées, retirer l'overlay et mettre à jour le bouton
       if (quizSection) {
         quizSection.classList.remove("locked")
         const overlay = quizSection.querySelector(".quiz-validation-overlay")
@@ -749,23 +371,13 @@ function initializeSkillsValidationState() {
 }
 
 function renderApplicationsWithCompatibility(filter = "all") {
-  console.log(`👥 Rendu des candidatures avec compatibilité (filtre: ${filter})`)
-  console.log(`🔍 DEBUG - Fonction appelée avec filter: ${filter}`)
-  console.log(`🔍 DEBUG - Applications disponibles:`, applications)
-
   const container = document.getElementById("applicationsList")
-  if (!container) {
-    console.error("❌ Container applicationsList non trouvé")
-    console.error("❌ Container applicationsList non trouvé - DOM non prêt?")
-    return
-  }
+  if (!container) return
 
   let filteredApplications = applications
   if (filter !== "all") {
     filteredApplications = applications.filter((app) => app.status === filter)
   }
-
-  console.log(`📊 ${filteredApplications.length} candidatures à afficher`)
 
   if (filteredApplications.length === 0) {
     container.innerHTML = `
@@ -780,7 +392,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
 
   container.innerHTML = filteredApplications
     .map((app) => {
-      // Handle different data structures from different API endpoints
       const candidateName = app.name || app.candidate_name || "Candidat inconnu"
       const candidateTitle = app.title || app.candidate_title || "Développeuse Full Stack Senior"
       const candidateEmail = app.email || app.candidate_email || "Email non disponible"
@@ -792,24 +403,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
       const recommendedBy = app.recommended_by || null
       const compatibilityPercentage = app.compatibility_percentage || 92
       const quizScore = app.quiz_score || 0
-
-      console.log(`🔍 DEBUG RENDU - ${candidateName}:`, {
-        id: app.id,
-        compatibility_percentage: app.compatibility_percentage,
-        matched_skills_count: app.matched_skills_count,
-        missing_skills_count: app.missing_skills_count,
-        total_job_skills: app.total_job_skills,
-        matched_skills: app.matched_skills,
-        missing_skills: app.missing_skills,
-        raw_app: app,
-      })
-
-      console.log(`🔍 Rendu candidature ${candidateName} avec compatibilité ${compatibilityPercentage}%`)
-
-      // Debug quiz section state
-      console.log(`🔍 DEBUG QUIZ SECTION ${app.id}:`, {
-        element_id: `quiz-section-${app.id}`,
-      })
 
       return `
       <div class="application-item-detailed ${isRecommended ? "has-recommendation" : ""}" data-app-id="${app.id}">
@@ -1087,90 +680,9 @@ function renderApplicationsWithCompatibility(filter = "all") {
     })
     .join("")
 
-  // DEBUG: Afficher le HTML final généré
-  console.log("🔍 DEBUG HTML FINAL GÉNÉRÉ:")
-  console.log(container.innerHTML)
-
-  console.log("✅ Candidatures rendues avec succès")
-
-  // Mettre à jour les compteurs des boutons de filtres
-  try {
-    updateFilterCounts()
-  } catch (error) {
-    console.error("❌ Erreur lors de la mise à jour des compteurs:", error)
-  }
+  updateFilterCounts()
 }
 
-// Fonction pour valider le quiz et enlever l'overlay de la section entretien
-async function validateQuizAndRemoveOverlay(applicationId) {
-  console.log(`✅ Validation du quiz pour l'application ${applicationId}`)
-  
-  try {
-    const app = applications.find(a => a.id === applicationId);
-    if (!app) {
-      console.error("❌ Application non trouvée");
-      return;
-    }
-    
-    const candidateName = app.name || app.candidate_name || "Candidat";
-    
-    // Vérifier si le quiz a déjà été fait (score existant)
-    if (!app.quiz_score && app.quiz_score !== 0) {
-      showNotification("Le quiz doit d'abord être complété avant de pouvoir être validé", "warning");
-      return;
-    }
-    
-    showLoading("Validation du quiz en cours...");
-    
-    // Appel API pour valider le quiz
-    const response = await fetch(`/api/applications/${applicationId}/validate-quiz`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        validated: true,
-        notes: "Quiz validé par l'équipe RH"
-      })
-    });
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      // Mettre à jour l'état local
-      app.quiz_validated = true;
-      app.quiz_validated_at = new Date().toISOString();
-      
-      // Supprimer l'overlay et débloquer la section
-      const interviewSection = document.getElementById(`interview-section-${applicationId}`);
-      if (interviewSection) {
-        interviewSection.classList.remove('locked');
-        const overlay = interviewSection.querySelector('.interview-validation-overlay');
-        if (overlay) {
-          overlay.remove();
-        }
-      }
-      
-      hideLoading();
-      showNotification(`✅ Quiz validé pour ${candidateName}`, "success");
-      
-      // Mettre à jour l'interface pour refléter la validation
-      const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${applicationId}`);
-      if (validateQuizBtn) {
-        validateQuizBtn.disabled = true;
-        validateQuizBtn.innerHTML = '<i class="fas fa-check"></i> Quiz Validé';
-      }
-      
-    } else {
-      hideLoading();
-      showNotification(result.message || "Erreur lors de la validation", "error");
-    }
-  } catch (error) {
-    hideLoading();
-    console.error("❌ Erreur validation quiz:", error);
-    showNotification("Erreur de connexion lors de la validation", "error");
-  }
-}
 
 function toggleCandidateCard(appId) {
   const expandedContent = document.getElementById(`expanded-${appId}`)
@@ -1182,71 +694,43 @@ function toggleCandidateCard(appId) {
   const isExpanded = expandedContent.classList.contains("expanded")
 
   if (isExpanded) {
-    // Fermer la carte
     expandedContent.classList.remove("expanded")
     toggleButton.classList.remove("expanded")
   } else {
-    // Ouvrir la carte
     expandedContent.classList.add("expanded")
     toggleButton.classList.add("expanded")
 
-    // Scroll automatique vers la carte si elle n'est PAS TOTALEMENT visible
     setTimeout(() => {
       if (cardElement) {
         const cardRect = cardElement.getBoundingClientRect()
         const windowHeight = window.innerHeight
-
-        // Vérifier si la carte est partiellement ou pas totalement visible
-        const isPartiallyVisible = cardRect.top < windowHeight && cardRect.bottom > 0
         const isFullyVisible = cardRect.top >= 0 && cardRect.bottom <= windowHeight
 
         if (!isFullyVisible) {
-          // Calculer la position de scroll optimale pour que la carte soit 100% visible
           let targetScrollY
-
           if (cardRect.top < 0) {
-            // La carte est au-dessus de la vue, scroll vers le haut
-            // On veut que le haut de la carte soit visible avec une marge de 50px
             targetScrollY = window.pageYOffset + cardRect.top - 50
           } else if (cardRect.bottom > windowHeight) {
-            // La carte est en dessous de la vue, scroll vers le bas
-            // On veut que le bas de la carte soit visible avec une marge de 100px
-            // La formule: position actuelle + (bas de la carte - hauteur de la fenêtre + marge)
             targetScrollY = window.pageYOffset + (cardRect.bottom - windowHeight + 100)
           }
 
-          // Ajouter un indicateur visuel de scroll
           cardElement.style.transition = "box-shadow 0.3s ease"
           cardElement.style.boxShadow = "0 0 20px rgba(0, 212, 255, 0.3)"
 
-          // Scroll fluide vers la position calculée
           window.scrollTo({
             top: Math.max(0, targetScrollY),
             behavior: "smooth",
           })
 
-          // Retirer l'indicateur visuel après le scroll
           setTimeout(() => {
             cardElement.style.boxShadow = ""
           }, 1500)
-
-          console.log(`🎯 Scroll automatique vers la carte ${appId} (carte pas totalement visible):`, {
-            cardTop: cardRect.top,
-            cardBottom: cardRect.bottom,
-            windowHeight: windowHeight,
-            targetScrollY: targetScrollY,
-            isPartiallyVisible: isPartiallyVisible,
-            isFullyVisible: isFullyVisible,
-          })
-        } else {
-          console.log(`✅ Carte ${appId} déjà totalement visible, pas de scroll nécessaire`)
         }
       }
-    }, 100) // Délai pour laisser l'animation CSS se déclencher
+    }, 100)
   }
 }
 
-// NOUVELLES FONCTIONS: Helpers pour la compatibilité
 function getCompatibilityClass(percentage) {
   if (percentage >= 75) return "high"
   if (percentage >= 50) return "medium"
@@ -1261,43 +745,9 @@ function getCompatibilityIcon(percentage) {
   return "times-circle"
 }
 
-// NOUVELLE FONCTION: Filtrer par compatibilité
-function filterApplicationsByCompatibility(minCompatibility) {
-  console.log("🔍 Filtrage par compatibilité:", minCompatibility)
 
-  if (minCompatibility === "all") {
-    renderApplicationsWithCompatibility()
-    return
-  }
 
-  const threshold = Number.parseInt(minCompatibility)
-  const filteredApps = applications.filter((app) => (app.compatibility_percentage || 0) >= threshold)
-
-  const container = document.getElementById("applicationsList")
-  if (!container) return
-
-  if (filteredApps.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <i class="fas fa-chart-pie"></i>
-        <h4>Aucune candidature avec ${threshold}%+ de compatibilité</h4>
-        <p>Aucune candidature ne correspond au niveau de compatibilité sélectionné.</p>
-      </div>
-    `
-    return
-  }
-
-  // Utiliser la même logique de rendu mais avec les candidatures filtrées
-  const originalApplications = applications
-  applications = filteredApps
-  renderApplicationsWithCompatibility()
-  applications = originalApplications
-}
-
-// NOUVELLE FONCTION: Voir les détails de compatibilité avec thème sombre
 async function viewCompatibilityDetails(applicationId) {
-  console.log("🔍 Affichage détails compatibilité pour candidature:", applicationId)
-
   try {
     showLoading("Chargement des détails de compatibilité...")
 
@@ -1306,21 +756,7 @@ async function viewCompatibilityDetails(applicationId) {
 
     hideLoading()
 
-    // Debug des données reçues
-    console.log("🔍 DEBUG COMPATIBILITY API RESPONSE:", {
-      status: response.status,
-      result: result,
-      success: result.success,
-      compatibility_percentage: result.compatibility_percentage,
-      matched_count: result.matched_count,
-      missing_count: result.missing_count,
-      total_job_skills: result.total_job_skills,
-      matched_skills: result.matched_skills,
-      missing_skills: result.missing_skills,
-    })
-
     if (result.success) {
-      // Utilisez les données de l'API pour afficher la modal
       showDarkCompatibilityModal(
         result,
         result.compatibility_percentage || 0,
@@ -1332,19 +768,17 @@ async function viewCompatibilityDetails(applicationId) {
     }
   } catch (error) {
     hideLoading()
-    console.error("❌ Erreur chargement détails compatibilité:", error)
+    console.error("Erreur chargement détails compatibilité:", error)
     showNotification("Erreur de connexion", "error")
   }
 }
 
-// NOUVELLE FONCTION: Afficher la modal de détails de compatibilité avec thème sombre
 function showDarkCompatibilityModal(
   compatibilityData,
   compatibilityPercentage,
   compatibilitySource,
   compatibilityReason,
 ) {
-  console.log("🔍 Affichage modal compatibilité sombre:", compatibilityData)
 
   const modal = document.createElement("div")
   modal.className = "modal-overlay compatibility-modal-overlay"
@@ -1777,7 +1211,6 @@ function showDarkCompatibilityModal(
   })
 }
 
-// Helper function pour les niveaux de compétences
 function getLevelText(level) {
   const levelTexts = {
     beginner: "Débutant",
@@ -1788,18 +1221,9 @@ function getLevelText(level) {
   return levelTexts[level] || level
 }
 
-// FONCTION CORRIGÉE: Rendre les actions pour chaque candidat selon le rôle
 function renderCandidateActions(app) {
-  // Handle different data structures from different API endpoints
   const candidateName = app.name || app.candidate_name || "Candidat inconnu"
   const candidateId = app.candidate_id || app.candidate_profile_id || app.id
-
-  console.log(`🎯 Rendu actions pour ${candidateName}:`, {
-    userRole: currentUser?.role,
-    currentUser: currentUser,
-    appStatus: app.status,
-    isRecommended: app.is_recommended,
-  })
 
   if (currentUser && currentUser.role === "department_head") {
     // ... (le code existant pour les chefs de département)
@@ -1807,10 +1231,8 @@ function renderCandidateActions(app) {
 
   // Pour les recruteurs
   if (currentUser && currentUser.role === "recruiter") {
-    console.log(`🎯 Rendu actions recruteur pour ${candidateName}, status: ${app.status}`)
-
     if (app.status === "pending") {
-      const actions = `
+      return `
       <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
         <i class="fas fa-eye"></i> Examiner
       </button>
@@ -1821,8 +1243,6 @@ function renderCandidateActions(app) {
         <i class="fas fa-times"></i> Rejeter
       </button>
     `
-      console.log(`🎯 Actions pending générées:`, actions)
-      return actions
     } else if (app.status === "reviewed") {
       return `
       <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
@@ -1890,13 +1310,10 @@ function renderCandidateActions(app) {
 `
 }
 
-// Fonction pour retourner au dashboard
 function goBackToDashboard() {
-  console.log("🔙 Retour au dashboard")
   window.location.href = "/dashboard"
 }
 
-// Obtenir le texte du statut
 function getStatusText(status) {
   const statusTexts = {
     pending: "En attente",
@@ -1912,16 +1329,12 @@ function getStatusText(status) {
   return statusTexts[status] || status
 }
 
-// Fonction pour initialiser l'état de validation du quiz
 function initializeQuizValidationState() {
-  console.log("🔧 Initialisation de l'état de validation du quiz")
-  
   applications.forEach(app => {
     const interviewSection = document.getElementById(`interview-section-${app.id}`)
     const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${app.id}`)
     
     if (app.quiz_validated) {
-      // Si le quiz est déjà validé, retirer l'overlay
       if (interviewSection) {
         interviewSection.classList.remove("locked")
         const overlay = interviewSection.querySelector(".interview-validation-overlay")
@@ -1937,10 +1350,7 @@ function initializeQuizValidationState() {
     }
   })
 }
-// Fonction pour afficher la modal de validation admin
 function showAdminValidationModal(applicationId, candidateName, jobTitle) {
-  console.log(`👑 Affichage validation admin pour ${candidateName}`)
-
   const modal = document.createElement("div")
   modal.className = "modal-overlay"
   modal.style.opacity = "1"
@@ -2007,10 +1417,7 @@ function showAdminValidationModal(applicationId, candidateName, jobTitle) {
   document.addEventListener("keydown", handleEscapeKey)
 }
 
-// Fonction pour confirmer la validation admin
 async function confirmAdminValidation(applicationId) {
-  console.log(`✅ Confirmation validation admin candidature ${applicationId}`)
-
   try {
     closeConfirmationModal()
     showLoading("Validation en cours...")
@@ -2036,15 +1443,12 @@ async function confirmAdminValidation(applicationId) {
     }
   } catch (error) {
     hideLoading()
-    console.error("❌ Erreur validation admin:", error)
+    console.error("Erreur validation admin:", error)
     showNotification("Erreur de connexion lors de la validation", "error")
   }
 }
 
-// FONCTION CORRIGÉE: Afficher la modal de confirmation de recommandation
 function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
-  console.log(`👍 Affichage confirmation recommandation pour ${candidateName} (ID: ${applicationId})`)
-
   if (!currentUser || currentUser.role !== "department_head") {
     showNotification("Seuls les chefs de département peuvent recommander des candidatures", "warning")
     return
@@ -2126,10 +1530,7 @@ function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
   document.addEventListener("keydown", handleEscapeKey)
 }
 
-// FONCTION CORRIGÉE: Confirmer la recommandation avec meilleur feedback
 async function confirmRecommendApplication(applicationId) {
-  console.log(`👍 Confirmation recommandation candidature ${applicationId}`)
-
   try {
     const commentElement = document.getElementById("recommendationComment")
     const priorityElement = document.getElementById("recommendationPriority")
@@ -2172,11 +1573,9 @@ async function confirmRecommendApplication(applicationId) {
     hideLoading()
 
     if (result.success) {
-      console.log("👍 Candidature recommandée avec succès")
       showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
 
       setTimeout(async () => {
-        console.log("🔄 Rechargement des données après recommandation...")
         if (currentJob && currentJob.id) {
           await loadJobFromAPI(currentJob.id)
         }
@@ -2186,20 +1585,16 @@ async function confirmRecommendApplication(applicationId) {
         showNotification("🎯 Les recruteurs et super admins ont été notifiés de votre recommandation", "info")
       }, 2000)
     } else {
-      console.error("❌ Erreur recommandation candidature:", result.message)
       showNotification(`❌ ${result.message}`, "error")
     }
   } catch (error) {
     hideLoading()
-    console.error("❌ Erreur réseau recommandation candidature:", error)
+    console.error("Erreur réseau recommandation candidature:", error)
     showNotification("❌ Erreur de connexion lors de la recommandation", "error")
   }
 }
 
-// Fonction pour afficher la modal de confirmation d'acceptation
 function showAcceptConfirmation(applicationId, candidateName, jobTitle, departmentName) {
-  console.log(`🎉 Affichage confirmation acceptation pour ${candidateName}`)
-
   const isAdmin = currentUser && currentUser.role === "super_admin"
   const modalTitle = isAdmin ? "Accepter définitivement" : "Accepter la candidature"
   const modalDescription = isAdmin
@@ -2285,10 +1680,7 @@ function showAcceptConfirmation(applicationId, candidateName, jobTitle, departme
   document.addEventListener("keydown", handleEscapeKey)
 }
 
-// Fonction pour afficher la modal de confirmation de rejet
 function showRejectConfirmation(applicationId, candidateName, jobTitle) {
-  console.log(`❌ Affichage confirmation rejet pour ${candidateName}`)
-
   const modal = document.createElement("div")
   modal.className = "modal-overlay"
   modal.style.opacity = "1"
@@ -2354,14 +1746,12 @@ function showRejectConfirmation(applicationId, candidateName, jobTitle) {
   document.addEventListener("keydown", handleEscapeKey)
 }
 
-// Fonction pour gérer la touche Escape
 function handleEscapeKey(e) {
   if (e.key === "Escape") {
     closeConfirmationModal()
   }
 }
 
-// Fonction pour fermer la modal de confirmation avec animation
 function closeConfirmationModal() {
   const modal = document.querySelector(".modal-overlay")
   if (modal) {
@@ -2378,14 +1768,11 @@ function closeConfirmationModal() {
   }
 }
 
-// Fonction pour confirmer l'acceptation
-// Fonction pour confirmer l'acceptation
 async function confirmAcceptApplication(applicationId) {
   try {
     closeConfirmationModal()
     showLoading("Traitement de l'acceptation...")
 
-    // Déterminer le statut en fonction du rôle
     let targetStatus = "accepted"
     if (currentUser && currentUser.role === "recruiter") {
       targetStatus = "accepted_pending_validation"
@@ -2417,16 +1804,13 @@ async function confirmAcceptApplication(applicationId) {
       showNotification(result.message || "Erreur lors de l'acceptation", "error")
     }
   } catch (error) {
-    console.error("❌ Erreur réseau ou système:", error)
+    console.error("Erreur réseau ou système:", error)
     hideLoading()
     showNotification("Erreur inattendue lors de la communication avec le serveur", "error")
   }
 }
 
-// Fonction pour confirmer le rejet
 async function confirmRejectApplication(applicationId) {
-  console.log(`❌ Confirmation rejet candidature ${applicationId}`)
-
   try {
     closeConfirmationModal()
     showLoading("Traitement du rejet...")
@@ -2446,7 +1830,6 @@ async function confirmRejectApplication(applicationId) {
     hideLoading()
 
     if (result.success) {
-      console.log("❌ Candidature rejetée avec succès")
       showNotification(result.message || "Candidature rejetée", "success")
 
       setTimeout(async () => {
@@ -2455,20 +1838,16 @@ async function confirmRejectApplication(applicationId) {
         }
       }, 1000)
     } else {
-      console.error("❌ Erreur rejet candidature:", result.message)
       showNotification(result.message, "error")
     }
   } catch (error) {
     hideLoading()
-    console.error("❌ Erreur réseau rejet candidature:", error)
+    console.error("Erreur réseau rejet candidature:", error)
     showNotification("Erreur de connexion lors du rejet", "error")
   }
 }
 
-// Fonction pour mettre à jour le statut d'une candidature
 async function updateApplicationStatus(applicationId, newStatus) {
-  console.log(`📝 Mise à jour statut candidature ${applicationId} vers ${newStatus}`)
-
   try {
     const response = await fetch(`/api/applications/${applicationId}/update-status`, {
       method: "POST",
@@ -2483,7 +1862,6 @@ async function updateApplicationStatus(applicationId, newStatus) {
     const result = await response.json()
 
     if (result.success) {
-      console.log(`✅ Statut mis à jour vers ${newStatus}`)
       showNotification(result.message, "success")
 
       setTimeout(async () => {
@@ -2492,19 +1870,15 @@ async function updateApplicationStatus(applicationId, newStatus) {
         }
       }, 1000)
     } else {
-      console.error("❌ Erreur mise à jour statut:", result.message)
       showNotification(result.message, "error")
     }
   } catch (error) {
-    console.error("❌ Erreur réseau mise à jour statut:", error)
+    console.error("Erreur réseau mise à jour statut:", error)
     showNotification("Erreur de connexion", "error")
   }
 }
 
-// Filtrer les candidatures
 function filterApplications(filter) {
-  console.log(`🔍 Filtrage: ${filter}`)
-
   document.querySelectorAll(".filter-btn").forEach((btn) => {
     btn.classList.remove("active")
   })
@@ -2519,65 +1893,13 @@ function filterApplications(filter) {
   renderApplicationsWithCompatibility(filter)
 }
 
-// Fonctions pour les actions
-function editJob() {
-  showNotification("Fonction de modification en cours de développement", "info")
-}
 
-function shareJob() {
-  if (!currentJob) {
-    showNotification("Aucun poste à partager", "error")
-    return
-  }
-
-  if (navigator.share) {
-    navigator
-      .share({
-        title: currentJob.title,
-        text: `Découvrez cette offre d'emploi: ${currentJob.title}`,
-        url: window.location.href,
-      })
-      .then(() => {
-        showNotification("Poste partagé avec succès !", "success")
-      })
-      .catch(() => {
-        fallbackShare()
-      })
-  } else {
-    fallbackShare()
-  }
-}
-
-function fallbackShare() {
-  const url = window.location.href
-  navigator.clipboard
-    .writeText(url)
-    .then(() => {
-      showNotification("Lien copié dans le presse-papiers !", "success")
-    })
-    .catch(() => {
-      showNotification("Impossible de copier le lien", "error")
-    })
-}
-
-function closeJob() {
-  if (confirm("Êtes-vous sûr de vouloir fermer ce poste ?")) {
-    showNotification("Poste fermé avec succès", "success")
-    setTimeout(() => {
-      goBackToDashboard()
-    }, 2000)
-  }
-}
 
 function viewCandidateProfile(candidateId) {
-  console.log(`👤 Voir profil candidat ${candidateId}`)
   window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
 }
 
-// Fonctions utilitaires
 function showLoading(message) {
-  console.log("⏳ Affichage loading:", message)
-
   hideLoading()
 
   const loadingHTML = `
@@ -2599,8 +1921,6 @@ function hideLoading() {
 }
 
 function showError(message) {
-  console.log("❌ Affichage erreur:", message)
-
   const errorHTML = `
   <div class="error-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 25000;">
     <div class="error-content" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)); backdrop-filter: blur(20px); padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25); max-width: 400px;">
@@ -2616,10 +1936,7 @@ function showError(message) {
   document.body.innerHTML = errorHTML
 }
 
-// Système de notifications
 function showNotification(message, type = "info") {
-  console.log(`📢 Notification ${type}:`, message)
-
   const notification = document.createElement("div")
   notification.className = `notification ${type}`
 
@@ -2677,7 +1994,6 @@ function showNotification(message, type = "info") {
   }, 4000)
 }
 
-// Gestion des événements globaux
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("filter-btn")) {
     const filterText = e.target.textContent.toLowerCase()
@@ -2691,7 +2007,6 @@ document.addEventListener("click", (e) => {
   }
 })
 
-// Ajouter les animations CSS
 const style = document.createElement("style")
 style.textContent = `
 @keyframes slideInRight {
@@ -2718,16 +2033,9 @@ style.textContent = `
 `
 document.head.appendChild(style)
 
-// NOUVELLE FONCTION: Mettre à jour les compteurs des boutons de filtres
 function updateFilterCounts() {
-  console.log("🔢 Mise à jour des compteurs de filtres")
+  if (!applications || applications.length === 0) return
 
-  if (!applications || applications.length === 0) {
-    console.log("⚠️ Aucune candidature pour mettre à jour les compteurs")
-    return
-  }
-
-  // Compter les candidatures par statut
   const counts = {
     all: applications.length,
     pending: applications.filter((app) => app.status === "pending").length,
@@ -2736,9 +2044,6 @@ function updateFilterCounts() {
     rejected: applications.filter((app) => app.status === "rejected").length,
   }
 
-  console.log("📊 Compteurs calculés:", counts)
-
-  // Mettre à jour les boutons de filtres
   const filterButtons = document.querySelectorAll(".filter-btn")
   filterButtons.forEach((btn) => {
     const onclick = btn.getAttribute("onclick")
@@ -2757,21 +2062,15 @@ function updateFilterCounts() {
     }
   })
 
-  // Mettre à jour le titre de la section
   const sectionHeader = document.querySelector(".applications-section .section-header h3")
   if (sectionHeader) {
     sectionHeader.innerHTML = `<i class="fas fa-users"></i> Candidatures (${counts.all})`
   }
-
-  console.log("✅ Compteurs de filtres mis à jour")
 }
 
-console.log("✅ Script job-details-enhanced.js chargé complètement avec compatibilité et modal sombre")
 
-// Fonction pour voir les résultats du quiz
+
 async function viewQuizResults(applicationId, candidateName) {
-  console.log(`👁️ Affichage résultats quiz pour ${candidateName} (ID: ${applicationId})`)
-
   try {
     showLoading("Chargement des résultats du quiz...")
 
@@ -2786,14 +2085,12 @@ async function viewQuizResults(applicationId, candidateName) {
     }
   } catch (error) {
     hideLoading()
-    console.error("❌ Erreur chargement résultats quiz:", error)
+    console.error("Erreur chargement résultats quiz:", error)
     showNotification("Erreur de connexion lors du chargement des résultats", "error")
   }
 }
 
-// Fonction pour afficher la modal des résultats du quiz
 function showQuizResultsModal(quizData, candidateName, applicationId) {
-  console.log("🔍 Affichage modal résultats quiz:", quizData)
 
   const modal = document.createElement("div")
   modal.className = "modal-overlay quiz-results-modal"
@@ -3052,7 +2349,6 @@ function showQuizResultsModal(quizData, candidateName, applicationId) {
   })
 }
 
-// Fonction helper pour déterminer la classe CSS du score quiz
 function getQuizScoreClass(score) {
   if (score >= 75) return "high"
   if (score >= 50) return "medium"
@@ -3060,134 +2356,15 @@ function getQuizScoreClass(score) {
   return "very-low"
 }
 
-// NOUVELLE FONCTION: Créer des candidatures de démonstration
-async function createDemoApplications() {
-  try {
-    console.log("🔧 Création de candidatures de démonstration...")
 
-    const response = await fetch("/api/applications/create-demo", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
 
-    const result = await response.json()
 
-    if (result.success) {
-      console.log("✅ Candidatures demo créées:", result.message)
-      showNotification(result.message, "success")
 
-      // Recharger les données du job pour afficher les nouvelles candidatures
-      if (currentJob && currentJob.id) {
-        console.log("🔄 Rechargement des données du job...")
-        await loadJobFromAPI(currentJob.id)
-      }
-    } else {
-      console.error("❌ Erreur création candidatures demo:", result.message)
-      showError(result.message || "Erreur lors de la création des candidatures demo")
-    }
-  } catch (error) {
-    console.error("❌ Erreur réseau création candidatures demo:", error)
-    showError("Erreur de connexion lors de la création des candidatures demo")
-  }
-}
-
-// NOUVELLE FONCTION: Vérifier manuellement les candidatures en base
-async function debugApplications() {
-  try {
-    console.log("🔍 Vérification manuelle des candidatures en base...")
-
-    if (!currentJob || !currentJob.id) {
-      console.error("❌ Aucun job chargé pour la vérification")
-      return
-    }
-
-    // Vérifier directement les candidatures pour ce job
-    const response = await fetch(`/api/applications?job_id=${currentJob.id}`)
-    const result = await response.json()
-
-    console.log("🔍 DEBUG APPLICATIONS DIRECT:")
-    console.log("   - Response status:", response.status)
-    console.log("   - Response result:", result)
-
-    if (result.success) {
-      console.log("   - Applications trouvées:", result.applications?.length || 0)
-      if (result.applications && result.applications.length > 0) {
-        console.log("   - Première candidature:", result.applications[0])
-      }
-    } else {
-      console.log("   - Erreur API:", result.message)
-    }
-  } catch (error) {
-    console.error("❌ Erreur vérification candidatures:", error)
-  }
-}
-
-async function validateSkillsAnalysis(applicationId, candidateName) {
-  console.log(`✅ Validation de l'analyse des compétences pour ${candidateName} (ID: ${applicationId})`)
-
-  try {
-      showLoading("Validation en cours...")
-
-      const response = await fetch(`/api/applications/${applicationId}/validate-skills`, {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-              validated: true,
-              notes: "Compétences validées par l'équipe RH"
-          })
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-          // Mettre à jour l'interface utilisateur
-          const validateBtn = document.getElementById(`validate-btn-${applicationId}`)
-          const validationStatus = document.getElementById(`validation-status-${applicationId}`)
-          const quizSection = document.getElementById(`quiz-section-${applicationId}`)
-
-          if (validateBtn) {
-              validateBtn.classList.add("validated")
-              validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé'
-              validateBtn.disabled = true
-          }
-
-          if (validationStatus) {
-              validationStatus.classList.add("success")
-          }
-
-          if (quizSection) {
-              quizSection.classList.remove("locked")
-              const overlay = quizSection.querySelector(".quiz-validation-overlay")
-              if (overlay) {
-                  overlay.remove()
-              }
-          }
-
-          showNotification(`Analyse des compétences validée pour ${candidateName}`, "success")
-      } else {
-          showNotification(result.message || "Erreur lors de la validation", "error")
-      }
-  } catch (error) {
-      console.error("Erreur lors de la validation des compétences:", error)
-      showNotification("Erreur de connexion lors de la validation", "error")
-  } finally {
-      hideLoading()
-  }
-}
-
-// Fonction pour enlever seulement l'overlay du quiz (sans valider les compétences)
 async function validateSkillsAndRemoveOverlay(applicationId) {
-  console.log(`✅ Validation des compétences pour l'application ${applicationId}`)
-  
   try {
-    // Trouver l'application correspondante
     const app = applications.find(a => a.id === applicationId);
     if (!app) {
-      console.error("❌ Application non trouvée");
+      console.error("Application non trouvée");
       return;
     }
     
@@ -3210,11 +2387,9 @@ async function validateSkillsAndRemoveOverlay(applicationId) {
     hideLoading();
     
     if (result.success) {
-      // Mettre à jour l'état local
       app.skills_validated = true;
       app.skills_validated_at = new Date().toISOString();
       
-      // Mettre à jour l'interface
       const validateBtn = document.getElementById(`validate-btn-${applicationId}`);
       const validationStatus = document.getElementById(`validation-status-${applicationId}`);
       const quizSection = document.getElementById(`quiz-section-${applicationId}`);
@@ -3244,19 +2419,16 @@ async function validateSkillsAndRemoveOverlay(applicationId) {
     }
   } catch (error) {
     hideLoading();
-    console.error("❌ Erreur validation compétences:", error);
+    console.error("Erreur validation compétences:", error);
     showNotification("Erreur de connexion lors de la validation", "error");
   }
 }
 
-// Fonction pour valider le quiz et enlever l'overlay de la section entretien
 async function validateQuizAndRemoveOverlay(applicationId) {
-  console.log(`✅ Validation du quiz pour l'application ${applicationId}`)
-  
   try {
     const app = applications.find(a => a.id === applicationId);
     if (!app) {
-      console.error("❌ Application non trouvée");
+      console.error("Application non trouvée");
       return;
     }
     
@@ -3264,7 +2436,6 @@ async function validateQuizAndRemoveOverlay(applicationId) {
     
     showLoading("Validation du quiz en cours...");
     
-    // Appel API pour valider le quiz
     const response = await fetch(`/api/applications/${applicationId}/validate-quiz`, {
       method: 'POST',
       headers: {
@@ -3279,11 +2450,9 @@ async function validateQuizAndRemoveOverlay(applicationId) {
     const result = await response.json();
     
     if (result.success) {
-      // Mettre à jour l'état local
       app.quiz_validated = true;
       app.quiz_validated_at = new Date().toISOString();
       
-      // Supprimer l'overlay et débloquer la section
       const interviewSection = document.getElementById(`interview-section-${applicationId}`);
       if (interviewSection) {
         interviewSection.classList.remove('locked');
@@ -3296,7 +2465,6 @@ async function validateQuizAndRemoveOverlay(applicationId) {
       hideLoading();
       showNotification(`✅ Quiz validé pour ${candidateName}`, "success");
       
-      // Mettre à jour l'interface pour refléter la validation
       const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${applicationId}`);
       if (validateQuizBtn) {
         validateQuizBtn.disabled = true;
@@ -3309,56 +2477,25 @@ async function validateQuizAndRemoveOverlay(applicationId) {
     }
   } catch (error) {
     hideLoading();
-    console.error("❌ Erreur validation quiz:", error);
+    console.error("Erreur validation quiz:", error);
     showNotification("Erreur de connexion lors de la validation", "error");
   }
 }
 
-// Fonction pour initialiser l'état de validation du quiz
-function initializeQuizValidationState() {
-  console.log("🔧 Initialisation de l'état de validation du quiz")
-  
-  applications.forEach(app => {
-    const interviewSection = document.getElementById(`interview-section-${app.id}`)
-    const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${app.id}`)
-    
-    if (app.quiz_validated) {
-      // Si le quiz est déjà validé, retirer l'overlay
-      if (interviewSection) {
-        interviewSection.classList.remove("locked")
-        const overlay = interviewSection.querySelector(".interview-validation-overlay")
-        if (overlay) {
-          overlay.remove()
-        }
-      }
-      
-      if (validateQuizBtn) {
-        validateQuizBtn.disabled = true
-        validateQuizBtn.innerHTML = '<i class="fas fa-check"></i> Quiz Validé'
-      }
-    }
-  })
-}
 
-// Appeler cette fonction après le chargement des applications
-setTimeout(() => {
-  initializeSkillsValidationState()
-  initializeQuizValidationState() // ← Ajouter cette ligne
-}, 100)
 
-// Guarded click handler to prevent spamming the open button
 function handleOpenCreateQuizClick(buttonEl) {
   if (!buttonEl) return
   if (buttonEl.dataset.loading === "true") return
-  // set loading state
+  
   buttonEl.dataset.loading = "true"
   buttonEl.disabled = true
   const originalHtml = buttonEl.innerHTML
   buttonEl.dataset.originalHtml = originalHtml
   buttonEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Ouverture...</span>'
-  // open modal (no candidate preselected here)
+  
   openCreateQuizModal()
-  // restore the button state after modal is shown
+  
   setTimeout(() => {
     try {
       buttonEl.disabled = false
@@ -3370,23 +2507,17 @@ function handleOpenCreateQuizClick(buttonEl) {
   }, 600)
 }
 
-// Ouvrir le modal de création de quiz
 async function openCreateQuizModal(candidateId = null, candidateName = null) {
-  console.log("🎯 Ouverture du modal de création de quiz professionnel")
-  console.log("👤 Candidat sélectionné:", candidateId, candidateName)
-
-  // Store the candidate ID globally for the form submission
   window.currentQuizCandidateId = candidateId
   window.currentQuizCandidateName = candidateName
 
   const modal = document.getElementById("createQuizModal")
 
   if (!modal) {
-    console.error("❌ Modal non trouvé")
+    console.error("Modal non trouvé")
     return
   }
 
-  // Update modal header to show candidate name if available
   const modalHeader = modal.querySelector(".modal-header h2")
   if (modalHeader && candidateName) {
     modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz d'Évaluation pour ${candidateName}`
@@ -3394,80 +2525,57 @@ async function openCreateQuizModal(candidateId = null, candidateName = null) {
     modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz d'Évaluation`
   }
 
-  // Afficher le modal
   modal.classList.add("show")
-
-  // Empêcher le scroll du body
   document.body.style.overflow = "hidden"
 
-  // Générer la configuration des compétences (async)
   await generateSkillsQuizConfig()
 }
 
-// Fermer le modal de création de quiz
 function closeCreateQuizModal() {
-  console.log("❌ Fermeture du modal de création de quiz")
   const modal = document.getElementById("createQuizModal")
 
   if (modal) {
     modal.classList.remove("show")
   }
 
-  // Restaurer le scroll du body
   document.body.style.overflow = "auto"
 
-  // Reset modal header and clear stored candidate info
   const modalHeader = modal.querySelector(".modal-header h2")
   if (modalHeader) {
     modalHeader.innerHTML = `<i class="fas fa-question-circle"></i> Créer un Quiz`
   }
 
-  // Clear stored candidate information
   window.currentQuizCandidateId = null
   window.currentQuizCandidateName = null
 }
 
-// Générer la configuration des compétences pour le quiz
 async function generateSkillsQuizConfig() {
-  console.log("🔧 Génération de la configuration des compétences")
   const container = document.getElementById("skillsQuizConfig")
 
   if (!container) {
-    console.error("❌ Container skillsQuizConfig non trouvé")
+    console.error("Container skillsQuizConfig non trouvé")
     return
   }
 
-  // Afficher un message de chargement
   container.innerHTML =
     '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Chargement des compétences...</p>'
 
   try {
-    // Récupérer les compétences du job
     let jobSkills = []
 
     if (currentJob && currentJob.id) {
-      console.log("🔍 Récupération des compétences pour le job ID:", currentJob.id)
-      console.log("🔍 Job complet:", currentJob)
-
-      // Essayer de récupérer depuis les données du job existantes
       if (currentJob.skills && Array.isArray(currentJob.skills)) {
         jobSkills = currentJob.skills
-        console.log("✅ Compétences trouvées dans currentJob.skills:", jobSkills)
       } else if (currentJob.required_skills && Array.isArray(currentJob.required_skills)) {
         jobSkills = currentJob.required_skills
-        console.log("✅ Compétences trouvées dans currentJob.required_skills:", jobSkills)
       } else if (currentJob.job_skills && Array.isArray(currentJob.job_skills)) {
         jobSkills = currentJob.job_skills
-        console.log("✅ Compétences trouvées dans currentJob.job_skills:", jobSkills)
       } else if (currentJob.skills_list && Array.isArray(currentJob.skills_list)) {
         jobSkills = currentJob.skills_list
-        console.log("✅ Compétences trouvées dans currentJob.skills_list:", jobSkills)
       }
     }
 
-    // Fallback: essayer de récupérer depuis le DOM
     if (jobSkills.length === 0) {
-      console.log("🔍 Fallback: récupération depuis le DOM")
       const skillsContainer = document.getElementById("jobSkillsContainer")
       if (skillsContainer) {
         const skillElements = skillsContainer.querySelectorAll(".skill-tag, .skill-item, [data-skill], .skill")
@@ -3479,30 +2587,24 @@ async function generateSkillsQuizConfig() {
       }
     }
 
-    console.log("🔍 Compétences finales trouvées:", jobSkills)
-
     if (jobSkills.length === 0) {
       container.innerHTML =
         '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Aucune compétence trouvée pour ce poste. Veuillez d\'abord ajouter des compétences au poste.</p>'
       return
     }
 
-    // Générer le HTML pour chaque compétence
     const skillsHTML = jobSkills
       .map((skill) => {
-        // Gérer différents formats de compétences (string ou object)
         let skillName = ""
         if (typeof skill === "string") {
           skillName = skill.trim()
         } else if (skill && typeof skill === "object") {
-          // Utiliser skill_name en priorité (structure trouvée dans les données)
           skillName =
             skill.skill_name || skill.name || skill.skill || skill.title || skill.text || "Compétence inconnue"
         } else {
           skillName = String(skill) || "Compétence inconnue"
         }
 
-        // Créer un ID sécurisé pour les inputs
         const skillId = skillName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()
 
         return `
@@ -3520,7 +2622,7 @@ async function generateSkillsQuizConfig() {
             <div class="form-group">
               <label for="difficulty_${skillId}">Niveau de difficulté</label>
               <select id="difficulty_${skillId}" name="difficulty_${skillId}" required>
-                <option value="easy">Facile</option>
+                <option value="easy">Facle</option>
                 <option value="medium" selected>Moyen</option>
                 <option value="hard">Difficile</option>
                 <option value="expert">Expert</option>
@@ -3534,22 +2636,19 @@ async function generateSkillsQuizConfig() {
 
     container.innerHTML = skillsHTML
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération des compétences:", error)
+    console.error("Erreur lors de la récupération des compétences:", error)
     container.innerHTML =
       '<p style="color: var(--error-red); text-align: center; padding: 2rem;">Erreur lors du chargement des compétences. Veuillez réessayer.</p>'
   }
 }
 
-// Gérer la soumission du formulaire de création de quiz
 document.addEventListener("DOMContentLoaded", () => {
   const quizForm = document.getElementById("createQuizForm")
 
   if (quizForm) {
     quizForm.addEventListener("submit", async (e) => {
       e.preventDefault()
-      console.log("📝 Soumission du formulaire de création de quiz")
 
-      // Prevent double submit and show loading state
       if (quizForm.dataset.submitting === "true") {
         return
       }
@@ -3560,9 +2659,7 @@ document.addEventListener("DOMContentLoaded", () => {
         submitBtn.disabled = true
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…'
       }
-      // Note: do NOT disable inputs yet; FormData ignores disabled controls
 
-      // Récupérer les données du formulaire
       const formData = new FormData(quizForm)
       const quizData = {
         title: formData.get("quizTitle"),
@@ -3570,7 +2667,6 @@ document.addEventListener("DOMContentLoaded", () => {
         skills: [],
       }
 
-      // Récupérer les compétences du job avec la même logique
       let jobSkills = []
 
       if (currentJob) {
@@ -3584,7 +2680,6 @@ document.addEventListener("DOMContentLoaded", () => {
           jobSkills = currentJob.skills_list
         }
 
-        // Si toujours vide, essayer de récupérer depuis les éléments DOM
         if (jobSkills.length === 0) {
           const skillsContainer = document.getElementById("jobSkillsContainer")
           if (skillsContainer) {
@@ -3598,21 +2693,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // Ajouter les configurations de chaque compétence
       jobSkills.forEach((skill) => {
-        // Gérer différents formats de compétences (string ou object)
         let skillName = ""
         if (typeof skill === "string") {
           skillName = skill.trim()
         } else if (skill && typeof skill === "object") {
-          // Utiliser skill_name en priorité (structure trouvée dans les données)
           skillName =
             skill.skill_name || skill.name || skill.skill || skill.title || skill.text || "Compétence inconnue"
         } else {
           skillName = String(skill) || "Compétence inconnue"
         }
 
-        // Créer un ID sécurisé pour les inputs
         const skillId = skillName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()
 
         const questions = Number.parseInt(formData.get(`questions_${skillId}`)) || 0
@@ -3627,9 +2718,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       })
 
-      console.log("📊 Données du quiz:", quizData)
-
-      // Basic validation before sending to API to avoid 422
       if (!quizData.title || !quizData.timeLimit || Number.isNaN(quizData.timeLimit)) {
         showNotification("Veuillez renseigner le titre et le temps limite.", "error")
         if (submitBtn) {
@@ -3649,17 +2737,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return
       }
 
-      // Now disable controls during the network request
       const formControls = quizForm.querySelectorAll("input, select, textarea, button")
       formControls.forEach((el) => {
         if (el !== submitBtn) el.disabled = true
       })
 
-      // Get candidate ID from the stored global variable
       const candidateId = window.currentQuizCandidateId || null
-      console.log("👤 ID du candidat pour le quiz:", candidateId)
 
-      // Send quiz data to the quiz router
       try {
         const response = await fetch("/api/hr/quiz/create", {
           method: "POST",
@@ -3684,10 +2768,9 @@ document.addEventListener("DOMContentLoaded", () => {
           showNotification("Erreur lors de la création du quiz", "error")
         }
       } catch (error) {
-        console.error("❌ Erreur lors de la création du quiz:", error)
+        console.error("Erreur lors de la création du quiz:", error)
         showNotification("Erreur lors de la création du quiz", "error")
       } finally {
-        // Restore form state
         if (submitBtn) {
           submitBtn.disabled = false
           if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
@@ -3701,22 +2784,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 })
 
-// Fermer le modal en cliquant à l'extérieur
-document.addEventListener("DOMContentLoaded", () => {
-  const modal = document.getElementById("createQuizModal")
 
-  if (modal) {
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) {
-        closeCreateQuizModal()
-      }
-    })
-  }
-})
 
-// ===== FONCTIONS POUR LA PROGRAMMATION D'ENTRETIEN =====
-
-// Fonction pour obtenir la classe CSS du statut d'entretien
 function getInterviewStatusClass(status) {
   const statusClasses = {
     'not_scheduled': 'status-not-scheduled',
@@ -3728,7 +2797,6 @@ function getInterviewStatusClass(status) {
   return statusClasses[status] || 'status-not-scheduled'
 }
 
-// Fonction pour obtenir le texte du statut d'entretien
 function getInterviewStatusText(status) {
   const statusTexts = {
     'not_scheduled': 'Non programmé',
@@ -3740,7 +2808,6 @@ function getInterviewStatusText(status) {
   return statusTexts[status] || 'Non programmé'
 }
 
-// Fonction pour formater une date
 function formatDate(dateString) {
   if (!dateString) return 'Non défini'
   try {
@@ -3756,11 +2823,7 @@ function formatDate(dateString) {
   }
 }
 
-// Fonction pour ouvrir le modal de programmation d'entretien
 function openScheduleInterviewModal(applicationId, candidateName) {
-  console.log(`📅 Ouverture du modal de programmation d'entretien pour ${candidateName}`)
-  
-  // Créer le modal
   const modal = document.createElement('div')
   modal.className = 'modal-overlay interview-modal-overlay'
   modal.style.cssText = `
@@ -3946,7 +3009,6 @@ function openScheduleInterviewModal(applicationId, candidateName) {
   })
 }
 
-// Fonction pour programmer l'entretien
 function scheduleInterview(applicationId, candidateName, form) {
   const formData = {
     date: form.querySelector('#interview-date').value,
@@ -3955,29 +3017,14 @@ function scheduleInterview(applicationId, candidateName, form) {
     notes: form.querySelector('#interview-notes').value
   }
 
-  console.log(`📅 Programmation d'entretien pour ${candidateName}:`, formData)
-
-  // Ici vous pouvez ajouter l'appel API pour sauvegarder l'entretien
-  // await saveInterviewToAPI(applicationId, formData)
-
-  // Fermer le modal
   form.closest('.modal-overlay').remove()
-
-  // Afficher une notification de succès
   showNotification(`Entretien programmé pour ${candidateName}`, "success")
-
-  // Mettre à jour l'affichage (optionnel)
-  // updateInterviewDisplay(applicationId, formData)
 }
 
-// Fonction pour voir les détails d'un entretien
 function viewInterviewDetails(applicationId) {
-  console.log(`👁️ Affichage des détails de l'entretien pour l'application ${applicationId}`)
   showNotification("Fonctionnalité en cours de développement", "info")
 }
 
-// Fonction pour reprogrammer un entretien
 function rescheduleInterview(applicationId) {
-  console.log(`🔄 Reprogrammation de l'entretien pour l'application ${applicationId}`)
   showNotification("Fonctionnalité en cours de développement", "info")
 }
