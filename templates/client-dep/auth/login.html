@@ -10,7 +10,7 @@
         /* Améliorations pour les boutons de connexion sociale */
         .social-login {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 0.75rem;
             margin-bottom: 2rem;
         }
@@ -63,16 +63,6 @@
             border-color: #00a1f1;
             background: rgba(0, 161, 241, 0.1);
             box-shadow: 0 8px 25px rgba(0, 161, 241, 0.2);
-        }
-
-        .linkedin-btn {
-            border-color: rgba(0, 119, 181, 0.3);
-        }
-
-        .linkedin-btn:hover:not(:disabled) {
-            border-color: #0077b5;
-            background: rgba(0, 119, 181, 0.1);
-            box-shadow: 0 8px 25px rgba(0, 119, 181, 0.2);
         }
 
         /* Animation de chargement pour les boutons sociaux */
@@ -260,11 +250,6 @@
                     <i class="fab fa-microsoft"></i>
                     <span>Microsoft</span>
                 </button>
-                <button type="button" class="social-btn linkedin-btn" id="linkedinBtn" disabled>
-                    <i class="fab fa-linkedin"></i>
-                    <span>LinkedIn</span>
-                    <small style="font-size: 0.7rem; opacity: 0.7;">(Bientôt)</small>
-                </button>
             </div>
 
             <!-- Sign Up Link -->
@@ -417,7 +402,6 @@
                 button.addEventListener("click", async () => {
                     const isGoogle = button.classList.contains("google-btn")
                     const isMicrosoft = button.classList.contains("microsoft-btn")
-                    const isLinkedIn = button.classList.contains("linkedin-btn")
 
                     // Désactiver le bouton pendant le traitement
                     button.disabled = true
@@ -431,13 +415,6 @@
                         } else if (isMicrosoft) {
                             // Redirection vers Microsoft OAuth
                             window.location.href = "/auth/microsoft"
-                        } else if (isLinkedIn) {
-                            // LinkedIn non disponible pour l'instant
-                            showFormError("Connexion LinkedIn temporairement indisponible")
-                            // Réactiver le bouton
-                            button.disabled = false
-                            button.style.opacity = "1"
-                            button.style.pointerEvents = "auto"
                         }
                     } catch (error) {
                         console.error("Social login error:", error)
