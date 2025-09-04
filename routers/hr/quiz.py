@@ -55,6 +55,9 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
     Create a new quiz based on form data and store in database
     """
     try:
+        # Debug: Print quiz creation data
+        print(f"DEBUG: Creating quiz with job_id={quiz_data.job_id}, candidate_id={quiz_data.candidate_id}")
+        
         quiz = Quiz(
             title=quiz_data.title,
             time_limit=quiz_data.time_limit,
@@ -68,6 +71,9 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
         db.add(quiz)
         db.commit()
         db.refresh(quiz)
+        
+        # Debug: Print created quiz data
+        print(f"DEBUG: Quiz created successfully with id={quiz.id}, job_id={quiz.job_id}, candidate_id={quiz.candidate_id}")
         
         for skill in quiz_data.skills:
             if skill.questions > 0:

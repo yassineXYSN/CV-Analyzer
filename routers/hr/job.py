@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from databasehr.database import SessionLocal
-from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin, JobSkill, Notification, User
+from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin, JobSkill, Notification, User, Quiz, QuizAttempt
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
@@ -211,6 +211,50 @@ async def get_jobs():
     except Exception as e:
         return {"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
 
+@router.get("/api/debug/quiz/{job_id}/{candidate_id}")
+async def debug_quiz_data(job_id: int, candidate_id: int):
+    """Debug endpoint to check quiz data for a specific job and candidate"""
+    try:
+        db = SessionLocal()
+        try:
+            # Check if quiz exists
+            quiz = db.query(Quiz).filter(
+                Quiz.job_id == job_id,
+                Quiz.candidate_id == candidate_id
+            ).first()
+            
+            if quiz:
+                # Check for completed attempts
+                quiz_attempt = db.query(QuizAttempt).filter(
+                    QuizAttempt.quiz_id == quiz.id,
+                    QuizAttempt.candidate_id == candidate_id,
+                    QuizAttempt.status == 'completed'
+                ).first()
+                
+                return {
+                    "success": True,
+                    "quiz_exists": True,
+                    "quiz_id": quiz.id,
+                    "quiz_status": quiz.status,
+                    "has_completed_attempt": quiz_attempt is not None,
+                    "attempt_data": {
+                        "score": quiz_attempt.score if quiz_attempt else None,
+                        "total_correct": quiz_attempt.total_correct if quiz_attempt else None,
+                        "total_questions": quiz_attempt.total_questions if quiz_attempt else None,
+                        "duration_seconds": int((quiz_attempt.end_time - quiz_attempt.start_time).total_seconds()) if quiz_attempt and quiz_attempt.start_time and quiz_attempt.end_time else None
+                    } if quiz_attempt else None
+                }
+            else:
+                return {
+                    "success": True,
+                    "quiz_exists": False,
+                    "quiz_id": None
+                }
+        finally:
+            db.close()
+    except Exception as e:
+        return {"success": False, "message": f"Error: {str(e)}"}
+
 @router.get("/api/job-basic/{job_id}")
 async def get_job_details(job_id: int):
     try:
@@ -280,6 +324,56 @@ async def get_job_details(job_id: int):
                     compatibility_source = "ai" if has_ai else None
                     compatibility_reason = app.compatibility_reason if has_ai else None
 
+                    # Récupérer les données de quiz pour ce candidat et ce job
+                    quiz_data = None
+                    quiz_attempt = None
+                    quiz = None
+                    
+                    # D'abord, chercher si un quiz existe pour ce job et ce candidat
+                    quiz = db.query(Quiz).filter(
+                        Quiz.job_id == job_id,
+                        Quiz.candidate_id == candidate.id
+                    ).first()
+                    
+                    if quiz:
+                        # Ensuite, chercher une tentative complétée pour ce quiz
+                        quiz_attempt = db.query(QuizAttempt).filter(
+                            QuizAttempt.quiz_id == quiz.id,
+                            QuizAttempt.candidate_id == candidate.id,
+                            QuizAttempt.status == 'completed'
+                        ).order_by(QuizAttempt.created_at.desc()).first()
+                        
+                        if quiz_attempt:
+                            # Calculer la durée du quiz
+                            duration_seconds = None
+                            if quiz_attempt.start_time and quiz_attempt.end_time:
+                                duration_seconds = int((quiz_attempt.end_time - quiz_attempt.start_time).total_seconds())
+                            
+                            # Calculer le score en pourcentage
+                            quiz_score_percentage = 0
+                            if quiz_attempt.total_questions and quiz_attempt.total_questions > 0:
+                                quiz_score_percentage = (quiz_attempt.total_correct / quiz_attempt.total_questions) * 100
+                            
+                            quiz_data = {
+                                "quiz_score": round(quiz_score_percentage, 1),  # Score en pourcentage
+                                "quiz_duration": duration_seconds,
+                                "quiz_correct_answers": quiz_attempt.total_correct if quiz_attempt.total_correct else 0,
+                                "quiz_total_questions": quiz_attempt.total_questions if quiz_attempt.total_questions else 0,
+                                "quiz_attempt_id": quiz_attempt.id,
+                                "quiz_id": quiz.id
+                            }
+                        else:
+                            # Quiz existe mais pas encore de tentative complétée
+                            quiz_data = {
+                                "quiz_score": None,
+                                "quiz_duration": None,
+                                "quiz_correct_answers": None,
+                                "quiz_total_questions": None,
+                                "quiz_attempt_id": None,
+                                "quiz_id": quiz.id
+                            }
+
+                    # Ajoutez ce champ dans la réponse des candidatures
                     applications_list.append({
                         "id": app.id,
                         "name": candidate.name,
@@ -307,8 +401,34 @@ async def get_job_details(job_id: int):
                         "quiz_validated_by": app.quiz_validated_by,
                         "quiz_validated_at": app.quiz_validated_at.isoformat() if app.quiz_validated_at else None,
                         "quiz_validated_notes": app.quiz_validated_notes,
-                        # Ajoutez le vrai score de quiz
+                        # Données de quiz
+                        "quiz_score": quiz_data["quiz_score"] if quiz_data else 0,
+                        "quiz_duration": quiz_data["quiz_duration"] if quiz_data else None,
+                        "quiz_correct_answers": quiz_data["quiz_correct_answers"] if quiz_data else 0,
+                        "quiz_total_questions": quiz_data["quiz_total_questions"] if quiz_data else 0,
+                        "quiz_attempt_id": quiz_data["quiz_attempt_id"] if quiz_data else None,
+                        "quiz_id": quiz_data["quiz_id"] if quiz_data else None
                     })
+                    
+                    # Debug: Print quiz data
+                    if quiz_data:
+                        print(f"DEBUG: Quiz data for candidate {candidate.name}: quiz_id={quiz_data['quiz_id']}, score={quiz_data['quiz_score']}%, duration={quiz_data['quiz_duration']}s, correct={quiz_data['quiz_correct_answers']}/{quiz_data['quiz_total_questions']}")
+                    else:
+                        print(f"DEBUG: No quiz data for candidate {candidate.name}")
+                    
+                    # Debug: Print application data being sent
+                    print(f"DEBUG: Application data for {candidate.name}: quiz_id={quiz_data['quiz_id'] if quiz_data else None}")
+                    
+                    # Debug: Print the final application object being sent
+                    final_app_data = {
+                        "quiz_score": quiz_data["quiz_score"] if quiz_data else 0,
+                        "quiz_duration": quiz_data["quiz_duration"] if quiz_data else None,
+                        "quiz_correct_answers": quiz_data["quiz_correct_answers"] if quiz_data else 0,
+                        "quiz_total_questions": quiz_data["quiz_total_questions"] if quiz_data else None,
+                        "quiz_attempt_id": quiz_data["quiz_attempt_id"] if quiz_data else None,
+                        "quiz_id": quiz_data["quiz_id"] if quiz_data else None
+                    }
+                    print(f"DEBUG: Final quiz fields for {candidate.name}: {final_app_data}")
             
             days_remaining = None
             if job.deadline:

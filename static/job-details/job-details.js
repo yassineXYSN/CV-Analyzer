@@ -533,6 +533,13 @@ function renderApplicationsWithCompatibility(filter = "all") {
               
               <div class="quiz-content">
                 <div class="quiz-overview">
+                  <!-- Debug: Log quiz data -->
+                  <script>console.log('Quiz data for ${candidateName}:', ${JSON.stringify({
+                    quiz_score: app.quiz_score,
+                    quiz_duration: app.quiz_duration,
+                    quiz_correct_answers: app.quiz_correct_answers,
+                    quiz_total_questions: app.quiz_total_questions
+                  })});</script>
                   <div class="quiz-info-grid">
                     <div class="quiz-info-item">
                       <div class="info-icon">
@@ -540,7 +547,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       </div>
                       <div class="info-content">
                         <div class="info-label">Score</div>
-                        <div class="info-value">${app.quiz_score || 0}%</div>
+                        <div class="info-value">${!app.quiz_id ? 'en attente de generation de quiz' : (!app.quiz_score ? 'en attente du condidat' : app.quiz_score + '%')}</div>
                       </div>
                     </div>
                     
@@ -550,11 +557,9 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       </div>
                       <div class="info-content">
                         <div class="info-label">Durée</div>
-                        <div class="info-value">${app.quiz_duration ? formatDuration(app.quiz_duration) : "N/A"}</div>
+                        <div class="info-value">${!app.quiz_id ? 'en attente de generation de quiz' : (!app.quiz_duration ? 'en attente du condidat' : formatDuration(app.quiz_duration))}</div>
                       </div>
                     </div>
-                    
-
                     
                     <div class="quiz-info-item">
                       <div class="info-icon">
@@ -562,20 +567,32 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       </div>
                       <div class="info-content">
                         <div class="info-label">Correctes</div>
-                        <div class="info-value">${app.quiz_correct_answers || 0}</div>
+                        <div class="info-value">${!app.quiz_id ? 'en attente de generation de quiz' : (!app.quiz_correct_answers ? 'en attente du condidat' : app.quiz_correct_answers)}</div>
                       </div>
                     </div>
                   </div>
+                  
+                  <script>console.log('DEBUG: Quiz data for ${candidateName}:', {
+                    quiz_id: ${app.quiz_id || 'null'},
+                    quiz_score: ${app.quiz_score || 'null'},
+                    quiz_duration: ${app.quiz_duration || 'null'},
+                    quiz_correct_answers: ${app.quiz_correct_answers || 'null'},
+                    quiz_total_questions: ${app.quiz_total_questions || 'null'}
+                  });</script>
                 </div>
                 
                 <div class="quiz-actions">
                   <div class="quiz-actions-row">
-                    <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
-                      <i class="fas fa-magic"></i> Générer Quiz
-                    </button>
-                    <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
-                      <i class="fas fa-eye"></i> Voir Quiz
-                    </button>
+                    ${!app.quiz_id ? `
+                      <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
+                        <i class="fas fa-magic"></i> Générer Quiz
+                      </button>
+                    ` : ''}
+                    ${app.quiz_id ? `
+                      <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
+                        <i class="fas fa-eye"></i> Voir Quiz
+                      </button>
+                    ` : ''}
                   </div>
                 </div>
               </div>
@@ -2764,6 +2781,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (result.success) {
           showNotification("Quiz créé avec succès !", "success")
           closeCreateQuizModal()
+          
+          // Refresh the page to show updated quiz data
+          setTimeout(() => {
+            window.location.reload()
+          }, 1000)
         } else {
           showNotification("Erreur lors de la création du quiz", "error")
         }
