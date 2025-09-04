@@ -1,0 +1,1568 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"compatibility_score\": {{ $json.choices[0].message.content.compatibility_score }},\n  \"reason\": \"{{ $json.choices[0].message.content.reason }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2880,
+        752
+      ],
+      "id": "1d5c5aa3-a985-4769-9ccd-24f3ed02863a",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI system that evaluates how well a candidate matches selected job profiles.\n\nCandidate data:\n- Name: {{ $json.name }}\n- Title: {{ $json.title }}\n- Years of Experience: {{ $json.yearsOfExperience }}\n- Email: {{ $json.contact.email }}\n- Phone: {{ $json.contact.phone }}\n- Address: {{ $json.contact.address }}\n- Education: {{ $json.education }}\n- Languages: {{ $json.languages }}\n- Certificates: {{ $json.certificates }}\n- Skills: {{ $json.skills }}\n\nJob profiles:\n{{ $json.body.selectedProfiles }}\n\nTask:\n1. Compare the candidate’s skills, education, certificates, languages, and experience against the requirements and skills of the selected job profiles.\n2. Compute a **single compatibility score (0–100)** for how well the candidate fits the selected profiles overall.\n   - Consider skill overlap, matching education level, language fit, and years of experience.\n3. Return only the score as :\n{CondidateProfileScore : }",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2224,
+        1744
+      ],
+      "id": "e38dec7f-4911-442d-a49a-bb82d3bd0342",
+      "name": "profiles score",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        832,
+        1664
+      ],
+      "id": "db59dba7-4ab8-45a7-9fdd-5601c82d3d27",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3216,
+        1168
+      ],
+      "id": "f3321134-5bf4-4316-ba60-80d0db082611",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an experienced and brutally honest career advisor.\nYou will receive:\n\nA CV in JSON format\n\nA list of strong points\n\nA list of weak points\n\nEvaluation scores across different categories\n\nYour task is to write a short, direct, and brutally honest summary of the candidate in just one paragraph.\nThis is not a marketing piece — be blunt, factual, and unapologetically realistic about their strengths, weaknesses, and overall employability.\n\nRules:\n\nNo sugarcoating — say exactly how the candidate comes across based on the data\n\nMention their best qualities, but also call out flaws and gaps clearly\n\nKeep the tone professional but candid\n\nLimit the summary to 5–8 impactful sentences\n\nCV JSON: {{ $json.education }}, {{ $json.languages }} , {{ $json.certificates }} , {{ $json.skills }} , {{ $json.yearsOfExperience }}\n\nStrong Points: {{ $json.strong_points }}\n\nweak points: {{ $json.weak_points }}\n\nScores : {{ $json.scores }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2224,
+        1360
+      ],
+      "id": "000c2e54-9bca-4ad6-ad27-bcbfed0f88b9",
+      "name": "honest summary",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combineBySql",
+        "numberInputs": 4,
+        "query": "SELECT \n  input1.choices.[0].message.content.key_improvements,\n  input2.*,\n  input3.choices.[0].message.content.summary,\n  input4.choices.[0].message.content.CondidateProfileScore\nFROM input1,input2,input3,input4",
+        "options": {
+          "emptyQueryResult": "empty"
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2672,
+        1152
+      ],
+      "id": "f80ed3b0-0e5a-4997-92d4-18323e26cace",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.all().map(item => item.json);\n\n// Take first object (you only have one CV per run)\nconst baseData = inputData[0] || {};\n\n// Build only the clean fields you want\nconst mergedData = {\n  name: baseData.name,\n  title: baseData.title,\n  yearsOfExperience: baseData.yearsOfExperience,\n  contact: baseData.contact,\n  profile: baseData.profile,\n  education: baseData.education,\n  languages: baseData.languages,\n  certificates: baseData.certificates,\n  skills: baseData.skills,\n  strong_points: baseData.strong_points,\n  weak_points: baseData.weak_points,\n  scores: baseData.scores,\n\n  // Extracted / renamed fields\n  key_improvements: baseData[\"input1.choices->0->message->content->key_improvements\"] || [],\n  summary: baseData[\"input3.choices->0->message->content->summary\"] || \"\",\n  profile_score: baseData[\"input4.choices->0->message->content->CondidateProfileScore\"] || 0\n};\n\nreturn [{ json: mergedData }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3008,
+        1168
+      ],
+      "id": "3dc9c2c8-e8df-40af-a2ef-b62fdfa7286d",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all incoming JSON objects\nconst inputData = $input.all().map(item => item.json);\n\n// Extract the base CV info (first object)\nlet result = { ...inputData[0] };\n\n// Extract strong points (second incoming item)\nconst strongPoints = inputData[1]?.choices?.[0]?.message?.content?.strong_points || [];\n\n// Extract weak points (third incoming item)\nconst weakPoints = inputData[2]?.choices?.[0]?.message?.content?.weak_points || [];\n\n// Extract scores (fourth incoming item)\nconst scores = inputData[3]?.choices?.[0]?.message?.content || {};\n\n// Merge into final CV object\nresult.strong_points = strongPoints;\nresult.weak_points = weakPoints;\nresult.scores = scores;\n\n// Output as single item\nreturn [{ json: result }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        1120
+      ],
+      "id": "e7589ec4-abc0-4f85-a9a3-649496421d7e",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1488,
+        1088
+      ],
+      "id": "20ca97c9-dd70-4070-abe7-7f62244be0fa",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert CV reviewer.\nBelow is a CV in JSON format, along with:\n\nA list of its strong points\n\nA list of its weak points\n\nEvaluation scores across different categories\n\nBased on this information, provide a clear, actionable list of key improvements the candidate should make to strengthen their CV.\nFocus on:\n\nImproving weak points\n\nIncreasing category scores\n\nEnhancing overall presentation\n\nRules:\n\nReturn the improvements as a concise bullet-point list called key_improvements\n\nAvoid generic advice — focus on specific improvements for this CV\n\nCV JSON: {{ $json.education }}, {{ $json.languages }} , {{ $json.certificates }} , {{ $json.skills }} , {{ $json.yearsOfExperience }}\n\nStrong Points: {{ $json.strong_points }}\n\nweak points: {{ $json.weak_points }}\n\nScores : {{ $json.scores }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2192,
+        1024
+      ],
+      "id": "206abe08-052d-441a-ae01-1dc0c5fa1b1d",
+      "name": "improvements",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert HR professional and recruiter.\nAnalyze the following CV data provided in JSON format and assign a score (from 0 to 100) for each of the following categories:\n\nWork Experience (Relevance, achievements, responsibilities)\n\nSkills & Technical Expertise (Hard skills, technical abilities, proficiency)\n\nEducation (Level of education, relevance to job roles)\n\nCertifications & Training (Relevance and value of certifications or courses)\n\nSoft Skills & Leadership (Communication, leadership, teamwork)\n\nOverall Structure & Presentation (Clarity, organization, completeness of information)\n\nProvide the result in this exact JSON format (only numbers, no extra text):\n{\n  \"Work Experience\": 0,\n  \"Skills & Technical Expertise\": 0,\n  \"Education\": 0,\n  \"Certifications & Training\": 0,\n  \"Soft Skills & Leadership\": 0,\n  \"Overall Structure & Presentation\": 0\n}\n\nCV JSON: {{ $json.education }}, {{ $json.languages }} , {{ $json.certificates }} , {{ $json.skills }} , {{ $json.yearsOfExperience }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        976,
+        1360
+      ],
+      "id": "9b12f41f-09ed-4060-9fcd-b21fc27c2cc9",
+      "name": "categorie points",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert HR professional.\nAnalyze the following CV data provided in JSON format and extract only the weak points of the candidate.\nFocus on missing skills, lack of experience, outdated or irrelevant qualifications, incomplete information, and any other gaps that could reduce the candidate’s suitability for a job.\n\nReturn the weak points as a bullet-point list.\n\nDo not include personal contact details\n\nDo not add explanations or suggestions for improvement — just state the weaknesses directly\n\nKeep each bullet point short and clear\n\nCV JSON: {{ $json.education }}, {{ $json.languages }} , {{ $json.certificates }} , {{ $json.skills }} , {{ $json.yearsOfExperience }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        944,
+        1184
+      ],
+      "id": "a031a889-766f-46cf-945f-aa3f40d7e6d3",
+      "name": "weak points",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert HR professional.\nAnalyze the following CV data provided in JSON format and extract only the strong points of the candidate.\nFocus on skills, achievements, education, certifications, work experience, and any other strengths that make this candidate a good fit for a job.\n\nReturn the strong points as a bullet-point list.\n\nDo not include personal contact details\n\nDo not add extra comments or explanations\n\nKeep each bullet point short and impactful\n\nreturn them in a json as strong_points\n\nCV JSON: {{ $json.education }}, {{ $json.languages }} , {{ $json.certificates }} , {{ $json.skills }} , {{ $json.yearsOfExperience }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        880,
+        912
+      ],
+      "id": "5f78b9ff-686a-4712-8f0f-3f2525e5f2b5",
+      "name": "good points",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert CV analyzer.\nYour task is to extract all the relevant certifcates from the following resume text.\nInclude only certifcates.\n\nProvide the results as a JSON list of strings.\nHere is the resume text:\n {{ $json.text }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -480,
+        1760
+      ],
+      "id": "a5d9569b-ae93-4bf6-9be6-68934786ed8e",
+      "name": "certificates",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a CV parsing expert.\nYour task is to extract the education history from the resume text below.\nFor each education entry, extract the following fields:\n\n\"institution\" – the name of the university, school, or institution\n\n\"degree\" – the degree obtained (e.g., B.Sc. in Computer Science, MBA, etc.)\n\n\"years\" – the period of study (e.g., \"2019–2023\", \"Sep 2021 – Jun 2024\")\n\nReturn the data as a JSON array of objects, in the following format:\n\"education\": [\n    {\n        \"institution\": \"\",\n        \"degree\": \"\",\n        \"years\": \"\"\n    }\n]\n\nOnly include education-related information. Do not summarize or explain anything.\n\nHere is the resume text:\n {{ $json.text }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -480,
+        1520
+      ],
+      "id": "8992f4b3-dd0c-4ef0-8c9c-fafc3d80e40e",
+      "name": "educations",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert CV analyzer.\nYour task is to extract all the relevant languages from the following resume text.\nInclude only real life languages.\n\nProvide the results as a JSON list of strings.\nHere is the resume text:\n {{ $json.text }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -480,
+        1296
+      ],
+      "id": "fa85681a-4f31-4bfc-9505-e84769c0d420",
+      "name": "languages",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert CV analyzer.\nYour task is to extract all the relevant skills from the following resume text.\nInclude technical skills, soft skills, tools, programming languages, frameworks, and any other job-relevant abilities mentioned except real life languages.\n\nProvide the results as a JSON list of strings.\nHere is the resume text:\n {{ $json.text }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -480,
+        1120
+      ],
+      "id": "2e5fa568-1067-4cd9-bfcd-ded6f7eb27d4",
+      "name": "Skills",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the input data array\nconst inputData = $input.all().map(item => item.json);\n\n// Initialize the result structure\nconst result = {\n  name: \"\",\n  title: \"\",\n  yearsOfExperience: \"\",\n  contact: {\n    email: \"\",\n    phone: \"\",\n    linkedin: \"\",\n    address: \"\"\n  },\n  profile: \"\",\n  education: [],\n  languages: [],\n  certificates: [],\n  skills: []\n};\n\n// Process personal details (first array item)\nif (inputData[0] && inputData[0].output) {\n  const personal = inputData[0].output;\n  result.name = personal.name || \"\";\n  result.title = personal.title || \"\";\n  result.yearsOfExperience = personal.yearsOfExperience?.toString() || \"\";\n  result.contact.email = personal.email || \"\";\n  result.contact.phone = personal.phone || \"\";\n  result.contact.address = personal.address || \"\";\n}\n\n// Process skills (second array item)\nif (inputData[1]?.choices?.[0]?.message?.content?.skills) {\n  result.skills = inputData[1].choices[0].message.content.skills;\n}\n\n// Process languages (third array item)\nif (inputData[2]?.choices?.[0]?.message?.content?.languages) {\n  result.languages = inputData[2].choices[0].message.content.languages;\n}\n\n// Process education (fourth array item)\nif (inputData[3]?.choices?.[0]?.message?.content?.education) {\n  result.education = inputData[3].choices[0].message.content.education;\n}\n\n// Process certificates (fifth array item)\nif (inputData[4]?.choices?.[0]?.message?.content?.certificates) {\n  result.certificates = inputData[4].choices[0].message.content.certificates;\n}\n\n// Return the structured result\nreturn [result];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        1120
+      ],
+      "id": "ff109a86-dea4-47ea-81d3-08fa211f828e",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        368,
+        1072
+      ],
+      "id": "fc404d94-9569-450b-856d-11b8e87c4fe7",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -368,
+        960
+      ],
+      "id": "53eb4630-c552-45ae-9986-e64377ad154b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "=CV",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        976
+      ],
+      "id": "128b1de4-b28f-40ae-9bb7-5606779f97f8",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "name",
+              "description": "The name of the condidate",
+              "required": true
+            },
+            {
+              "name": "title",
+              "description": "The title of the condidate",
+              "required": true
+            },
+            {
+              "name": "yearsOfExperience",
+              "type": "number",
+              "description": "how many years of experience does the condidate have",
+              "required": true
+            },
+            {
+              "name": "email",
+              "description": "The email of the condidate",
+              "required": true
+            },
+            {
+              "name": "phone",
+              "description": "The phone number of the condidate",
+              "required": true
+            },
+            {
+              "name": "address",
+              "description": "The address of the condidate",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        -464,
+        816
+      ],
+      "id": "c7eefe43-cbb2-4c2a-a9cc-93b7a858991f",
+      "name": "Information Extractor",
+      "retryOnFail": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1328,
+        528
+      ],
+      "id": "717d333b-b00b-43dd-bd6d-d0bea9142dbb",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert CV analyzer.\nYour task is to extract all the relevant certifcates from the following resume text.\nInclude only certifcates.\n\nProvide the results as a JSON list of strings.\nHere is the resume text:\n {{ $json.text }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -320,
+        624
+      ],
+      "id": "1515adf8-2532-46e1-a9b6-cf6cc0d6ffa8",
+      "name": "certificates1",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a CV parsing expert.\nYour task is to extract the education history from the resume text below.\nFor each education entry, extract the following fields:\n\n\"institution\" – the name of the university, school, or institution\n\n\"degree\" – the degree obtained (e.g., B.Sc. in Computer Science, MBA, etc.)\n\n\"years\" – the period of study (e.g., \"2019–2023\", \"Sep 2021 – Jun 2024\")\n\nReturn the data as a JSON array of objects, in the following format:\n\"education\": [\n    {\n        \"institution\": \"\",\n        \"degree\": \"\",\n        \"years\": \"\"\n    }\n]\n\nOnly include education-related information. Do not summarize or explain anything.\n\nHere is the resume text:\n {{ $json.text }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -304,
+        432
+      ],
+      "id": "ce083702-a17e-4379-a9b6-03677b2623d2",
+      "name": "educations1",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert CV analyzer.\nYour task is to extract all the relevant languages from the following resume text.\nInclude only real life languages.\n\nProvide the results as a JSON list of strings.\nHere is the resume text:\n {{ $json.text }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -288,
+        256
+      ],
+      "id": "8a911c18-a61e-46fb-b524-821a8fc24550",
+      "name": "languages1",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert CV analyzer.\nYour task is to extract all the relevant skills from the following resume text.\nInclude technical skills, soft skills, tools, programming languages, frameworks, and any other job-relevant abilities mentioned except real life languages.\n\nProvide the results as a JSON list of strings.\nHere is the resume text:\n {{ $json.text }}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -288,
+        112
+      ],
+      "id": "31df06ec-6e19-434d-a289-4a9cc52b0843",
+      "name": "Skills1",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        608,
+        480
+      ],
+      "id": "9e3fcc25-cad5-4040-b267-7a2ea3656327",
+      "name": "Merge7"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -32,
+        48
+      ],
+      "id": "e50607b1-3fbc-4719-9029-632a3e94d29c",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "=CV",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        448
+      ],
+      "id": "8fadc99f-9f42-4065-82f8-c3c995a71570",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "name",
+              "description": "The name of the condidate",
+              "required": true
+            },
+            {
+              "name": "title",
+              "description": "The title of the condidate",
+              "required": true
+            },
+            {
+              "name": "yearsOfExperience",
+              "type": "number",
+              "description": "how many years of experience does the condidate have",
+              "required": true
+            },
+            {
+              "name": "email",
+              "description": "The email of the condidate",
+              "required": true
+            },
+            {
+              "name": "phone",
+              "description": "The phone number of the condidate",
+              "required": true
+            },
+            {
+              "name": "address",
+              "description": "The address of the condidate",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        -112
+      ],
+      "id": "c132e34d-447b-419a-8030-edee3dc1a68b",
+      "name": "Information Extractor1",
+      "retryOnFail": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI recruitment evaluator. You will be given details of a job opening and a candidate profile.  \nYour task:  \n- Compare the candidate to the job requirements.  \n- Be brutally honest, highlighting exact strengths, weaknesses, and risks.  \n- Provide a final compatibility score (0–100).  \n- Format output strictly as JSON.  \n\nReturn JSON with this structure:\n{\n  \"compatibility_score\": <number>\n  \"reson\": reason\n}\n\nJob Information:  \nTitle: {{ $json.body.job.title }}  \nCompany: {{ $json.body.job.company }}  \nDepartment: {{ $json.body.job.department }}  \nIndustry: {{ $json.body.job.industry }}  \nEmployment Type: {{ $json.body.job.employment_type }}  \nPriority Level: {{ $json.body.job.priority_level }}  \nSalary Range: {{ $json.body.job.salary_range }}  \nDescription: {{ $json.body.job.description }}  \nRequirements: {{ $json.body.job.requirements }}  \nResponsibilities: {{ $json.body.job.responsibilities }}  \nSkills: {{ $json.body.job.skills }}  \n\nCandidate Information:  \nName: {{ $json.body.candidate.name }}  \nTitle: {{ $json.body.candidate.title }}  \nYears of Experience: {{ $json.body.candidate.years_of_experience }}  \nSummary: {{ $json.body.candidate.summary }}  \nEducation: {{ $json.body.candidate.education }}  \nSkills: {{ $json.body.candidate.skills }}  \nLanguages: {{ $json.body.candidate.languages }}  \nCertifications: {{ $json.body.candidate.certifications }}\n",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2208,
+        704
+      ],
+      "id": "fc8088d5-4515-48f2-b6fd-d43c00319e0f",
+      "name": "Compatibility",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the input data array\nconst inputData = $input.all().map(item => item.json);\n\n// Initialize the result structure\nconst result = {\n  name: \"\",\n  title: \"\",\n  yearsOfExperience: \"\",\n  contact: {\n    email: \"\",\n    phone: \"\",\n    linkedin: \"\",\n    address: \"\"\n  },\n  profile: \"\",\n  education: [],\n  languages: [],\n  certificates: [],\n  skills: []\n};\n\n// Process personal details (first array item)\nif (inputData[0] && inputData[0].output) {\n  const personal = inputData[0].output;\n  result.name = personal.name || \"\";\n  result.title = personal.title || \"\";\n  result.yearsOfExperience = personal.yearsOfExperience?.toString() || \"\";\n  result.contact.email = personal.email || \"\";\n  result.contact.phone = personal.phone || \"\";\n  result.contact.address = personal.address || \"\";\n}\n\n// Process skills (second array item)\nif (inputData[1]?.choices?.[0]?.message?.content?.skills) {\n  result.skills = inputData[1].choices[0].message.content.skills;\n}\n\n// Process languages (third array item)\nif (inputData[2]?.choices?.[0]?.message?.content?.languages) {\n  result.languages = inputData[2].choices[0].message.content.languages;\n}\n\n// Process education (fourth array item)\nif (inputData[3]?.choices?.[0]?.message?.content?.education) {\n  result.education = inputData[3].choices[0].message.content.education;\n}\n\n// Process certificates (fifth array item)\nif (inputData[4]?.choices?.[0]?.message?.content?.certificates) {\n  result.certificates = inputData[4].choices[0].message.content.certificates;\n}\n\n// Return the structured result\nreturn [result];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        512
+      ],
+      "id": "d9f06647-dff7-46a2-973e-5f1e1860d154",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/profile-creation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        560
+      ],
+      "id": "d2f6d6ab-cc43-4ceb-b131-672bac0f3fb2",
+      "name": "Account creation webhook",
+      "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/cv-upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        1152
+      ],
+      "id": "1b1cf5a1-33bb-46a5-a086-9ae56e2e2c37",
+      "name": "Analyze cv webhook",
+      "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/compatibility",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        640
+      ],
+      "id": "58bccbe8-1d71-4562-a78f-74118219f2c1",
+      "name": "Analyze compatibility webhook",
+      "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
+    },
+    {
+      "parameters": {
+        "batchSize": "=1",
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1488,
+        -48
+      ],
+      "id": "78bcf4b7-19bd-4303-8449-c9f2265586c3",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all input items\nconst items = $input.all();\n\n// First item has the \"body.number\"\nconst body = items[0].json[\"body.skills\"];\n\n// Second item has the AI response with questions\nconst aiResponse = items[1].json.choices[0].message.content.questions;\n\n// Attach the questions to body.number\nbody.questions = aiResponse;\n\nreturn [{ json: body }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        288
+      ],
+      "id": "ab219c88-8fa0-424e-a3cf-1f6ad6ff6e45",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2560,
+        -112
+      ],
+      "id": "35c4138e-c503-485f-8a2a-6a41ea35b598",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "body.skills",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "body.text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -80
+      ],
+      "id": "3a5ec66c-ad13-4e4c-85fc-34bd5fab8904",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert exam question generator.\nGiven the following JSON input:\n\n{ \"skill\": {{ $json['body.skills'].name }}, \"level\": {{ $json['body.skills'].difficulty }}, \"nb\": {{ $json['body.skills'].questions }} }\n\n\ngenerate exactly nb multiple-choice questions in JSON format.\n\nEach question must:\n\nBe related to the selected \"skill\".\n\nMatch the \"level\" difficulty (e.g., \"beginner\" = simple, \"intermediate\" = medium, \"advanced\" = challenging, \"expert\" = very hard).\n\nContain 4 possible answers.\n\nIndicate the correct answer explicitly.\n\nBe realistic and accurate (e.g., advanced JavaScript should include closures, async/await, prototypes, event loop, etc.).\n\nOutput JSON format:\n{\n  \"questions\": [\n    {\n      \"question\": \"string\",\n      \"options\": [\"string\", \"string\", \"string\", \"string\"],\n      \"correctAnswerNumber\": int\n    }\n  ]\n}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1792,
+        256
+      ],
+      "id": "e5503d86-490c-41e7-9c3c-0ea44821dd92",
+      "name": "Quiz generator",
+      "credentials": {
+        "openAiApi": {
+          "id": "na8QgUz8QMoE1dQY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2176,
+        128
+      ],
+      "id": "622301d5-90c7-4076-bc3e-3f9deff20c7a",
+      "name": "Merge4"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "quiz-ceation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        944,
+        -288
+      ],
+      "id": "3c33295c-5741-41c8-830a-fe45ef1806a5",
+      "name": "Quiz creation",
+      "webhookId": "69c5f680-542e-4c5e-82cf-9bd935078c71"
+    }
+  ],
+  "connections": {
+    "profiles score": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "profiles score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "honest summary": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "honest summary",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "improvements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "improvements": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "categorie points": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "weak points": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "good points": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "certificates": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "educations": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "languages": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Skills": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "categorie points",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "weak points",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "good points",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "certificates",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "educations",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "languages",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Skills",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "certificates1": {
+      "main": [
+        [
+          {
+            "node": "Merge7",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "educations1": {
+      "main": [
+        [
+          {
+            "node": "Merge7",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "languages1": {
+      "main": [
+        [
+          {
+            "node": "Merge7",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Skills1": {
+      "main": [
+        [
+          {
+            "node": "Merge7",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge7": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "certificates1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "educations1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "languages1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Skills1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Information Extractor1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor1": {
+      "main": [
+        [
+          {
+            "node": "Merge7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compatibility": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Account creation webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze cv webhook": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze compatibility webhook": {
+      "main": [
+        [
+          {
+            "node": "Compatibility",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Quiz generator",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quiz generator": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge4": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quiz creation": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2df1d9b26151c6a695cab68e94e15dbdb9b7cd038465b164117d3229715de918"
+  }
+}

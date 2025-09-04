@@ -15,10 +15,11 @@
             right: 20px;
             background: var(--surface);
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 1rem 1.5rem;
             z-index: 1000;
             box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
         }
         
         .timer-text {
@@ -46,17 +47,37 @@
         .quiz-header {
             background: var(--surface);
             border-radius: 16px;
-            padding: 2rem;
+            padding: 2.5rem 2rem;
             margin-bottom: 2rem;
             border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .quiz-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .quiz-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 1.125rem;
+            line-height: 1.6;
         }
         
         .quiz-progress {
             background: var(--background);
-            border-radius: 8px;
-            height: 8px;
-            margin: 1rem 0;
+            border-radius: 12px;
+            height: 10px;
+            margin: 1.5rem 0;
             overflow: hidden;
+            border: 1px solid var(--border);
         }
         
         .quiz-progress-bar {
@@ -64,51 +85,57 @@
             height: 100%;
             width: 0%;
             transition: width 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        .quiz-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 1rem;
         }
         
         .question-card {
             background: var(--surface);
             border-radius: 16px;
-            padding: 2rem;
+            padding: 2.5rem;
             margin-bottom: 2rem;
             border: 1px solid var(--border);
             display: none;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
         }
         
         .question-card.active {
             display: block;
+            transform: translateY(0);
+            opacity: 1;
         }
         
         .question-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
         }
         
         .question-number {
             background: var(--primary-gradient);
             color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        
-        .question-difficulty {
-            background: var(--neutral-100);
-            color: var(--text-secondary);
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 1rem;
+            box-shadow: var(--shadow-md);
         }
         
         .question-text {
-            font-size: 1.25rem;
+            font-size: 1.375rem;
             font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
             line-height: 1.6;
         }
         
@@ -122,8 +149,8 @@
         .answer-option {
             background: var(--background);
             border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
@@ -134,23 +161,28 @@
         .answer-option:hover {
             border-color: var(--primary-500);
             background: var(--primary-50);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
         
         .answer-option.selected {
             border-color: var(--primary-600);
             background: var(--primary-100);
+            box-shadow: var(--shadow-lg);
         }
         
         .answer-radio {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             border: 2px solid var(--border);
             position: relative;
+            transition: all 0.3s ease;
         }
         
         .answer-option.selected .answer-radio {
             border-color: var(--primary-600);
+            background: var(--primary-600);
         }
         
         .answer-option.selected .answer-radio::after {
@@ -159,33 +191,35 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 10px;
-            height: 10px;
-            background: var(--primary-600);
+            width: 8px;
+            height: 8px;
+            background: white;
             border-radius: 50%;
         }
         
         .answer-text-input {
             width: 100%;
-            padding: 1rem;
+            padding: 1.25rem;
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 16px;
             font-size: 1rem;
             background: var(--background);
             color: var(--text-primary);
+            transition: all 0.3s ease;
         }
         
         .answer-text-input:focus {
             outline: none;
             border-color: var(--primary-500);
             box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+            transform: translateY(-1px);
         }
         
         .quiz-navigation {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 2rem;
+            margin-top: 2.5rem;
         }
         
         .nav-btn {
@@ -193,11 +227,12 @@
             color: white;
             border: none;
             border-radius: 12px;
-            padding: 0.75rem 1.5rem;
+            padding: 1rem 2rem;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
         }
         
         .nav-btn:hover {
@@ -209,6 +244,7 @@
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
         
         .nav-btn.secondary {
@@ -217,28 +253,65 @@
             border: 2px solid var(--border);
         }
         
+        .nav-btn.secondary:hover {
+            background: var(--surface);
+            border-color: var(--primary-300);
+        }
+        
         .submit-quiz-btn {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: var(--primary-gradient);
             color: white;
             border: none;
-            border-radius: 12px;
-            padding: 1rem 2rem;
-            font-size: 1.125rem;
+            border-radius: 16px;
+            padding: 1.25rem 2.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
             width: 100%;
             margin-top: 2rem;
+            box-shadow: var(--shadow-lg);
         }
         
         .submit-quiz-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(16, 185, 129, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .quiz-container {
+                padding: 1rem;
+            }
+            
+            .quiz-header {
+                padding: 2rem 1.5rem;
+            }
+            
+            .quiz-title {
+                font-size: 1.5rem;
+            }
+            
+            .question-card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .question-text {
+                font-size: 1.25rem;
+            }
+            
+            .quiz-navigation {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .nav-btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-     Background Effects 
+    <!-- Background Effects -->
     <div class="background-effects">
         <div class="floating-shapes">
             <div class="shape"></div>
@@ -248,31 +321,29 @@
         <div class="grid-overlay"></div>
     </div>
 
-     Timer 
+    <!-- Timer -->
     <div class="quiz-timer" id="quizTimer">
         <div class="timer-text" id="timerText">{{ (remaining_time // 60) }}:{{ '{:02d}'.format(remaining_time % 60) }}</div>
     </div>
 
     <div class="main-container">
         <div class="quiz-container">
-             Quiz Header 
+            <!-- Quiz Header -->
             <div class="quiz-header">
-                <h1 style="font-size: 2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
-                    {{ quiz.title }}
-                </h1>
-                <p style="color: var(--text-secondary); margin-bottom: 1rem;">{{ quiz.description }}</p>
+                <h1 class="quiz-title">{{ quiz.title }}</h1>
+                <p class="quiz-description">{{ quiz.description }}</p>
                 
                 <div class="quiz-progress">
                     <div class="quiz-progress-bar" id="progressBar"></div>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: var(--text-secondary);">
+                <div class="quiz-meta">
                     <span>Question <span id="currentQuestion">1</span> sur {{ total_questions }}</span>
                     <span>{{ quiz.time_limit }} minutes</span>
                 </div>
             </div>
 
-             Quiz Form 
+            <!-- Quiz Form -->
             <form id="quizForm" method="post" action="/quiz/{{ quiz.id }}/submit">
                 {% for question in questions %}
                 <div class="question-card" data-question="{{ loop.index }}" data-question-id="{{ question.id }}">
@@ -298,7 +369,7 @@
                 </div>
                 {% endfor %}
                 
-                 Navigation 
+                <!-- Navigation -->
                 <div class="quiz-navigation">
                     <button type="button" class="nav-btn secondary" id="prevBtn" onclick="previousQuestion()" disabled>
                         ← Précédent
@@ -308,7 +379,7 @@
                     </button>
                 </div>
                 
-                 Submit Button (hidden initially) 
+                <!-- Submit Button (hidden initially) -->
                 <button type="submit" class="submit-quiz-btn" id="submitBtn" style="display: none;">
                     🎯 Terminer le Quiz
                 </button>

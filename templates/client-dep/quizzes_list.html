@@ -6,22 +6,8 @@
     <title>Mes Quiz - CV Analyzer Pro</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/client-dep/css/analyze.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-            color: #e2e8f0;
-            line-height: 1.6;
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -36,7 +22,7 @@
         .header h1 {
             font-size: 2.5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -45,31 +31,51 @@
 
         .header p {
             font-size: 1.1rem;
-            color: #94a3b8;
+            color: var(--text-secondary);
             max-width: 600px;
             margin: 0 auto;
         }
 
         .back-btn {
-            position: absolute;
+            position: fixed;
             top: 2rem;
-            left: 2rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            right: 2rem;
+            background: var(--primary-gradient);
             border: none;
             color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
             cursor: pointer;
             font-size: 0.9rem;
-            font-weight: 500;
+            font-weight: 600;
             text-decoration: none;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .back-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+
+        .back-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .back-btn i {
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .back-btn:hover i {
+            transform: translateX(-3px);
         }
 
         .quizzes-grid {
@@ -80,18 +86,36 @@
         }
 
         .quiz-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(102, 126, 234, 0.2);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 16px;
             padding: 2rem;
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quiz-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
         }
 
         .quiz-card:hover {
             transform: translateY(-5px);
-            border-color: rgba(102, 126, 234, 0.4);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary-300);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .quiz-card:hover::before {
+            transform: scaleX(1);
         }
 
         .quiz-header {
@@ -101,12 +125,12 @@
         .quiz-title {
             font-size: 1.4rem;
             font-weight: 600;
-            color: #f8fafc;
+            color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
 
         .quiz-description {
-            color: #94a3b8;
+            color: var(--text-secondary);
             font-size: 0.95rem;
             line-height: 1.6;
         }
@@ -117,11 +141,11 @@
             gap: 1rem;
             margin-bottom: 1.5rem;
             font-size: 0.9rem;
-            color: #64748b;
+            color: var(--text-muted);
         }
 
         .quiz-meta i {
-            color: #667eea;
+            color: var(--primary-500);
         }
 
         .quiz-status {
@@ -145,7 +169,7 @@
         }
 
         .status-completed {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             color: white;
         }
 
@@ -158,7 +182,7 @@
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
@@ -169,40 +193,44 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             color: white;
+            box-shadow: var(--shadow-md);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #e2e8f0;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--background);
+            color: var(--text-secondary);
+            border: 2px solid var(--border);
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
+            background: var(--surface);
+            border-color: var(--primary-300);
+            color: var(--text-primary);
+            transform: translateY(-2px);
         }
 
         .btn-success {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
+            box-shadow: var(--shadow-md);
         }
 
         .btn-success:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            box-shadow: var(--shadow-lg);
         }
 
         .score-display {
             background: rgba(102, 126, 234, 0.1);
             border: 1px solid rgba(102, 126, 234, 0.3);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 1rem;
             margin-top: 1rem;
             text-align: center;
@@ -211,19 +239,19 @@
         .score-value {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #667eea;
+            color: var(--primary-500);
             margin-bottom: 0.5rem;
         }
 
         .score-label {
-            color: #94a3b8;
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
 
         .no-quizzes {
             text-align: center;
             padding: 4rem 2rem;
-            color: #94a3b8;
+            color: var(--text-secondary);
         }
 
         .no-quizzes i {
@@ -235,7 +263,7 @@
         .no-quizzes h3 {
             font-size: 1.5rem;
             margin-bottom: 1rem;
-            color: #e2e8f0;
+            color: var(--text-primary);
         }
 
         .no-quizzes p {
@@ -244,17 +272,28 @@
             margin: 0 auto;
         }
 
+        .no-quizzes a {
+            color: var(--primary-500);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .no-quizzes a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
             }
             
             .back-btn {
-                position: relative;
-                top: auto;
-                left: auto;
-                margin-bottom: 2rem;
-                display: inline-block;
+                position: fixed;
+                top: 1rem;
+                right: 1rem;
+                padding: 0.75rem 1rem;
+                font-size: 0.8rem;
+                z-index: 1001;
             }
             
             .quizzes-grid {
@@ -267,78 +306,101 @@
             }
         }
     </style>
+    
+    <script>
+        /* Back button functionality */
+        function goBack() {
+            if (document.referrer && document.referrer.includes(window.location.host)) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+    </script>
 </head>
 <body>
-    <a href="javascript:void(0)" class="back-btn" onclick="history.back()">
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <a href="javascript:void(0)" class="back-btn" onclick="goBack()">
         <i class="fas fa-arrow-left"></i> Retour
     </a>
 
-    <div class="container">
-        <div class="header">
-            <h1>Mes Quiz</h1>
-            <p>Accédez à vos quiz assignés et suivez votre progression</p>
-        </div>
-
-        {% if no_profile %}
-            <div class="no-quizzes">
-                <i class="fas fa-user-plus"></i>
-                <h3>Profil requis</h3>
-                <p>Vous devez d'abord créer votre profil candidat pour accéder aux quiz. <a href="/signup/step2" style="color: #667eea;">Créer mon profil</a></p>
+    <div class="main-container">
+        <div class="container">
+            <div class="header">
+                <h1>Mes Quiz</h1>
+                <p>Accédez à vos quiz assignés et suivez votre progression</p>
             </div>
-        {% elif quizzes %}
-            <div class="quizzes-grid">
-                {% for quiz in quizzes %}
-                    <div class="quiz-card">
-                        <div class="quiz-header">
-                            <h3 class="quiz-title">{{ quiz.title }}</h3>
-                            <p class="quiz-description">{{ quiz.description or "Aucune description disponible" }}</p>
-                        </div>
 
-                        <div class="quiz-meta">
-                            <span><i class="fas fa-clock"></i> {{ quiz.time_limit }} min</span>
-                            <span class="quiz-status status-{{ quiz.status }}">
-                                {% if quiz.status == 'available' %}
-                                    Disponible
-                                {% elif quiz.status == 'active' %}
-                                    En cours
-                                {% elif quiz.status == 'completed' %}
-                                    Terminé
-                                {% endif %}
-                            </span>
-                        </div>
-
-                        {% if quiz.status == 'completed' and quiz.score is not none %}
-                            <div class="score-display">
-                                <div class="score-value">{{ quiz.score }}/{{ quiz.max_score }}</div>
-                                <div class="score-label">Score obtenu</div>
+            {% if no_profile %}
+                <div class="no-quizzes">
+                    <i class="fas fa-user-plus"></i>
+                    <h3>Profil requis</h3>
+                    <p>Vous devez d'abord créer votre profil candidat pour accéder aux quiz. <a href="/signup/step2">Créer mon profil</a></p>
+                </div>
+            {% elif quizzes %}
+                <div class="quizzes-grid">
+                    {% for quiz in quizzes %}
+                        <div class="quiz-card">
+                            <div class="quiz-header">
+                                <h3 class="quiz-title">{{ quiz.title }}</h3>
+                                <p class="quiz-description">{{ quiz.description or "Aucune description disponible" }}</p>
                             </div>
-                        {% endif %}
 
-                        <div class="quiz-actions">
-                            {% if quiz.status == 'available' %}
-                                <a href="/quiz/{{ quiz.id }}" class="btn btn-primary">
-                                    <i class="fas fa-play"></i> Commencer
-                                </a>
-                            {% elif quiz.status == 'active' %}
-                                <a href="/quiz/{{ quiz.id }}" class="btn btn-secondary">
-                                    <i class="fas fa-edit"></i> Continuer
-                                </a>
-                            {% elif quiz.status == 'completed' %}
-                                <a href="/quiz/{{ quiz.id }}/results" class="btn btn-success">
-                                    <i class="fas fa-chart-bar"></i> Voir résultats
-                                </a>
+                            <div class="quiz-meta">
+                                <span><i class="fas fa-clock"></i> {{ quiz.time_limit }} min</span>
+                                <span class="quiz-status status-{{ quiz.status }}">
+                                    {% if quiz.status == 'available' %}
+                                        Disponible
+                                    {% elif quiz.status == 'active' %}
+                                        En cours
+                                    {% elif quiz.status == 'completed' %}
+                                        Terminé
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            {% if quiz.status == 'completed' and quiz.score is not none %}
+                                <div class="score-display">
+                                    <div class="score-value">{{ quiz.score }}/{{ quiz.max_score }}</div>
+                                    <div class="score-label">Score obtenu</div>
+                                </div>
                             {% endif %}
+
+                            <div class="quiz-actions">
+                                {% if quiz.status == 'available' %}
+                                    <a href="/quiz/{{ quiz.id }}" class="btn btn-primary">
+                                        <i class="fas fa-play"></i> Commencer
+                                    </a>
+                                {% elif quiz.status == 'active' %}
+                                    <a href="/quiz/{{ quiz.id }}" class="btn btn-secondary">
+                                        <i class="fas fa-edit"></i> Continuer
+                                    </a>
+                                {% elif quiz.status == 'completed' %}
+                                    <a href="/quiz/{{ quiz.id }}/results" class="btn btn-success">
+                                        <i class="fas fa-chart-bar"></i> Voir résultats
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="no-quizzes">
-                <i class="fas fa-question-circle"></i>
-                <h3>Aucun quiz disponible</h3>
-                <p>Vous n'avez pas encore de quiz assignés. Les quiz vous seront proposés par les recruteurs en fonction de vos candidatures.</p>
-            </div>
-        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-quizzes">
+                    <i class="fas fa-question-circle"></i>
+                    <h3>Aucun quiz disponible</h3>
+                    <p>Vous n'avez pas encore de quiz assignés. Les quiz vous seront proposés par les recruteurs en fonction de vos candidatures.</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </body>
 </html>

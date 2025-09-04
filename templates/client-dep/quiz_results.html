@@ -18,56 +18,167 @@
         .results-header {
             background: var(--surface);
             border-radius: 16px;
-            padding: 2rem;
+            padding: 3rem 2rem;
             margin-bottom: 2rem;
             border: 1px solid var(--border);
             text-align: center;
+            box-shadow: var(--shadow-lg);
         }
         
         .score-circle {
-            width: 120px;
-            height: 120px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
             background: var(--primary-gradient);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1rem;
+            margin: 0 auto 1.5rem;
             color: white;
+            font-size: 2.5rem;
+            font-weight: 800;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+        }
+        
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+            z-index: -1;
+        }
+        
+        .results-title {
             font-size: 2rem;
             font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+        
+        .results-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
         }
         
         .results-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            gap: 1.5rem;
             margin: 2rem 0;
         }
         
         .stat-card {
-            background: var(--background);
+            background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
+            border-radius: 16px;
+            padding: 2rem 1.5rem;
             text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-300);
         }
         
         .stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary-500);
+            margin-bottom: 0.75rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
         }
         
         .stat-label {
             color: var(--text-secondary);
             font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .results-footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .results-message {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 1.125rem;
+            line-height: 1.6;
+        }
+        
+        .home-btn {
+            display: inline-block;
+            background: var(--primary-gradient);
+            color: white;
+            text-decoration: none;
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .home-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        @media (max-width: 768px) {
+            .results-container {
+                padding: 1rem;
+            }
+            
+            .results-header {
+                padding: 2rem 1.5rem;
+            }
+            
+            .score-circle {
+                width: 120px;
+                height: 120px;
+                font-size: 2rem;
+            }
+            
+            .results-title {
+                font-size: 1.5rem;
+            }
+            
+            .results-stats {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .stat-card {
+                padding: 1.5rem 1rem;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
-     Background Effects 
+    <!-- Background Effects -->
     <div class="background-effects">
         <div class="floating-shapes">
             <div class="shape"></div>
@@ -83,41 +194,41 @@
                 <div class="score-circle">
                     {{ "%.0f"|format((attempt.total_correct / attempt.total_questions * 100) if attempt.total_questions > 0 else 0) }}%
                 </div>
-                <h1 style="font-size: 2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
+                <h1 class="results-title">
                     Quiz Terminé !
                 </h1>
-                <p style="color: var(--text-secondary);">{{ quiz.title }}</p>
+                <p class="results-subtitle">{{ quiz.title }}</p>
             </div>
             
             <div class="results-stats">
                 <div class="stat-card">
-                                    <div class="stat-value">{{ attempt.total_correct }}/{{ attempt.total_questions }}</div>
-                <div class="stat-label">Score Total</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ "%.1f"|format((attempt.total_correct / attempt.total_questions * 100) if attempt.total_questions > 0 else 0) }}%</div>
-                <div class="stat-label">Pourcentage</div>
-            </div>
-            <div class="stat-card">
-                {% if attempt.end_time and attempt.start_time %}
-                    {% set time_taken_seconds = (attempt.end_time - attempt.start_time).total_seconds() %}
-                    <div class="stat-value">{{ (time_taken_seconds // 60)|int }}:{{ '{:02d}'.format((time_taken_seconds % 60)|int) }}</div>
-                {% else %}
-                    <div class="stat-value">0:00</div>
-                {% endif %}
-                <div class="stat-label">Temps Utilisé</div>
-            </div>
+                    <div class="stat-value">{{ attempt.total_correct }}/{{ attempt.total_questions }}</div>
+                    <div class="stat-label">Score Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ "%.1f"|format((attempt.total_correct / attempt.total_questions * 100) if attempt.total_questions > 0 else 0) }}%</div>
+                    <div class="stat-label">Pourcentage</div>
+                </div>
+                <div class="stat-card">
+                    {% if attempt.end_time and attempt.start_time %}
+                        {% set time_taken_seconds = (attempt.end_time - attempt.start_time).total_seconds() %}
+                        <div class="stat-value">{{ (time_taken_seconds // 60)|int }}:{{ '{:02d}'.format((time_taken_seconds % 60)|int) }}</div>
+                    {% else %}
+                        <div class="stat-value">0:00</div>
+                    {% endif %}
+                    <div class="stat-label">Temps Utilisé</div>
+                </div>
                 <div class="stat-card">
                     <div class="stat-value">{{ answers|length }}</div>
                     <div class="stat-label">Questions Répondues</div>
                 </div>
             </div>
             
-            <div style="text-align: center; margin-top: 2rem;">
-                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+            <div class="results-footer">
+                <p class="results-message">
                     Merci d'avoir passé ce quiz. Vos résultats ont été enregistrés.
                 </p>
-                <a href="/" class="submit-btn" style="display: inline-block; text-decoration: none;">
+                <a href="/" class="home-btn">
                     🏠 Retour à l'accueil
                 </a>
             </div>
