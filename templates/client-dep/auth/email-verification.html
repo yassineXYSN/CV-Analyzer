@@ -8,131 +8,177 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Background Effects -->
-    <div class="background-effects">
-        <div class="floating-shapes">
-            <div class="shape shape-1"></div>
-            <div class="shape shape-2"></div>
-            <div class="shape shape-3"></div>
+    <!-- Background avec effet glassmorphism -->
+    <div class="background-container">
+        <div class="floating-elements">
+            <div class="floating-circle circle-1"></div>
+            <div class="floating-circle circle-2"></div>
+            <div class="floating-circle circle-3"></div>
+            <div class="floating-square square-1"></div>
+            <div class="floating-square square-2"></div>
         </div>
         <div class="grid-overlay"></div>
     </div>
 
-    <!-- Email Verification Container -->
-    <div class="auth-container verification-layout">
-        <!-- Logo Section - Left -->
-        <div class="logo-section">
-            <div class="logo">
-                <i class="fas fa-brain"></i>
-                <a href="/" style="text-decoration: none; color: inherit;">CV Analyzer Pro</a>
+    <!-- Container principal -->
+    <div class="main-container">
+        <!-- Header avec logo -->
+        <header class="page-header">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h1 class="logo-text">CV Analyzer Pro</h1>
             </div>
-            <div class="logo-subtitle">Vérification de votre adresse email</div>
-            <div class="logo-description">
-                <p>Nous avons envoyé un lien de vérification à votre adresse email. Cliquez sur le lien pour activer votre compte.</p>
-                <div class="features-list">
-                    <div class="feature-item">
-                        <i class="fas fa-envelope-circle-check"></i>
-                        <span>Email de vérification envoyé</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-shield-check"></i>
-                        <span>Sécurisation de votre compte</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-clock"></i>
-                        <span>Lien valide 24 heures</span>
+        </header>
+
+        <!-- Contenu principal -->
+        <main class="main-content">
+            <!-- Carte de vérification -->
+            <div class="verification-card">
+                <!-- Icône principale -->
+                <div class="main-icon">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-envelope-open"></i>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Verification Form - Right -->
-        <div class="auth-form verification-form">
-            <div class="form-header">
-                <h2 class="form-title">
-                    <i class="fas fa-envelope-open-text"></i>
-                    Vérifiez votre email
-                </h2>
-                <p class="form-subtitle">Un email de vérification a été envoyé à <strong id="userEmail">{{ user_email }}</strong></p>
-            </div>
-            
-            <!-- Messages -->
-            <div class="message success-message" id="successMessage" style="display: none;">
-                <i class="fas fa-check-circle"></i>
-                <span>Email de vérification renvoyé avec succès !</span>
-            </div>
-            
-            <div class="message error-message" id="errorMessage" style="display: none;">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span id="errorText">Une erreur s'est produite.</span>
-            </div>
-
-            <!-- Verification Status -->
-            <div class="verification-status">
-                <div class="status-icon">
-                    <i class="fas fa-envelope fa-3x"></i>
-                </div>
-                <h3>Consultez votre boîte email</h3>
-                <p>Nous avons envoyé un lien de vérification à votre adresse email. Cliquez sur le lien dans l'email pour activer votre compte et continuer.</p>
-                
-                <div class="verification-steps">
-                    <div class="step">
-                        <i class="fas fa-envelope"></i>
-                        <span>1. Ouvrez votre boîte email</span>
-                    </div>
-                    <div class="step">
-                        <i class="fas fa-mouse-pointer"></i>
-                        <span>2. Cliquez sur le lien de vérification</span>
-                    </div>
-                    <div class="step">
-                        <i class="fas fa-check-circle"></i>
-                        <span>3. Votre compte sera activé</span>
+                <!-- Titre et description -->
+                <div class="verification-header">
+                    <h2>Vérifiez votre email</h2>
+                    <p class="description">
+                        Nous avons envoyé un lien de vérification à votre adresse email
+                    </p>
+                    <div class="email-display">
+                        <i class="fas fa-at"></i>
+                        <span id="userEmail">{{ user_email }}</span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Resend Email -->
-            <div class="resend-section">
-                <p>Vous n'avez pas reçu l'email ?</p>
-                <button type="button" class="resend-btn" id="resendBtn">
-                    <span class="btn-content" id="resendBtnContent">
-                        <i class="fas fa-paper-plane"></i>
-                        Renvoyer l'email
-                    </span>
-                    <div class="loading-spinner" id="resendLoadingSpinner" style="display: none;">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        Envoi en cours...
+                <!-- Messages de statut -->
+                <div class="status-messages">
+                    <div class="message success-message" id="successMessage" style="display: none;">
+                        <div class="message-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="message-content">
+                            <h4>Email envoyé !</h4>
+                            <p>L'email de vérification a été renvoyé avec succès.</p>
+                        </div>
                     </div>
-                </button>
-                <p class="resend-timer" id="resendTimer" style="display: none;">
-                    Vous pourrez renvoyer l'email dans <span id="countdown">60</span> secondes
-                </p>
-            </div>
+                    
+                    <div class="message error-message" id="errorMessage" style="display: none;">
+                        <div class="message-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="message-content">
+                            <h4>Erreur</h4>
+                            <p id="errorText">Une erreur s'est produite lors de l'envoi.</p>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Help Section -->
-            <div class="help-section">
-                <h4><i class="fas fa-question-circle"></i> Besoin d'aide ?</h4>
-                <ul>
-                    <li>Vérifiez votre dossier spam/courrier indésirable</li>
-                    <li>Assurez-vous que l'adresse email est correcte</li>
-                    <li>Le lien de vérification expire après 24 heures</li>
-                </ul>
-                <p>
-                    <a href="/contact" class="help-link">
+                <!-- Instructions -->
+                <div class="instructions-section">
+                    <div class="instruction-item">
+                        <div class="instruction-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="instruction-text">
+                            <h4>Ouvrez votre boîte email</h4>
+                            <p>Vérifiez votre dossier principal et spam</p>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-item">
+                        <div class="instruction-icon">
+                            <i class="fas fa-mouse-pointer"></i>
+                        </div>
+                        <div class="instruction-text">
+                            <h4>Cliquez sur le lien</h4>
+                            <p>Le lien de vérification est valide 24h</p>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-item">
+                        <div class="instruction-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="instruction-text">
+                            <h4>Compte activé</h4>
+                            <p>Votre compte sera immédiatement activé</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section renvoi -->
+                <div class="resend-section">
+                    <div class="resend-header">
+                        <h4>Vous n'avez pas reçu l'email ?</h4>
+                        <p>Cliquez sur le bouton ci-dessous pour le renvoyer</p>
+                    </div>
+                    
+                    <button type="button" class="resend-button" id="resendBtn">
+                        <div class="button-content" id="resendBtnContent">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Renvoyer l'email</span>
+                        </div>
+                        <div class="loading-spinner" id="resendLoadingSpinner" style="display: none;">
+                            <div class="spinner"></div>
+                            <span>Envoi en cours...</span>
+                        </div>
+                    </button>
+                    
+                    <div class="resend-timer" id="resendTimer" style="display: none;">
+                        <div class="timer-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="timer-text">
+                            <p>Vous pourrez renvoyer l'email dans</p>
+                            <div class="countdown">
+                                <span id="countdown">60</span>
+                                <span class="unit">secondes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section d'aide -->
+                <div class="help-section">
+                    <div class="help-header">
+                        <h4><i class="fas fa-question-circle"></i> Besoin d'aide ?</h4>
+                    </div>
+                    
+                    <div class="help-tips">
+                        <div class="tip">
+                            <i class="fas fa-search"></i>
+                            <span>Vérifiez votre dossier spam</span>
+                        </div>
+                        <div class="tip">
+                            <i class="fas fa-check-double"></i>
+                            <span>Vérifiez l'adresse email</span>
+                        </div>
+                        <div class="tip">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span>Le lien expire dans 24h</span>
+                        </div>
+                    </div>
+                    
+                    <a href="/contact" class="support-button">
                         <i class="fas fa-headset"></i>
-                        Contactez le support
+                        <span>Contacter le support</span>
                     </a>
-                </p>
-            </div>
+                </div>
 
-            <!-- Back to Login -->
-            <div class="back-to-login">
-                <a href="/login">
-                    <i class="fas fa-arrow-left"></i>
-                    Retour à la connexion
-                </a>
+                <!-- Navigation -->
+                <div class="navigation-section">
+                    <a href="/login" class="back-link">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Retour à la connexion</span>
+                    </a>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script>
@@ -191,7 +237,7 @@
             function startResendCooldown() {
                 canResend = false
                 resendBtn.style.display = "none"
-                resendTimer.style.display = "block"
+                resendTimer.style.display = "flex"
                 
                 let timeLeft = 60
                 countdown.textContent = timeLeft
@@ -203,14 +249,14 @@
                     if (timeLeft <= 0) {
                         clearInterval(countdownInterval)
                         canResend = true
-                        resendBtn.style.display = "block"
+                        resendBtn.style.display = "flex"
                         resendTimer.style.display = "none"
                     }
                 }, 1000)
             }
 
             function showSuccess(message) {
-                successMessage.querySelector("span").textContent = message
+                successMessage.querySelector("p").textContent = message
                 successMessage.style.display = "flex"
                 errorMessage.style.display = "none"
             }
@@ -242,154 +288,577 @@
     </script>
 
     <style>
-        .verification-layout {
-            max-width: 1000px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .verification-form {
-            max-width: 500px;
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(at center top, rgb(26, 26, 46) 0%, rgb(22, 33, 62) 50%, rgb(15, 15, 35) 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: var(--text-primary);
+            line-height: 1.6;
         }
 
-        .verification-status {
+        /* Background avec effets */
+        .background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .floating-elements {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .floating-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .circle-1 {
+            width: 200px;
+            height: 200px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .circle-2 {
+            width: 150px;
+            height: 150px;
+            top: 60%;
+            right: 15%;
+            animation-delay: 5s;
+        }
+
+        .circle-3 {
+            width: 100px;
+            height: 100px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 10s;
+        }
+
+        .floating-square {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        .square-1 {
+            width: 80px;
+            height: 80px;
+            top: 30%;
+            right: 30%;
+            animation-delay: 2s;
+        }
+
+        .square-2 {
+            width: 120px;
+            height: 120px;
+            bottom: 40%;
+            right: 10%;
+            animation-delay: 8s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+        }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        /* Container principal */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .page-header {
             text-align: center;
-            padding: 2rem 0;
-            border: 2px dashed #e0e6ed;
-            border-radius: 12px;
-            margin: 2rem 0;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            margin-bottom: 3rem;
         }
 
-        .status-icon {
-            color: #3b82f6;
+        .logo-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--dark-bg);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Contenu principal */
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .verification-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Icône principale */
+        .main-icon {
+            margin-bottom: 2rem;
+        }
+
+        .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 2rem;
+            color: var(--text-primary);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Header de vérification */
+        .verification-header {
+            margin-bottom: 2.5rem;
+        }
+
+        .verification-header h2 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--text-primary);
             margin-bottom: 1rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .verification-status h3 {
-            color: #1e293b;
-            margin-bottom: 1rem;
-            font-size: 1.25rem;
-        }
-
-        .verification-status p {
-            color: #64748b;
+        .description {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
             line-height: 1.6;
             margin-bottom: 1.5rem;
         }
 
-        .verification-steps {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            text-align: left;
-            max-width: 300px;
-            margin: 0 auto;
-        }
-
-        .step {
-            display: flex;
+        .email-display {
+            display: inline-flex;
             align-items: center;
             gap: 0.75rem;
-            padding: 0.5rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .step i {
-            color: #10b981;
-            width: 20px;
-        }
-
-        .resend-section {
-            text-align: center;
-            margin: 2rem 0;
-            padding: 1.5rem;
-            background: #f8fafc;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem 1.5rem;
             border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
 
-        .resend-btn {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
+        .email-display i {
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .email-display span {
+            color: var(--text-primary);
             font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        /* Messages de statut */
+        .status-messages {
+            margin-bottom: 2rem;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.25rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .success-message {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+        }
+
+        .error-message {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            color: #ff4757;
+        }
+
+        .message-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .message-content h4 {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .message-content p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        /* Instructions */
+        .instructions-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .instruction-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .instruction-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .instruction-text {
+            flex: 1;
+            text-align: center;
+        }
+
+        .instruction-text h4 {
+            color: var(--text-primary);
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            font-size: 1rem;
+        }
+
+        .instruction-text p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Section renvoi */
+        .resend-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .resend-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .resend-header h4 {
+            color: var(--text-primary);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .resend-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .resend-button {
+            background: var(--primary-gradient);
+            color: var(--text-primary);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin: 1rem 0;
+            width: 100%;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
         }
 
-        .resend-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        .resend-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
         }
 
-        .resend-btn:disabled {
+        .resend-button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
 
+        .button-content, .loading-spinner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid var(--text-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .resend-timer {
-            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .timer-icon {
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+
+        .timer-text p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .countdown {
+            display: flex;
+            align-items: baseline;
+            gap: 0.25rem;
+        }
+
+        .countdown span:first-child {
+            color: #667eea;
+            font-weight: 800;
+            font-size: 1.5rem;
+        }
+
+        .countdown .unit {
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
 
+        /* Section d'aide */
         .help-section {
-            background: #fef3c7;
-            border: 1px solid #fbbf24;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin: 2rem 0;
+            background: rgba(255, 165, 2, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 165, 2, 0.3);
         }
 
-        .help-section h4 {
-            color: #92400e;
-            margin-bottom: 1rem;
+        .help-header h4 {
+            color: #ffa502;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
         }
 
-        .help-section ul {
-            color: #92400e;
-            margin: 1rem 0;
-            padding-left: 1.5rem;
+        .help-tips {
+            margin-bottom: 1.5rem;
         }
 
-        .help-section li {
-            margin-bottom: 0.5rem;
+        .tip {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            color: #ffa502;
+            font-weight: 500;
         }
 
-        .help-link {
-            color: #1d4ed8;
+        .tip i {
+            color: #ffa502;
+            width: 16px;
+        }
+
+        .support-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--warning-gradient);
+            color: var(--text-primary);
+            text-decoration: none;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 165, 2, 0.3);
+        }
+
+        .support-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 165, 2, 0.3);
+        }
+
+        /* Navigation */
+        .navigation-section {
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-secondary);
             text-decoration: none;
             font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
         }
 
-        .help-link:hover {
-            text-decoration: underline;
+        .back-link:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
-        .back-to-login {
-            text-align: center;
-            margin-top: 2rem;
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem 0.5rem;
+            }
+
+            .verification-card {
+                padding: 2rem 1.5rem;
+                margin: 0 0.5rem;
+            }
+
+            .verification-header h2 {
+                font-size: 1.875rem;
+            }
+
+            .icon-wrapper {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+
+            .logo-container {
+                padding: 0.75rem 1.5rem;
+            }
+
+            .logo-text {
+                font-size: 1.25rem;
+            }
         }
 
-        .back-to-login a {
-            color: #64748b;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: color 0.3s ease;
-        }
+        @media (max-width: 480px) {
+            .verification-card {
+                padding: 1.5rem 1rem;
+            }
 
-        .back-to-login a:hover {
-            color: #1e293b;
+            .verification-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .instruction-item {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .resend-section, .help-section {
+                padding: 1.5rem;
+            }
         }
     </style>
 </body>

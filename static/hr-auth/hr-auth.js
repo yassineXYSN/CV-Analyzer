@@ -100,6 +100,18 @@
                     console.log('✅ FRONTEND: Connexion réussie');
                     console.log('🎯 FRONTEND: Redirection vers:', result.redirect_url);
                     
+                    // Store JWT tokens
+                    if (result.access_token && result.refresh_token) {
+                        console.log('💾 FRONTEND: Stockage des tokens JWT');
+                        localStorage.setItem('hr_access_token', result.access_token);
+                        localStorage.setItem('hr_refresh_token', result.refresh_token);
+                        if (result.user) {
+                            localStorage.setItem('hr_user', JSON.stringify(result.user));
+                        }
+                    } else {
+                        console.warn('⚠️ FRONTEND: Aucun token JWT reçu');
+                    }
+                    
                     // Success
                     successText.textContent = result.message || 'Connexion réussie ! Redirection en cours...';
                     successMessage.style.display = 'flex';

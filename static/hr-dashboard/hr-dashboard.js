@@ -15,10 +15,65 @@ window.applications = []
 // Initialize dashboard when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🚀 FRONTEND: Dashboard initializing...")
+  
+  // Check authentication first
+  if (!checkAuthentication()) {
+    return;
+  }
+  
   initializeDashboard()
   initializeSkillsSystem()
   console.log("✅ FRONTEND: Dashboard initialized")
 })
+
+// Check if user is authenticated
+function checkAuthentication() {
+  const token = localStorage.getItem('hr_access_token');
+  if (!token) {
+    console.log("❌ FRONTEND: No authentication token found, redirecting to login");
+    window.location.replace("/hr-login");
+    return false;
+  }
+  
+  // Verify token is not expired (basic check)
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) {
+      console.log("❌ FRONTEND: Token expired, redirecting to login");
+      localStorage.clear();
+      window.location.replace("/hr-login");
+      return false;
+    }
+  } catch (error) {
+    console.log("❌ FRONTEND: Invalid token, redirecting to login");
+    localStorage.clear();
+    window.location.replace("/hr-login");
+    return false;
+  }
+  
+  return true;
+}
+
+// Prevent back button from showing cached dashboard
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted) {
+    // Page was loaded from cache, check authentication again
+    console.log("🔄 FRONTEND: Page loaded from cache, checking authentication");
+    if (!checkAuthentication()) {
+      return;
+    }
+  }
+});
+
+// Prevent back button navigation to dashboard after logout
+window.addEventListener('popstate', function(event) {
+  const token = localStorage.getItem('hr_access_token');
+  if (!token) {
+    console.log("🚫 FRONTEND: Back button blocked - no authentication");
+    window.location.replace("/hr-login");
+  }
+});
 
 // Fonction d'initialisation
 async function initializeDashboard() {
@@ -57,7 +112,12 @@ async function loadDashboardData() {
 async function loadApplications() {
   console.log("📋 FRONTEND: Chargement des candidatures (mode basique)")
   try {
-    const response = await fetch("/api/applications")
+    const response = await fetch("/api/applications", {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
+        'Content-Type': 'application/json'
+      }
+    })
     const result = await response.json()
     if (result.success) {
       window.applications = (result.applications || []).map((app) => ({
@@ -976,6 +1036,7 @@ async function confirmRecommendation(applicationId) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
       },
       body: JSON.stringify({
         comment: comment,
@@ -1238,7 +1299,12 @@ function updateApplicationStatus(applicationId, newStatus) {
 async function loadCurrentUser() {
   console.log("👤 FRONTEND: Chargement utilisateur actuel")
   try {
-    const response = await fetch("/api/current-user")
+    const response = await fetch("/api/current-user", {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
+        'Content-Type': 'application/json'
+      }
+    })
     const result = await response.json()
     console.log("API Response:", result)
     if (result.success) {
@@ -1379,7 +1445,12 @@ function updateUserDisplay() {
 async function loadDashboardStats() {
   console.log("📊 FRONTEND: Chargement statistiques dashboard")
   try {
-    const response = await fetch("/api/dashboard-stats")
+    const response = await fetch("/api/dashboard-stats", {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
+        'Content-Type': 'application/json'
+      }
+    })
     const result = await response.json()
     if (result.success) {
       const stats = result.stats
@@ -1439,7 +1510,17 @@ function openCompanyProfile() {
 
 function logout() {
   console.log("🚪 FRONTEND: Déconnexion")
-  window.location.href = "/hr-login"
+  
+  // Clear all authentication data
+  localStorage.removeItem('hr_access_token');
+  localStorage.removeItem('hr_refresh_token');
+  localStorage.removeItem('hr_user');
+  
+  // Clear session storage as well
+  sessionStorage.clear();
+  
+  // Force reload to clear any cached data
+  window.location.replace("/hr-login");
 }
 
 // Gestion des modals - FONCTIONS AMÉLIORÉES POUR LE CSS
@@ -1524,7 +1605,12 @@ function resetManagerFields() {
 async function loadAvailableManagers() {
   console.log("👥 FRONTEND: Chargement des chefs disponibles")
   try {
-    const response = await fetch("/api/available-managers")
+    const response = await fetch("/api/available-managers", {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
+        'Content-Type': 'application/json'
+      }
+    })
     const result = await response.json()
     const select = document.getElementById("existingManagerSelect")
 
@@ -1772,6 +1858,7 @@ async function createDepartment() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
       },
       body: JSON.stringify(departmentData),
     })
@@ -1869,6 +1956,7 @@ async function createJob() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
       },
       body: JSON.stringify(jobData),
     })
@@ -1945,6 +2033,7 @@ async function createEmployee() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
       },
       body: JSON.stringify(employeeData),
     })
@@ -1982,7 +2071,12 @@ async function refreshDashboard() {
 async function loadDepartments() {
   console.log("🔄 FRONTEND: Chargement des départements")
   try {
-    const response = await fetch("/api/departments")
+    const response = await fetch("/api/departments", {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
+        'Content-Type': 'application/json'
+      }
+    })
     const result = await response.json()
     if (result.success) {
       departments = result.departments || []
@@ -2010,7 +2104,12 @@ async function loadDepartments() {
 async function loadJobs() {
   console.log("🔄 FRONTEND: Chargement des postes")
   try {
-    const response = await fetch("/api/jobs")
+    const response = await fetch("/api/jobs", {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
+        'Content-Type': 'application/json'
+      }
+    })
     const result = await response.json()
     if (result.success) {
       jobs = result.jobs || []
@@ -2308,7 +2407,12 @@ function clearSearch() {
 async function loadEmployees() {
   console.log("👥 FRONTEND: Chargement des employés")
   try {
-    const response = await fetch("/api/employees")
+    const response = await fetch("/api/employees", {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('hr_access_token')}`,
+        'Content-Type': 'application/json'
+      }
+    })
     const result = await response.json()
     if (result.success) {
       employees = result.employees || []

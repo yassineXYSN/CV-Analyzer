@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Response, Form, Depends, UploadFile, File
+from fastapi import APIRouter, Request, Response, Form, Depends, UploadFile, File, Header, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from database import SessionLocal
 from databaseclient.models import User
@@ -14,6 +14,7 @@ from databaseclient.insert_to_db import insert_candidate_data
 from fastapi.templating import Jinja2Templates
 from utils1.email_service import send_verification_email, generate_verification_token, get_verification_token_expiry
 from datetime import datetime
+from jwt_utils import JWTManager
 
 
 router = APIRouter()
@@ -146,7 +147,7 @@ async def login(
         if not user.is_active:
             return {"success": False, "message": "Compte désactivé"}
         
-        # Create session
+        # Create session (kept for existing flows)
         session_token = create_user_session(db, user.id, remember_me)
         
         # Set cookie
@@ -159,12 +160,75 @@ async def login(
             secure=False,  # Set to True in production with HTTPS
             samesite="lax"
         )
+
+        # Issue JWT tokens
+        token_data = {"sub": str(user.id), "email": user.email, "role": "client"}
+        access_token = JWTManager.create_access_token(data=token_data)
+        refresh_token = JWTManager.create_refresh_token(data=token_data)
         
-        return {"success": True, "message": "Connexion réussie"}
+        return {
+            "success": True,
+            "message": "Connexion réussie",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "first_name": getattr(user, "first_name", None),
+                "last_name": getattr(user, "last_name", None),
+            },
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+        }
         
     except Exception as e:
         print(f"Login error: {str(e)}")
         return {"success": False, "message": "Erreur lors de la connexion"}
+
+
+@router.post("/api/client-refresh-token")
+async def client_refresh_token(refresh_token: str):
+    try:
+        payload = JWTManager.verify_token(refresh_token)
+        if payload.get("type") != "refresh" or payload.get("role") != "client":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        token_data = {"sub": payload.get("sub"), "email": payload.get("email"), "role": "client"}
+        new_access = JWTManager.create_access_token(data=token_data)
+        return {"access_token": new_access, "token_type": "bearer"}
+    except Exception:
+        raise HTTPException(status_code=401, detail="Could not refresh token")
+
+
+@router.get("/api/client-me")
+async def client_me(authorization: str = Header(None), db: Session = Depends(get_db)):
+    try:
+        if not authorization or not authorization.lower().startswith("bearer "):
+            raise HTTPException(status_code=401, detail="Missing token")
+        token = authorization.split(" ", 1)[1]
+        payload = JWTManager.verify_token(token)
+        if payload.get("role") != "client":
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+        user_id = int(payload.get("sub"))
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {
+            "success": True,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "first_name": getattr(user, "first_name", None),
+                "last_name": getattr(user, "last_name", None),
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+
+@router.post("/api/client-logout")
+async def client_logout():
+    return {"success": True, "message": "Logged out"}
 
 @router.get("/signup", response_class=HTMLResponse)
 def signup_page(request: Request, db: Session = Depends(get_db)):

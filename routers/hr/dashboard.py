@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from databasehr.database import SessionLocal
 from databasehr.models import Department, Employee, Job, Application, HRAdmin, ProfileCandidat, Contact
@@ -6,6 +6,8 @@ from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import date
 from fastapi.templating import Jinja2Templates
+from jwt_utils import get_current_hr_user, get_optional_current_hr_user
+from typing import Dict, Any, Optional
 import os
 
 # Configuration des templates
@@ -14,6 +16,14 @@ templates_dir = os.path.join(current_dir, '../../templates')
 templates = Jinja2Templates(directory=templates_dir)
 
 router = APIRouter()
+
+def check_hr_authentication():
+    """Check if user is authenticated for HR pages"""
+    user_id = current_user_session.get('user_id')
+    if not user_id:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/hr-login", status_code=302)
+    return None
 
 def check_super_admin_permission(user_id: int) -> bool:
     """
@@ -33,31 +43,67 @@ def check_super_admin_permission(user_id: int) -> bool:
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard_page(request: Request):
-    return templates.TemplateResponse("HR-dep/hr-dashboard.html", {"request": request})
+    # Check authentication
+    auth_check = check_hr_authentication()
+    if auth_check:
+        return auth_check
+    
+    response = templates.TemplateResponse("HR-dep/hr-dashboard.html", {"request": request})
+    # Prevent caching of dashboard page
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @router.get("/hr-reports", response_class=HTMLResponse)
 def hr_reports_page(request: Request):
-    return templates.TemplateResponse("HR-dep/hr-reports.html", {"request": request})
+    # Check authentication
+    auth_check = check_hr_authentication()
+    if auth_check:
+        return auth_check
+    
+    response = templates.TemplateResponse("HR-dep/hr-reports.html", {"request": request})
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @router.get("/employee-profile", response_class=HTMLResponse)
 def employee_profile_page(request: Request):
-    return templates.TemplateResponse("HR-dep/employee-profile.html", {"request": request})
+    # Check authentication
+    auth_check = check_hr_authentication()
+    if auth_check:
+        return auth_check
+    
+    response = templates.TemplateResponse("HR-dep/employee-profile.html", {"request": request})
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @router.get("/job-details", response_class=HTMLResponse)
 def job_details_page(request: Request):
-    return templates.TemplateResponse("HR-dep/job-details.html", {"request": request})
+    # Check authentication
+    auth_check = check_hr_authentication()
+    if auth_check:
+        return auth_check
+    
+    response = templates.TemplateResponse("HR-dep/job-details.html", {"request": request})
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
-@router.get("/api/dashboard-stats")
-async def get_dashboard_stats():
+@router.get("/api/dashboard-stats-debug")
+async def get_dashboard_stats_debug(current_user: Dict[str, Any] = Depends(get_current_hr_user)):
+    """Debug version of dashboard stats with simplified queries"""
     try:
-        user_id = current_user_session.get('user_id')
-        if not user_id:
-            return JSONResponse(
-                status_code=401,
-                content={"success": False, "message": "Utilisateur non connecté"}
-            )
-        
+        print(f"🔍 DASHBOARD STATS DEBUG: Starting with user: {current_user}")
+        user_id = int(current_user.get("sub"))
+        print(f"🔍 DASHBOARD STATS DEBUG: User ID: {user_id}")
         company = get_user_company(user_id)
+        print(f"🔍 DASHBOARD STATS DEBUG: Company: {company}")
+        
         if not company:
             return JSONResponse(
                 status_code=404,
@@ -66,6 +112,101 @@ async def get_dashboard_stats():
         
         db = SessionLocal()
         try:
+            print(f"🔍 DASHBOARD STATS DEBUG: Starting database queries for company ID: {company.id}")
+            
+            # Statistiques des départements
+            total_departments = db.query(Department).filter(
+                Department.company_id == company.id,
+                Department.is_active == True
+            ).count()
+            print(f"🔍 DASHBOARD STATS DEBUG: Departments: {total_departments}")
+            
+            # Statistiques des employés
+            total_employees = db.query(Employee).filter(
+                Employee.company_id == company.id,
+                Employee.status == 'active'
+            ).count()
+            print(f"🔍 DASHBOARD STATS DEBUG: Employees: {total_employees}")
+            
+            # Statistiques des postes
+            total_jobs = db.query(Job).filter(
+                Job.company_id == company.id,
+                Job.status.in_(['draft', 'active'])
+            ).count()
+            print(f"🔍 DASHBOARD STATS DEBUG: Jobs: {total_jobs}")
+            
+            urgent_jobs = db.query(Job).filter(
+                Job.company_id == company.id,
+                Job.status.in_(['draft', 'active']),
+                Job.priority == 'urgent'
+            ).count()
+            print(f"🔍 DASHBOARD STATS DEBUG: Urgent jobs: {urgent_jobs}")
+            
+            # Statistiques des candidatures (simplifiées)
+            total_applications = db.query(Application).join(
+                Job, Application.job_id == Job.id
+            ).filter(
+                Job.company_id == company.id,
+                Application.status.in_(['pending', 'reviewed'])
+            ).count()
+            print(f"🔍 DASHBOARD STATS DEBUG: Applications: {total_applications}")
+            
+            # Pas de requête complexe pour les candidatures récentes pour l'instant
+            recent_applications_list = []
+            
+            stats = {
+                "total_departments": total_departments,
+                "total_employees": total_employees,
+                "total_jobs": total_jobs,
+                "urgent_jobs": urgent_jobs,
+                "total_applications": total_applications,
+                "recent_applications": recent_applications_list,
+            }
+            
+            print(f"🔍 DASHBOARD STATS DEBUG: Stats created: {stats}")
+            
+            return JSONResponse(
+                status_code=200,
+                content={"success": True, "stats": stats}
+            )
+            
+        except Exception as e:
+            print(f"❌ DASHBOARD STATS DEBUG: Database error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "message": f"Erreur lors du calcul des statistiques: {str(e)}"}
+            )
+        finally:
+            db.close()
+            
+    except Exception as e:
+        print(f"❌ DASHBOARD STATS DEBUG: Outer error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
+        )
+
+@router.get("/api/dashboard-stats")
+async def get_dashboard_stats(current_user: Dict[str, Any] = Depends(get_current_hr_user)):
+    try:
+        print(f"🔍 DASHBOARD STATS: Starting with user: {current_user}")
+        user_id = int(current_user.get("sub"))
+        print(f"🔍 DASHBOARD STATS: User ID: {user_id}")
+        company = get_user_company(user_id)
+        print(f"🔍 DASHBOARD STATS: Company: {company}")
+        if not company:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "message": "Aucune entreprise associée"}
+            )
+        
+        db = SessionLocal()
+        try:
+            print(f"🔍 DASHBOARD STATS: Starting database queries for company ID: {company.id}")
             # Statistiques des départements
             total_departments = db.query(Department).filter(
                 Department.company_id == company.id,
@@ -99,6 +240,7 @@ async def get_dashboard_stats():
             ).count()
             
             # Récupération des dernières candidatures pour le tableau
+            print(f"🔍 DASHBOARD STATS: Querying recent applications...")
             recent_applications = db.query(
                 Application.id,
                 ProfileCandidat.name.label("candidate_name"),
@@ -145,6 +287,9 @@ async def get_dashboard_stats():
             )
             
         except Exception as e:
+            print(f"❌ DASHBOARD STATS: Database error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return JSONResponse(
                 status_code=500,
                 content={"success": False, "message": f"Erreur lors du calcul des statistiques: {str(e)}"}
@@ -153,10 +298,131 @@ async def get_dashboard_stats():
             db.close()
             
     except Exception as e:
+        print(f"❌ DASHBOARD STATS: Outer error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return JSONResponse(
             status_code=500,
             content={"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
         )
+
+@router.get("/api/test-simple")
+async def test_simple():
+    """Simple test endpoint without authentication"""
+    print("🔍 TEST SIMPLE: Endpoint called")
+    return JSONResponse(
+        status_code=200,
+        content={"success": True, "message": "Simple test works"}
+    )
+
+@router.get("/api/test-dashboard-simple")
+async def test_dashboard_simple():
+    """Test dashboard endpoint without authentication to isolate the issue"""
+    print("🔍 TEST DASHBOARD SIMPLE: Starting test")
+    try:
+        db = SessionLocal()
+        try:
+            # Test basic database connection
+            print("🔍 TEST DASHBOARD SIMPLE: Testing database connection")
+            departments_count = db.query(Department).count()
+            print(f"🔍 TEST DASHBOARD SIMPLE: Found {departments_count} departments")
+            
+            return JSONResponse(
+                status_code=200,
+                content={"success": True, "message": f"Database test successful - {departments_count} departments found"}
+            )
+        except Exception as e:
+            print(f"❌ TEST DASHBOARD SIMPLE: Database error: {str(e)}")
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "message": f"Database error: {str(e)}"}
+            )
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"❌ TEST DASHBOARD SIMPLE: Outer error: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Outer error: {str(e)}"}
+        )
+
+@router.get("/api/test-dashboard-with-auth")
+async def test_dashboard_with_auth(current_user: Dict[str, Any] = Depends(get_current_hr_user)):
+    """Test dashboard endpoint with authentication to isolate the issue"""
+    print(f"🔍 TEST DASHBOARD AUTH: Starting with user: {current_user}")
+    try:
+        user_id = int(current_user.get("sub"))
+        print(f"🔍 TEST DASHBOARD AUTH: User ID: {user_id}")
+        company = get_user_company(user_id)
+        print(f"🔍 TEST DASHBOARD AUTH: Company: {company}")
+        
+        if not company:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "message": "Aucune entreprise associée"}
+            )
+        
+        db = SessionLocal()
+        try:
+            print(f"🔍 TEST DASHBOARD AUTH: Testing basic queries for company ID: {company.id}")
+            
+            # Test simple queries
+            total_departments = db.query(Department).filter(
+                Department.company_id == company.id,
+                Department.is_active == True
+            ).count()
+            
+            total_employees = db.query(Employee).filter(
+                Employee.company_id == company.id,
+                Employee.status == 'active'
+            ).count()
+            
+            total_jobs = db.query(Job).filter(
+                Job.company_id == company.id,
+                Job.status.in_(['draft', 'active'])
+            ).count()
+            
+            print(f"🔍 TEST DASHBOARD AUTH: Departments: {total_departments}, Employees: {total_employees}, Jobs: {total_jobs}")
+            
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True, 
+                    "message": "Auth test successful",
+                    "stats": {
+                        "total_departments": total_departments,
+                        "total_employees": total_employees,
+                        "total_jobs": total_jobs
+                    }
+                }
+            )
+        except Exception as e:
+            print(f"❌ TEST DASHBOARD AUTH: Database error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "message": f"Database error: {str(e)}"}
+            )
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"❌ TEST DASHBOARD AUTH: Outer error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Outer error: {str(e)}"}
+        )
+
+@router.get("/api/test-auth")
+async def test_auth(current_user: Dict[str, Any] = Depends(get_current_hr_user)):
+    """Test endpoint to debug JWT authentication"""
+    print(f"🔍 TEST AUTH: User data: {current_user}")
+    return JSONResponse(
+        status_code=200,
+        content={"success": True, "user": current_user}
+    )
 
 @router.get("/api/current-user")
 async def get_current_user():

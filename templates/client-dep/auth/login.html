@@ -373,10 +373,23 @@
                 const result = await response.json()
 
                 if (result.success) {
+                    try {
+                        // Store JWT tokens when provided by backend
+                        if (result.access_token && result.refresh_token) {
+                            localStorage.setItem('client_access_token', result.access_token)
+                            localStorage.setItem('client_refresh_token', result.refresh_token)
+                            if (result.user) {
+                                localStorage.setItem('client_user', JSON.stringify(result.user))
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Token storage failed:', e)
+                    }
+
                     showFormSuccess(result.message)
                     setTimeout(() => {
-                        window.location.href = '/analyze'; // Replace with actual dashboard URL
-                    }, 2000);
+                        window.location.href = '/analyze';
+                    }, 800);
                 } else {
                     showFormError(result.message)
                     // Reset button state

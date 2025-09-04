@@ -71,7 +71,17 @@ def check_super_admin_permission(user_id: int) -> bool:
 
 @router.get("/company-setup", response_class=HTMLResponse)
 def company_setup_page(request: Request):
-    return templates.TemplateResponse("HR-dep/company-setup.html", {"request": request})
+    # Check authentication
+    user_id = current_user_session.get('user_id')
+    if not user_id:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/hr-login", status_code=302)
+    
+    response = templates.TemplateResponse("HR-dep/company-setup.html", {"request": request})
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @router.get("/company-profile", response_class=HTMLResponse)
 def company_profile_page(request: Request):
@@ -94,13 +104,17 @@ def company_profile_page(request: Request):
             departments = get_company_departments(company.id)
         
         # Rendu du template avec toutes les données incluant les permissions
-        return templates.TemplateResponse("HR-dep/company-profile.html", {
+        response = templates.TemplateResponse("HR-dep/company-profile.html", {
             "request": request,
             "company": company,
             "company_admins": company_admins,
             "departments": departments,
             "is_super_admin": is_super_admin  # Nouveau paramètre pour les permissions
         })
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
         
     except Exception as e:
         import traceback

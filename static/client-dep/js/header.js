@@ -79,7 +79,48 @@ class HeaderComponent {
 
   async checkAuthStatus() {
     try {
-      // First try to check via API
+      // Prefer JWT if available
+      const clientAccess = localStorage.getItem('client_access_token')
+      if (clientAccess) {
+        const resp = await fetch('/api/client-me', { headers: { 'Authorization': `Bearer ${clientAccess}` } })
+        if (resp.ok) {
+          const data = await resp.json()
+          if (data && data.success && data.user) {
+            this.setUser(data.user)
+            return
+          }
+        }
+
+        // Try refresh flow if access token invalid
+        const clientRefresh = localStorage.getItem('client_refresh_token')
+        if (clientRefresh) {
+          try {
+            const r = await fetch('/api/client-refresh-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refresh_token: clientRefresh })
+            })
+            if (r.ok) {
+              const j = await r.json()
+              if (j && j.access_token) {
+                localStorage.setItem('client_access_token', j.access_token)
+                const me2 = await fetch('/api/client-me', { headers: { 'Authorization': `Bearer ${j.access_token}` } })
+                if (me2.ok) {
+                  const d2 = await me2.json()
+                  if (d2 && d2.success && d2.user) {
+                    this.setUser(d2.user)
+                    return
+                  }
+                }
+              }
+            }
+          } catch (_) {
+            // ignore and fall through
+          }
+        }
+      }
+
+      // Fallback: session cookie API
       const response = await fetch("/api/auth/status", {
         credentials: "include",
       })
@@ -104,12 +145,18 @@ class HeaderComponent {
         return
       }
 
-      // If no user data found, set as guest
-      this.setGuest()
+      // If no user data found but JWT tokens exist, don't force guest; retry shortly
+      if (localStorage.getItem('client_access_token') || localStorage.getItem('client_refresh_token')) {
+        setTimeout(() => this.checkAuthStatus(), 300)
+      } else {
+        this.setGuest()
+      }
     } catch (error) {
       console.error("Auth check error:", error)
-      // Fallback: check if we have user data from server
-      if (window.currentUser) {
+      // Avoid forcing guest if JWT tokens exist; retry
+      if (localStorage.getItem('client_access_token') || localStorage.getItem('client_refresh_token')) {
+        setTimeout(() => this.checkAuthStatus(), 500)
+      } else if (window.currentUser) {
         this.setUser(window.currentUser)
       } else {
         this.setGuest()
@@ -403,6 +450,13 @@ class HeaderComponent {
         window.currentUser = null
         this.setGuest()
 
+        // Clear client JWT tokens
+        try {
+          localStorage.removeItem('client_access_token')
+          localStorage.removeItem('client_refresh_token')
+          localStorage.removeItem('client_user')
+        } catch (_) {}
+
         // Show success message
         if (window.showToast) {
           window.showToast("Déconnexion réussie", "success")
@@ -423,6 +477,13 @@ class HeaderComponent {
       if (window.showToast) {
         window.showToast("Erreur lors de la déconnexion", "error")
       }
+    } finally {
+      // Always ensure tokens are removed on any logout attempt
+      try {
+        localStorage.removeItem('client_access_token')
+        localStorage.removeItem('client_refresh_token')
+        localStorage.removeItem('client_user')
+      } catch (_) {}
     }
   }
 
