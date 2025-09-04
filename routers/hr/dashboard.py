@@ -604,3 +604,39 @@ async def get_applications():
             status_code=500,
             content={"success": False, "message": f"Erreur interne du serveur: {str(e)}"}
         )
+
+@router.get("/quiz-preview/{application_id}", response_class=HTMLResponse)
+async def quiz_preview_page(request: Request, application_id: int):
+    """Display quiz preview page for HR admin"""
+    try:
+        # Check authentication
+        auth_check = check_hr_authentication()
+        if auth_check:
+            return auth_check
+        
+        # Get quiz results data
+        from routers.hr.application import get_quiz_results
+        from databasehr.database import SessionLocal
+        
+        db = SessionLocal()
+        try:
+            result = await get_quiz_results(application_id, db)
+            if not result["success"]:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": result["message"]}
+                )
+            
+            return templates.TemplateResponse("HR-dep/quiz-preview.html", {
+                "request": request,
+                "quiz_data": result["quiz_data"]
+            })
+        finally:
+            db.close()
+            
+    except Exception as e:
+        print(f"Error loading quiz preview: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Erreur lors du chargement de l'aperçu du quiz: {str(e)}"}
+        )

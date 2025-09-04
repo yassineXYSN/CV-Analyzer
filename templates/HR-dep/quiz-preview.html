@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aperçu du Quiz - {{ quiz_data.quiz.title }}</title>
+    <link rel="stylesheet" href="/static/client-dep/css/analyze.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .quiz-preview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #0f172a;
+            min-height: 100vh;
+        }
+        
+        .quiz-header {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #475569;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .quiz-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .quiz-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #f1f5f9;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #f1f5f9 0%, #667eea 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            text-align: center;
+        }
+        
+        .quiz-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .meta-item {
+            background: rgba(102, 126, 234, 0.15);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            text-align: center;
+        }
+        
+        .meta-item i {
+            color: #667eea;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .meta-item .label {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin-bottom: 0.25rem;
+        }
+        
+        .meta-item .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+        
+        .candidate-info {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .candidate-info h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .candidate-info p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .questions-container {
+            display: grid;
+            gap: 1.5rem;
+        }
+        
+        .question-card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid #475569;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .question-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .question-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 1rem;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .question-skill {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .options-container {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .option {
+            background: linear-gradient(135deg, #334155 0%, #475569 100%);
+            border: 1px solid #64748b;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .option.correct {
+            border-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+            position: relative;
+        }
+        
+        .option.incorrect {
+            border-color: #ef4444;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+            position: relative;
+        }
+        
+        .option.user-selected {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            position: relative;
+        }
+        
+        /* Special case: correct answer that user also selected */
+        .option.correct.user-selected {
+            border-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4);
+        }
+        
+        .option-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .option.correct .option-icon {
+            background: #10b981;
+            color: white;
+        }
+        
+        .option.incorrect .option-icon {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .option.user-selected .option-icon {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .option:not(.correct):not(.incorrect):not(.user-selected) .option-icon {
+            background: #475569;
+            color: #cbd5e1;
+            border: 1px solid #64748b;
+        }
+        
+        .option-text {
+            flex: 1;
+            font-weight: 500;
+            color: #f1f5f9;
+        }
+        
+        .answer-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: auto;
+        }
+        
+        .answer-status .correct {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 0.4rem 0.8rem;
+            border-radius: 16px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .answer-status .incorrect {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 0.4rem 0.8rem;
+            border-radius: 16px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .answer-status .user-selected {
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 0.4rem 0.8rem;
+            border-radius: 16px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .answer-status .not-answered {
+            color: var(--text-secondary);
+        }
+        
+        .user-answer-info {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .user-answer-info h4 {
+            margin: 0 0 0.5rem 0;
+            color: #3b82f6;
+            font-size: 1rem;
+        }
+        
+        .user-answer-info p {
+            margin: 0;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+        
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .back-button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .back-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .ai-analyze-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .ai-analyze-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+        
+        .ai-analyze-button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
+        
+        .ai-analyze-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .no-attempt {
+            text-align: center;
+            padding: 3rem;
+            color: #cbd5e1;
+        }
+        
+        .no-attempt i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+        
+        .no-attempt h3 {
+            margin: 0 0 1rem 0;
+            color: #f1f5f9;
+        }
+        
+        .legend-container {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #475569;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: #475569;
+            border-radius: 12px;
+            border: 1px solid #64748b;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            color: #f1f5f9;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid;
+            flex-shrink: 0;
+        }
+        
+        .legend-color.correct {
+            background: #10b981;
+            border-color: #10b981;
+        }
+        
+        .legend-color.user-selected {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        .legend-color.incorrect {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+        
+        .legend-color.correct.user-selected {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-color: #10b981;
+            position: relative;
+        }
+        
+        .legend-color.correct.user-selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .quiz-preview-container {
+                padding: 1rem;
+            }
+            
+            .quiz-header {
+                padding: 1.5rem;
+            }
+            
+            .quiz-title {
+                font-size: 1.5rem;
+            }
+            
+            .quiz-meta {
+                grid-template-columns: 1fr;
+            }
+            
+            .question-header {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .question-card {
+                padding: 1.5rem;
+            }
+            
+            .back-button {
+                position: relative;
+                top: auto;
+                left: auto;
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="main-container">
+        <button class="back-button" onclick="goBack()">
+            <i class="fas fa-arrow-left"></i>
+            Retour
+        </button>
+        
+        <button class="ai-analyze-button" onclick="analyzeWithAI()">
+            <i class="fas fa-robot"></i>
+            Analyser avec AI
+        </button>
+
+        <div class="quiz-preview-container">
+            <!-- Quiz Header -->
+            <div class="quiz-header">
+                <h1 class="quiz-title">{{ quiz_data.quiz.title }}</h1>
+                
+                <div class="quiz-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-question-circle"></i>
+                        <div class="label">Questions</div>
+                        <div class="value">{{ quiz_data.quiz.total_questions }}</div>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-clock"></i>
+                        <div class="label">Durée</div>
+                        <div class="value">{{ quiz_data.quiz.time_limit }} min</div>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-calendar"></i>
+                        <div class="label">Créé le</div>
+                        <div class="value">{{ quiz_data.quiz.created_at.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-info-circle"></i>
+                        <div class="label">Statut</div>
+                        <div class="value">{{ quiz_data.quiz.status }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Candidate Info -->
+            <div class="candidate-info">
+                <h3><i class="fas fa-user"></i> {{ quiz_data.candidate.name }}</h3>
+                <p>{{ quiz_data.candidate.email }}</p>
+            </div>
+
+            <!-- Quiz Attempt Info -->
+            {% if quiz_data.attempt and quiz_data.attempt.id %}
+            <div class="quiz-header">
+                <h2 style="margin: 0 0 1rem 0; color: #f1f5f9; text-align: center;">
+                    <i class="fas fa-chart-bar"></i> Résultats du Quiz
+                </h2>
+                
+                <div class="quiz-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-percentage"></i>
+                        <div class="label">Score</div>
+                        <div class="value">{{ quiz_data.attempt.score }}%</div>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-check-circle"></i>
+                        <div class="label">Réponses correctes</div>
+                        <div class="value">{{ quiz_data.attempt.total_correct }}/{{ quiz_data.attempt.total_questions }}</div>
+                    </div>
+                    {% if quiz_data.attempt.duration_seconds %}
+                    <div class="meta-item">
+                        <i class="fas fa-stopwatch"></i>
+                        <div class="label">Durée</div>
+                        <div class="value">{{ (quiz_data.attempt.duration_seconds // 60) }}:{{ '{:02d}'.format(quiz_data.attempt.duration_seconds % 60) }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="meta-item">
+                        <i class="fas fa-flag-checkered"></i>
+                        <div class="label">Statut</div>
+                        <div class="value">{{ quiz_data.attempt.status }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Legend -->
+            <div class="legend-container">
+                <h3 style="margin: 0 0 1rem 0; color: #f1f5f9; text-align: center;">
+                    <i class="fas fa-info-circle"></i> Légende des réponses
+                </h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-color correct"></div>
+                        <span>Bonne réponse</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color user-selected"></div>
+                        <span>Réponse du candidat</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color incorrect"></div>
+                        <span>Mauvaise réponse du candidat</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color correct user-selected"></div>
+                        <span>Bonne réponse du candidat</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions -->
+            <div class="questions-container">
+                {% for question in quiz_data.questions %}
+                <div class="question-card">
+                    <div class="question-header">
+                        <div class="question-number">Question {{ loop.index }}</div>
+                        <div class="question-skill">{{ question.skill_name }}</div>
+                    </div>
+                    
+                    <div class="question-text">{{ question.question_text }}</div>
+                    
+                    
+                    <div class="options-container">
+                        {% for option in question.options %}
+                        {% set correct_answer_index = question.correct_answer|int %}
+                        {% set is_correct = loop.index == correct_answer_index %}
+                        {% set user_selected_option = question.user_answer.selected_option if question.user_answer and question.user_answer.selected_option else None %}
+                        {% set is_user_selected = question.user_answer and option == user_selected_option %}
+                        {% set is_wrong_user_choice = is_user_selected and not is_correct %}
+                        <div class="option 
+                            {% if is_correct %}correct{% endif %}
+                            {% if is_user_selected %}user-selected{% endif %}
+                            {% if is_wrong_user_choice %}incorrect{% endif %}
+                        ">
+                            <div class="option-icon">
+                                {% if is_correct and is_user_selected %}
+                                    <i class="fas fa-check-double"></i>
+                                {% elif is_correct %}
+                                    <i class="fas fa-check"></i>
+                                {% elif is_wrong_user_choice %}
+                                    <i class="fas fa-times"></i>
+                                {% elif is_user_selected %}
+                                    <i class="fas fa-user"></i>
+                                {% else %}
+                                    {{ loop.index }}
+                                {% endif %}
+                            </div>
+                            <div class="option-text">{{ option }}</div>
+                            <div class="answer-status">
+                                {% if is_correct and is_user_selected %}
+                                    <span class="correct">
+                                        <i class="fas fa-check-circle"></i>
+                                        Correcte (Réponse du candidat)
+                                    </span>
+                                {% elif is_correct %}
+                                    <span class="correct">
+                                        <i class="fas fa-check-circle"></i>
+                                        Bonne réponse
+                                    </span>
+                                {% elif is_wrong_user_choice %}
+                                    <span class="incorrect">
+                                        <i class="fas fa-times-circle"></i>
+                                        Mauvaise réponse du candidat
+                                    </span>
+                                {% elif is_user_selected %}
+                                    <span class="user-selected">
+                                        <i class="fas fa-user"></i>
+                                        Réponse du candidat
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if question.user_answer %}
+                    <div class="user-answer-info">
+                        <h4><i class="fas fa-user"></i> Réponse du candidat</h4>
+                        <p><strong>Réponse sélectionnée:</strong> {{ question.user_answer.selected_option or question.user_answer.answer }}</p>
+                        <p><strong>Temps de réponse:</strong> {{ question.user_answer.time_taken_seconds }} secondes</p>
+                        <p><strong>Résultat:</strong> 
+                            {% if question.user_answer.is_correct %}
+                                <span style="color: #10b981; font-weight: 700;">Correct</span>
+                            {% else %}
+                                <span style="color: #ef4444; font-weight: 700;">Incorrect</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="user-answer-info">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Aucune réponse</h4>
+                        <p>Le candidat n'a pas répondu à cette question.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if not quiz_data.attempt or not quiz_data.attempt.id %}
+            <div class="no-attempt">
+                <i class="fas fa-hourglass-half"></i>
+                <h3>Quiz non complété</h3>
+                <p>Le candidat n'a pas encore complété ce quiz.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        let isNavigating = false;
+        
+        function goBack() {
+            if (isNavigating) {
+                console.log('Navigation already in progress');
+                return;
+            }
+            
+            console.log('Back button clicked');
+            isNavigating = true;
+            
+            // Disable button and show loading state
+            const backButton = document.querySelector('.back-button');
+            if (backButton) {
+                backButton.disabled = true;
+                backButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Retour...';
+            }
+            
+            try {
+                // Check if we can go back in history
+                if (window.history.length > 1) {
+                    console.log('Going back in history');
+                    window.history.back();
+                } else {
+                    console.log('No history, redirecting to dashboard');
+                    window.location.href = '/dashboard';
+                }
+            } catch (error) {
+                console.error('Error in goBack:', error);
+                // Fallback to dashboard
+                window.location.href = '/dashboard';
+            }
+        }
+        
+        function analyzeWithAI() {
+            console.log('AI Analyze button clicked');
+            
+            // Disable button and show loading state
+            const aiButton = document.querySelector('.ai-analyze-button');
+            if (aiButton) {
+                aiButton.disabled = true;
+                aiButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyse...';
+            }
+            
+            // Get the application ID from the URL
+            const pathParts = window.location.pathname.split('/');
+            const applicationId = pathParts[pathParts.length - 1];
+            
+            if (!applicationId || isNaN(applicationId)) {
+                console.error('Invalid application ID');
+                alert('Erreur: ID d\'application invalide');
+                if (aiButton) {
+                    aiButton.disabled = false;
+                    aiButton.innerHTML = '<i class="fas fa-robot"></i> Analyser avec AI';
+                }
+                return;
+            }
+            
+            // Make request to AI analysis endpoint
+            fetch(`/api/applications/${applicationId}/ai-analysis`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('AI Analysis response:', data);
+                if (data.success) {
+                    alert('Analyse AI terminée! Vérifiez la console pour les détails.');
+                } else {
+                    alert('Erreur lors de l\'analyse AI: ' + (data.message || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Error during AI analysis:', error);
+                alert('Erreur lors de l\'analyse AI: ' + error.message);
+            })
+            .finally(() => {
+                // Re-enable button
+                if (aiButton) {
+                    aiButton.disabled = false;
+                    aiButton.innerHTML = '<i class="fas fa-robot"></i> Analyser avec AI';
+                }
+            });
+        }
+        
+        // Add event listener as backup
+        document.addEventListener('DOMContentLoaded', function() {
+            const backButton = document.querySelector('.back-button');
+            if (backButton) {
+                console.log('Back button found and event listener added');
+                backButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    goBack();
+                });
+            } else {
+                console.error('Back button not found!');
+            }
+            
+            const aiButton = document.querySelector('.ai-analyze-button');
+            if (aiButton) {
+                console.log('AI button found and event listener added');
+                aiButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    analyzeWithAI();
+                });
+            } else {
+                console.error('AI button not found!');
+            }
+        });
+    </script>
+</body>
+</html>

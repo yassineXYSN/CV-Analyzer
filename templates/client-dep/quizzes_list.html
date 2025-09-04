@@ -118,6 +118,132 @@
             transform: scaleX(1);
         }
 
+        /* Special styling for incomplete quizzes */
+        .quiz-card.incomplete {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, var(--surface) 100%);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.15);
+            position: relative;
+        }
+
+        .quiz-card.incomplete::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            transform: scaleX(1);
+        }
+
+        .quiz-card.incomplete::after {
+            content: "⚠️";
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            opacity: 0.8;
+            animation: pulse 2s infinite;
+        }
+
+        .quiz-card.incomplete:hover {
+            transform: translateY(-8px);
+            border-color: rgba(245, 158, 11, 0.6);
+            box-shadow: 0 16px 48px rgba(245, 158, 11, 0.25);
+        }
+
+        .quiz-card.incomplete .quiz-title {
+            color: #f59e0b;
+            font-weight: 700;
+        }
+
+        .quiz-card.incomplete .quiz-meta {
+            background: rgba(245, 158, 11, 0.1);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .quiz-card.incomplete .quiz-meta i {
+            color: #f59e0b;
+        }
+
+        .quiz-card.incomplete .status-available,
+        .quiz-card.incomplete .status-active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .quiz-card.incomplete .btn-primary,
+        .quiz-card.incomplete .btn-secondary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .quiz-card.incomplete .btn-primary:hover,
+        .quiz-card.incomplete .btn-secondary:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        /* Urgency indicator for incomplete quizzes */
+        .quiz-card.incomplete .urgency-indicator {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        .quiz-card.incomplete .quiz-description {
+            color: #f59e0b;
+            font-weight: 500;
+        }
+
+        /* Priority badge for incomplete quizzes */
+        .quiz-card.incomplete .priority-badge {
+            display: inline-block;
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 8px 32px rgba(245, 158, 11, 0.15);
+            }
+            50% {
+                box-shadow: 0 8px 32px rgba(245, 158, 11, 0.25);
+            }
+        }
+
+        .quiz-card.incomplete {
+            animation: glow 3s ease-in-out infinite;
+        }
+
         .quiz-header {
             margin-bottom: 1.5rem;
         }
@@ -304,6 +430,26 @@
             .quiz-actions {
                 flex-direction: column;
             }
+            
+            .quiz-card.incomplete .urgency-indicator {
+                top: 0.75rem;
+                left: 0.75rem;
+                font-size: 0.6rem;
+                padding: 0.2rem 0.5rem;
+            }
+            
+            .quiz-card.incomplete::after {
+                top: 0.75rem;
+                right: 0.75rem;
+                font-size: 1.2rem;
+            }
+            
+            .quiz-card.incomplete .priority-badge {
+                display: block;
+                margin-left: 0;
+                margin-top: 0.25rem;
+                text-align: center;
+            }
         }
     </style>
     
@@ -349,10 +495,25 @@
             {% elif quizzes %}
                 <div class="quizzes-grid">
                     {% for quiz in quizzes %}
-                        <div class="quiz-card">
+                        <div class="quiz-card{% if quiz.status != 'completed' %} incomplete{% endif %}">
+                            {% if quiz.status != 'completed' %}
+                                <div class="urgency-indicator">
+                                    {% if quiz.status == 'available' %}
+                                        À FAIRE
+                                    {% elif quiz.status == 'active' %}
+                                        EN COURS
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
                             <div class="quiz-header">
-                                <h3 class="quiz-title">{{ quiz.title }}</h3>
-                                <p class="quiz-description">{{ quiz.description or "Aucune description disponible" }}</p>
+                                <h3 class="quiz-title">
+                                    {{ quiz.title }}
+                                    {% if quiz.status != 'completed' %}
+                                        <span class="priority-badge">PRIORITÉ</span>
+                                    {% endif %}
+                                </h3>
+                                <p class="quiz-description">{{ quiz.created_at or "Aucune description disponible" }}</p>
                             </div>
 
                             <div class="quiz-meta">

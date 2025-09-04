@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, Query, Depends, requests
 from databasehr.database import SessionLocal
-from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments, Quiz, QuizAttempt
+from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments, Quiz, QuizAttempt, QuizQuestion, QuizAnswer
 from databasehr.models import Application, Job, ProfileCandidat, Contact, Department, JobSkill, Company
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
@@ -1182,5 +1182,288 @@ def accept_application(application_id: int):
     except Exception as e:
         db.rollback()
         return {"success": False, "message": f"Erreur: {str(e)}"}
+    finally:
+        db.close()
+
+@router.get("/api/applications/{application_id}/quiz-results")
+async def get_quiz_results(application_id: int, db: Session = Depends(get_db)):
+    """
+    Get quiz results for a specific application
+    """
+    try:
+        # Get the application
+        application = db.query(Application).filter(Application.id == application_id).first()
+        if not application:
+            return {"success": False, "message": "Application not found"}
+        
+        # Get the quiz for this application
+        quiz = db.query(Quiz).filter(
+            Quiz.job_id == application.job_id,
+            Quiz.candidate_id == application.candidate_profile_id
+        ).first()
+        
+        if not quiz:
+            return {"success": False, "message": "No quiz found for this application"}
+        
+        # Get quiz questions
+        questions = db.query(QuizQuestion).filter(
+            QuizQuestion.quiz_id == quiz.id
+        ).order_by(QuizQuestion.question_order).all()
+        
+        # Get completed quiz attempt
+        quiz_attempt = db.query(QuizAttempt).filter(
+            QuizAttempt.quiz_id == quiz.id,
+            QuizAttempt.candidate_id == application.candidate_profile_id,
+            QuizAttempt.status == 'completed'
+        ).first()
+        
+        # Get user answers if attempt exists
+        user_answers = {}
+        if quiz_attempt:
+            answers = db.query(QuizAnswer).filter(
+                QuizAnswer.attempt_id == quiz_attempt.id
+            ).all()
+            
+            for answer in answers:
+                # Parse the JSON string to get the actual selected option
+                try:
+                    import json
+                    selected_option = json.loads(answer.selected_options)
+                except (json.JSONDecodeError, TypeError):
+                    selected_option = answer.selected_options
+                
+                user_answers[answer.question_id] = {
+                    "selected_option": selected_option,
+                    "answer": selected_option,
+                    "is_correct": answer.is_correct,
+                    "time_taken_seconds": answer.time_taken_seconds
+                }
+        
+        # Calculate score
+        score = 0
+        if quiz_attempt and quiz_attempt.total_questions > 0:
+            score = (quiz_attempt.total_correct / quiz_attempt.total_questions) * 100
+        
+        # Calculate duration
+        duration_seconds = None
+        if quiz_attempt and quiz_attempt.start_time and quiz_attempt.end_time:
+            duration_seconds = int((quiz_attempt.end_time - quiz_attempt.start_time).total_seconds())
+        
+        # Get candidate info
+        candidate = db.query(ProfileCandidat).options(joinedload(ProfileCandidat.contact)).filter(ProfileCandidat.id == application.candidate_profile_id).first()
+        
+        return {
+            "success": True,
+            "quiz_data": {
+                "quiz": {
+                    "id": quiz.id,
+                    "title": quiz.title,
+                    "time_limit": quiz.time_limit,
+                    "total_questions": quiz.total_questions,
+                    "status": quiz.status,
+                    "created_at": quiz.created_at
+                },
+                "candidate": {
+                    "id": candidate.id,
+                    "name": candidate.name or "Nom non disponible",
+                    "email": candidate.contact.email if candidate.contact else "Email non disponible"
+                },
+                "questions": [
+                    {
+                        "id": q.id,
+                        "skill_name": q.skill,
+                        "question_text": q.question_text,
+                        "options": q.options,
+                        "correct_answer": q.correct_answer,
+                        "difficulty": getattr(q, 'difficulty', None),
+                        "points": getattr(q, 'points', None),
+                        "question_order": q.question_order,
+                        "user_answer": user_answers.get(q.id, None)
+                    }
+                    for q in questions
+                ],
+                "attempt": {
+                    "id": quiz_attempt.id if quiz_attempt else None,
+                    "score": round(score, 1),
+                    "total_correct": quiz_attempt.total_correct if quiz_attempt else 0,
+                    "total_questions": quiz_attempt.total_questions if quiz_attempt else 0,
+                    "duration_seconds": duration_seconds,
+                    "start_time": quiz_attempt.start_time if quiz_attempt else None,
+                    "end_time": quiz_attempt.end_time if quiz_attempt else None,
+                    "status": quiz_attempt.status if quiz_attempt else None
+                }
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error getting quiz results: {str(e)}")
+        return {"success": False, "message": f"Error retrieving quiz results: {str(e)}"}
+    finally:
+        db.close()
+
+@router.post("/api/applications/{application_id}/ai-analysis")
+async def analyze_quiz_with_ai(application_id: int, db: Session = Depends(get_db)):
+    """
+    Analyze quiz results with AI - prints all quiz and candidate information
+    """
+    try:
+        print(f"\n{'='*80}")
+        print(f"🤖 AI ANALYSIS REQUEST - Application ID: {application_id}")
+        print(f"{'='*80}")
+        
+        # Get the application
+        application = db.query(Application).filter(Application.id == application_id).first()
+        if not application:
+            print("❌ Application not found")
+            return {"success": False, "message": "Application not found"}
+        
+        print(f"📋 APPLICATION DETAILS:")
+        print(f"   ID: {application.id}")
+        print(f"   Job ID: {application.job_id}")
+        print(f"   Candidate Profile ID: {application.candidate_profile_id}")
+        print(f"   Application Date: {application.application_date}")
+        print(f"   Status: {application.status}")
+        print(f"   HR Rating: {application.hr_rating}")
+        print(f"   HR Notes: {application.hr_notes}")
+        print(f"   Interview Date: {application.interview_date}")
+        print(f"   Interview Notes: {application.interview_notes}")
+        print(f"   Is Recommended: {application.is_recommended}")
+        print(f"   Recommendation Priority: {application.recommendation_priority}")
+        print(f"   Skills Validated: {application.skills_validated}")
+        print(f"   Skills Validated Notes: {application.skills_validated_notes}")
+        
+        # Get the job details
+        job = db.query(Job).filter(Job.id == application.job_id).first()
+        if job:
+            print(f"\n💼 JOB DETAILS:")
+            print(f"   ID: {job.id}")
+            print(f"   Title: {job.title}")
+            print(f"   Description: {job.description}")
+            print(f"   Requirements: {job.requirements}")
+            print(f"   Employment Type: {job.employment_type}")
+            print(f"   Status: {job.status}")
+            print(f"   Created At: {job.created_at}")
+        
+        # Get the candidate details
+        candidate = db.query(ProfileCandidat).options(joinedload(ProfileCandidat.contact)).filter(ProfileCandidat.id == application.candidate_profile_id).first()
+        if candidate:
+            print(f"\n👤 CANDIDATE DETAILS:")
+            print(f"   ID: {candidate.id}")
+            print(f"   Name: {candidate.name}")
+            print(f"   Title: {candidate.title}")
+            print(f"   Profile: {candidate.profile}")
+            print(f"   Education: {candidate.education}")
+            print(f"   Languages: {candidate.languages}")
+            print(f"   Certificates: {candidate.certificates}")
+            print(f"   Skills: {candidate.skills}")
+            
+            if candidate.contact:
+                print(f"\n📞 CONTACT DETAILS:")
+                print(f"   Email: {candidate.contact.email}")
+                print(f"   Phone: {candidate.contact.phone}")
+                print(f"   LinkedIn: {candidate.contact.linkedin}")
+                print(f"   Address: {candidate.contact.address}")
+        
+        # Get the quiz details
+        quiz = db.query(Quiz).filter(
+            Quiz.job_id == application.job_id,
+            Quiz.candidate_id == application.candidate_profile_id
+        ).first()
+        
+        if quiz:
+            print(f"\n📝 QUIZ DETAILS:")
+            print(f"   ID: {quiz.id}")
+            print(f"   Title: {quiz.title}")
+            print(f"   Description: {quiz.description}")
+            print(f"   Time Limit: {quiz.time_limit} minutes")
+            print(f"   Total Questions: {quiz.total_questions}")
+            print(f"   Status: {quiz.status}")
+            print(f"   Created At: {quiz.created_at}")
+            print(f"   N8N Webhook URL: {quiz.n8n_webhook_url}")
+            print(f"   N8N Response: {quiz.n8n_response}")
+            
+            # Get quiz skills
+            quiz_skills = db.query(QuizSkill).filter(QuizSkill.quiz_id == quiz.id).all()
+            if quiz_skills:
+                print(f"\n🎯 QUIZ SKILLS:")
+                for skill in quiz_skills:
+                    print(f"   - {skill.skill_name} (Weight: {skill.weight})")
+            
+            # Get quiz questions
+            questions = db.query(QuizQuestion).filter(QuizQuestion.quiz_id == quiz.id).order_by(QuizQuestion.question_order).all()
+            if questions:
+                print(f"\n❓ QUIZ QUESTIONS ({len(questions)} total):")
+                for i, question in enumerate(questions, 1):
+                    print(f"   Question {i}:")
+                    print(f"     ID: {question.id}")
+                    print(f"     Skill: {question.skill}")
+                    print(f"     Text: {question.question_text}")
+                    print(f"     Options: {question.options}")
+                    print(f"     Correct Answer: {question.correct_answer}")
+                    print(f"     Explanation: {question.explanation}")
+                    print(f"     Order: {question.question_order}")
+                    print(f"     Created At: {question.created_at}")
+                    print()
+            
+            # Get quiz attempt
+            quiz_attempt = db.query(QuizAttempt).filter(
+                QuizAttempt.quiz_id == quiz.id,
+                QuizAttempt.candidate_id == application.candidate_profile_id,
+                QuizAttempt.status == 'completed'
+            ).first()
+            
+            if quiz_attempt:
+                print(f"\n📊 QUIZ ATTEMPT DETAILS:")
+                print(f"   ID: {quiz_attempt.id}")
+                print(f"   Start Time: {quiz_attempt.start_time}")
+                print(f"   End Time: {quiz_attempt.end_time}")
+                print(f"   Score: {quiz_attempt.score}")
+                print(f"   Total Correct: {quiz_attempt.total_correct}")
+                print(f"   Total Questions: {quiz_attempt.total_questions}")
+                print(f"   Status: {quiz_attempt.status}")
+                print(f"   Created At: {quiz_attempt.created_at}")
+                
+                # Calculate duration
+                if quiz_attempt.start_time and quiz_attempt.end_time:
+                    duration = quiz_attempt.end_time - quiz_attempt.start_time
+                    print(f"   Duration: {duration.total_seconds()} seconds ({duration.total_seconds()/60:.1f} minutes)")
+                
+                # Get quiz answers
+                answers = db.query(QuizAnswer).filter(QuizAnswer.attempt_id == quiz_attempt.id).all()
+                if answers:
+                    print(f"\n📝 QUIZ ANSWERS ({len(answers)} total):")
+                    for answer in answers:
+                        print(f"   Answer ID: {answer.id}")
+                        print(f"   Question ID: {answer.question_id}")
+                        print(f"   Selected Options: {answer.selected_options}")
+                        print(f"   Is Correct: {answer.is_correct}")
+                        print(f"   Time Taken: {answer.time_taken_seconds} seconds")
+                        print(f"   Created At: {answer.created_at}")
+                        print()
+            else:
+                print(f"\n⚠️  No completed quiz attempt found")
+        else:
+            print(f"\n⚠️  No quiz found for this application")
+        
+        print(f"\n{'='*80}")
+        print(f"✅ AI ANALYSIS COMPLETE - All data printed above")
+        print(f"{'='*80}\n")
+        
+        return {
+            "success": True,
+            "message": "AI analysis completed successfully. Check server logs for detailed information.",
+            "data": {
+                "application_id": application_id,
+                "quiz_found": quiz is not None,
+                "attempt_found": quiz_attempt is not None if quiz else False,
+                "total_questions": len(questions) if quiz else 0,
+                "total_answers": len(answers) if quiz_attempt else 0
+            }
+        }
+        
+    except Exception as e:
+        print(f"\n❌ ERROR during AI analysis: {str(e)}")
+        print(f"{'='*80}\n")
+        return {"success": False, "message": f"Error during AI analysis: {str(e)}"}
     finally:
         db.close()

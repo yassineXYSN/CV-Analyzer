@@ -2089,21 +2089,11 @@ function updateFilterCounts() {
 
 async function viewQuizResults(applicationId, candidateName) {
   try {
-    showLoading("Chargement des résultats du quiz...")
-
-    const response = await fetch(`/api/applications/${applicationId}/quiz-results`)
-    const result = await response.json()
-    hideLoading()
-
-    if (result.success) {
-      showQuizResultsModal(result.quiz_data, candidateName, applicationId)
-    } else {
-      showNotification(result.message || "Erreur lors du chargement des résultats", "error")
-    }
+    // Redirect to the quiz preview page
+    window.open(`/quiz-preview/${applicationId}`, '_blank')
   } catch (error) {
-    hideLoading()
-    console.error("Erreur chargement résultats quiz:", error)
-    showNotification("Erreur de connexion lors du chargement des résultats", "error")
+    console.error("Erreur ouverture aperçu quiz:", error)
+    showNotification("Erreur lors de l'ouverture de l'aperçu du quiz", "error")
   }
 }
 
@@ -2639,7 +2629,7 @@ async function generateSkillsQuizConfig() {
             <div class="form-group">
               <label for="difficulty_${skillId}">Niveau de difficulté</label>
               <select id="difficulty_${skillId}" name="difficulty_${skillId}" required>
-                <option value="easy">Facle</option>
+                <option value="easy">Facile</option>
                 <option value="medium" selected>Moyen</option>
                 <option value="hard">Difficile</option>
                 <option value="expert">Expert</option>
@@ -2762,7 +2752,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const candidateId = window.currentQuizCandidateId || null
 
       try {
-        const response = await fetch("/api/hr/quiz/create", {
+        const response = await fetch("/api/hr/quizof the ", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

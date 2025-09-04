@@ -75,7 +75,8 @@ async def quizzes_list(
                 'attempt_id': existing_attempt.id if existing_attempt else None,
                 'score': existing_attempt.score if existing_attempt else None,
                 'max_score': existing_attempt.total_questions if existing_attempt else None,
-                'completed_at': existing_attempt.end_time if existing_attempt else None
+                'completed_at': existing_attempt.end_time if existing_attempt else None,
+                'created_at': quiz.created_at
             }
             quiz_data.append(quiz_info)
         
