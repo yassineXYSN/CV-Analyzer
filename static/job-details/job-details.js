@@ -2752,7 +2752,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const candidateId = window.currentQuizCandidateId || null
 
       try {
-        const response = await fetch("/api/hr/quizof the ", {
+        const response = await fetch("/api/hr/quiz/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
