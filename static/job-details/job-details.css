@@ -1405,6 +1405,79 @@ body {
   gap: 1rem;
 }
 
+/* When only one skill, make it compact and centered */
+.skills-grid.single-skill {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 180px));
+  justify-content: flex-start;
+  justify-items: start;
+  max-width: none;
+  margin: 0;
+}
+
+.skills-grid.single-skill .skill-item {
+  width: 140px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Keep skill texts on a single line with truncation */
+.skills-grid .skill-item .skill-name,
+.skills-grid .skill-item .skill-level {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Few skills: airy layout */
+.skills-grid.skills-few {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.2rem;
+}
+
+/* Many skills: compact cards */
+.skills-grid.skills-many {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.skills-grid.skills-many .skill-item {
+  padding: 0.75rem;
+}
+
+/* Tons of skills: very compact, allow vertical scroll in section if needed */
+.skills-grid.skills-tons {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem;
+}
+
+.skills-grid.skills-tons .skill-item {
+  padding: 0.6rem;
+}
+
+/* Ensure the skills section remains usable with very large lists */
+.job-skills-section .skills-list {
+  max-height: 520px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 768px) {
+  .skills-grid.skills-few {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  .skills-grid.skills-many {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  .skills-grid.skills-tons {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
 .skill-item {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid var(--border-color);

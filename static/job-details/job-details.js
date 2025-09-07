@@ -312,8 +312,11 @@ function renderJobSkills() {
     return
   }
 
+  const count = validSkills.length
+  const singleClass = count === 1 ? ' single-skill' : ''
+  const densityClass = count <= 6 ? ' skills-few' : (count <= 24 ? ' skills-many' : ' skills-tons')
   skillsContainer.innerHTML = `
-      <div class="skills-grid">
+      <div class="skills-grid${singleClass}${densityClass}">
         ${validSkills
           .map((skill) => {
             const skillName = skill.name || skill.skill_name || skill.skill || "Compétence non spécifiée"
@@ -389,6 +392,8 @@ function renderApplicationsWithCompatibility(filter = "all") {
   `
     return
   }
+
+  const isDeptHead = currentUser && currentUser.role === "department_head"
 
   container.innerHTML = filteredApplications
     .map((app) => {
@@ -521,9 +526,11 @@ function renderApplicationsWithCompatibility(filter = "all") {
                 <div class="quiz-validation-overlay">
                   <div class="quiz-validation-number">2</div>
                   <div class="quiz-validation-message">En attente de validation des compétences</div>
+                  ${isDeptHead ? '' : `
                   <button class="btn-validate-skills-overlay" onclick="validateSkillsAndRemoveOverlay(${app.id})" id="validate-btn-overlay-${app.id}">
                     <i class="fas fa-check-double"></i> Valider les compétences
                   </button>
+                  `}
                 </div>
               ` : ''}
 
@@ -583,7 +590,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                 
                 <div class="quiz-actions">
                   <div class="quiz-actions-row">
-                    ${!app.quiz_id ? `
+                    ${!app.quiz_id && !isDeptHead ? `
                       <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
                         <i class="fas fa-magic"></i> Générer Quiz
                       </button>
@@ -653,6 +660,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                   </div>
                 </div>
                 
+                ${isDeptHead ? '' : `
                 <div class="interview-actions">
                   <div class="interview-actions-row">
                     <button class="btn-schedule-interview" onclick="openScheduleInterviewModal(${app.id}, '${candidateName}')">
@@ -664,6 +672,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                     </button>
                   </div>
                 </div>
+                `}
                 
                 ${app.interview_notes ? `
                 <div class="interview-notes">
@@ -681,16 +690,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
             ${renderCandidateActions(app)}
           </div>
           
-          ${
-            isRecommended && app.recommendation_comment
-              ? `
-            <div class="recommendation-comment">
-              <h4><i class="fas fa-comment"></i> Commentaire de recommandation</h4>
-              <p>${app.recommendation_comment}</p>
-            </div>
-          `
-              : ""
-          }
+          ${""}
         </div>
       </div>
     `
@@ -1243,7 +1243,30 @@ function renderCandidateActions(app) {
   const candidateId = app.candidate_id || app.candidate_profile_id || app.id
 
   if (currentUser && currentUser.role === "department_head") {
-    // ... (le code existant pour les chefs de département)
+    // Pour les chefs de département : toujours afficher "Voir profil"
+    const parts = []
+    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
+      const safeCandidateName = String(candidateName).replace(/'/g, "\\'").replace(/"/g, '\\"')
+      const safeJobTitle = String((currentJob && (currentJob.title || currentJob.job_title)) || "Poste").replace(/'/g, "\\'").replace(/"/g, '\\"')
+      parts.push(`
+      <button class="btn-action recommend" onclick="showRecommendConfirmation(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
+        <i class="fas fa-thumbs-up"></i> Recommander
+      </button>
+    `)
+    }
+    if (app.is_recommended) {
+      parts.push(`
+      <button class="btn-action recommend" onclick="showRecommendationDetails(${app.id})">
+        <i class="fas fa-comment"></i> Déjà recommandé
+      </button>
+    `)
+    }
+    parts.push(`
+      <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+        <i class="fas fa-info-circle"></i> Voir profil
+      </button>
+    `)
+    return parts.join("\n")
   }
 
   // Pour les recruteurs
@@ -1325,6 +1348,43 @@ function renderCandidateActions(app) {
     <i class="fas fa-info-circle"></i> Voir profil
   </button>
 `
+}
+
+// Affiche un modal léger avec le commentaire de recommandation
+function showRecommendationDetails(applicationId) {
+  try {
+    const app = (Array.isArray(applications) ? applications : []).find(a => String(a.id) === String(applicationId))
+    const comment = (app && app.recommendation_comment) || "Aucun commentaire saisi"
+    const priority = (app && app.recommendation_priority) || "normal"
+
+    const overlay = document.createElement('div')
+    overlay.className = 'recommend-modal-overlay'
+
+    overlay.innerHTML = `
+      <div class="recommend-modal" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h3><i class="fas fa-comment"></i> Commentaire de recommandation</h3>
+          <button class="modal-close" onclick="this.closest('.recommend-modal-overlay').remove()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="recommendation-comment">
+            <p><strong>Priorité:</strong> <span class="recommendation-badge ${priority}">${priority}</span></p>
+            <p>${comment}</p>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-confirm" onclick="this.closest('.recommend-modal-overlay').remove()"><i class="fas fa-check"></i> Fermer</button>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(overlay)
+  } catch (e) {
+    console.error('Erreur lors de l\'affichage du commentaire de recommandation:', e)
+    if (typeof showNotification === 'function') {
+      showNotification("Impossible d'afficher le commentaire de recommandation", 'error')
+    }
+  }
 }
 
 function goBackToDashboard() {
