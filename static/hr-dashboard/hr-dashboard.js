@@ -335,9 +335,9 @@ function renderApplicationsWithCompatibility(filter = "all") {
             ${
               isAICompatibility && hasAIReason
                 ? `
-            <button class="compatibility-ai-reason-btn" onclick="showAIReasonModal(${app.id}, '${app.compatibility_reason.replace(/'/g, "\\'")}')" title="Voir la raison de l'IA">
-              <i class="fas fa-robot"></i>
-              <span>Raison IA</span>
+            <button class="compatibility-ai-reason-btn" onclick="showAIReasonModal(${app.id}, '${app.compatibility_reason.replace(/'/g, "\\'")}')" title="Voir l'analyse détaillée de l'IA">
+              <i class="fas fa-brain"></i>
+              <span>Analyse IA</span>
             </button>
             `
                 : ""
@@ -1255,7 +1255,7 @@ async function confirmRecommendation(applicationId) {
 }
 
 function showAIReasonModal(applicationId, reason) {
-  console.log(`🤖 [v0] DASHBOARD: Showing AI reason modal for application ${applicationId}`)
+  console.log(`🧠 [v0] DASHBOARD: Showing AI analysis modal for application ${applicationId}`)
 
   const modal = document.createElement("div")
   modal.className = "ai-reason-modal-overlay"
@@ -1295,9 +1295,9 @@ function showAIReasonModal(applicationId, reason) {
       ">
         <div style="display: flex; align-items: center; justify-content: space-between;">
           <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <i class="fas fa-robot" style="font-size: 1.5rem;"></i>
+            <i class="fas fa-brain" style="font-size: 1.5rem;"></i>
             <div>
-              <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Analyse IA</h3>
+              <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Analyse intelligente</h3>
               <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Candidature #${applicationId}</p>
             </div>
           </div>
@@ -1332,7 +1332,7 @@ function showAIReasonModal(applicationId, reason) {
         ">
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
             <i class="fas fa-brain" style="color: #10b981; font-size: 1.2rem;"></i>
-            <h4 style="margin: 0; color: #10b981; font-weight: 600;">Raisonnement de l'IA</h4>
+            <h4 style="margin: 0; color: #10b981; font-weight: 600;">Analyse détaillée</h4>
             <span class="modal-source-badge" style="
               background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
               color: #10b981;
@@ -1345,7 +1345,7 @@ function showAIReasonModal(applicationId, reason) {
               letter-spacing: 0.5px;
               margin-left: auto;
             ">
-              <i class="fas fa-robot"></i> IA
+              <i class="fas fa-brain"></i> IA
             </span>
           </div>
           <div style="
