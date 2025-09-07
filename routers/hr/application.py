@@ -2,7 +2,7 @@ import os
 from fastapi import APIRouter, Query, Depends, requests
 import requests as req
 from databasehr.database import SessionLocal
-from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments, Quiz, QuizAttempt, QuizQuestion, QuizAnswer, JobSkill
+from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments, Quiz, QuizAttempt, QuizQuestion, QuizAnswer, JobSkill, QuizSkill
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from sqlalchemy.orm import Session, joinedload
@@ -1210,6 +1210,9 @@ async def get_quiz_results(application_id: int, db: Session = Depends(get_db)):
             QuizQuestion.quiz_id == quiz.id
         ).order_by(QuizQuestion.question_order).all()
         
+        # Get quiz skills
+        skills = db.query(QuizSkill).filter(QuizSkill.quiz_id == quiz.id).all()
+        
         # Get completed quiz attempt
         quiz_attempt = db.query(QuizAttempt).filter(
             QuizAttempt.quiz_id == quiz.id,
@@ -1261,7 +1264,15 @@ async def get_quiz_results(application_id: int, db: Session = Depends(get_db)):
                     "time_limit": quiz.time_limit,
                     "total_questions": quiz.total_questions,
                     "status": quiz.status,
-                    "created_at": quiz.created_at
+                    "created_at": quiz.created_at.strftime('%d/%m/%Y') if quiz.created_at else None,
+                    "skills": [
+                        {
+                            "skill_name": skill.skill_name,
+                            "questions_count": skill.questions_count,
+                            "difficulty": skill.difficulty
+                        }
+                        for skill in skills
+                    ]
                 },
                 "candidate": {
                     "id": candidate.id,
@@ -1288,8 +1299,8 @@ async def get_quiz_results(application_id: int, db: Session = Depends(get_db)):
                     "total_correct": quiz_attempt.total_correct if quiz_attempt else 0,
                     "total_questions": quiz_attempt.total_questions if quiz_attempt else 0,
                     "duration_seconds": duration_seconds,
-                    "start_time": quiz_attempt.start_time if quiz_attempt else None,
-                    "end_time": quiz_attempt.end_time if quiz_attempt else None,
+                    "start_time": quiz_attempt.start_time.isoformat() if quiz_attempt and quiz_attempt.start_time else None,
+                    "end_time": quiz_attempt.end_time.isoformat() if quiz_attempt and quiz_attempt.end_time else None,
                     "status": quiz_attempt.status if quiz_attempt else None
                 }
             }

@@ -169,6 +169,7 @@ class HeaderComponent {
 
     const userMenuContainer = document.getElementById("userMenuContainer")
     const notificationBellContainer = document.getElementById("notificationBellContainer")
+    const quizzesContainer = document.getElementById("quizzesContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
 
     if (userMenuContainer) {
@@ -177,6 +178,10 @@ class HeaderComponent {
 
     if (notificationBellContainer) {
       notificationBellContainer.style.display = "block"
+    }
+
+    if (quizzesContainer) {
+      quizzesContainer.style.display = "block"
     }
 
     guestMenuContainers.forEach((container) => {
@@ -253,6 +258,7 @@ async updatePlannedInterviewMenu() {
     // Hide user menu and notification bell, show guest menu
     const userMenuContainer = document.getElementById("userMenuContainer")
     const notificationBellContainer = document.getElementById("notificationBellContainer")
+    const quizzesContainer = document.getElementById("quizzesContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
 
     if (userMenuContainer) {
@@ -261,6 +267,10 @@ async updatePlannedInterviewMenu() {
 
     if (notificationBellContainer) {
       notificationBellContainer.style.display = "none"
+    }
+
+    if (quizzesContainer) {
+      quizzesContainer.style.display = "none"
     }
 
     guestMenuContainers.forEach((container) => {

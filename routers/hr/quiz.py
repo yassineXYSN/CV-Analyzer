@@ -8,6 +8,7 @@ import os
 import requests
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import threading
 from fastapi import BackgroundTasks
 
@@ -128,7 +129,8 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
 
         n8nurl = os.getenv("N8N_QUIZ_WEBHOOK_URL")
         if not n8nurl:
-            raise HTTPException(status_code=500, detail="N8N webhook URL not configured")
+            print("WARNING: N8N webhook URL not configured, quiz will be created without AI questions")
+            # Continue without N8N webhook - quiz will be created but without AI-generated questions
         
         print("=============================")
         print(quiz_request)
@@ -138,44 +140,66 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
         quiz.n8n_webhook_url = n8nurl
         quiz.n8n_webhook_triggered = True
         
-        # Call n8n webhook
-        try:
-            response = requests.post(n8nurl, json=quiz_request, timeout=60)
-            
-            if response.status_code == 200:
-                response_data = response.json()
-                quiz.n8n_response = response_data
+        # Call n8n webhook only if URL is configured
+        if n8nurl:
+            try:
+                print(f"DEBUG: Calling N8N webhook at {n8nurl}")
+                response = requests.post(n8nurl, json=quiz_request, timeout=10*len(quiz_request["skills"]))
+                print(f"DEBUG: N8N webhook response status: {response.status_code}")
                 
-                # Process and store questions from n8n response
-                await process_n8n_quiz_response(db, quiz.id, response_data)
-                
-                quiz.status = 'active'
-                db.commit()
-            else:
-                error_msg = f"HTTP {response.status_code}: {response.text}"
+                if response.status_code == 200:
+                    response_data = response.json()
+                    print(f"DEBUG: N8N response data received: {len(response_data) if isinstance(response_data, list) else 'not a list'}")
+                    quiz.n8n_response = response_data
+                    
+                    # Process and store questions from n8n response
+                    print("DEBUG: Processing N8N response...")
+                    await process_n8n_quiz_response(db, quiz.id, response_data)
+                    print("DEBUG: N8N response processed successfully")
+                    
+                    quiz.status = 'active'
+                    db.commit()
+                    print("DEBUG: Quiz status updated to active")
+                else:
+                    error_msg = f"HTTP {response.status_code}: {response.text}"
+                    print(f"DEBUG: N8N webhook error: {error_msg}")
+                    quiz.webhook_error = error_msg
+                    quiz.status = 'error'
+                    db.commit()
+                    raise HTTPException(status_code=500, detail=f"Failed to generate quiz questions: {error_msg}")
+                    
+            except requests.exceptions.RequestException as webhook_error:
+                error_msg = f"Webhook request failed: {str(webhook_error)}"
+                print(f"DEBUG: N8N webhook exception: {error_msg}")
                 quiz.webhook_error = error_msg
                 quiz.status = 'error'
                 db.commit()
-                raise HTTPException(status_code=500, detail=f"Failed to generate quiz questions: {error_msg}")
-                
-        except requests.exceptions.RequestException as webhook_error:
-            error_msg = f"Webhook request failed: {str(webhook_error)}"
-            quiz.webhook_error = error_msg
-            quiz.status = 'error'
+                raise HTTPException(status_code=500, detail=error_msg)
+            except Exception as e:
+                error_msg = f"Unexpected error in N8N webhook processing: {str(e)}"
+                print(f"DEBUG: Unexpected error: {error_msg}")
+                import traceback
+                traceback.print_exc()
+                quiz.webhook_error = error_msg
+                quiz.status = 'error'
+                db.commit()
+                raise HTTPException(status_code=500, detail=error_msg)
+        else:
+            # No N8N webhook configured, create quiz without AI questions
+            quiz.status = 'active'
+            quiz.webhook_error = "N8N webhook not configured"
             db.commit()
-            raise HTTPException(status_code=500, detail=error_msg)
-        except Exception as webhook_error:
-            error_msg = f"Webhook error: {str(webhook_error)}"
-            quiz.webhook_error = error_msg
-            quiz.status = 'error'
-            db.commit()
-            raise HTTPException(status_code=500, detail=error_msg)
+            print("Quiz created successfully without AI questions (N8N webhook not configured)")
 
         # Send notification (non-critical, don't fail if this fails)
         try:
+            print("DEBUG: Starting notification process...")
             candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == quiz.candidate_id).first()
             admin = db.query(HRAdmin).filter(HRAdmin.id == current_user["id"]).first()
-            job = db.query(Job).filter(Job.id == quiz_data.job_id).first()
+            job = db.query(Job).filter(Job.id == quiz.job_id).first()
+            
+            print(f"DEBUG: Found candidat={candidat is not None}, admin={admin is not None}, job={job is not None}")
+            print(f"DEBUG: candidat.id={quiz.candidate_id}, admin.id={current_user.get('id')}, job.id={quiz.job_id}")
             
             if candidat and job:
                 application = db.query(Application).filter(
@@ -184,7 +208,10 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
                 ).first()
                 company = db.query(Company).filter(Company.id == job.company_id).first()
                 
+                print(f"DEBUG: Found application={application is not None}, company={company is not None}")
+                
                 base_url = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
+                print(f"DEBUG: Adding notification task with base_url={base_url}")
                 background_tasks.add_task(send_test_notification_via_api,
                     base_url,
                     user_id=candidat.user_id if candidat else None,
@@ -198,10 +225,16 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
                     job_title=job.title if job else None,
                     admin_name=f"{admin.first_name} {admin.last_name}" if admin else None,
                 )
+                print("DEBUG: Notification task added successfully")
+            else:
+                print("DEBUG: Skipping notification - missing candidat or job")
         except Exception as notification_error:
             # Log notification error but don't fail the quiz creation
             print(f"Notification error (non-critical): {notification_error}")
+            import traceback
+            traceback.print_exc()
             
+        print("DEBUG: About to return success response...")
         return {
             "success": True,
             "message": "Quiz created and stored successfully",
@@ -237,6 +270,8 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
                 db.rollback()
         
         print(f"Error creating quiz: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error creating quiz: {str(e)}")
 
 async def process_n8n_quiz_response(db: Session, quiz_id: int, n8n_response: List[dict]):
@@ -432,3 +467,143 @@ def send_test_notification_via_api(
         print("Response:", resp.json())
     except Exception:
         print("Response text:", resp.text)
+
+
+@router.delete("/questions/{question_id}")
+async def delete_quiz_question(question_id: int, current_user=Depends(get_current_hr_user), db: Session = Depends(get_db)):
+    """
+    Delete a quiz question if no candidate has completed the quiz
+    """
+    try:
+        # Get the question
+        question = db.query(QuizQuestion).filter(QuizQuestion.id == question_id).first()
+        if not question:
+            raise HTTPException(status_code=404, detail="Question not found")
+        
+        # Get the quiz
+        quiz = db.query(Quiz).filter(Quiz.id == question.quiz_id).first()
+        if not quiz:
+            raise HTTPException(status_code=404, detail="Quiz not found")
+        
+        # Check if any candidate has attempted this quiz
+        # We can check this by looking for quiz attempts or applications with quiz scores
+        from databasehr.models import QuizAttempt
+        has_attempts = db.query(QuizAttempt).filter(QuizAttempt.quiz_id == quiz.id).first() is not None
+        
+        if has_attempts:
+            raise HTTPException(status_code=400, detail="Cannot delete question: Quiz has been attempted by candidates")
+        
+        # Delete the question
+        db.delete(question)
+        
+        # Update quiz total_questions count
+        remaining_questions = db.query(QuizQuestion).filter(QuizQuestion.quiz_id == quiz.id).count()
+        quiz.total_questions = remaining_questions
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Question deleted successfully",
+            "remaining_questions": remaining_questions
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting question: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting question: {str(e)}")
+
+
+class AddQuestionRequest(BaseModel):
+    quiz_id: int
+    question_text: str
+    skill_name: str
+    difficulty: str
+    options: List[str]
+    correct_answer: int
+
+@router.post("/questions")
+async def add_quiz_question(question_data: AddQuestionRequest, current_user=Depends(get_current_hr_user), db: Session = Depends(get_db)):
+    """
+    Add a new question to a quiz if no candidate has completed it
+    """
+    try:
+        # Get the quiz
+        quiz = db.query(Quiz).filter(Quiz.id == question_data.quiz_id).first()
+        if not quiz:
+            raise HTTPException(status_code=404, detail="Quiz not found")
+        
+        # Check if any candidate has attempted this quiz
+        from databasehr.models import QuizAttempt
+        has_attempts = db.query(QuizAttempt).filter(QuizAttempt.quiz_id == quiz.id).first() is not None
+        
+        if has_attempts:
+            raise HTTPException(status_code=400, detail="Cannot add question: Quiz has been attempted by candidates")
+        
+        # Validate question data
+        if not question_data.question_text.strip():
+            raise HTTPException(status_code=400, detail="Question text cannot be empty")
+        
+        if len(question_data.options) < 2:
+            raise HTTPException(status_code=400, detail="At least 2 options are required")
+        
+        if question_data.correct_answer < 1 or question_data.correct_answer > len(question_data.options):
+            raise HTTPException(status_code=400, detail="Correct answer must be between 1 and number of options")
+        
+        # Get the last question order for this specific skill
+        max_order_for_skill = db.query(func.max(QuizQuestion.question_order)).filter(
+            QuizQuestion.quiz_id == question_data.quiz_id,
+            QuizQuestion.skill == question_data.skill_name
+        ).scalar() or 0
+        
+        # If no questions exist for this skill, get the last question order overall
+        if max_order_for_skill == 0:
+            max_order_overall = db.query(func.max(QuizQuestion.question_order)).filter(
+                QuizQuestion.quiz_id == question_data.quiz_id
+            ).scalar() or 0
+            new_order = max_order_overall + 1
+        else:
+            # Insert right after the last question of this skill
+            new_order = max_order_for_skill + 1
+            
+            # Update all questions that come after this position to make room
+            questions_to_update = db.query(QuizQuestion).filter(
+                QuizQuestion.quiz_id == question_data.quiz_id,
+                QuizQuestion.question_order > max_order_for_skill
+            ).all()
+            
+            for q in questions_to_update:
+                q.question_order += 1
+        
+        # Create the question
+        question = QuizQuestion(
+            quiz_id=question_data.quiz_id,
+            question_text=question_data.question_text.strip(),
+            skill=question_data.skill_name,
+            options=question_data.options,
+            correct_answer=str(question_data.correct_answer),
+            question_order=new_order
+        )
+        
+        db.add(question)
+        
+        # Update quiz total_questions count
+        quiz.total_questions = db.query(QuizQuestion).filter(QuizQuestion.quiz_id == quiz.id).count()
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Question added successfully",
+            "question_id": question.id,
+            "total_questions": quiz.total_questions
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error adding question: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error adding question: {str(e)}")

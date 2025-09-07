@@ -599,9 +599,11 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
                         <i class="fas fa-eye"></i> Voir Quiz
                       </button>
-                      <button class="btn-analyze-ai" onclick="viewAIAnalysis(${app.id}, '${candidateName}')">
-                        <i class="fas fa-robot"></i> Analyse IA
-                      </button>
+                      ${app.quiz_score && app.quiz_score > 0 ? `
+                        <button class="btn-analyze-ai" onclick="viewAIAnalysis(${app.id}, '${candidateName}')">
+                          <i class="fas fa-robot"></i> Analyse IA
+                        </button>
+                      ` : ''}
                     ` : ''}
                   </div>
                 </div>
@@ -3022,6 +3024,278 @@ async function generateSkillsQuizConfig() {
   }
 }
 
+function showQuizGenerationPopup() {
+  // Create popup overlay
+  const popupOverlay = document.createElement('div')
+  popupOverlay.className = 'quiz-generation-popup-overlay'
+  popupOverlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+  `
+
+  // Create popup content
+  const popupContent = document.createElement('div')
+  popupContent.className = 'quiz-generation-popup-content'
+  popupContent.style.cssText = `
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    animation: slideIn 0.3s ease;
+  `
+
+  popupContent.innerHTML = `
+    <div style="margin-bottom: 1.5rem;">
+      <i class="fas fa-clock" style="font-size: 3rem; color: #3b82f6; margin-bottom: 1rem;"></i>
+      <h3 style="margin: 0 0 1rem 0; color: #1f2937; font-size: 1.5rem;">Génération du Quiz</h3>
+      <p style="margin: 0; color: #6b7280; line-height: 1.6;">
+        La création peut prendre 5 à 10 secondes par compétence sélectionnée.
+      </p>
+    </div>
+    <div style="display: flex; justify-content: center; gap: 1rem;">
+      <button id="continueQuizGeneration" style="
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      ">
+        <i class="fas fa-check"></i> Continuer
+      </button>
+      <button id="cancelQuizGeneration" style="
+        background: #f3f4f6;
+        color: #6b7280;
+        border: 1px solid #d1d5db;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      ">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+    </div>
+  `
+
+  // Add CSS animations
+  const style = document.createElement('style')
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .quiz-generation-popup-content button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  `
+  document.head.appendChild(style)
+
+  popupOverlay.appendChild(popupContent)
+  document.body.appendChild(popupOverlay)
+
+  // Handle continue button
+  const continueBtn = document.getElementById('continueQuizGeneration')
+  const cancelBtn = document.getElementById('cancelQuizGeneration')
+
+  continueBtn.addEventListener('click', () => {
+    document.body.removeChild(popupOverlay)
+    document.head.removeChild(style)
+    // Continue with quiz generation
+    proceedWithQuizGeneration()
+  })
+
+  cancelBtn.addEventListener('click', () => {
+    document.body.removeChild(popupOverlay)
+    document.head.removeChild(style)
+    // Reset form state
+    const quizForm = document.getElementById("createQuizForm")
+    if (quizForm) {
+      quizForm.dataset.submitting = "false"
+      const submitBtn = quizForm.querySelector(".quiz-create-btn, .btn-primary")
+      if (submitBtn) {
+        submitBtn.disabled = false
+        submitBtn.innerHTML = '<i class="fas fa-magic"></i> Générer le Quiz'
+      }
+    }
+  })
+
+  // Close on overlay click
+  popupOverlay.addEventListener('click', (e) => {
+    if (e.target === popupOverlay) {
+      document.body.removeChild(popupOverlay)
+      document.head.removeChild(style)
+      // Reset form state
+      const quizForm = document.getElementById("createQuizForm")
+      if (quizForm) {
+        quizForm.dataset.submitting = "false"
+        const submitBtn = quizForm.querySelector(".quiz-create-btn, .btn-primary")
+        if (submitBtn) {
+          submitBtn.disabled = false
+          submitBtn.innerHTML = '<i class="fas fa-magic"></i> Générer le Quiz'
+        }
+      }
+    }
+  })
+}
+
+async function proceedWithQuizGeneration() {
+  const quizForm = document.getElementById("createQuizForm")
+  if (!quizForm) return
+
+  const submitBtn = quizForm.querySelector(".quiz-create-btn, .btn-primary")
+  const originalBtnHtml = submitBtn ? submitBtn.innerHTML : null
+  if (submitBtn) {
+    submitBtn.disabled = true
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…'
+  }
+
+  const formData = new FormData(quizForm)
+  const quizData = {
+    title: formData.get("quizTitle"),
+    timeLimit: Number.parseInt(formData.get("quizTime")) || 45,
+    skills: [],
+  }
+
+  let jobSkills = []
+
+  if (currentJob) {
+    if (currentJob.skills && Array.isArray(currentJob.skills)) {
+      jobSkills = currentJob.skills
+    } else if (currentJob.required_skills && Array.isArray(currentJob.required_skills)) {
+      jobSkills = currentJob.required_skills
+    } else if (currentJob.job_skills && Array.isArray(currentJob.job_skills)) {
+      jobSkills = currentJob.job_skills
+    } else if (currentJob.skills_list && Array.isArray(currentJob.skills_list)) {
+      jobSkills = currentJob.skills_list
+    }
+
+    if (jobSkills.length === 0) {
+      const skillsContainer = document.getElementById("jobSkillsContainer")
+      if (skillsContainer) {
+        const skillElements = skillsContainer.querySelectorAll(".skill-tag, .skill-item, [data-skill]")
+        jobSkills = Array.from(skillElements)
+          .map((el) => {
+            return el.textContent?.trim() || el.getAttribute("data-skill") || el.innerText?.trim()
+          })
+          .filter((skill) => skill && skill.length > 0)
+      }
+    }
+  }
+
+  jobSkills.forEach((skill) => {
+    let skillName = ""
+    if (typeof skill === "string") {
+      skillName = skill.trim()
+    } else if (skill && typeof skill === "object") {
+      skillName =
+        skill.skill_name || skill.name || skill.skill || skill.title || skill.text || "Compétence inconnue"
+    } else {
+      skillName = String(skill) || "Compétence inconnue"
+    }
+
+    const skillId = skillName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()
+
+    const questions = Number.parseInt(formData.get(`questions_${skillId}`)) || 0
+    const difficulty = formData.get(`difficulty_${skillId}`) || "medium"
+
+    if (questions > 0) {
+      quizData.skills.push({
+        name: skillName,
+        questions: questions,
+        difficulty: difficulty,
+      })
+    }
+  })
+
+  if (!quizData.title || !quizData.timeLimit || Number.isNaN(quizData.timeLimit)) {
+    showNotification("Veuillez renseigner le titre et le temps limite.", "error")
+    if (submitBtn) {
+      submitBtn.disabled = false
+      if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
+    }
+    quizForm.dataset.submitting = "false"
+    return
+  }
+  if (quizData.skills.length === 0) {
+    showNotification("Veuillez configurer au moins une compétence avec des questions.", "error")
+    if (submitBtn) {
+      submitBtn.disabled = false
+      if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
+    }
+    quizForm.dataset.submitting = "false"
+    return
+  }
+
+  const formControls = quizForm.querySelectorAll("input, select, textarea, button")
+  formControls.forEach((el) => {
+    if (el !== submitBtn) el.disabled = true
+  })
+
+  const candidateId = window.currentQuizCandidateId || null
+
+  try {
+    const response = await fetch("/api/hr/quiz/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: quizData.title,
+        time_limit: quizData.timeLimit,
+        skills: quizData.skills,
+        job_id: currentJob ? currentJob.id || currentJob.job_id : null,
+        candidate_id: candidateId,
+      }),
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      showNotification("Quiz créé avec succès !", "success")
+      closeCreateQuizModal()
+      
+      // Refresh the page to show updated quiz data
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } else {
+      showNotification("Erreur lors de la création du quiz", "error")
+    }
+  } catch (error) {
+    console.error("Erreur lors de la création du quiz:", error)
+    showNotification("Erreur lors de la création du quiz", "error")
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false
+      if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
+    }
+    formControls.forEach((el) => {
+      if (el !== submitBtn) el.disabled = false
+    })
+    quizForm.dataset.submitting = "false"
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const quizForm = document.getElementById("createQuizForm")
 
@@ -3032,139 +3306,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (quizForm.dataset.submitting === "true") {
         return
       }
-      quizForm.dataset.submitting = "true"
-      const submitBtn = quizForm.querySelector(".quiz-create-btn, .btn-primary")
-      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : null
-      if (submitBtn) {
-        submitBtn.disabled = true
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…'
-      }
 
-      const formData = new FormData(quizForm)
-      const quizData = {
-        title: formData.get("quizTitle"),
-        timeLimit: Number.parseInt(formData.get("quizTime")) || 45,
-        skills: [],
-      }
-
-      let jobSkills = []
-
-      if (currentJob) {
-        if (currentJob.skills && Array.isArray(currentJob.skills)) {
-          jobSkills = currentJob.skills
-        } else if (currentJob.required_skills && Array.isArray(currentJob.required_skills)) {
-          jobSkills = currentJob.required_skills
-        } else if (currentJob.job_skills && Array.isArray(currentJob.job_skills)) {
-          jobSkills = currentJob.job_skills
-        } else if (currentJob.skills_list && Array.isArray(currentJob.skills_list)) {
-          jobSkills = currentJob.skills_list
-        }
-
-        if (jobSkills.length === 0) {
-          const skillsContainer = document.getElementById("jobSkillsContainer")
-          if (skillsContainer) {
-            const skillElements = skillsContainer.querySelectorAll(".skill-tag, .skill-item, [data-skill]")
-            jobSkills = Array.from(skillElements)
-              .map((el) => {
-                return el.textContent?.trim() || el.getAttribute("data-skill") || el.innerText?.trim()
-              })
-              .filter((skill) => skill && skill.length > 0)
-          }
-        }
-      }
-
-      jobSkills.forEach((skill) => {
-        let skillName = ""
-        if (typeof skill === "string") {
-          skillName = skill.trim()
-        } else if (skill && typeof skill === "object") {
-          skillName =
-            skill.skill_name || skill.name || skill.skill || skill.title || skill.text || "Compétence inconnue"
-        } else {
-          skillName = String(skill) || "Compétence inconnue"
-        }
-
-        const skillId = skillName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()
-
-        const questions = Number.parseInt(formData.get(`questions_${skillId}`)) || 0
-        const difficulty = formData.get(`difficulty_${skillId}`) || "medium"
-
-        if (questions > 0) {
-          quizData.skills.push({
-            name: skillName,
-            questions: questions,
-            difficulty: difficulty,
-          })
-        }
-      })
-
-      if (!quizData.title || !quizData.timeLimit || Number.isNaN(quizData.timeLimit)) {
-        showNotification("Veuillez renseigner le titre et le temps limite.", "error")
-        if (submitBtn) {
-          submitBtn.disabled = false
-          if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
-        }
-        quizForm.dataset.submitting = "false"
-        return
-      }
-      if (quizData.skills.length === 0) {
-        showNotification("Veuillez configurer au moins une compétence avec des questions.", "error")
-        if (submitBtn) {
-          submitBtn.disabled = false
-          if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
-        }
-        quizForm.dataset.submitting = "false"
-        return
-      }
-
-      const formControls = quizForm.querySelectorAll("input, select, textarea, button")
-      formControls.forEach((el) => {
-        if (el !== submitBtn) el.disabled = true
-      })
-
-      const candidateId = window.currentQuizCandidateId || null
-
-      try {
-        const response = await fetch("/api/hr/quiz/create", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: quizData.title,
-            time_limit: quizData.timeLimit,
-            skills: quizData.skills,
-            job_id: currentJob ? currentJob.id || currentJob.job_id : null,
-            candidate_id: candidateId,
-          }),
-        })
-
-        const result = await response.json()
-
-        if (result.success) {
-          showNotification("Quiz créé avec succès !", "success")
-          closeCreateQuizModal()
-          
-          // Refresh the page to show updated quiz data
-          setTimeout(() => {
-            window.location.reload()
-          }, 1000)
-        } else {
-          showNotification("Erreur lors de la création du quiz", "error")
-        }
-      } catch (error) {
-        console.error("Erreur lors de la création du quiz:", error)
-        showNotification("Erreur lors de la création du quiz", "error")
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false
-          if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
-        }
-        formControls.forEach((el) => {
-          if (el !== submitBtn) el.disabled = false
-        })
-        quizForm.dataset.submitting = "false"
-      }
+      // Show popup before starting quiz generation
+      showQuizGenerationPopup()
     })
   }
 })
