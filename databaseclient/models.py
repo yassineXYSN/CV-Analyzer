@@ -254,12 +254,14 @@ class Notification(Base):
     title = Column(String(200), nullable=False)
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    scheduled_slots = Column(String(500), nullable=True)
+    chosen_slot = Column(String(50), nullable=True)
     # Optional fields for application-related notifications
     application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
-    
+    response_status = Column(Boolean, default=False)   # ✅ ici, c'est un booléen
+
     # Additional data stored as JSON-like fields
     status = Column(String(50), nullable=True)  # application status
     company_name = Column(String(200), nullable=True)
@@ -270,6 +272,7 @@ class Notification(Base):
     user = relationship("User", back_populates="notifications")
     application = relationship("Application", backref="notifications")
     job = relationship("Job", backref="notifications")
+    
 
 # Add this to your User model if it doesn't exist
 # User.notifications = relationship("Notification", back_populates="user")
@@ -553,3 +556,39 @@ def get_job_by_id(job_id):
         return None
     finally:
         db.close()
+from enum import Enum as PyEnum   # 👈 différencier les deux
+
+# Enum Python
+class InterviewStatus(PyEnum):
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    PENDING = "pending"
+
+# Modèle SQLAlchemy
+class Interview(Base):
+    __tablename__ = "interviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # <-- ici
+    application_id = Column(Integer, ForeignKey("applications.id"), nullable=False)
+
+    status = Column(
+        Enum(InterviewStatus, name="interview_status"),
+        default=InterviewStatus.PENDING,
+        nullable=False
+    )
+
+    start_session = Column(Boolean, default=False)
+    end_session = Column(Boolean, default=False)
+
+    scheduled_at = Column(DateTime, nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    ended_at = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relations
+    candidate = relationship("User", backref="interviews")  # <-- utiliser User
+    application = relationship("Application", backref="interviews")

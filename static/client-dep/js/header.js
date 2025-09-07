@@ -196,7 +196,56 @@ class HeaderComponent {
     // Fetch notification count and setup WebSocket
     this.fetchNotificationCount()
     this.setupNotificationWebSocket()
-  }
+
+    // 🔹 NEW: Show "Entretien planifié" only if response_status == 1
+    this.updatePlannedInterviewMenu()
+}
+
+async updatePlannedInterviewMenu() {
+    const container = document.getElementById("plannedInterviewContainer");
+    const slotContainer = document.getElementById("plannedInterviewSlot"); // où afficher la date
+    if (!container || !this.currentUser?.id) return;
+
+    try {
+        // 🔹 Récupérer toutes les applications récentes de l'utilisateur
+        const resp = await fetch(`/api/applications/user/${this.currentUser.id}`);
+        if (!resp.ok) {
+            container.style.display = "none";
+            return;
+        }
+
+        const data = await resp.json();
+        // Chercher la première application avec interview_date défini
+        const appWithInterview = data.applications?.find(app => app.interview_date);
+
+        if (appWithInterview) {
+            // Récupérer la notification correspondante
+            const notifResp = await fetch(`/api/notification/${appWithInterview.id}`);
+            if (!notifResp.ok) {
+                container.style.display = "none";
+                return;
+            }
+            const notifData = await notifResp.json();
+            const notification = notifData.notification;
+
+            if (notification && notification.response_status == 1) {
+                container.style.display = "block";
+                if (slotContainer && notification.interview_date) {
+                    const date = new Date(notification.interview_date);
+                    slotContainer.textContent = `Entretien planifié le ${date.toLocaleString()}`;
+                }
+            } else {
+                container.style.display = "none";
+            }
+        } else {
+            container.style.display = "none";
+        }
+
+    } catch (error) {
+        console.error("Erreur lors de la vérification de l'entretien planifié:", error);
+        container.style.display = "none";
+    }
+}
 
   setGuest() {
     this.currentUser = null

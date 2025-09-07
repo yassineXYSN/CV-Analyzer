@@ -37,6 +37,42 @@ class ProfileCandidat(Base):
     contact = relationship("Contact")
     analyse = relationship("AnalyseCandidat")
     user = relationship("User", back_populates="profile")  # 👈 correct one
+from enum import Enum as PyEnum   # 👈 différencier les deux
+
+# Enum Python
+class InterviewStatus(PyEnum):
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    PENDING = "pending"
+
+# Modèle SQLAlchemy
+class Interview(Base):
+    __tablename__ = "interviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # <-- ici
+    application_id = Column(Integer, ForeignKey("applications.id"), nullable=False)
+
+    status = Column(
+        Enum(InterviewStatus, name="interview_status"),
+        default=InterviewStatus.PENDING,
+        nullable=False
+    )
+
+    start_session = Column(Boolean, default=False)
+    end_session = Column(Boolean, default=False)
+
+    scheduled_at = Column(DateTime, nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    ended_at = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relations
+    candidate = relationship("User", backref="interviews")  # <-- utiliser User
+    application = relationship("Application", backref="interviews")
 
 
 # NOUVEAUX MODÈLES HR
@@ -328,7 +364,6 @@ class User(Base):
     # Relations
     profile = relationship("ProfileCandidat", back_populates="user", uselist=False)
     
-
 class Notification(Base):
     __tablename__ = "notifications"
     
@@ -338,18 +373,17 @@ class Notification(Base):
     title = Column(String(200), nullable=False)
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=func.now(), nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    response_status = Column(Boolean, default=False)   # ✅ ici, c'est un booléen
     application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
     status = Column(String(50), nullable=True)
     company_name = Column(String(200), nullable=True)
     job_title = Column(String(200), nullable=True)
     admin_name = Column(String(100), nullable=True)
-    
-    # Relations
-    user = relationship("User")
-    application = relationship("Application")
-    job = relationship("Job")
+    scheduled_slots = Column(Text, nullable=True)
+    chosen_slot = Column(String(50), nullable=True)
+
 
 class Quiz(Base):
     __tablename__ = "quizzes"

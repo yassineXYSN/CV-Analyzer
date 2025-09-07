@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse,JSONResponse
 from database import SessionLocal
 from databaseclient.models import User, Application, Job, Company, ProfileCandidat, Notification
 from routers.client_dep.dependencies import get_db, get_current_user, require_auth
@@ -11,6 +11,7 @@ import os
 from datetime import datetime
 from pydantic import BaseModel
 
+from databaseclient.models import Interview, InterviewStatus
 router = APIRouter()
 
 # Templates
@@ -374,3 +375,142 @@ async def ping_user_notification(user_id: int):
     }
     success = await manager.send_personal_message(message, user_id)
     return {"success": success}
+# -------------------------------
+# Respond to interview invitation
+# -------------------------------
+@router.post("/api/respond-interview/{application_id}")
+async def respond_interview(
+    application_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    request: Request = None
+):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return JSONResponse(
+            status_code=401,
+            content={"success": False, "message": "Utilisateur non connecté"}
+        )
+
+    response = payload.get("response")  # "accepted" ou "rejected"
+    chosen_slot = payload.get("chosen_slot")
+
+    # Récupérer la notification
+    notification = db.query(Notification).filter(
+        Notification.application_id == application_id,
+        Notification.user_id == current_user.id,
+        Notification.type == "interview_scheduled"
+    ).first()
+
+    if not notification:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Notification introuvable"}
+        )
+
+    # Mettre à jour la notification
+    notification.response_status = 1 if response == "accepted" else 0
+    if chosen_slot:
+        notification.chosen_slot = chosen_slot
+
+    # Si accepté → mise à jour de l'application + création de l'interview
+    if response == "accepted" and chosen_slot:
+        application = db.query(Application).filter(
+            Application.id == application_id
+        ).first()
+
+        if application:
+            application.interview_date = chosen_slot
+
+            # Vérifier si une interview existe déjà
+            existing_interview = db.query(Interview).filter(
+                Interview.application_id == application.id,
+                Interview.candidate_id == current_user.id
+            ).first()
+
+            if not existing_interview:
+                new_interview = Interview(
+                    candidate_id=current_user.id,
+                    application_id=application.id,
+                    status=InterviewStatus.PENDING,  # ✅ utiliser l'enum
+                    start_session=False,
+                    end_session=False,
+                    scheduled_at=chosen_slot
+                )
+                db.add(new_interview)
+
+    db.commit()
+
+    redirect_url = f"/interview/{application_id}"
+    return JSONResponse({
+        "success": True,
+        "message": "Réponse enregistrée",
+        "redirect": redirect_url
+    })
+# -------------------------------
+# Get specific notification
+# -------------------------------
+@router.get("/api/notification/{application_id}")
+async def get_notifications(application_id: int, db: Session = Depends(get_db), request: Request = None):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return JSONResponse(status_code=401, content={"success": False, "message": "Utilisateur non connecté"})
+
+    # Récupérer toutes les notifications interview_scheduled de cette application pour l'utilisateur
+    notifications = db.query(Notification).filter(
+        Notification.application_id == application_id,
+        Notification.user_id == current_user.id,
+        Notification.type == "interview_scheduled"
+    ).all()
+
+    if not notifications:
+        return JSONResponse(status_code=404, content={"success": False, "message": "Aucune notification trouvée pour cette application"})
+
+    # Récupérer l'application
+    application = db.query(Application).filter(Application.id == application_id).first()
+    job_title = application.job.title if application and application.job else "Non spécifié"
+    company_name = application.job.company.company_name if application and application.job and application.job.company else "Non spécifié"
+
+    notifications_data = []
+    for notif in notifications:
+        notifications_data.append({
+            "id": notif.id,
+            "application_id": application_id,
+            "title": notif.title,
+            "message": notif.message,
+            "chosen_slot": getattr(notif, "chosen_slot", None) or "",
+            "scheduled_slot": notif.scheduled_slots,  # un créneau par notification
+            "job_title": job_title,
+            "company_name": company_name,
+            "admin_name": getattr(notif, "admin_name", "Non spécifié"),
+            "response_status": getattr(notif, "response_status", None) or "",
+            "interview_date": application.interview_date.isoformat() if application and application.interview_date else None
+        })
+
+    return JSONResponse(status_code=200, content={"success": True, "notifications": notifications_data})
+
+
+@router.get("/{application_id}/slots")
+def get_interview_slots(application_id: int, db: Session = Depends(get_db)):
+    application = db.query(Application).filter(Application.id == application_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    if not application.interview_slot:
+        return {"slots": []}
+
+    # ✅ Ensure proper splitting and trimming
+    slots = [s.strip() for s in application.interview_slot.split(",") if s.strip()]
+    return {"slots": slots}
+
+@router.get("/api/applications/user/{user_id}")
+async def get_user_applications(user_id: int, db: Session = Depends(get_db)):
+    applications = db.query(Application).filter(Application.user_id == user_id).all()
+    result = []
+    for app in applications:
+        result.append({
+            "id": app.id,
+            "job_id": app.job_id,
+            "interview_date": app.interview_date.isoformat() if app.interview_date else None
+        })
+    return {"success": True, "applications": result}

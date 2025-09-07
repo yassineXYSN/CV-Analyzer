@@ -16,9 +16,16 @@ from routers.hr import (
 )
 from database import engine
 import databaseclient.models as models
-from routers.client_dep import auth, jobs, profiles, scan, general, notifications
+from routers.client_dep import auth, interview, jobs, profiles, scan, general, notifications
 import routers.client_dep.quiz as quiz_client
-
+import time
+import base64
+import cv2
+# Interview system
+from emotion_recognizer.emotion_detector import EmotionDetector
+# Initialize shared detector
+detector = EmotionDetector()
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 app = FastAPI()
@@ -58,7 +65,30 @@ app.include_router(candidate.router)
 app.include_router(dashboard.router)
 app.include_router(admin_router.router)
 app.include_router(quiz.router)
+# Interview
 
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Inclure le router
+app.include_router(interview.router)
+# --- Run system test ---
+@app.get("/run_tests")
+async def run_tests():
+    """Run system tests (HR/Client + Interview)"""
+    results = {
+        "model_loaded": detector.model is not None,
+        "camera_accessible": get_camera().isOpened(),
+        "face_cascade_loaded": not detector.face_cascade.empty(),
+        "timestamp": time.time(),
+    }
+    return results
 # Favicon handler: serve static favicon if present, otherwise return a tiny placeholder
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="5ce7ef10-f818-43e5-979d-af1ada82794f" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/databaseclient/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/databaseclient/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/databasehr/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/databasehr/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/routers/client_dep/general.py" beforeDir="false" afterPath="$PROJECT_DIR$/routers/client_dep/general.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/routers/client_dep/notifications.py" beforeDir="false" afterPath="$PROJECT_DIR$/routers/client_dep/notifications.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/routers/hr/dashboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/routers/hr/dashboard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/client-dep/components/header.html" beforeDir="false" afterPath="$PROJECT_DIR$/static/client-dep/components/header.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/client-dep/js/header.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/client-dep/js/header.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/hr-dashboard/hr-dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/hr-dashboard/hr-dashboard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/HR-dep/hr-dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/HR-dep/hr-dashboard.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/client-dep/notifications.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/client-dep/notifications.html" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 8
+}]]></component>
+  <component name="ProjectId" id="32KYdjxAFakrSJRahDIgWsLEjOV" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "0509-integration-amine",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.26927.53" />
+        <option value="bundled-js-predefined-d6986cc7102b-09060db00ec0-JavaScript-IU-251.26927.53" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="5ce7ef10-f818-43e5-979d-af1ada82794f" name="Changes" comment="" />
+      <created>1757170820946</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1757170820946</updated>
+      <workItem from="1757170822012" duration="4000" />
+    </task>
+    <servers />
+  </component>
+</project>

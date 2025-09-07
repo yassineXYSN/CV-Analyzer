@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Entretien planifié</title>
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            /* Updated background to match homepage */
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+        }
+        header {
+            background-color: rgba(30, 41, 59, 0.9);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        #calendar {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .fc-event {
+            background-color: #1cc88a !important;
+            border: none !important;
+            color: white !important;
+            font-weight: bold;
+            text-align: center;
+        }
+        /* Style for completed interviews */
+        .fc-event.completed {
+            background-color: #6c757d !important;
+            text-decoration: line-through !important;
+            opacity: 0.7;
+            position: relative;
+        }
+        .fc-event.completed::after {
+            content: "✓ Terminé";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.8em;
+            color: white;
+            font-weight: bold;
+        }
+        .fc-toolbar-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        #startSessionBtn {
+            display: none;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            background-color: #4e73df;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        /* Style for completed status */
+        .completed-status {
+            background-color: #28a745;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+        .view-results-btn {
+            background-color: #17a2b8;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>Mon Entretien Planifié</header>
+<div class="container">
+    <h2>Calendrier de votre entretien</h2>
+    <div id="calendar"></div>
+    <div id="countdown" style="text-align:center; margin-top:1rem; font-size:1.2rem; color:#4e73df;"></div>
+    
+    <!-- Show completion status if interview is done -->
+    {% if is_completed %}
+    <div class="completed-status">
+        <i class="fas fa-check-circle"></i> Entretien terminé avec succès !
+        <br>
+        <button class="view-results-btn" onclick="viewResults()">
+            <i class="fas fa-chart-bar"></i> Voir les résultats
+        </button>
+    </div>
+    {% else %}
+    <div style="text-align:center; margin-top:1rem;">
+        <button id="startSessionBtn">Démarrer l'entretien</button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const interviewDateStr = "{{ interview_date | string | default('') }}";
+    const applicationId = "{{ application_id | string | default('') }}";
+    const isCompleted = {{ 'true' if is_completed else 'false' }};
+    const sessionEnded = {{ 'true' if interview_session_end else 'false' }}; // pass from backend
+
+    const interviewDate = interviewDateStr ? new Date(interviewDateStr) : null;
+    const countdownEl = document.getElementById('countdown');
+    const startBtn = document.getElementById('startSessionBtn');
+
+    // FullCalendar
+    const calendarEl = document.getElementById('calendar');
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'fr',
+        themeSystem: 'standard',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: ''
+        },
+        events: interviewDate ? [
+            {
+                title: sessionEnded ? 'Entretien (Terminé)' : 'Entretien',
+                start: interviewDate,
+                allDay: true,
+                className: sessionEnded ? 'completed' : ''
+            }
+        ] : [],
+        eventClick: function(info) {
+            if (sessionEnded) {
+                alert('Entretien terminé le: ' + info.event.start.toLocaleString() + '\nCliquez sur "Voir les résultats" pour plus de détails.');
+            } else {
+                alert('Entretien prévu le: ' + info.event.start.toLocaleString());
+            }
+        }
+    });
+    calendar.render();
+
+    // Countdown / minute timer
+    function updateCountdown() {
+        if (!interviewDate) {
+            countdownEl.innerText = "Aucune interview planifiée";
+            startBtn.style.display = "none";
+            return;
+        }
+
+        const now = new Date();
+        const diff = interviewDate - now;
+
+        if (sessionEnded) {
+            countdownEl.innerHTML = '<i class="fas fa-check-circle" style="color: #28a745;"></i> Entretien terminé avec succès !';
+            startBtn.style.display = "none";
+            return;
+        }
+
+        if (diff > 0) {
+            // Before interview starts
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+
+            countdownEl.innerText = `Temps restant avant l'entretien: ${days}j ${hours}h ${minutes}m ${seconds}s`;
+            startBtn.style.display = "none";
+        } else {
+            // Interview started
+            countdownEl.innerText = "Entretien en cours...";
+            startBtn.style.display = "inline-block";
+
+            startBtn.onclick = function() {
+                if(applicationId) {
+                    window.location.href = `/interview/${applicationId}`;
+                } else {
+                    console.error("Application ID non défini, impossible de rediriger.");
+                }
+            };
+        }
+    }
+
+    const timer = setInterval(updateCountdown, 1000);
+    updateCountdown();
+});
+
+
+function viewResults() {
+    const applicationId = "{{ application_id | default('') }}";
+    if (applicationId) {
+        window.location.href = `/interview-results?application_id=${applicationId}`;
+    }
+}
+</script>
+
+<script>
+const applicationId = "{{ application_id | default('') }}";
+console.log("Application ID:", applicationId);
+</script>
+
+</body>
+</html>

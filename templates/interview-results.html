@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Results Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .result-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .status-pass {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        
+        .status-fail {
+            background: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #ef4444;
+        }
+        
+        .candidate-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        .metrics-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4f46e5;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+        
+        .timestamp {
+            font-size: 0.9rem;
+            color: #6b7280;
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+        
+        .no-results h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 20px auto;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Interview Results Dashboard</h1>
+            <p>Comprehensive overview of all interview assessments</p>
+        </div>
+
+        <div class="main-content">
+            <button class="refresh-btn" onclick="loadAllResults()">🔄 Refresh Results</button>
+            
+            <div id="resultsContainer">
+                <div class="no-results">
+                    <h3>Loading results...</h3>
+                    <p>Please wait while we fetch the interview data.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadAllResults() {
+            fetch('/get_all_interview_results')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayResults(data.results);
+                } else {
+                    showNoResults('Error loading results: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNoResults('Failed to load results');
+            });
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('resultsContainer');
+            
+            if (!results || Object.keys(results).length === 0) {
+                showNoResults('No interview results found');
+                return;
+            }
+
+            let html = '<div class="results-grid">';
+            
+            Object.entries(results).forEach(([applicationId, resultData]) => {
+                const report = resultData.report;
+                const timestamp = new Date(resultData.timestamp * 1000);
+                const statusClass = report.interview_result === 'PASS' ? 'status-pass' : 'status-fail';
+                const statusIcon = report.interview_result === 'PASS' ? '✅' : '❌';
+                
+                html += `
+                    <div class="result-card">
+                        <div class="result-header">
+                            <div class="candidate-name">${report.candidate_name}</div>
+                            <div class="result-status ${statusClass}">
+                                ${statusIcon} ${report.interview_result}
+                            </div>
+                        </div>
+                        
+                        <div class="metrics-summary">
+                            <div class="metric-item">
+                                <div class="metric-value">${Math.round(report.session_duration)}s</div>
+                                <div class="metric-label">Duration</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${report.key_metrics.positive_emotions}%</div>
+                                <div class="metric-label">Positive</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${report.key_metrics.confidence_level}%</div>
+                                <div class="metric-label">Confidence</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${(report.average_confidence * 100).toFixed(0)}%</div>
+                                <div class="metric-label">Accuracy</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timestamp">
+                            📅 Completed: ${timestamp.toLocaleString()}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function showNoResults(message) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = `
+                <div class="no-results">
+                    <h3>📭 ${message}</h3>
+                    <p>Interview results will appear here once sessions are completed.</p>
+                </div>
+            `;
+        }
+
+        // Load results when page loads
+        window.addEventListener('load', loadAllResults);
+    </script>
+</body>
+</html>

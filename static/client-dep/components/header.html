@@ -8,26 +8,31 @@
                     CV Analyzer Pro
                 </a>
             </div>
-            
             <ul class="nav-menu" id="navMenu">
-                <li class="nav-item">
-                    <a href="/" class="nav-link" data-page="home">Accueil</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/analyze" class="nav-link" data-page="analyze">Analyser CV</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/jobs" class="nav-link" data-page="jobs">Emplois</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/quizzes" class="nav-link" data-page="quizzes">Mes Quiz</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/signup/step2" class="nav-link active" data-page="step2" id="setupstep2" style="display: none;">
-                        <i class="fas fa-user-plus"></i>
-                        Continuer l'inscription
-                    </a>
-                </li>
+    <li class="nav-item">
+        <a href="/" class="nav-link" data-page="home">Accueil</a>
+    </li>
+    <li class="nav-item">
+        <a href="/analyze" class="nav-link" data-page="analyze">Analyser CV</a>
+    </li>
+    <li class="nav-item">
+        <a href="/jobs" class="nav-link" data-page="jobs">Emplois</a>
+    </li>
+    <!-- Fix: make planned interview same as other nav-items -->
+    <li class="nav-item" id="plannedInterviewContainer" style="display: none;">
+        <a href="/planned-interview" class="nav-link" data-page="planned-interview">Entretien planifié</a>
+    </li>
+    <li class="nav-item">
+        <a href="/quizzes" class="nav-link" data-page="quizzes">Mes Quiz</a>
+    </li>
+    <li class="nav-item">
+        <a href="/signup/step2" class="nav-link active" data-page="step2" id="setupstep2" style="display: none;">
+            <i class="fas fa-user-plus"></i>
+            Continuer l'inscription
+        </a>
+    </li>
+</ul>
+
                 
                 <!-- Notification Bell - Shown when authenticated -->
                 <li class="nav-item notification-bell-container" id="notificationBellContainer" style="display: none;">

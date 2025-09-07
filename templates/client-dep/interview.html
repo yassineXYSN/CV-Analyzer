@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Emotion Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            /* Updated background to match homepage dark navy blue theme */
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .session-form {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .session-form h3 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            flex: 1;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+        
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .video-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .video-container {
+            background: #1f2937;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .video-feed {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .stats-container {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .stats-container h3 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+        
+        .timer-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4f46e5;
+            text-align: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .current-emotion {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .emotion-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .emotion-bar {
+            margin: 15px 0;
+        }
+        
+        .emotion-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+        
+        .emotion-icon {
+            font-size: 1.2rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background-color: #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 6px;
+        }
+        
+        .anxious { 
+            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+        }
+        .confused { 
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        }
+        .confident { 
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        }
+        .neutral { 
+            background: linear-gradient(90deg, #6b7280 0%, #4b5563 100%);
+        }
+        
+        .report-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .report-section h3 {
+            color: #1e293b;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        
+        .result-pass {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 2px solid #10b981;
+            color: #065f46;
+            padding: 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .result-fail {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 2px solid #ef4444;
+            color: #7f1d1d;
+            padding: 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4f46e5;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .insight {
+            background: white;
+            border-left: 4px solid #4f46e5;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        @media (max-width: 768px) {
+            .video-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Interview Emotion Detection</h1>
+            <p>Advanced AI-powered emotion analysis for comprehensive interview assessment</p>
+        </div>
+
+        <div class="main-content">
+            <div class="session-form">
+                <h3>📋 Session Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="candidateName">👤 Candidate Name:</label>
+                        <input type="text" id="candidateName" value="{{ candidate_name }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="interviewerName">👨‍💼 Interviewer Name:</label>
+                        <input type="text" id="interviewerName" value="{{ interviewer_name }}" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-success" id="startBtn" onclick="startSession()">
+                    ▶️ Start Interview Session
+                </button>
+                <button class="btn btn-danger" id="endBtn" onclick="endSession()" disabled>
+                    ⏹️ End Session
+                </button>
+            </div>
+
+            <div class="video-section">
+                <div class="video-container">
+                    <img src="{{ request.url_for('video_feed') }}" class="video-feed" alt="Video Feed">
+                </div>
+                
+                <div class="stats-container">
+                    <h3>📊 Live Analysis</h3>
+                    
+                    <div class="timer-display" id="sessionTimer">00:00</div>
+                    
+                    <div class="current-emotion">
+                        <div style="font-size: 0.9rem; color: #6b7280; margin-bottom: 5px;">Current Emotion</div>
+                        <div class="emotion-text" id="emotionText">None</div>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 15px 0; padding: 10px; background: white; border-radius: 8px;">
+                        <strong>Total Detections: </strong><span id="detectionCount">0</span>
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 15px 0; color: #374151;">Emotion Distribution</h4>
+                    
+                    <div class="emotion-bar">
+                        <div class="emotion-label">
+                            <span><span class="emotion-icon">😰</span> Anxious</span>
+                            <span id="anxiousPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill anxious" id="anxiousBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="emotion-bar">
+                        <div class="emotion-label">
+                            <span><span class="emotion-icon">❓</span> Confused</span>
+                            <span id="confusedPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill confused" id="confusedBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="emotion-bar">
+                        <div class="emotion-label">
+                            <span><span class="emotion-icon">😊</span> Confident</span>
+                            <span id="confidentPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill confident" id="confidentBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="emotion-bar">
+                        <div class="emotion-label">
+                            <span><span class="emotion-icon">😐</span> Neutral</span>
+                            <span id="neutralPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill neutral" id="neutralBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="report-section" id="reportSection" style="display: none;">
+                <h3>📈 Interview Assessment Report</h3>
+                <div id="reportContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sessionActive = false;
+        let statsInterval;
+        let timerInterval;
+        let sessionStartTime;
+
+        function startSession() {
+            const candidateName = document.getElementById('candidateName').value;
+            const interviewerName = document.getElementById('interviewerName').value;
+            const applicationId = {{ application_id }};
+            
+            if (!candidateName || !interviewerName) {
+                alert('Please enter both candidate and interviewer names');
+                return;
+            }
+
+            fetch(`/start_session/${applicationId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    sessionActive = true;
+                    sessionStartTime = Date.now();
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('endBtn').disabled = false;
+                    document.getElementById('reportSection').style.display = 'none';
+                    
+                    timerInterval = setInterval(updateTimer, 1000);
+                    statsInterval = setInterval(updateStats, 1000);
+                    
+                    alert('✅ Session started successfully!');
+                } else {
+                    alert('❌ Failed to start session: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error starting session');
+            });
+        }
+
+       function endSession() {
+    const applicationId = {{ application_id }};
+    
+    sessionActive = false;
+    clearInterval(statsInterval);
+    clearInterval(timerInterval);
+    
+    fetch(`/end_session/${applicationId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('endBtn').disabled = true;
+            
+            alert('✅ Session ended successfully! Redirecting to planned interviews...');
+            
+            setTimeout(() => {
+                window.location.href = '/planned-interview';
+            }, 1000);
+        } else {
+            sessionActive = true;
+            timerInterval = setInterval(updateTimer, 1000);
+            statsInterval = setInterval(updateStats, 1000);
+            alert('❌ Failed to end session: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        sessionActive = true;
+        timerInterval = setInterval(updateTimer, 1000);
+        statsInterval = setInterval(updateStats, 1000);
+        alert('❌ Error ending session');
+    });
+}
+
+
+        function updateTimer() {
+            if (!sessionActive || !sessionStartTime) return;
+            
+            const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            
+            document.getElementById('sessionTimer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateStats() {
+            if (!sessionActive) return;
+
+            fetch('/get_live_stats')
+            .then(response => response.json())
+            .then(data => {
+                let displayEmotion = data.current_emotion;
+                if (displayEmotion.toLowerCase() === 'confused') {
+                    displayEmotion = '❓ ' + displayEmotion;
+                }
+                
+                document.getElementById('emotionText').textContent = displayEmotion;
+                document.getElementById('detectionCount').textContent = data.total_detections;
+                
+                const emotions = ['anxious', 'confused', 'confident', 'neutral'];
+                emotions.forEach(emotion => {
+                    const emotionKey = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+                    const percentage = data.emotion_distribution[emotionKey] || 0;
+                    document.getElementById(emotion + 'Percent').textContent = percentage.toFixed(1) + '%';
+                    document.getElementById(emotion + 'Bar').style.width = percentage + '%';
+                });
+            })
+            .catch(error => {
+                console.error('Error updating stats:', error);
+            });
+        }
+
+        function displayReport(report) {
+            if (!report || !report.interview_result) {
+                document.getElementById('reportContent').innerHTML = 
+                    '<div class="result-fail"><h2>❌ Error generating report</h2><p>No valid report data received</p></div>';
+                document.getElementById('reportSection').style.display = 'block';
+                return;
+            }
+            
+            const reportContent = document.getElementById('reportContent');
+            const resultClass = report.interview_result === 'PASS' ? 'result-pass' : 'result-fail';
+            const resultIcon = report.interview_result === 'PASS' ? '✅' : '❌';
+            
+            let html = `
+                <div class="${resultClass}">
+                    <h2>${resultIcon} Interview Result: ${report.interview_result}</h2>
+                    <p>${report.overall_assessment}</p>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">${Math.round(report.session_duration)}s</div>
+                        <div class="metric-label">⏱️ Session Duration</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${report.total_detections}</div>
+                        <div class="metric-label">🔍 Total Detections</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${(report.average_confidence * 100).toFixed(1)}%</div>
+                        <div class="metric-label">🎯 Average Confidence</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${report.key_metrics.positive_emotions}%</div>
+                        <div class="metric-label">😊 Positive Emotions</div>
+                    </div>
+                </div>
+                
+                <h4 style="margin: 25px 0 15px 0; color: #374151;">📊 Detailed Metrics</h4>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">${report.key_metrics.confidence_level}%</div>
+                        <div class="metric-label">😊 Confidence Level</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${report.key_metrics.neutral_level}%</div>
+                        <div class="metric-label">😐 Neutral Level</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${report.key_metrics.anxiety_level}%</div>
+                        <div class="metric-label">😰 Anxiety Level</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${report.key_metrics.confusion_level}%</div>
+                        <div class="metric-label">❓ Confusion Level</div>
+                    </div>
+                </div>
+                
+                <h4 style="margin: 25px 0 15px 0; color: #374151;">💡 Insights</h4>
+            `;
+            
+            if (report.insights && report.insights.length > 0) {
+                report.insights.forEach(insight => {
+                    html += `<div class="insight">${insight}</div>`;
+                });
+            } else {
+                html += '<div class="insight">No specific insights available</div>';
+            }
+            
+            html += '<h4 style="margin: 25px 0 15px 0; color: #374151;">🎯 Recommendations</h4>';
+            
+            if (report.recommendations && report.recommendations.length > 0) {
+                report.recommendations.forEach(rec => {
+                    html += `<div class="insight">${rec}</div>`;
+                });
+            } else {
+                html += '<div class="insight">No specific recommendations available</div>';
+            }
+            
+            reportContent.innerHTML = html;
+            document.getElementById('reportSection').style.display = 'block';
+        }
+
+        function loadSavedResult() {
+            const applicationId = {{ application_id }};
+            
+            fetch(`/get_interview_result/${applicationId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.result && data.result.report) {
+                    displayReport(data.result.report);
+                    
+                    // Show when the result was saved
+                    const timestamp = new Date(data.result.timestamp * 1000);
+                    const timeString = timestamp.toLocaleString();
+                    
+                    const reportSection = document.getElementById('reportSection');
+                    const timestampDiv = document.createElement('div');
+                    timestampDiv.style.cssText = 'text-align: center; margin-bottom: 20px; padding: 10px; background: #f3f4f6; border-radius: 8px; color: #6b7280;';
+                    timestampDiv.innerHTML = `📅 Interview completed on: ${timeString}`;
+                    reportSection.insertBefore(timestampDiv, reportSection.firstChild.nextSibling);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading saved result:', error);
+            });
+        }
+
+        window.addEventListener('load', function() {
+            loadSavedResult();
+        });
+    </script>
+</body>
+</html>

@@ -9,6 +9,120 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+    /* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    z-index: 1000;
+    overflow: auto;
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+    color: #333;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-close:hover {
+    color: #000;
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.modal-body p {
+    margin: 10px 0;
+    font-size: 1em;
+    color: #333;
+}
+
+.slot-select {
+    width: 100%;
+    padding: 8px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+.btn-accept {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.btn-accept:hover {
+    background-color: #218838;
+}
+
+.btn-decline {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.btn-decline:hover {
+    background-color: #c82333;
+}
+
+.btn-close {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.btn-close:hover {
+    background-color: #5a6268;
+}
+
+/* Ensure toast doesn't overlap with modal */
+.notification-toast {
+    z-index: 1100; /* Higher than modal */
+}
     /* Base styles */
 :root {
 --primary_gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -604,6 +718,13 @@ box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
                         <button class="notification-btn" onclick="markAsRead({{ notification.id }})">
                             ✓ Marquer comme lu
                         </button>
+                                                 {% if notification.type == 'interview_scheduled' %}
+<button class="notification-btn"
+    onclick="viewInterviewDetail({{ notification.application_id }})">
+    📧 Voir l'entretien
+</button>
+
+    {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -644,6 +765,200 @@ box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
     {% else %}
     window.currentUser = null;
     {% endif %}
+async function loadInterviewSlots(applicationId) {
+  try {
+    const response = await fetch(`/api/interviews/${applicationId}/slots`);
+    const data = await response.json();
+
+    const container = document.getElementById("slotContainer");
+    container.innerHTML = ""; // reset
+
+    if (!data.slots || data.slots.length === 0) {
+      container.innerHTML = "<p>Aucun créneau disponible</p>";
+      return;
+    }
+
+    data.slots.forEach(slot => {
+      const btn = document.createElement("button");
+      btn.className = "slot-btn";
+      btn.innerText = slot;
+      btn.onclick = () => selectSlot(slot);
+      container.appendChild(btn);
+    });
+  } catch (error) {
+    console.error("❌ Error loading slots:", error);
+  }
+}
+
+function selectSlot(slot) {
+  alert(`✅ Créneau sélectionné: ${slot}`);
+  // here you can call backend to confirm slot
+}
+
+    function showNotificationToast(notification) {
+        const toast = document.getElementById('notification-toast');
+        const messageElement = document.getElementById('toast-message');
+        
+        if (!toast || !messageElement) {
+            console.error('Toast elements not found');
+            return;
+        }
+        
+        messageElement.textContent = notification.message;
+        toast.style.display = 'block';
+        toast.offsetHeight; // Force reflow
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            hideToast();
+        }, 6000);
+    }
+
+    function hideToast() {
+        const toast = document.getElementById('notification-toast');
+        if (toast) {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 400);
+        }
+    }
+async function viewInterviewDetail(applicationId) {
+    try {
+        const res = await fetch(`/api/notification/${applicationId}`, {
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            alert("Erreur : " + (data.message || "Impossible de charger la notification"));
+            return;
+        }
+
+        const notifications = data.notifications || [];
+        if (!notifications.length) {
+            alert("Aucune notification pour cette candidature");
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'interviewModal';
+        modal.className = 'modal';
+
+        let bodyHTML = '';
+        notifications.forEach(notif => {
+            // ✅ Si déjà accepté
+            if (notif.response_status === 'accepted') {
+                bodyHTML += `
+                    <div class="notif-item" data-id="${notif.id}">
+                        <p><strong>Poste :</strong> ${notif.job_title}</p>
+                        <p><strong>Entreprise :</strong> ${notif.company_name}</p>
+                        <p><strong>Recruteur :</strong> ${notif.admin_name}</p>
+                        <p><em>✅ Vous avez déjà accepté cet entretien pour le créneau : ${notif.chosen_slot}</em></p>
+                        <hr>
+                    </div>
+                `;
+                return;
+            }
+
+            // Options pour les créneaux
+            let slotOptions = `<option value="">Sélectionner un créneau</option>`;
+            if (notif.scheduled_slot) {
+                const slots = notif.scheduled_slot.split(',');
+                slots.forEach(slot => {
+                    slotOptions += `<option value="${slot}" ${slot === notif.chosen_slot ? 'selected' : ''}>${slot}</option>`;
+                });
+            }
+
+            bodyHTML += `
+                <div class="notif-item" data-id="${notif.id}">
+                    <p><strong>Poste :</strong> ${notif.job_title}</p>
+                    <p><strong>Entreprise :</strong> ${notif.company_name}</p>
+                    <p><strong>Recruteur :</strong> ${notif.admin_name}</p>
+                    <label for="chosenSlot_${notif.id}"><strong>Créneau :</strong></label>
+                    <select id="chosenSlot_${notif.id}" class="chosen-slot">
+                        ${slotOptions}
+                    </select>
+                    <br>
+                    <button class="btn btn-accept" onclick="respondInterview(${notif.application_id}, 'accepted', ${notif.id})">Accepter</button>
+                    <button class="btn btn-decline" onclick="respondInterview(${notif.application_id}, 'rejected', ${notif.id})">Refuser</button>
+                    <hr>
+                </div>
+            `;
+        });
+
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Entretiens planifiés</h2>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="modal-body">${bodyHTML}</div>
+                <div class="modal-footer">
+                    <button class="btn btn-close" onclick="closeModal()">Fermer</button>
+                </div>
+            </div>
+        `;
+
+        const existingModal = document.getElementById('interviewModal');
+        if (existingModal) existingModal.remove();
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+
+    } catch (err) {
+        console.error(err);
+        alert("Erreur lors du chargement des notifications");
+    }
+}
+
+async function respondInterview(applicationId, response, notificationId) {
+    const slotSelect = document.querySelector(`#chosenSlot_${notificationId}`);
+    const chosenSlot = slotSelect && response === 'accepted' ? slotSelect.value : null;
+
+    if (response === 'accepted' && (!chosenSlot || chosenSlot === "")) {
+        alert("Veuillez sélectionner un créneau horaire.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/respond-interview/${applicationId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ response, chosen_slot: chosenSlot }),
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            closeModal();
+
+            if (response === 'accepted') {
+                // 🔹 Redirection vers la page des entretiens planifiés
+                window.location.href = '/planned-interview';
+            } else if (response === 'rejected') {
+                // 🔹 Afficher la notification détaillée puis rediriger vers la home
+                viewInterviewDetail(applicationId);
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 5000); // 5 secondes avant de revenir à l'accueil
+            }
+        } else {
+            alert("Erreur: " + data.message);
+        }
+    } catch (err) {
+        console.error('Error in respondInterview:', err);
+        alert("Erreur lors de l'envoi de la réponse");
+    }
+}
+
+function closeModal() {
+    const modal = document.getElementById('interviewModal');
+    if (modal) modal.remove();
+}
+
 
     function showNotificationToast(notification) {
         const toast = document.getElementById('notification-toast');

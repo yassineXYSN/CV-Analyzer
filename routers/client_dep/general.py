@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from database import SessionLocal
+from routers.client_dep import interview
 from routers.client_dep.dependencies import get_db, get_current_user
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from databaseclient.models import Job, Company, Department, JobSkill  # Added Job-related imports
+from databaseclient.models import Application, Job, Company, Department, JobSkill, Notification  # Added Job-related imports
 import os
 
 
@@ -135,3 +136,48 @@ def get_job_details(job_id: int, db: Session = Depends(get_db)):
             "success": False,
             "error": str(e)
         }, status_code=500)
+
+@router.get("/planned-interview", response_class=HTMLResponse)
+async def planned_interview_page(request: Request, db: Session = Depends(get_db)):
+    """
+    Page de l'entretien planifié pour l'utilisateur connecté.
+    Affiche la prochaine interview planifiée et l'application_id pour la redirection.
+    """
+    current_user = get_current_user(request, db)
+    if not current_user:
+        # Redirige vers login si l'utilisateur n'est pas connecté
+        return templates.TemplateResponse("client-dep/auth/login.html", {
+            "request": request,
+            "error": "Vous devez être connecté pour voir votre entretien planifié"
+        })
+
+    # Récupère la dernière notification d'entretien planifié accepté
+    notification = db.query(Notification).filter(
+        Notification.user_id == current_user.id,
+        Notification.type == "interview_scheduled",
+        Notification.response_status == 1  # accepté
+    ).order_by(Notification.created_at.desc()).first()
+
+    interview_date = None
+    application_id = None
+    is_completed = False
+
+    if notification:
+        # Récupère l'application liée à la notification
+        application = db.query(Application).filter(Application.id == notification.application_id).first()
+        if application and application.interview_date:
+            interview_date = application.interview_date.isoformat()  # format ISO pour JS
+            application_id = application.id
+            
+            import os
+            result_file = f"interview_results/result_{application_id}.json"
+            is_completed = os.path.exists(result_file)
+
+    return templates.TemplateResponse("client-dep/planned-interview.html", {
+        "request": request,
+        "interview_date": interview_date,
+        "application_id": application_id,
+        "is_completed":  interview.end_session,  # Pass completion status to template
+        "interview_session_end": interview.end_session
+
+    })
