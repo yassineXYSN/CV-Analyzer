@@ -295,6 +295,10 @@ class Application(Base):
     compatibility_score = Column(Numeric(5, 2), comment="Compatibility score between candidate and job (0-100)")
     compatibility_reason = Column(Text, comment="Detailed reason for compatibility score from AI analysis")
     n8n_webhook_triggered = Column(Boolean, default=False, comment="Flag to track if n8n webhook was triggered")
+    
+    # AI Quiz Review
+    quiz_review = Column(Text, comment="AI analysis review of quiz performance and candidate assessment")
+    quiz_review_date = Column(DateTime, comment="Date when the quiz review was generated")
 
 # NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
 class ActivityLog(Base):

@@ -3646,6 +3646,30 @@ body {
   background: linear-gradient(135deg, #1d4ed8, #3b82f6);
 }
 
+.btn-analyze-ai {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 0.85rem 1.5rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  min-width: 150px;
+  justify-content: center;
+}
+
+.btn-analyze-ai:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+  background: linear-gradient(135deg, #059669, #10b981);
+}
+
 /* Responsive pour la section quiz */
 @media (max-width: 768px) {
   .quiz-info-grid {
@@ -3658,7 +3682,8 @@ body {
   }
   
   .btn-generate-quiz,
-  .btn-view-quiz {
+  .btn-view-quiz,
+  .btn-analyze-ai {
     width: 100%;
     max-width: 300px;
   }

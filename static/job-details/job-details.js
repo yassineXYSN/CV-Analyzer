@@ -599,6 +599,9 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
                         <i class="fas fa-eye"></i> Voir Quiz
                       </button>
+                      <button class="btn-analyze-ai" onclick="viewAIAnalysis(${app.id}, '${candidateName}')">
+                        <i class="fas fa-robot"></i> Analyse IA
+                      </button>
                     ` : ''}
                   </div>
                 </div>
@@ -2301,11 +2304,138 @@ function updateFilterCounts() {
 
 async function viewQuizResults(applicationId, candidateName) {
   try {
-    // Redirect to the quiz preview page
-    window.open(`/quiz-preview/${applicationId}`, '_blank')
+    // Redirect to the quiz preview page in the same tab
+    window.location.href = `/quiz-preview/${applicationId}`
   } catch (error) {
     console.error("Erreur ouverture aperçu quiz:", error)
     showNotification("Erreur lors de l'ouverture de l'aperçu du quiz", "error")
+  }
+}
+
+async function viewAIAnalysis(applicationId, candidateName) {
+  try {
+    // Check if there's an existing AI review
+    const response = await fetch(`/api/applications/${applicationId}/quiz-review`)
+    const data = await response.json()
+    
+    if (data.success && data.has_review) {
+      // Show existing review in a modal
+      showAIAnalysisModal(data.quiz_review, data.quiz_review_date, candidateName)
+    } else {
+      // No review exists, redirect to quiz preview to generate one
+      showNotification("Aucune analyse IA disponible. Redirection vers la page de quiz pour générer une analyse.", "info")
+      setTimeout(() => {
+        window.location.href = `/quiz-preview/${applicationId}`
+      }, 2000)
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération de l'analyse IA:", error)
+    showNotification("Erreur lors de la récupération de l'analyse IA", "error")
+  }
+}
+
+function showAIAnalysisModal(review, reviewDate, candidateName) {
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay ai-analysis-modal"
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  `
+  
+  const modalContent = document.createElement("div")
+  modalContent.style.cssText = `
+    background: #1e293b;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    border: 1px solid #475569;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    position: relative;
+  `
+  
+  const header = document.createElement("div")
+  header.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #475569;
+  `
+  
+  const title = document.createElement("h2")
+  title.textContent = `Analyse IA - ${candidateName}`
+  title.style.cssText = `
+    color: #f1f5f9;
+    margin: 0;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  `
+  title.innerHTML = `<i class="fas fa-robot"></i> Analyse IA - ${candidateName}`
+  
+  const closeBtn = document.createElement("button")
+  closeBtn.innerHTML = '<i class="fas fa-times"></i>'
+  closeBtn.style.cssText = `
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+  `
+  closeBtn.onclick = () => document.body.removeChild(modal)
+  
+  const reviewDateElement = document.createElement("div")
+  reviewDateElement.textContent = `Analyse générée le ${new Date(reviewDate).toLocaleDateString('fr-FR')}`
+  reviewDateElement.style.cssText = `
+    color: #94a3b8;
+    font-size: 0.9rem;
+    font-style: italic;
+    margin-bottom: 1rem;
+    text-align: center;
+  `
+  
+  const content = document.createElement("div")
+  content.style.cssText = `
+    color: #e2e8f0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    font-size: 0.95rem;
+    background: #0f172a;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #334155;
+  `
+  content.textContent = review
+  
+  header.appendChild(title)
+  header.appendChild(closeBtn)
+  modalContent.appendChild(header)
+  modalContent.appendChild(reviewDateElement)
+  modalContent.appendChild(content)
+  modal.appendChild(modalContent)
+  
+  document.body.appendChild(modal)
+  
+  // Close modal when clicking outside
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal)
+    }
   }
 }
 

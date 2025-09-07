@@ -1,8 +1,8 @@
 import os
 from fastapi import APIRouter, Query, Depends, requests
+import requests as req
 from databasehr.database import SessionLocal
-from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments, Quiz, QuizAttempt, QuizQuestion, QuizAnswer
-from databasehr.models import Application, Job, ProfileCandidat, Contact, Department, JobSkill, Company
+from databasehr.models import Application, Job, ProfileCandidat, Contact, Employee, Department, Company, HRAdmin, AdminDepartments, Quiz, QuizAttempt, QuizQuestion, QuizAnswer, JobSkill
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from sqlalchemy.orm import Session, joinedload
@@ -1465,5 +1465,237 @@ async def analyze_quiz_with_ai(application_id: int, db: Session = Depends(get_db
         print(f"\n❌ ERROR during AI analysis: {str(e)}")
         print(f"{'='*80}\n")
         return {"success": False, "message": f"Error during AI analysis: {str(e)}"}
+    finally:
+        db.close()
+
+@router.post("/api/applications/{application_id}/ai-analyze-quiz")
+async def ai_analyze_quiz(application_id: int, db: Session = Depends(get_db)):
+    """
+    AI Analyzer for Quiz - Collects candidate profile, job info, and quiz data into structured JSON
+    """
+    try:
+        # Get the application
+        application = db.query(Application).filter(Application.id == application_id).first()
+        if not application:
+            return {"success": False, "message": "Application not found"}
+        
+        # Get job information
+        job = db.query(Job).filter(Job.id == application.job_id).first()
+        if not job:
+            return {"success": False, "message": "Job not found"}
+        
+        # Get job skills
+        job_skills = db.query(JobSkill).filter(JobSkill.job_id == job.id).all()
+        
+        # Get candidate profile with all related data
+        candidate = db.query(ProfileCandidat).options(
+            joinedload(ProfileCandidat.contact),
+            joinedload(ProfileCandidat.analyse)
+        ).filter(ProfileCandidat.id == application.candidate_profile_id).first()
+        
+        if not candidate:
+            return {"success": False, "message": "Candidate profile not found"}
+        
+        # Get quiz information
+        quiz = db.query(Quiz).filter(
+            Quiz.job_id == application.job_id,
+            Quiz.candidate_id == application.candidate_profile_id
+        ).first()
+        
+        quiz_data = None
+        if quiz:
+            # Get quiz questions
+            questions = db.query(QuizQuestion).filter(
+                QuizQuestion.quiz_id == quiz.id
+            ).order_by(QuizQuestion.question_order).all()
+            
+            # Get quiz attempt
+            quiz_attempt = db.query(QuizAttempt).filter(
+                QuizAttempt.quiz_id == quiz.id,
+                QuizAttempt.candidate_id == application.candidate_profile_id,
+                QuizAttempt.status == 'completed'
+            ).first()
+            
+            # Get user answers
+            user_answers = {}
+            if quiz_attempt:
+                answers = db.query(QuizAnswer).filter(
+                    QuizAnswer.attempt_id == quiz_attempt.id
+                ).all()
+                
+                for answer in answers:
+                    try:
+                        import json
+                        selected_option = json.loads(answer.selected_options)
+                    except (json.JSONDecodeError, TypeError):
+                        selected_option = answer.selected_options
+                    
+                    user_answers[answer.question_id] = {
+                        "selected_option": selected_option,
+                        "is_correct": answer.is_correct,
+                        "time_taken_seconds": answer.time_taken_seconds
+                    }
+            
+            # Calculate score
+            score = 0
+            if quiz_attempt and quiz_attempt.total_questions > 0:
+                score = (quiz_attempt.total_correct / quiz_attempt.total_questions) * 100
+            
+            # Calculate duration
+            duration_seconds = None
+            if quiz_attempt and quiz_attempt.start_time and quiz_attempt.end_time:
+                duration_seconds = int((quiz_attempt.end_time - quiz_attempt.start_time).total_seconds())
+            
+            # Build quiz questions with answers
+            quiz_questions = []
+            for q in questions:
+                question_data = {
+                    "id": q.id,
+                    "skill_name": q.skill,
+                    "question_text": q.question_text,
+                    "options": q.options,
+                    "correct_answer": q.correct_answer,
+                    "difficulty": getattr(q, 'difficulty', None),
+                    "points": getattr(q, 'points', None),
+                    "question_order": q.question_order,
+                    "explanation": getattr(q, 'explanation', None)
+                }
+                
+                # Add user answer if available
+                if q.id in user_answers:
+                    question_data["user_answer"] = user_answers[q.id]
+                else:
+                    question_data["user_answer"] = None
+                
+                quiz_questions.append(question_data)
+            
+            quiz_data = {
+                "quiz_info": {
+                    "id": quiz.id,
+                    "title": quiz.title,
+                    "description": quiz.description,
+                    "time_limit": quiz.time_limit,
+                    "total_questions": quiz.total_questions,
+                    "status": quiz.status,
+                    "created_at": quiz.created_at.isoformat() if quiz.created_at else None
+                },
+                "attempt_info": {
+                    "id": quiz_attempt.id if quiz_attempt else None,
+                    "score": round(score, 1),
+                    "total_correct": quiz_attempt.total_correct if quiz_attempt else 0,
+                    "total_questions": quiz_attempt.total_questions if quiz_attempt else 0,
+                    "duration_seconds": duration_seconds,
+                    "start_time": quiz_attempt.start_time.isoformat() if quiz_attempt and quiz_attempt.start_time else None,
+                    "end_time": quiz_attempt.end_time.isoformat() if quiz_attempt and quiz_attempt.end_time else None,
+                    "status": quiz_attempt.status if quiz_attempt else None
+                },
+                "questions": quiz_questions
+            }
+        
+        # Build comprehensive analysis data
+        analysis_data = {
+            "application_info": {
+                "application_id": application.id,
+                "application_date": application.application_date.isoformat() if application.application_date else None,
+                "status": application.status,
+                "hr_rating": float(application.hr_rating) if application.hr_rating else None,
+                "hr_notes": application.hr_notes,
+                "interview_date": application.interview_date.isoformat() if application.interview_date else None,
+                "interview_notes": application.interview_notes,
+                "compatibility_score": float(application.compatibility_score) if application.compatibility_score else None,
+                "compatibility_reason": application.compatibility_reason
+            },
+            "job_info": {
+                "id": job.id,
+                "title": job.title,
+                "description": job.description,
+                "requirements": job.requirements,
+                "responsibilities": job.responsibilities,
+                "employment_type": job.employment_type,
+                "salary_min": float(job.salary_min) if job.salary_min else None,
+                "salary_max": float(job.salary_max) if job.salary_max else None,
+                "currency": job.currency,
+                "priority": job.priority,
+                "status": job.status,
+                "deadline": job.deadline.isoformat() if job.deadline else None,
+                "start_date": job.start_date.isoformat() if job.start_date else None,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "skills": [
+                    {
+                        "skill_name": skill.skill_name,
+                        "skill_level": skill.skill_level,
+                        "is_required": skill.is_required
+                    }
+                    for skill in job_skills
+                ]
+            },
+            "candidate_profile": {
+                "id": candidate.id,
+                "name": candidate.name,
+                "title": candidate.title,
+                "profile": candidate.profile,
+                "education": candidate.education,
+                "languages": candidate.languages,
+                "certificates": candidate.certificates,
+                "skills": candidate.skills,
+                "contact": {
+                    "email": candidate.contact.email if candidate.contact else None,
+                    "phone": candidate.contact.phone if candidate.contact else None,
+                    "linkedin": candidate.contact.linkedin if candidate.contact else None,
+                    "address": candidate.contact.address if candidate.contact else None
+                } if candidate.contact else None,
+                "analysis": candidate.analyse.analyse if candidate.analyse else None
+            },
+            "quiz_data": quiz_data
+        }
+        # Send data to N8N webhook for AI analysis
+        url = os.getenv("N8N_ANALYZE_QUIZ_WEBHOOK_URL")
+        if not url:
+            return {"success": False, "message": "N8N_ANALYZE_QUIZ_WEBHOOK_URL not configured"}
+        
+        response = req.post(url, json=analysis_data)
+        if response.status_code != 200:
+            return {"success": False, "message": f"Failed to send data to n8n. Status code: {response.status_code}"}
+        
+        # Get the AI review from N8N response
+        quiz_review = response.json().get("ReviewParagraph", "")
+        
+        # Store the quiz review in the database
+        application.quiz_review = quiz_review
+        application.quiz_review_date = datetime.now()
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "AI analysis data collected and stored successfully",
+            "analysis_data": analysis_data,
+            "quiz_review": quiz_review
+        }
+        
+    except Exception as e:
+        return {"success": False, "message": f"Error collecting analysis data: {str(e)}"}
+    finally:
+        db.close()
+
+@router.get("/api/applications/{application_id}/quiz-review")
+async def get_quiz_review(application_id: int, db: Session = Depends(get_db)):
+    """
+    Get the stored AI quiz review for a specific application
+    """
+    try:
+        # Get the application
+        application = db.query(Application).filter(Application.id == application_id).first()
+        if not application:
+            return {"success": False, "message": "Application not found"}
+        
+        return {
+            "success": True,
+            "quiz_review": application.quiz_review,
+            "quiz_review_date": application.quiz_review_date.isoformat() if application.quiz_review_date else None,
+            "has_review": application.quiz_review is not None
+        }
+        
+    except Exception as e:
+        return {"success": False, "message": f"Error retrieving quiz review: {str(e)}"}
     finally:
         db.close()
