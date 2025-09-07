@@ -1249,7 +1249,7 @@ function renderCandidateActions(app) {
       const safeCandidateName = String(candidateName).replace(/'/g, "\\'").replace(/"/g, '\\"')
       const safeJobTitle = String((currentJob && (currentJob.title || currentJob.job_title)) || "Poste").replace(/'/g, "\\'").replace(/"/g, '\\"')
       parts.push(`
-      <button class="btn-action recommend" onclick="showRecommendConfirmation(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
+      <button class="btn-action recommend" onclick="showRecommendModal(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
         <i class="fas fa-thumbs-up"></i> Recommander
       </button>
     `)
@@ -1359,6 +1359,17 @@ function showRecommendationDetails(applicationId) {
 
     const overlay = document.createElement('div')
     overlay.className = 'recommend-modal-overlay'
+    // Fallback inline styles in case CSS isn't loaded yet
+    overlay.style.position = 'fixed'
+    overlay.style.top = '0'
+    overlay.style.left = '0'
+    overlay.style.width = '100%'
+    overlay.style.height = '100%'
+    overlay.style.display = 'flex'
+    overlay.style.alignItems = 'center'
+    overlay.style.justifyContent = 'center'
+    overlay.style.zIndex = '30000'
+    overlay.style.background = overlay.style.background || 'rgba(0,0,0,0.75)'
 
     overlay.innerHTML = `
       <div class="recommend-modal" role="dialog" aria-modal="true">
@@ -1378,12 +1389,153 @@ function showRecommendationDetails(applicationId) {
       </div>
     `
 
+    // Close on backdrop click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove()
+      }
+    })
+
     document.body.appendChild(overlay)
   } catch (e) {
     console.error('Erreur lors de l\'affichage du commentaire de recommandation:', e)
     if (typeof showNotification === 'function') {
       showNotification("Impossible d'afficher le commentaire de recommandation", 'error')
     }
+  }
+}
+
+// Copie du modal de recommandation du dashboard pour un rendu identique
+function showRecommendModal(applicationId, candidateName, jobTitle) {
+  if (!currentUser || currentUser.role !== "department_head") {
+    showNotification("Seuls les chefs de département peuvent recommander des candidatures", "warning")
+    return
+  }
+
+  const existingModal = document.querySelector(".recommend-modal-overlay")
+  if (existingModal) existingModal.remove()
+
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay recommend-modal-overlay"
+  modal.style.cssText = `
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px);
+display: flex; align-items: center; justify-content: center;
+z-index: 25000; padding: 2rem; opacity: 0; transition: opacity 0.3s ease;`
+
+  modal.innerHTML = `
+<div class="modal-content recommend-modal" style="
+background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+border: 2px solid rgba(243, 156, 18, 0.4);
+border-radius: 20px; max-width: 550px; width: 95%; max-height: 85vh;
+overflow: hidden; display: flex; flex-direction: column;
+box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+transform: scale(0.95); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+  <div class="modal-header" style="flex-shrink: 0; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 1.5rem 2rem; border-bottom: none; position: relative; border-radius: 20px 20px 0 0;">
+    <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+      <i class="fas fa-thumbs-up" style="color: #f39c12;"></i>
+      Recommander cette candidature
+    </h3>
+    <button class="modal-close" onclick="closeRecommendModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-size: 1.2rem;">&times;</button>
+  </div>
+  <div class="modal-body" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 2rem; background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);">
+    <div class="candidate-info-modal" style="display: flex; align-items: center; gap: 1.5rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05)); border: 1px solid rgba(243, 156, 18, 0.3); border-radius: 16px; margin-bottom: 2rem; position: relative; overflow: hidden;">
+      <div class="candidate-avatar-modal" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f39c12, #e67e22); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);">${(candidateName || '').split(' ').map(n=>n[0]).join('')}</div>
+      <div>
+        <h4 style="color: #f8fafc; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 700;">${candidateName}</h4>
+        <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Poste:</strong> ${jobTitle}</p>
+        <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Votre rôle:</strong> Chef de département</p>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom: 2rem;">
+      <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; color: #f1f5f9; font-weight: 600; font-size: 0.95rem;">
+        <i class="fas fa-comment" style="color: #f39c12;"></i>
+        Commentaire de recommandation *
+      </label>
+      <textarea id="recommendationComment" class="form-textarea" placeholder="Expliquez pourquoi vous recommandez ce candidat (compétences, expérience, adéquation au poste...)..." rows="4" required style="width: 100%; padding: 1rem; border: 2px solid rgba(203, 213, 225, 0.3); border-radius: 12px; font-size: 0.95rem; transition: all 0.3s; background: rgba(248, 250, 252, 0.95); color: #1e293b; font-weight: 500; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); font-family: inherit; resize: vertical; line-height: 1.5;"></textarea>
+      <small class="form-help" style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem; font-style: italic; display: flex; align-items: center; gap: 0.5rem;">💡 Ce commentaire sera visible par les recruteurs et super admins</small>
+    </div>
+    <div class="form-group" style="margin-bottom: 2rem;">
+      <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; color: #f1f5f9; font-weight: 600; font-size: 0.95rem;">
+        <i class="fas fa-flag" style="color: #f39c12;"></i>
+        Niveau de priorité de votre recommandation
+      </label>
+      <select id="recommendationPriority" class="form-select" style="width: 100%; padding: 1rem; border: 2px solid rgba(203, 213, 225, 0.3); border-radius: 12px; font-size: 0.95rem; transition: all 0.3s; background: rgba(248, 250, 252, 0.95); color: #1e293b; font-weight: 500; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); cursor: pointer;">
+        <option value="normal">📋 Recommandation normale</option>
+        <option value="high">⭐ Recommandation forte</option>
+        <option value="urgent">🔥 Recommandation urgente</option>
+      </select>
+      <small class="form-help" style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem; font-style: italic; display: flex; align-items: center; gap: 0.5rem;">💡 Choisissez le niveau selon l'adéquation du candidat</small>
+    </div>
+    <div class="recommendation-info" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05)); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; padding: 1.5rem; margin-top: 2rem; position: relative;">
+      <h5 style="margin: 0 0 1rem 0; color: #f8fafc; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+        Cette action va :
+      </h5>
+      <ul style="margin: 0; padding-left: 1.5rem; list-style: none;">
+        <li style="margin: 0.75rem 0; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 0.75rem;"><i class="fas fa-star" style="color: #f59e0b; width: 20px; font-size: 1rem;"></i> Marquer la candidature comme recommandée</li>
+        <li style="margin: 0.75rem 0; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 0.75rem;"><i class="fas fa-bell" style="color: #17a2b8; width: 20px; font-size: 1rem;"></i> Notifier les recruteurs et super admins</li>
+        <li style="margin: 0.75rem 0; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 0.75rem;"><i class="fas fa-arrow-up" style="color: #28a745; width: 20px; font-size: 1rem;"></i> Donner une priorité élevée à cette candidature</li>
+        <li style="margin: 0.75rem 0; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 0.75rem;"><i class="fas fa-user-tie" style="color: #007bff; width: 20px; font-size: 1rem;"></i> Associer votre nom à cette recommandation</li>
+      </ul>
+    </div>
+  </div>
+  <div class="modal-footer" style="flex-shrink: 0; display: flex; justify-content: flex-end; gap: 1rem; padding: 1.5rem 2rem; border-top: 1px solid rgba(59, 130, 246, 0.2); background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 0 0 20px 20px;">
+    <button class="btn-secondary" onclick="closeRecommendModal()" style="padding: 0.875rem 1.75rem; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; background: linear-gradient(135deg, #64748b, #475569); color: white; border: 1px solid rgba(100, 116, 139, 0.3);"><i class="fas fa-times"></i> Annuler</button>
+    <button class="btn-primary recommend" onclick="confirmRecommendation(${applicationId})" style="padding: 0.875rem 1.75rem; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: 1px solid rgba(243, 156, 18, 0.3); box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);"><i class="fas fa-thumbs-up"></i> Confirmer la recommandation</button>
+  </div>
+</div>`
+
+  document.body.appendChild(modal)
+  document.body.style.overflow = "hidden"
+  requestAnimationFrame(() => {
+    modal.style.opacity = "1"
+    const modalContent = modal.querySelector(".recommend-modal")
+    if (modalContent) modalContent.style.transform = "scale(1)"
+  })
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeRecommendModal() })
+}
+
+function closeRecommendModal() {
+  const modal = document.querySelector(".recommend-modal-overlay")
+  if (!modal) return
+  modal.style.opacity = "0"
+  const modalContent = modal.querySelector(".recommend-modal")
+  if (modalContent) modalContent.style.transform = "scale(0.95)"
+  setTimeout(() => { if (modal.parentElement) modal.remove(); document.body.style.overflow = "auto" }, 300)
+}
+
+async function confirmRecommendation(applicationId) {
+  try {
+    const commentElement = document.getElementById("recommendationComment")
+    const priorityElement = document.getElementById("recommendationPriority")
+    if (!commentElement || !priorityElement) {
+      showNotification("Erreur: éléments du formulaire non trouvés", "error")
+      return
+    }
+    const comment = commentElement.value.trim()
+    const priority = priorityElement.value
+    if (!comment) {
+      showNotification("Le commentaire de recommandation est obligatoire", "warning"); commentElement.focus(); return
+    }
+    if (comment.length < 10) {
+      showNotification("Le commentaire doit contenir au moins 10 caractères", "warning"); commentElement.focus(); return
+    }
+    closeRecommendModal(); showLoading("Traitement de votre recommandation...")
+    const response = await fetch(`/api/applications/${applicationId}/recommend`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ comment, priority }) })
+    const result = await response.json(); hideLoading()
+    if (response.ok && (result.success || result.message)) {
+      showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
+      if (result.recommended_by || result.recommendation_comment) {
+        showNotification("🎯 Les recruteurs et super admins ont été notifiés de votre recommandation", "info")
+      }
+      setTimeout(() => { loadJobData && loadJobData() }, 600)
+    } else {
+      showNotification(result.message || "Erreur lors de la recommandation", "error")
+    }
+  } catch (error) {
+    console.error("❌ Erreur réseau recommandation candidature:", error)
+    hideLoading(); showNotification("❌ Erreur de connexion lors de la recommandation", "error")
   }
 }
 
@@ -1572,11 +1724,11 @@ function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
         </div>
         
         <div class="recommendation-form">
-          <label for="recommendationComment">Commentaire de recommandation :</label>
-          <textarea id="recommendationComment" placeholder="Expliquez pourquoi vous recommandez ce candidat..." rows="3" required></textarea>
+          <label for="recommendationComment_${applicationId}">Commentaire de recommandation :</label>
+          <textarea id="recommendationComment_${applicationId}" placeholder="Expliquez pourquoi vous recommandez ce candidat..." rows="3" required></textarea>
           
-          <label for="recommendationPriority">Niveau de recommandation :</label>
-          <select id="recommendationPriority">
+          <label for="recommendationPriority_${applicationId}">Niveau de recommandation :</label>
+          <select id="recommendationPriority_${applicationId}">
             <option value="normal">Recommandation normale</option>
             <option value="high">Recommandation forte</option>
             <option value="urgent">Recommandation urgente</option>
@@ -1609,8 +1761,8 @@ function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
 
 async function confirmRecommendApplication(applicationId) {
   try {
-    const commentElement = document.getElementById("recommendationComment")
-    const priorityElement = document.getElementById("recommendationPriority")
+    const commentElement = document.getElementById(`recommendationComment_${applicationId}`)
+    const priorityElement = document.getElementById(`recommendationPriority_${applicationId}`)
 
     if (!commentElement || !priorityElement) {
       showNotification("Erreur: éléments du formulaire non trouvés", "error")
