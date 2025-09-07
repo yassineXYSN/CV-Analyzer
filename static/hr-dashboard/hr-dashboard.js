@@ -322,26 +322,26 @@ function renderApplicationsWithCompatibility(filter = "all") {
           <div class="compatibility-title">
             <i class="fas fa-chart-pie"></i>
             Compatibilité des compétences
-            <span class="compatibility-source ${isAICompatibility ? "ai" : "calculated"}">
-              <i class="fas fa-${isAICompatibility ? "robot" : "calculator"}"></i>
-              ${isAICompatibility ? "IA" : "CALCULÉ"}
-            </span>
-          </div>
-          <div class="compatibility-percentage-container">
-            <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
-              ${app.compatibility_percentage}%
-              <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
-            </div>
             ${
               isAICompatibility && hasAIReason
                 ? `
-            <button class="compatibility-ai-reason-btn" onclick="showAIReasonModal(${app.id}, '${app.compatibility_reason.replace(/'/g, "\\'")}')" title="Voir l'analyse détaillée de l'IA">
+            <span class="compatibility-source ai clickable" onclick="showAIReasonModal(${app.id}, '${app.compatibility_reason.replace(/'/g, "\\'")}')" title="Cliquer pour voir l'analyse détaillée">
               <i class="fas fa-brain"></i>
               <span>Analyse IA</span>
-            </button>
+              <i class="fas fa-external-link-alt"></i>
+            </span>
             `
-                : ""
+                : `
+            <span class="compatibility-source ${isAICompatibility ? "ai" : "calculated"}">
+              <i class="fas fa-${isAICompatibility ? "brain" : "calculator"}"></i>
+              ${isAICompatibility ? "IA" : "CALCULÉ"}
+            </span>
+            `
             }
+          </div>
+          <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
+            ${app.compatibility_percentage}%
+            <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
           </div>
         </div>
         <div class="compatibility-progress">
