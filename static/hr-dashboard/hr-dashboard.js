@@ -327,9 +327,21 @@ function renderApplicationsWithCompatibility(filter = "all") {
               ${isAICompatibility ? "IA" : "CALCULÉ"}
             </span>
           </div>
-          <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
-            ${app.compatibility_percentage}%
-            <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
+          <div class="compatibility-percentage-container">
+            <div class="compatibility-percentage ${getCompatibilityClass(app.compatibility_percentage)}">
+              ${app.compatibility_percentage}%
+              <i class="fas fa-${getCompatibilityIcon(app.compatibility_percentage)}"></i>
+            </div>
+            ${
+              isAICompatibility && hasAIReason
+                ? `
+            <button class="compatibility-ai-reason-btn" onclick="showAIReasonModal(${app.id}, '${app.compatibility_reason.replace(/'/g, "\\'")}')" title="Voir la raison de l'IA">
+              <i class="fas fa-robot"></i>
+              <span>Raison IA</span>
+            </button>
+            `
+                : ""
+            }
           </div>
         </div>
         <div class="compatibility-progress">
@@ -369,15 +381,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
       <button class="app-btn schedule" onclick="openScheduler(${app.id}, ${app.candidate_id})">
     <i class="fas fa-calendar-check"></i> Planifier Entretien
   </button>
-    ${
-      isAICompatibility && hasAIReason
-        ? `
-      <button class="app-btn ai-reason" onclick="showAIReasonModal(${app.id}, '${app.compatibility_reason.replace(/'/g, "\\'")}')">
-        <i class="fas fa-robot"></i> Raison IA
-      </button>
-    `
-        : ""
-    }
     ${renderApplicationActionButtons(app)}
   </div>
 </div>
