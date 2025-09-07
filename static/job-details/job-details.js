@@ -1257,7 +1257,7 @@ function renderCandidateActions(app) {
     if (app.is_recommended) {
       parts.push(`
       <button class="btn-action recommend" onclick="showRecommendationDetails(${app.id})">
-        <i class="fas fa-comment"></i> Déjà recommandé
+        <i class="fas fa-comment"></i> Commentaire
       </button>
     `)
     }
@@ -1271,8 +1271,10 @@ function renderCandidateActions(app) {
 
   // Pour les recruteurs
   if (currentUser && currentUser.role === "recruiter") {
+    const parts = []
+    
     if (app.status === "pending") {
-      return `
+      parts.push(`
       <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
         <i class="fas fa-eye"></i> Examiner
       </button>
@@ -1282,21 +1284,18 @@ function renderCandidateActions(app) {
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-times"></i> Rejeter
       </button>
-    `
+      `)
     } else if (app.status === "reviewed") {
-      return `
-      <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
-        <i class="fas fa-calendar"></i> Programmer entretien
-      </button>
+      parts.push(`
       <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || "Département"}')">
         <i class="fas fa-check-circle"></i> Accepter
       </button>
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-times"></i> Rejeter
       </button>
-    `
+      `)
     } else if (app.status === "interview_scheduled") {
-      return `
+      parts.push(`
       <button class="btn-action complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
         <i class="fas fa-check-double"></i> Entretien terminé
       </button>
@@ -1306,40 +1305,72 @@ function renderCandidateActions(app) {
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-times"></i> Rejeter
       </button>
-    `
+      `)
     } else if (app.status === "accepted_pending_validation") {
-      return `
+      parts.push(`
       <span class="status-badge pending-validation">
         <i class="fas fa-clock"></i> En attente validation admin
       </span>
-    `
+      `)
     }
+    
+    // Ajouter le bouton de recommandation si le candidat est recommandé
+    if (app.is_recommended) {
+      parts.push(`
+      <button class="btn-action recommend" onclick="showRecommendationDetails(${app.id})">
+        <i class="fas fa-comment"></i> Commentaire
+      </button>
+      `)
+    }
+    
+    // Toujours ajouter le bouton voir profil
+    parts.push(`
+    <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+      <i class="fas fa-info-circle"></i> Voir profil
+    </button>
+    `)
+    
+    return parts.join("\n")
   }
 
   // Pour les administrateurs
   if (currentUser && currentUser.role === "super_admin") {
+    const parts = []
+    
     if (app.status === "accepted_pending_validation") {
-      return `
+      parts.push(`
       <button class="btn-action validate" onclick="showAdminValidationModal(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-user-shield"></i> Valider
       </button>
-      <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
-        <i class="fas fa-info-circle"></i> Voir profil
-      </button>
-    `
+      `)
     } else if (app.status === "pending" || app.status === "reviewed" || app.status === "interview_scheduled") {
-      return `
+      parts.push(`
       <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || "Département"}')">
         <i class="fas fa-check"></i> Accepter définitivement
       </button>
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-times"></i> Rejeter
       </button>
-      <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
-        <i class="fas fa-info-circle"></i> Voir profil
-      </button>
-    `
+      `)
     }
+    
+    // Ajouter le bouton de recommandation si le candidat est recommandé
+    if (app.is_recommended) {
+      parts.push(`
+      <button class="btn-action recommend" onclick="showRecommendationDetails(${app.id})">
+        <i class="fas fa-comment"></i> Commentaire
+      </button>
+      `)
+    }
+    
+    // Toujours ajouter le bouton voir profil
+    parts.push(`
+    <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+      <i class="fas fa-info-circle"></i> Voir profil
+    </button>
+    `)
+    
+    return parts.join("\n")
   }
 
   // Pour tous les autres cas
