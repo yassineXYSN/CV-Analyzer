@@ -6,11 +6,11 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from auth_utils import hash_password, create_admin_user, authenticate_user
 from databasehr.database import get_db
-from databasehr.models import Company, Employee, AdminCompanyAccess, HRAdmin
-from datetime import datetime
+from databasehr.models import Company, Employee, AdminCompanyAccess, HRAdmin, Job, Application, Department, ActivityLog
+from sqlalchemy import func, extract
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -423,15 +423,175 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
 @router.get("/api/stats")
 async def get_admin_stats(db: Session = Depends(get_db)):
     """Récupérer les statistiques pour le dashboard"""
+    
+    # Statistiques de base
     total_companies = db.query(Company).count()
-    total_users = db.query(Employee).count() + db.query(HRAdmin).count()
+    total_employees = db.query(Employee).count()
+    total_hr_admins = db.query(HRAdmin).count()
+    total_users = total_employees + total_hr_admins
+    
+    # Statistiques des entreprises actives (avec setup complété)
+    active_companies = db.query(Company).filter(Company.setup_completed == 1).count()
+    
+    # Nouvelles entreprises (derniers 30 jours)
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    recent_companies = db.query(Company).filter(Company.created_at >= thirty_days_ago).count()
+    
+    # Statistiques des emplois
+    total_jobs = db.query(Job).count()
+    active_jobs = db.query(Job).filter(Job.status == 'active').count()
+    urgent_jobs = db.query(Job).filter(Job.priority == 'urgent').count()
+    
+    # Statistiques des candidatures
+    total_applications = db.query(Application).count()
+    pending_applications = db.query(Application).filter(Application.status == 'pending').count()
+    
+    # Statistiques des départements
+    total_departments = db.query(Department).count()
     
     return {
         "total_companies": total_companies,
         "total_users": total_users,
-        "active_companies": total_companies,
-        "recent_registrations": 0
+        "total_employees": total_employees,
+        "total_hr_admins": total_hr_admins,
+        "active_companies": active_companies,
+        "recent_companies": recent_companies,
+        "total_jobs": total_jobs,
+        "active_jobs": active_jobs,
+        "urgent_jobs": urgent_jobs,
+        "total_applications": total_applications,
+        "pending_applications": pending_applications,
+        "total_departments": total_departments
     }
+
+@router.get("/api/analytics")
+async def get_analytics_data(db: Session = Depends(get_db)):
+    """Récupérer les données d'analytics détaillées"""
+    
+    # Croissance des entreprises (derniers 6 mois)
+    six_months_ago = datetime.now() - timedelta(days=180)
+    company_growth = db.query(
+        extract('month', Company.created_at).label('month'),
+        extract('year', Company.created_at).label('year'),
+        func.count(Company.id).label('count')
+    ).filter(
+        Company.created_at >= six_months_ago
+    ).group_by(
+        extract('year', Company.created_at),
+        extract('month', Company.created_at)
+    ).order_by('year', 'month').all()
+    
+    # Répartition des utilisateurs par rôle
+    user_distribution = {
+        "employees": db.query(Employee).count(),
+        "hr_admins": db.query(HRAdmin).count(),
+        "super_admins": db.query(HRAdmin).filter(HRAdmin.role == 'super_admin').count()
+    }
+    
+    # Statistiques des emplois par statut
+    job_stats = db.query(
+        Job.status,
+        func.count(Job.id).label('count')
+    ).group_by(Job.status).all()
+    
+    # Statistiques des candidatures par statut
+    application_stats = db.query(
+        Application.status,
+        func.count(Application.id).label('count')
+    ).group_by(Application.status).all()
+    
+    # Performance système (temps de réponse moyen - simulation)
+    system_performance = {
+        "avg_response_time": 245,  # ms - à calculer réellement
+        "uptime": 99.9,  # % - à calculer réellement
+        "active_sessions": db.query(HRAdmin).filter(HRAdmin.token_expires > datetime.now()).count()
+    }
+    
+    return {
+        "company_growth": [{"month": int(row.month), "year": int(row.year), "count": row.count} for row in company_growth],
+        "user_distribution": user_distribution,
+        "job_stats": [{"status": row.status, "count": row.count} for row in job_stats],
+        "application_stats": [{"status": row.status, "count": row.count} for row in application_stats],
+        "system_performance": system_performance
+    }
+
+@router.get("/api/recent-activity")
+async def get_recent_activity(db: Session = Depends(get_db)):
+    """Récupérer l'activité récente du système"""
+    
+    # Activité récente (derniers 7 jours)
+    seven_days_ago = datetime.now() - timedelta(days=7)
+    
+    # Récupérer les dernières activités depuis les logs
+    recent_activities = db.query(ActivityLog).filter(
+        ActivityLog.created_at >= seven_days_ago
+    ).order_by(ActivityLog.created_at.desc()).limit(10).all()
+    
+    # Si pas de logs, créer des activités basées sur les données récentes
+    if not recent_activities:
+        activities = []
+        
+        # Nouvelles entreprises
+        new_companies = db.query(Company).filter(
+            Company.created_at >= seven_days_ago
+        ).order_by(Company.created_at.desc()).limit(3).all()
+        
+        for company in new_companies:
+            activities.append({
+                "icon": "fas fa-building",
+                "title": "Nouvelle entreprise",
+                "description": f"{company.company_name} créée",
+                "time": company.created_at.strftime("%d/%m/%Y à %H:%M")
+            })
+        
+        # Nouveaux emplois
+        new_jobs = db.query(Job).filter(
+            Job.created_at >= seven_days_ago
+        ).order_by(Job.created_at.desc()).limit(3).all()
+        
+        for job in new_jobs:
+            activities.append({
+                "icon": "fas fa-briefcase",
+                "title": "Nouveau poste",
+                "description": f"{job.title} publié",
+                "time": job.created_at.strftime("%d/%m/%Y à %H:%M")
+            })
+        
+        # Nouvelles candidatures
+        new_applications = db.query(Application).filter(
+            Application.created_at >= seven_days_ago
+        ).order_by(Application.created_at.desc()).limit(3).all()
+        
+        for app in new_applications:
+            activities.append({
+                "icon": "fas fa-user-plus",
+                "title": "Nouvelle candidature",
+                "description": f"Candidature reçue",
+                "time": app.created_at.strftime("%d/%m/%Y à %H:%M")
+            })
+        
+        return activities[:10]
+    
+    # Convertir les logs en format d'activité
+    activities = []
+    for log in recent_activities:
+        icon_map = {
+            'company': 'fas fa-building',
+            'employee': 'fas fa-user',
+            'job': 'fas fa-briefcase',
+            'application': 'fas fa-file-alt',
+            'department': 'fas fa-sitemap',
+            'user': 'fas fa-user-cog'
+        }
+        
+        activities.append({
+            "icon": icon_map.get(log.entity_type, 'fas fa-info-circle'),
+            "title": log.description,
+            "description": f"{log.action_type} {log.entity_type}",
+            "time": log.created_at.strftime("%d/%m/%Y à %H:%M")
+        })
+    
+    return activities
 
 @router.get("/api/companies/{company_id}/admins")
 async def get_company_admins(company_id: int, db: Session = Depends(get_db)):
