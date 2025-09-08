@@ -1094,13 +1094,13 @@
                             <div class="job-stats">
                                 {% if job.salary_min and job.salary_max %}
                                 <span class="salary">
-                                    <i class="fas fa-euro-sign"></i>
-                                    {{ "{:,.0f}".format(job.salary_min) }} - {{ "{:,.0f}".format(job.salary_max) }} {{ job.currency }}
+                                    <i class="fas fa-dinar-sign"></i>
+                                    {{ "{:,.0f}".format(job.salary_min) }} - {{ "{:,.0f}".format(job.salary_max) }} TND
                                 </span>
                                 {% elif job.salary_min %}
                                 <span class="salary">
-                                    <i class="fas fa-euro-sign"></i>
-                                    À partir de {{ "{:,.0f}".format(job.salary_min) }} {{ job.currency }}
+                                    <i class="fas fa-dinar-sign"></i>
+                                    À partir de {{ "{:,.0f}".format(job.salary_min) }} TND
                                 </span>
                                 {% endif %}
                                 <span class="applications">

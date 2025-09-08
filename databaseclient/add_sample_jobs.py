@@ -64,8 +64,8 @@ def add_sample_jobs():
                 "requirements": "• 3+ années d'expérience en développement web\n• Maîtrise de Python et Django\n• Expérience avec React et JavaScript moderne\n• Connaissance des bases de données relationnelles\n• Expérience avec Git et les méthodologies Agile",
                 "responsibilities": "• Développer et maintenir des applications web\n• Collaborer avec l'équipe de design pour implémenter les interfaces\n• Optimiser les performances des applications\n• Participer aux code reviews\n• Mentorer les développeurs juniors",
                 "employment_type": "CDI",
-                "salary_min": 45000,
-                "salary_max": 65000,
+                "salary_min": 148500,
+                "salary_max": 214500,
                 "department_name": "Développement"
             },
             {
@@ -74,8 +74,8 @@ def add_sample_jobs():
                 "requirements": "• Master en Data Science, Statistiques ou domaine similaire\n• 4+ années d'expérience en analyse de données\n• Maîtrise de Python (pandas, scikit-learn, TensorFlow)\n• Expérience avec SQL et bases de données\n• Connaissance des outils de visualisation (Tableau, Power BI)",
                 "responsibilities": "• Analyser des datasets complexes\n• Développer des modèles de machine learning\n• Créer des dashboards et rapports\n• Présenter les insights aux équipes métier\n• Optimiser les algorithmes existants",
                 "employment_type": "CDI",
-                "salary_min": 55000,
-                "salary_max": 75000,
+                "salary_min": 181500,
+                "salary_max": 247500,
                 "department_name": "Data & Analytics"
             },
             {
@@ -84,8 +84,8 @@ def add_sample_jobs():
                 "requirements": "• 3+ années d'expérience en design UX/UI\n• Maîtrise de Figma, Sketch ou Adobe XD\n• Portfolio démontrant des projets web et mobile\n• Connaissance des principes d'accessibilité\n• Expérience en recherche utilisateur",
                 "responsibilities": "• Concevoir des wireframes et prototypes\n• Réaliser des tests utilisateurs\n• Créer des design systems cohérents\n• Collaborer avec les équipes de développement\n• Analyser les métriques d'usage",
                 "employment_type": "CDI",
-                "salary_min": 40000,
-                "salary_max": 55000,
+                "salary_min": 132000,
+                "salary_max": 181500,
                 "department_name": "Design"
             },
             {
@@ -94,8 +94,8 @@ def add_sample_jobs():
                 "requirements": "• 5+ années d'expér ience en marketing digital\n• Maîtrise des outils Google Ads, Facebook Ads\n• Expérience en SEO/SEA et analytics\n• Connaissance des outils d'automation marketing\n• Excellentes compétences rédactionnelles",
                 "responsibilities": "• Développer la stratégie marketing digital\n• Gérer les campagnes publicitaires en ligne\n• Analyser les performances et ROI\n• Créer du contenu engageant\n• Manager l'équipe marketing junior",
                 "employment_type": "CDI",
-                "salary_min": 50000,
-                "salary_max": 70000,
+                "salary_min": 165000,
+                "salary_max": 231000,
                 "department_name": "Marketing"
             },
             {
@@ -104,8 +104,8 @@ def add_sample_jobs():
                 "requirements": "• Étudiant en informatique (Bac+3/4/5)\n• Bases en HTML, CSS, JavaScript\n• Première expérience avec React souhaitée\n• Motivation et envie d'apprendre\n• Disponibilité 6 mois minimum",
                 "responsibilities": "• Développer des composants React\n• Intégrer des maquettes design\n• Participer aux daily meetings\n• Apprendre les bonnes pratiques\n• Contribuer aux projets de l'équipe",
                 "employment_type": "Stage",
-                "salary_min": 800,
-                "salary_max": 1200,
+                "salary_min": 2640,
+                "salary_max": 3960,
                 "department_name": "Développement"
             },
             {
@@ -114,8 +114,8 @@ def add_sample_jobs():
                 "requirements": "• 5+ années d'expérience DevOps\n• Expertise AWS/Azure/GCP\n• Maîtrise Docker, Kubernetes\n• Expérience CI/CD (Jenkins, GitLab CI)\n• Connaissance Terraform, Ansible",
                 "responsibilities": "• Concevoir l'architecture cloud\n• Mettre en place les pipelines CI/CD\n• Former les équipes internes\n• Optimiser les coûts infrastructure\n• Assurer la sécurité des déploiements",
                 "employment_type": "Freelance",
-                "salary_min": 600,
-                "salary_max": 800,
+                "salary_min": 1980,
+                "salary_max": 2640,
                 "department_name": "Développement"
             },
             {
@@ -124,8 +124,8 @@ def add_sample_jobs():
                 "requirements": "• 3+ années d'expérience en BI\n• Maîtrise SQL avancé\n• Expérience Power BI ou Tableau\n• Connaissance des entrepôts de données\n• Compétences en analyse statistique",
                 "responsibilities": "• Créer des tableaux de bord\n• Analyser les KPIs business\n• Automatiser les rapports\n• Former les utilisateurs finaux\n• Optimiser les requêtes de données",
                 "employment_type": "CDI",
-                "salary_min": 42000,
-                "salary_max": 58000,
+                "salary_min": 138600,
+                "salary_max": 191400,
                 "department_name": "Data & Analytics"
             },
             {
@@ -134,8 +134,8 @@ def add_sample_jobs():
                 "requirements": "• 2+ années d'expérience en recrutement IT\n• Connaissance de l'écosystème tech\n• Maîtrise des outils de sourcing\n• Excellentes compétences relationnelles\n• Anglais courant",
                 "responsibilities": "• Sourcer et qualifier les candidats\n• Mener les entretiens de pré-sélection\n• Gérer les processus de recrutement\n• Développer la marque employeur\n• Analyser les métriques de recrutement",
                 "employment_type": "CDI",
-                "salary_min": 35000,
-                "salary_max": 45000,
+                "salary_min": 115500,
+                "salary_max": 148500,
                 "department_name": "Ressources Humaines"
             }
         ]

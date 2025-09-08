@@ -198,7 +198,7 @@ class Job(Base):
     employment_type = Column(Enum('CDI', 'CDD', 'Stage', 'Freelance'), nullable=False)
     salary_min = Column(DECIMAL(10,2))
     salary_max = Column(DECIMAL(10,2))
-    currency = Column(String(3), default='EUR')
+    currency = Column(String(3), default='TND')
     
     # Gestion du poste
     priority = Column(Enum('low', 'normal', 'urgent'), default='normal')

@@ -2455,7 +2455,7 @@ function renderDepartmentDetails(department, deptEmployees, deptJobs) {
                   <div class="item-avatar"><i class="fas fa-briefcase"></i></div>
                   <div class="item-info">
                     <strong>${job.title || "Titre non défini"}</strong>
-                    <span>${job.employment_type || "Type non défini"} - ${job.salary_min && job.salary_max ? `${job.salary_min}€ - ${job.salary_max}€` : "Salaire non spécifié"}</span>
+                    <span>${job.employment_type || "Type non défini"} - ${job.salary_min && job.salary_max ? `${job.salary_min} TND - ${job.salary_max} TND` : "Salaire non spécifié"}</span>
                     <small class="priority-${job.priority || "normal"}">${getPriorityLabel(job.priority || "normal")}</small>
                     ${job.assigned_employee_id ? '<span class="status-filled"><i class="fas fa-check"></i> Poste pourvu</span>' : ""}
                     ${job.skills && job.skills.length > 0 ? `<small><i class="fas fa-cogs"></i> ${job.skills.length} compétence(s)</small>` : ""}

@@ -168,7 +168,7 @@ class Job(Base):
     employment_type = Column(Enum('CDI', 'CDD', 'Stage', 'Freelance', name='job_employment_type'), nullable=False)
     salary_min = Column(Numeric(10, 2))
     salary_max = Column(Numeric(10, 2))
-    currency = Column(String(3), default='EUR')
+    currency = Column(String(3), default='TND')
     priority = Column(Enum('low', 'normal', 'urgent', name='job_priority'), default='normal')
     status = Column(Enum('draft', 'active', 'paused', 'closed', 'filled', name='job_status'), default='draft')
     assigned_employee_id = Column(Integer, ForeignKey("employees.id"))
@@ -458,7 +458,7 @@ def get_jobs_with_pagination(page=1, per_page=9, search_query=None, location=Non
                 'employment_type': job.employment_type,
                 'salary_min': float(job.salary_min) if job.salary_min else None,
                 'salary_max': float(job.salary_max) if job.salary_max else None,
-                'currency': job.currency or 'EUR',
+                'currency': job.currency or 'TND',
                 'description': job.description,
                 'requirements': job.requirements,
                 'responsibilities': job.responsibilities,
@@ -530,7 +530,7 @@ def get_job_by_id(job_id):
                 'employment_type': job.employment_type,
                 'salary_min': float(job.salary_min) if job.salary_min else None,
                 'salary_max': float(job.salary_max) if job.salary_max else None,
-                'currency': job.currency or 'EUR',
+                'currency': job.currency or 'TND',
                 'description': job.description,
                 'requirements': job.requirements,
                 'responsibilities': job.responsibilities,

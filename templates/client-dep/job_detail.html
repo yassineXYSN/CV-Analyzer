@@ -138,17 +138,17 @@
                     {% if job.salary_min or job.salary_max %}
                     <div class="content-section">
                         <h3 class="section-title">
-                            <i class="fas fa-euro-sign"></i>
+                            <i class="fas fa-dinar-sign"></i>
                             Salaire
                         </h3>
                         <div class="salary-info">
                             <div class="salary-amount">
                                 {% if job.salary_min and job.salary_max %}
-                                    {{ "{:,.0f}".format(job.salary_min) }} - {{ "{:,.0f}".format(job.salary_max) }} €
+                                    {{ "{:,.0f}".format(job.salary_min) }} - {{ "{:,.0f}".format(job.salary_max) }} TND
                                 {% elif job.salary_min %}
-                                    À partir de {{ "{:,.0f}".format(job.salary_min) }} €
+                                    À partir de {{ "{:,.0f}".format(job.salary_min) }} TND
                                 {% elif job.salary_max %}
-                                    Jusqu'à {{ "{:,.0f}".format(job.salary_max) }} €
+                                    Jusqu'à {{ "{:,.0f}".format(job.salary_max) }} TND
                                 {% endif %}
                             </div>
                             <div class="salary-period">par an</div>

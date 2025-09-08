@@ -241,9 +241,9 @@ function displayJobInfo() {
 
 function getSalaryText() {
   if (currentJob.salary_min && currentJob.salary_max) {
-    return `€ ${currentJob.salary_min} - ${currentJob.salary_max}`
+    return `${currentJob.salary_min} - ${currentJob.salary_max} TND`
   } else if (currentJob.salary_min) {
-    return `€ ${currentJob.salary_min}+`
+    return `${currentJob.salary_min}+ TND`
   }
   return "Non spécifié"
 }
