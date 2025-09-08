@@ -2,6 +2,8 @@
 let companies = []
 let users = []
 const companyAdmins = {} // Store admins by company ID
+let recentActivities = []
+const RECENT_ACTIVITY_LIMIT = 5
 
 // Variables for users table functionality
 let usersTableData = []
@@ -205,34 +207,8 @@ async function loadRecentActivity() {
   try {
     // Charger l'activité récente depuis l'API
     const response = await fetch('/admin/api/recent-activity')
-    const activities = await response.json()
-    
-    if (activities && activities.length > 0) {
-      activityList.innerHTML = activities.map(activity => `
-        <div class="activity-item">
-          <div class="activity-icon">
-            <i class="${activity.icon}"></i>
-          </div>
-          <div class="activity-content">
-            <p><strong>${activity.title}</strong> ${activity.description}</p>
-            <small>${activity.time}</small>
-          </div>
-        </div>
-      `).join("")
-    } else {
-      // Afficher un message si aucune activité récente
-      activityList.innerHTML = `
-        <div class="activity-item">
-          <div class="activity-icon">
-            <i class="fas fa-info-circle"></i>
-          </div>
-          <div class="activity-content">
-            <p><strong>Aucune activité récente</strong></p>
-            <small>Les activités apparaîtront ici</small>
-          </div>
-        </div>
-      `
-    }
+    recentActivities = await response.json()
+    renderRecentActivityList()
   } catch (error) {
     console.error("[v0] Error loading recent activity:", error)
     // Fallback message
@@ -248,6 +224,144 @@ async function loadRecentActivity() {
       </div>
     `
   }
+}
+
+function renderRecentActivityList() {
+  const activityList = document.getElementById("recent-activity-list")
+  if (!activityList) return
+
+  if (!recentActivities || recentActivities.length === 0) {
+    activityList.innerHTML = `
+      <div class="activity-item">
+        <div class="activity-icon">
+          <i class="fas fa-info-circle"></i>
+        </div>
+        <div class="activity-content">
+          <p><strong>Aucune activité récente</strong></p>
+          <small>Les activités apparaîtront ici</small>
+        </div>
+      </div>
+    `
+    return
+  }
+
+  const limited = recentActivities.slice(0, RECENT_ACTIVITY_LIMIT)
+  const listMarkup = limited.map(activity => `
+    <div class="activity-item">
+      <div class="activity-icon">
+        <i class="${activity.icon}"></i>
+      </div>
+      <div class="activity-content">
+        <p>
+          <strong>${activity.title}</strong> ${activity.description}
+          ${activity.company_name ? `<span class="activity-company">• ${activity.company_name}</span>` : ""}
+        </p>
+        <small>${activity.time}</small>
+      </div>
+    </div>
+  `).join("")
+
+  const showMoreButton = recentActivities.length > RECENT_ACTIVITY_LIMIT
+    ? `
+      <div class="activity-actions">
+        <button class="btn-view-all" onclick="openAllActivitiesModal()">
+          <i class="fas fa-list"></i> Voir tout (${recentActivities.length})
+        </button>
+      </div>
+    `
+    : ""
+
+  activityList.innerHTML = listMarkup + showMoreButton
+}
+
+function openAllActivitiesModal() {
+  // Remove existing if any
+  const existing = document.querySelector('.all-activities-overlay')
+  if (existing) existing.remove()
+
+  const overlay = document.createElement('div')
+  overlay.className = 'all-activities-overlay show'
+
+  const panel = document.createElement('div')
+  panel.className = 'all-activities-panel'
+
+  const header = document.createElement('div')
+  header.className = 'all-activities-header'
+  const companyOptions = (() => {
+    const set = new Map()
+    recentActivities.forEach(a => {
+      if (a.company_id || a.company_name) {
+        set.set(String(a.company_id || a.company_name), a.company_name || `Entreprise #${a.company_id}`)
+      }
+    })
+    return Array.from(set.entries())
+      .sort((a, b) => (a[1] || "").localeCompare(b[1] || ""))
+      .map(([id, name]) => `<option value="${id}">${name}</option>`)
+      .join("")
+  })()
+
+  header.innerHTML = `
+    <h3>
+      <i class="fas fa-clock"></i> Toutes les activités (${recentActivities.length})
+    </h3>
+    <div class="activities-filters">
+      <label for="activities-company-filter" class="sr-only">Filtrer par entreprise</label>
+      <select id="activities-company-filter" class="filter-select-small">
+        <option value="">Toutes les entreprises</option>
+        ${companyOptions}
+      </select>
+      <button class="close-details" aria-label="Fermer" onclick="this.closest('.all-activities-overlay').remove()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `
+
+  const body = document.createElement('div')
+  body.className = 'all-activities-body'
+  body.innerHTML = renderAllActivitiesList(recentActivities)
+
+  panel.appendChild(header)
+  panel.appendChild(body)
+  overlay.appendChild(panel)
+  document.body.appendChild(overlay)
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.remove()
+    }
+  })
+
+  const select = header.querySelector('#activities-company-filter')
+  if (select) {
+    select.addEventListener('change', () => {
+      const value = select.value
+      const filtered = value
+        ? recentActivities.filter(a => String(a.company_id || a.company_name) === value)
+        : recentActivities
+      body.innerHTML = renderAllActivitiesList(filtered)
+    })
+  }
+}
+
+function renderAllActivitiesList(list) {
+  return `
+    <div class="activity-list all-activities-list">
+      ${list.map(activity => `
+        <div class="activity-item">
+          <div class="activity-icon">
+            <i class="${activity.icon}"></i>
+          </div>
+          <div class="activity-content">
+            <p>
+              <strong>${activity.title}</strong> ${activity.description}
+              ${activity.company_name ? `<span class=\"activity-company\">• ${activity.company_name}</span>` : ""}
+            </p>
+            <small>${activity.time}</small>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `
 }
 
 // Analytics Functions

@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profil Entreprise - CV Analyzer Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        function googleTranslateElementInit() {
+            var config = {
+                pageLanguage: 'fr',
+                includedLanguages: 'fr,en,ar',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: true
+            };
+            if (document.getElementById('google_translate_global')) {
+                new google.translate.TranslateElement(config, 'google_translate_global');
+            }
+        }
+    </script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script src="/static/super_admin/gt-persist.js" defer></script>
+    <script src="/static/super_admin/gt-coloredbar.js" defer></script>
+    <script src="/static/super_admin/gt-hidebanner.js" defer></script>
     <link rel="stylesheet" href="/static/company-profile/company-profile.css">
 </head>
 <body>
@@ -49,6 +66,7 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <div id="google_translate_global" style="margin-right: 8px;"></div>
                     <button class="btn-back" onclick="goToDashboard()">
                         <i class="fas fa-arrow-left"></i>
                         Retour

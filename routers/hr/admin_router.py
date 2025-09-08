@@ -541,7 +541,9 @@ async def get_recent_activity(db: Session = Depends(get_db)):
                 "icon": "fas fa-building",
                 "title": "Nouvelle entreprise",
                 "description": f"{company.company_name} créée",
-                "time": company.created_at.strftime("%d/%m/%Y à %H:%M")
+                "time": company.created_at.strftime("%d/%m/%Y à %H:%M"),
+                "company_id": company.id,
+                "company_name": company.company_name
             })
         
         # Nouveaux emplois
@@ -550,11 +552,24 @@ async def get_recent_activity(db: Session = Depends(get_db)):
         ).order_by(Job.created_at.desc()).limit(3).all()
         
         for job in new_jobs:
+            # Récupérer le nom de l'entreprise liée au job
+            company_name = None
+            company_id = None
+            if getattr(job, "company", None):
+                company_name = getattr(job.company, "company_name", None)
+                company_id = getattr(job.company, "id", None)
+            else:
+                comp = db.query(Company).filter(Company.id == job.company_id).first()
+                if comp:
+                    company_name = comp.company_name
+                    company_id = comp.id
             activities.append({
                 "icon": "fas fa-briefcase",
                 "title": "Nouveau poste",
                 "description": f"{job.title} publié",
-                "time": job.created_at.strftime("%d/%m/%Y à %H:%M")
+                "time": job.created_at.strftime("%d/%m/%Y à %H:%M"),
+                "company_id": company_id,
+                "company_name": company_name
             })
         
         # Nouvelles candidatures
@@ -563,11 +578,25 @@ async def get_recent_activity(db: Session = Depends(get_db)):
         ).order_by(Application.created_at.desc()).limit(3).all()
         
         for app in new_applications:
+            # Récupérer l'entreprise via le job
+            company_name = None
+            company_id = None
+            job = getattr(app, "job", None)
+            if job and getattr(job, "company", None):
+                company_name = getattr(job.company, "company_name", None)
+                company_id = getattr(job.company, "id", None)
+            elif job:
+                comp = db.query(Company).filter(Company.id == job.company_id).first()
+                if comp:
+                    company_name = comp.company_name
+                    company_id = comp.id
             activities.append({
                 "icon": "fas fa-user-plus",
                 "title": "Nouvelle candidature",
                 "description": f"Candidature reçue",
-                "time": app.created_at.strftime("%d/%m/%Y à %H:%M")
+                "time": app.created_at.strftime("%d/%m/%Y à %H:%M"),
+                "company_id": company_id,
+                "company_name": company_name
             })
         
         return activities[:10]
@@ -583,12 +612,24 @@ async def get_recent_activity(db: Session = Depends(get_db)):
             'department': 'fas fa-sitemap',
             'user': 'fas fa-user-cog'
         }
-        
+        # Récupérer le nom de l'entreprise liée au log
+        company_name = None
+        company_id = None
+        if getattr(log, "company", None):
+            company_name = getattr(log.company, "company_name", None)
+            company_id = getattr(log.company, "id", None)
+        elif getattr(log, "company_id", None):
+            comp = db.query(Company).filter(Company.id == log.company_id).first()
+            if comp:
+                company_name = comp.company_name
+                company_id = comp.id
         activities.append({
             "icon": icon_map.get(log.entity_type, 'fas fa-info-circle'),
             "title": log.description,
             "description": f"{log.action_type} {log.entity_type}",
-            "time": log.created_at.strftime("%d/%m/%Y à %H:%M")
+            "time": log.created_at.strftime("%d/%m/%Y à %H:%M"),
+            "company_id": company_id,
+            "company_name": company_name
         })
     
     return activities

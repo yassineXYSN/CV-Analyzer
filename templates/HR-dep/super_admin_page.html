@@ -6,6 +6,24 @@
     <title>Interface Grand Admin - Gestion des Entreprises</title>
     <link rel="stylesheet" href="/static/super_admin/admin-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            var config = {
+                pageLanguage: 'fr',
+                includedLanguages: 'fr,en,ar',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: true
+            };
+            if (document.getElementById('google_translate_element')) {
+                new google.translate.TranslateElement(config, 'google_translate_element');
+            }
+            if (document.getElementById('google_translate_settings')) {
+                new google.translate.TranslateElement(config, 'google_translate_settings');
+            }
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script src="/static/super_admin/gt-persist.js" defer></script>
 </head>
 <body>
     <!-- Background Effects -->
@@ -37,6 +55,7 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <div id="google_translate_element" style="margin-right: 8px;"></div>
 
                     <button class="btn-add" onclick="showAddUserModal()">
                         <i class="fas fa-user-plus"></i>
@@ -407,6 +426,7 @@
                                     <option>Français</option>
                                     <option>English</option>
                                 </select>
+                                <div id="google_translate_settings" style="margin-top: 0.75rem;"></div>
                             </div>
                         </div>
                     </div>

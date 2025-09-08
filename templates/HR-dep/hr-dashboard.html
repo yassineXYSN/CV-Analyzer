@@ -7,6 +7,23 @@
     <link rel="stylesheet" href="/static/hr-dashboard/hr-dashboard.css">
     <link rel="stylesheet" href="/static/hr-dashboard/compatibility.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        function googleTranslateElementInit() {
+            var config = {
+                pageLanguage: 'fr',
+                includedLanguages: 'fr,en,ar',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: true
+            };
+            if (document.getElementById('google_translate_global')) {
+                new google.translate.TranslateElement(config, 'google_translate_global');
+            }
+        }
+    </script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script src="/static/super_admin/gt-persist.js" defer></script>
+    <script src="/static/super_admin/gt-coloredbar.js" defer></script>
+    <script src="/static/super_admin/gt-hidebanner.js" defer></script>
 </head>
 <body>
     <!-- Background Effects -->
@@ -27,6 +44,7 @@
                 <h1><i class="fas fa-chart-line"></i> CV Analyzer Pro</h1>
             </div>
             <div class="user-info">
+                <div id="google_translate_global" style="margin-right: 8px;"></div>
                 <button class="profile-btn" onclick="openCompanyProfile()" title="Profil de l'entreprise">
                     <i class="fas fa-building"></i>
                 </button>
