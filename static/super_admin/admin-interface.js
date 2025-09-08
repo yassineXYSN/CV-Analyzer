@@ -2,6 +2,8 @@
 let companies = []
 let users = []
 const companyAdmins = {} // Store admins by company ID
+let recentActivities = []
+const RECENT_ACTIVITY_LIMIT = 5
 
 // Variables for users table functionality
 let usersTableData = []
@@ -14,6 +16,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadCompaniesFromAPI()
   await loadUsersFromAPI()
   loadCompanyOptions()
+  loadDashboardData()
+  // Apply saved theme if any
+  const savedTheme = localStorage.getItem('admin_theme') || 'dark'
+  applyTheme(savedTheme)
+  highlightActiveTheme(savedTheme)
   console.log("[v0] Admin interface loaded successfully")
 })
 
@@ -162,6 +169,373 @@ async function loadCompanyAdmins(companyId) {
   return []
 }
 
+// Dashboard Functions
+async function loadDashboardData() {
+  console.log("[v0] Loading dashboard data...")
+  
+  try {
+    // Charger les statistiques réelles depuis l'API
+    const statsResponse = await fetch('/admin/api/stats')
+    const stats = await statsResponse.json()
+    
+    // Update overview cards with real data
+    document.getElementById("total-companies-count").textContent = stats.total_companies || 0
+    document.getElementById("total-users-count").textContent = stats.total_users || 0
+    document.getElementById("total-admins-count").textContent = stats.total_hr_admins || 0
+    
+    // System activity status
+    document.getElementById("system-activity").textContent = "Active"
+    
+    // Load recent activity with real data
+    await loadRecentActivity()
+  } catch (error) {
+    console.error("[v0] Error loading dashboard data:", error)
+    // Fallback to local data if API fails
+    document.getElementById("total-companies-count").textContent = companies.length
+    document.getElementById("total-users-count").textContent = users.length
+    
+    const adminCount = users.filter(user => 
+      user.role === "super_admin" || 
+      user.role === "hr_manager" || 
+      user.role === "hr_admin"
+    ).length
+    document.getElementById("total-admins-count").textContent = adminCount
+    document.getElementById("system-activity").textContent = "Active"
+  }
+}
+
+async function loadRecentActivity() {
+  const activityList = document.getElementById("recent-activity-list")
+  if (!activityList) return
+  
+  try {
+    // Charger l'activité récente depuis l'API
+    const response = await fetch('/admin/api/recent-activity')
+    recentActivities = await response.json()
+    renderRecentActivityList()
+  } catch (error) {
+    console.error("[v0] Error loading recent activity:", error)
+    // Fallback message
+    activityList.innerHTML = `
+      <div class="activity-item">
+        <div class="activity-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="activity-content">
+          <p><strong>Erreur de chargement</strong></p>
+          <small>Impossible de charger l'activité récente</small>
+        </div>
+      </div>
+    `
+  }
+}
+
+function renderRecentActivityList() {
+  const activityList = document.getElementById("recent-activity-list")
+  if (!activityList) return
+
+  if (!recentActivities || recentActivities.length === 0) {
+    activityList.innerHTML = `
+      <div class="activity-item">
+        <div class="activity-icon">
+          <i class="fas fa-info-circle"></i>
+        </div>
+        <div class="activity-content">
+          <p><strong>Aucune activité récente</strong></p>
+          <small>Les activités apparaîtront ici</small>
+        </div>
+      </div>
+    `
+    return
+  }
+
+  const limited = recentActivities.slice(0, RECENT_ACTIVITY_LIMIT)
+  const listMarkup = limited.map(activity => `
+    <div class="activity-item">
+      <div class="activity-icon">
+        <i class="${activity.icon}"></i>
+      </div>
+      <div class="activity-content">
+        <p>
+          <strong>${activity.title}</strong> ${activity.description}
+          ${activity.company_name ? `<span class="activity-company">• ${activity.company_name}</span>` : ""}
+        </p>
+        <small>${activity.time}</small>
+      </div>
+    </div>
+  `).join("")
+
+  const showMoreButton = recentActivities.length > RECENT_ACTIVITY_LIMIT
+    ? `
+      <div class="activity-actions">
+        <button class="btn-view-all" onclick="openAllActivitiesModal()">
+          <i class="fas fa-list"></i> Voir tout (${recentActivities.length})
+        </button>
+      </div>
+    `
+    : ""
+
+  activityList.innerHTML = listMarkup + showMoreButton
+}
+
+function openAllActivitiesModal() {
+  // Remove existing if any
+  const existing = document.querySelector('.all-activities-overlay')
+  if (existing) existing.remove()
+
+  const overlay = document.createElement('div')
+  overlay.className = 'all-activities-overlay show'
+
+  const panel = document.createElement('div')
+  panel.className = 'all-activities-panel'
+
+  const header = document.createElement('div')
+  header.className = 'all-activities-header'
+  const companyOptions = (() => {
+    const set = new Map()
+    recentActivities.forEach(a => {
+      if (a.company_id || a.company_name) {
+        set.set(String(a.company_id || a.company_name), a.company_name || `Entreprise #${a.company_id}`)
+      }
+    })
+    return Array.from(set.entries())
+      .sort((a, b) => (a[1] || "").localeCompare(b[1] || ""))
+      .map(([id, name]) => `<option value="${id}">${name}</option>`)
+      .join("")
+  })()
+
+  header.innerHTML = `
+    <h3>
+      <i class="fas fa-clock"></i> Toutes les activités (${recentActivities.length})
+    </h3>
+    <div class="activities-filters">
+      <label for="activities-company-filter" class="sr-only">Filtrer par entreprise</label>
+      <select id="activities-company-filter" class="filter-select-small">
+        <option value="">Toutes les entreprises</option>
+        ${companyOptions}
+      </select>
+      <button class="close-details" aria-label="Fermer" onclick="this.closest('.all-activities-overlay').remove()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `
+
+  const body = document.createElement('div')
+  body.className = 'all-activities-body'
+  body.innerHTML = renderAllActivitiesList(recentActivities)
+
+  panel.appendChild(header)
+  panel.appendChild(body)
+  overlay.appendChild(panel)
+  document.body.appendChild(overlay)
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.remove()
+    }
+  })
+
+  const select = header.querySelector('#activities-company-filter')
+  if (select) {
+    select.addEventListener('change', () => {
+      const value = select.value
+      const filtered = value
+        ? recentActivities.filter(a => String(a.company_id || a.company_name) === value)
+        : recentActivities
+      body.innerHTML = renderAllActivitiesList(filtered)
+    })
+  }
+}
+
+function renderAllActivitiesList(list) {
+  return `
+    <div class="activity-list all-activities-list">
+      ${list.map(activity => `
+        <div class="activity-item">
+          <div class="activity-icon">
+            <i class="${activity.icon}"></i>
+          </div>
+          <div class="activity-content">
+            <p>
+              <strong>${activity.title}</strong> ${activity.description}
+              ${activity.company_name ? `<span class=\"activity-company\">• ${activity.company_name}</span>` : ""}
+            </p>
+            <small>${activity.time}</small>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `
+}
+
+// Analytics Functions
+async function loadAnalyticsData() {
+  console.log("[v0] Loading analytics data...")
+  
+  try {
+    // Charger les données d'analytics depuis l'API
+    const response = await fetch('/admin/api/analytics')
+    const analytics = await response.json()
+    
+    // Mettre à jour les cartes d'analytics avec les vraies données
+    updateAnalyticsCards(analytics)
+    
+  } catch (error) {
+    console.error("[v0] Error loading analytics data:", error)
+    showNotification("Erreur lors du chargement des analytics", "error")
+  }
+}
+
+function updateAnalyticsCards(analytics) {
+  // Calculer les tendances basées sur les données réelles
+  const companyGrowth = analytics.company_growth || []
+  const userDistribution = analytics.user_distribution || {}
+  const systemPerformance = analytics.system_performance || {}
+  
+  // Mettre à jour la carte de croissance des entreprises
+  const companyGrowthTrend = document.getElementById('company-growth-trend')
+  const companyGrowthCard = document.querySelector('.analytics-card:nth-child(1) .analytics-trend')
+  if (companyGrowthTrend && companyGrowthCard && companyGrowth.length > 0) {
+    const currentMonth = companyGrowth[companyGrowth.length - 1]?.count || 0
+    const previousMonth = companyGrowth.length > 1 ? companyGrowth[companyGrowth.length - 2]?.count || 0 : 0
+    const growth = previousMonth > 0 ? ((currentMonth - previousMonth) / previousMonth * 100).toFixed(1) : 0
+    
+    companyGrowthTrend.textContent = `${growth >= 0 ? '+' : ''}${growth}%`
+    companyGrowthCard.innerHTML = `
+      <i class="fas fa-arrow-${growth >= 0 ? 'up' : 'down'}"></i>
+      ${growth >= 0 ? '+' : ''}${growth}%
+    `
+    companyGrowthCard.className = `analytics-trend ${growth >= 0 ? 'positive' : 'negative'}`
+  }
+  
+  // Mettre à jour la carte des utilisateurs actifs
+  const userActivityTrend = document.getElementById('user-activity-trend')
+  const userActiveCard = document.querySelector('.analytics-card:nth-child(2) .analytics-trend')
+  if (userActivityTrend && userActiveCard) {
+    const totalUsers = (userDistribution.employees || 0) + (userDistribution.hr_admins || 0)
+    const activeUsers = userDistribution.hr_admins || 0
+    const activityRate = totalUsers > 0 ? (activeUsers / totalUsers * 100).toFixed(1) : 0
+    
+    userActivityTrend.textContent = `${activityRate}%`
+    userActiveCard.innerHTML = `
+      <i class="fas fa-arrow-up"></i>
+      ${activityRate}%
+    `
+    userActiveCard.className = 'analytics-trend positive'
+  }
+  
+  // Mettre à jour la carte de performance système
+  const responseTimeTrend = document.getElementById('response-time-trend')
+  const performanceCard = document.querySelector('.analytics-card:nth-child(3) .analytics-trend')
+  if (responseTimeTrend && performanceCard && systemPerformance.avg_response_time) {
+    const responseTime = systemPerformance.avg_response_time
+    const isGood = responseTime < 300 // Moins de 300ms est considéré comme bon
+    
+    responseTimeTrend.textContent = `${responseTime}ms`
+    performanceCard.innerHTML = `
+      <i class="fas fa-arrow-${isGood ? 'down' : 'up'}"></i>
+      ${responseTime}ms
+    `
+    performanceCard.className = `analytics-trend ${isGood ? 'positive' : 'negative'}`
+  }
+  
+  // Mettre à jour les graphiques avec des données réelles
+  updateAnalyticsCharts(analytics)
+}
+
+function updateAnalyticsCharts(analytics) {
+  // Mettre à jour les graphiques avec des données réelles
+  const companyGrowth = analytics.company_growth || []
+  const userDistribution = analytics.user_distribution || {}
+  const systemPerformance = analytics.system_performance || {}
+  
+  // Graphique de croissance des entreprises
+  const companyGrowthChart = document.getElementById('company-growth-chart')
+  if (companyGrowthChart) {
+    if (companyGrowth.length > 0) {
+      const totalCompanies = companyGrowth.reduce((sum, item) => sum + item.count, 0)
+      companyGrowthChart.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; height: 100%;">
+          <div style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: bold; color: #3b82f6;">${totalCompanies}</div>
+            <div style="font-size: 0.9rem; color: #64748b;">Entreprises créées</div>
+          </div>
+          <div style="font-size: 0.8rem; color: #64748b;">
+            Derniers 6 mois
+          </div>
+        </div>
+      `
+    } else {
+      companyGrowthChart.innerHTML = `
+        <div style="text-align: center; color: #64748b;">
+          <i class="fas fa-chart-line" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+          <p>Aucune donnée disponible</p>
+        </div>
+      `
+    }
+  }
+  
+  // Graphique de répartition des utilisateurs
+  const userDistributionChart = document.getElementById('user-distribution-chart')
+  if (userDistributionChart) {
+    const totalUsers = (userDistribution.employees || 0) + (userDistribution.hr_admins || 0)
+    if (totalUsers > 0) {
+      const employeePercent = ((userDistribution.employees || 0) / totalUsers * 100).toFixed(1)
+      const adminPercent = ((userDistribution.hr_admins || 0) / totalUsers * 100).toFixed(1)
+      
+      userDistributionChart.innerHTML = `
+        <div style="display: flex; flex-direction: column; height: 100%; justify-content: center;">
+          <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+            <div style="width: 12px; height: 12px; background: #3b82f6; border-radius: 50%; margin-right: 0.5rem;"></div>
+            <span style="font-size: 0.9rem;">Employés: ${employeePercent}%</span>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <div style="width: 12px; height: 12px; background: #10b981; border-radius: 50%; margin-right: 0.5rem;"></div>
+            <span style="font-size: 0.9rem;">Admins: ${adminPercent}%</span>
+          </div>
+        </div>
+      `
+    } else {
+      userDistributionChart.innerHTML = `
+        <div style="text-align: center; color: #64748b;">
+          <i class="fas fa-chart-pie" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+          <p>Aucun utilisateur</p>
+        </div>
+      `
+    }
+  }
+  
+  // Graphique de performance système
+  const systemPerformanceChart = document.getElementById('system-performance-chart')
+  if (systemPerformanceChart) {
+    if (systemPerformance.uptime) {
+      systemPerformanceChart.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 2rem; font-weight: bold; color: #10b981;">${systemPerformance.uptime}%</div>
+          <div style="font-size: 0.9rem; color: #64748b;">Uptime</div>
+          <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
+            ${systemPerformance.active_sessions || 0} sessions actives
+          </div>
+        </div>
+      `
+    } else {
+      systemPerformanceChart.innerHTML = `
+        <div style="text-align: center; color: #64748b;">
+          <i class="fas fa-chart-area" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+          <p>Données indisponibles</p>
+        </div>
+      `
+    }
+  }
+}
+
+// Settings Functions
+function loadSettingsData() {
+  console.log("[v0] Loading settings data...")
+  // Settings are already in the HTML
+  // In a real implementation, you would load current settings from an API
+}
+
 // Tab Management
 function showTab(tabName) {
   console.log("[v0] Switching to tab:", tabName)
@@ -181,6 +555,9 @@ function showTab(tabName) {
 
   // Load data based on tab
   switch (tabName) {
+    case "dashboard":
+      loadDashboardData()
+      break
     case "companies":
       loadCompanies()
       break
@@ -190,7 +567,33 @@ function showTab(tabName) {
     case "users-table":
       loadUsersTable()
       break
+    case "analytics":
+      loadAnalyticsData()
+      break
+    case "settings":
+      loadSettingsData()
+      break
   }
+}
+
+// Simple Theme Switcher
+function applyTheme(theme) {
+  const root = document.documentElement
+  root.classList.remove('theme-light', 'theme-blue', 'theme-emerald', 'theme-purple')
+  // base dark is default
+  if (theme === 'light') root.classList.add('theme-light')
+  if (theme === 'blue') root.classList.add('theme-blue')
+  if (theme === 'emerald') root.classList.add('theme-emerald')
+  if (theme === 'purple') root.classList.add('theme-purple')
+  localStorage.setItem('admin_theme', theme)
+  showNotification(`Thème appliqué: ${theme}`, 'info')
+  highlightActiveTheme(theme)
+}
+
+function highlightActiveTheme(theme) {
+  document.querySelectorAll('.theme-option').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-theme') === theme)
+  })
 }
 
 // Load Companies

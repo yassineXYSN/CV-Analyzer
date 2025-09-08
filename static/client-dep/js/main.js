@@ -98,6 +98,10 @@ function initializeSmoothScrolling() {
 
 function initializeNavbarScroll() {
   const navbar = document.querySelector(".navbar")
+  if (!navbar) {
+    // Header may not be injected yet; skip safely
+    return
+  }
   let lastScrollY = window.scrollY
 
   window.addEventListener("scroll", () => {

@@ -931,14 +931,14 @@
                             <div class="detail-row">
                                 <span class="detail-label">Salaire</span>
                                 <span class="detail-value salary-value">
-                                    {{ "{:,.0f}".format(application.job.salary_min) }} - {{ "{:,.0f}".format(application.job.salary_max) }} €
+                                    {{ "{:,.0f}".format(application.job.salary_min) }} - {{ "{:,.0f}".format(application.job.salary_max) }} TND
                                 </span>
                             </div>
                             {% elif application.job.salary_min %}
                             <div class="detail-row">
                                 <span class="detail-label">Salaire</span>
                                 <span class="detail-value salary-value">
-                                    À partir de {{ "{:,.0f}".format(application.job.salary_min) }} €
+                                    À partir de {{ "{:,.0f}".format(application.job.salary_min) }} TND
                                 </span>
                             </div>
                             {% endif %}

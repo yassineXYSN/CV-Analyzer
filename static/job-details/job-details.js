@@ -315,9 +315,9 @@ function displayJobInfo() {
 
 function getSalaryText() {
   if (currentJob.salary_min && currentJob.salary_max) {
-    return `€ ${currentJob.salary_min} - ${currentJob.salary_max}`
+    return `${currentJob.salary_min} - ${currentJob.salary_max} TND`
   } else if (currentJob.salary_min) {
-    return `€ ${currentJob.salary_min}+`
+    return `${currentJob.salary_min}+ TND`
   }
   return "Non spécifié"
 }
@@ -388,8 +388,11 @@ function renderJobSkills() {
     return
   }
 
+  const count = validSkills.length
+  const singleClass = count === 1 ? ' single-skill' : ''
+  const densityClass = count <= 6 ? ' skills-few' : (count <= 24 ? ' skills-many' : ' skills-tons')
   skillsContainer.innerHTML = `
-      <div class="skills-grid">
+      <div class="skills-grid${singleClass}${densityClass}">
         ${validSkills
           .map((skill) => {
             const skillName = skill.name || skill.skill_name || skill.skill || "Compétence non spécifiée"
@@ -466,6 +469,8 @@ function renderApplicationsWithCompatibility(filter = "all") {
   `
     return
   }
+
+  const isDeptHead = currentUser && currentUser.role === "department_head"
 
   container.innerHTML = filteredApplications
     .map((app) => {
@@ -600,9 +605,11 @@ function renderApplicationsWithCompatibility(filter = "all") {
                 <div class="quiz-validation-overlay">
                   <div class="quiz-validation-number">2</div>
                   <div class="quiz-validation-message">En attente de validation des compétences</div>
+                  ${isDeptHead ? '' : `
                   <button class="btn-validate-skills-overlay" onclick="validateSkillsAndRemoveOverlay(${app.id})" id="validate-btn-overlay-${app.id}">
                     <i class="fas fa-check-double"></i> Valider les compétences
                   </button>
+                  `}
                 </div>
               `
                   : ""
@@ -664,9 +671,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                 
                 <div class="quiz-actions">
                   <div class="quiz-actions-row">
-                    ${
-                      !app.quiz_id
-                        ? `
+                    ${!app.quiz_id && !isDeptHead ? `
                       <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
                         <i class="fas fa-magic"></i> Générer Quiz
                       </button>
@@ -679,9 +684,12 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
                         <i class="fas fa-eye"></i> Voir Quiz
                       </button>
-                    `
-                        : ""
-                    }
+                      ${app.quiz_score && app.quiz_score > 0 ? `
+                        <button class="btn-analyze-ai" onclick="viewAIAnalysis(${app.id}, '${candidateName}')">
+                          <i class="fas fa-robot"></i> Analyse IA
+                        </button>
+                      ` : ''}
+                    ` : ''}
                   </div>
                 </div>
               </div>
@@ -705,16 +713,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
             ${renderCandidateActions(app)}
           </div>
           
-          ${
-            isRecommended && app.recommendation_comment
-              ? `
-            <div class="recommendation-comment">
-              <h4><i class="fas fa-comment"></i> Commentaire de recommandation</h4>
-              <p>${app.recommendation_comment}</p>
-            </div>
-          `
-              : ""
-          }
+          ${""}
         </div>
       </div>
     `
@@ -1263,13 +1262,38 @@ function renderCandidateActions(app) {
   const candidateId = app.candidate_id || app.candidate_profile_id || app.id
 
   if (currentUser && currentUser.role === "department_head") {
-    // ... (le code existant pour les chefs de département)
+    // Pour les chefs de département : toujours afficher "Voir profil"
+    const parts = []
+    if ((app.status === "pending" || app.status === "reviewed") && !app.is_recommended) {
+      const safeCandidateName = String(candidateName).replace(/'/g, "\\'").replace(/"/g, '\\"')
+      const safeJobTitle = String((currentJob && (currentJob.title || currentJob.job_title)) || "Poste").replace(/'/g, "\\'").replace(/"/g, '\\"')
+      parts.push(`
+      <button class="btn-action recommend" onclick="showRecommendModal(${app.id}, '${safeCandidateName}', '${safeJobTitle}')">
+        <i class="fas fa-thumbs-up"></i> Recommander
+      </button>
+    `)
+    }
+    if (app.is_recommended) {
+      parts.push(`
+      <button class="btn-action recommend" onclick="showRecommendationDetails(${app.id})">
+        <i class="fas fa-comment"></i> Commentaire
+      </button>
+    `)
+    }
+    parts.push(`
+      <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+        <i class="fas fa-info-circle"></i> Voir profil
+      </button>
+    `)
+    return parts.join("\n")
   }
 
   // Pour les recruteurs
   if (currentUser && currentUser.role === "recruiter") {
+    const parts = []
+    
     if (app.status === "pending") {
-      return `
+      parts.push(`
       <button class="btn-action review" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
         <i class="fas fa-eye"></i> Examiner
       </button>
@@ -1279,21 +1303,18 @@ function renderCandidateActions(app) {
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-times"></i> Rejeter
       </button>
-    `
+      `)
     } else if (app.status === "reviewed") {
-      return `
-      <button class="btn-action schedule" onclick="updateApplicationStatus(${app.id}, 'interview_scheduled')">
-        <i class="fas fa-calendar"></i> Programmer entretien
-      </button>
+      parts.push(`
       <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || "Département"}')">
         <i class="fas fa-check-circle"></i> Accepter
       </button>
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-times"></i> Rejeter
       </button>
-    `
+      `)
     } else if (app.status === "interview_scheduled") {
-      return `
+      parts.push(`
       <button class="btn-action complete" onclick="updateApplicationStatus(${app.id}, 'reviewed')">
         <i class="fas fa-check-double"></i> Entretien terminé
       </button>
@@ -1303,40 +1324,72 @@ function renderCandidateActions(app) {
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-times"></i> Rejeter
       </button>
-    `
+      `)
     } else if (app.status === "accepted_pending_validation") {
-      return `
+      parts.push(`
       <span class="status-badge pending-validation">
         <i class="fas fa-clock"></i> En attente validation admin
       </span>
-    `
+      `)
     }
+    
+    // Ajouter le bouton de recommandation si le candidat est recommandé
+    if (app.is_recommended) {
+      parts.push(`
+      <button class="btn-action recommend" onclick="showRecommendationDetails(${app.id})">
+        <i class="fas fa-comment"></i> Commentaire
+      </button>
+      `)
+    }
+    
+    // Toujours ajouter le bouton voir profil
+    parts.push(`
+    <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+      <i class="fas fa-info-circle"></i> Voir profil
+    </button>
+    `)
+    
+    return parts.join("\n")
   }
 
   // Pour les administrateurs
   if (currentUser && currentUser.role === "super_admin") {
+    const parts = []
+    
     if (app.status === "accepted_pending_validation") {
-      return `
+      parts.push(`
       <button class="btn-action validate" onclick="showAdminValidationModal(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-user-shield"></i> Valider
       </button>
-      <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
-        <i class="fas fa-info-circle"></i> Voir profil
-      </button>
-    `
+      `)
     } else if (app.status === "pending" || app.status === "reviewed" || app.status === "interview_scheduled") {
-      return `
+      parts.push(`
       <button class="btn-action accept" onclick="showAcceptConfirmation(${app.id}, '${candidateName}', '${currentJob.title}', '${currentJob.department_name || currentJob.department || "Département"}')">
         <i class="fas fa-check"></i> Accepter définitivement
       </button>
       <button class="btn-action reject" onclick="showRejectConfirmation(${app.id}, '${candidateName}', '${currentJob.title}')">
         <i class="fas fa-times"></i> Rejeter
       </button>
-      <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
-        <i class="fas fa-info-circle"></i> Voir profil
-      </button>
-    `
+      `)
     }
+    
+    // Ajouter le bouton de recommandation si le candidat est recommandé
+    if (app.is_recommended) {
+      parts.push(`
+      <button class="btn-action recommend" onclick="showRecommendationDetails(${app.id})">
+        <i class="fas fa-comment"></i> Commentaire
+      </button>
+      `)
+    }
+    
+    // Toujours ajouter le bouton voir profil
+    parts.push(`
+    <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+      <i class="fas fa-info-circle"></i> Voir profil
+    </button>
+    `)
+    
+    return parts.join("\n")
   }
 
   // Pour tous les autres cas
@@ -1345,6 +1398,195 @@ function renderCandidateActions(app) {
     <i class="fas fa-info-circle"></i> Voir profil
   </button>
 `
+}
+
+// Affiche un modal léger avec le commentaire de recommandation
+function showRecommendationDetails(applicationId) {
+  try {
+    const app = (Array.isArray(applications) ? applications : []).find(a => String(a.id) === String(applicationId))
+    const comment = (app && app.recommendation_comment) || "Aucun commentaire saisi"
+    const priority = (app && app.recommendation_priority) || "normal"
+
+    const overlay = document.createElement('div')
+    overlay.className = 'recommend-modal-overlay'
+    // Fallback inline styles in case CSS isn't loaded yet
+    overlay.style.position = 'fixed'
+    overlay.style.top = '0'
+    overlay.style.left = '0'
+    overlay.style.width = '100%'
+    overlay.style.height = '100%'
+    overlay.style.display = 'flex'
+    overlay.style.alignItems = 'center'
+    overlay.style.justifyContent = 'center'
+    overlay.style.zIndex = '30000'
+    overlay.style.background = overlay.style.background || 'rgba(0,0,0,0.75)'
+
+    overlay.innerHTML = `
+      <div class="recommend-modal" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h3><i class="fas fa-comment"></i> Commentaire de recommandation</h3>
+          <button class="modal-close" onclick="this.closest('.recommend-modal-overlay').remove()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="recommendation-comment">
+            <p><strong>Priorité:</strong> <span class="recommendation-badge ${priority}">${priority}</span></p>
+            <p>${comment}</p>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-confirm" onclick="this.closest('.recommend-modal-overlay').remove()"><i class="fas fa-check"></i> Fermer</button>
+        </div>
+      </div>
+    `
+
+    // Close on backdrop click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove()
+      }
+    })
+
+    document.body.appendChild(overlay)
+  } catch (e) {
+    console.error('Erreur lors de l\'affichage du commentaire de recommandation:', e)
+    if (typeof showNotification === 'function') {
+      showNotification("Impossible d'afficher le commentaire de recommandation", 'error')
+    }
+  }
+}
+
+// Copie du modal de recommandation du dashboard pour un rendu identique
+function showRecommendModal(applicationId, candidateName, jobTitle) {
+  if (!currentUser || currentUser.role !== "department_head") {
+    showNotification("Seuls les chefs de département peuvent recommander des candidatures", "warning")
+    return
+  }
+
+  const existingModal = document.querySelector(".recommend-modal-overlay")
+  if (existingModal) existingModal.remove()
+
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay recommend-modal-overlay"
+  modal.style.cssText = `
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px);
+display: flex; align-items: center; justify-content: center;
+z-index: 25000; padding: 2rem; opacity: 0; transition: opacity 0.3s ease;`
+
+  modal.innerHTML = `
+<div class="modal-content recommend-modal" style="
+background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+border: 2px solid rgba(243, 156, 18, 0.4);
+border-radius: 20px; max-width: 550px; width: 95%; max-height: 85vh;
+overflow: hidden; display: flex; flex-direction: column;
+box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+transform: scale(0.95); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+  <div class="modal-header" style="flex-shrink: 0; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 1.5rem 2rem; border-bottom: none; position: relative; border-radius: 20px 20px 0 0;">
+    <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+      <i class="fas fa-thumbs-up" style="color: #f39c12;"></i>
+      Recommander cette candidature
+    </h3>
+    <button class="modal-close" onclick="closeRecommendModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-size: 1.2rem;">&times;</button>
+  </div>
+  <div class="modal-body" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 2rem; background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);">
+    <div class="candidate-info-modal" style="display: flex; align-items: center; gap: 1.5rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05)); border: 1px solid rgba(243, 156, 18, 0.3); border-radius: 16px; margin-bottom: 2rem; position: relative; overflow: hidden;">
+      <div class="candidate-avatar-modal" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f39c12, #e67e22); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);">${(candidateName || '').split(' ').map(n=>n[0]).join('')}</div>
+      <div>
+        <h4 style="color: #f8fafc; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 700;">${candidateName}</h4>
+        <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Poste:</strong> ${jobTitle}</p>
+        <p style="color: #cbd5e1; margin: 0.25rem 0; font-size: 0.95rem;"><strong>Votre rôle:</strong> Chef de département</p>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom: 2rem;">
+      <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; color: #f1f5f9; font-weight: 600; font-size: 0.95rem;">
+        <i class="fas fa-comment" style="color: #f39c12;"></i>
+        Commentaire de recommandation *
+      </label>
+      <textarea id="recommendationComment" class="form-textarea" placeholder="Expliquez pourquoi vous recommandez ce candidat (compétences, expérience, adéquation au poste...)..." rows="4" required style="width: 100%; padding: 1rem; border: 2px solid rgba(203, 213, 225, 0.3); border-radius: 12px; font-size: 0.95rem; transition: all 0.3s; background: rgba(248, 250, 252, 0.95); color: #1e293b; font-weight: 500; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); font-family: inherit; resize: vertical; line-height: 1.5;"></textarea>
+      <small class="form-help" style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem; font-style: italic; display: flex; align-items: center; gap: 0.5rem;">💡 Ce commentaire sera visible par les recruteurs et super admins</small>
+    </div>
+    <div class="form-group" style="margin-bottom: 2rem;">
+      <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; color: #f1f5f9; font-weight: 600; font-size: 0.95rem;">
+        <i class="fas fa-flag" style="color: #f39c12;"></i>
+        Niveau de priorité de votre recommandation
+      </label>
+      <select id="recommendationPriority" class="form-select" style="width: 100%; padding: 1rem; border: 2px solid rgba(203, 213, 225, 0.3); border-radius: 12px; font-size: 0.95rem; transition: all 0.3s; background: rgba(248, 250, 252, 0.95); color: #1e293b; font-weight: 500; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); cursor: pointer;">
+        <option value="normal">📋 Recommandation normale</option>
+        <option value="high">⭐ Recommandation forte</option>
+        <option value="urgent">🔥 Recommandation urgente</option>
+      </select>
+      <small class="form-help" style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem; font-style: italic; display: flex; align-items: center; gap: 0.5rem;">💡 Choisissez le niveau selon l'adéquation du candidat</small>
+    </div>
+    <div class="recommendation-info" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05)); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; padding: 1.5rem; margin-top: 2rem; position: relative;">
+      <h5 style="margin: 0 0 1rem 0; color: #f8fafc; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+        Cette action va :
+      </h5>
+      <ul style="margin: 0; padding-left: 1.5rem; list-style: none;">
+        <li style="margin: 0.75rem 0; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 0.75rem;"><i class="fas fa-star" style="color: #f59e0b; width: 20px; font-size: 1rem;"></i> Marquer la candidature comme recommandée</li>
+        <li style="margin: 0.75rem 0; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 0.75rem;"><i class="fas fa-bell" style="color: #17a2b8; width: 20px; font-size: 1rem;"></i> Notifier les recruteurs et super admins</li>
+        <li style="margin: 0.75rem 0; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 0.75rem;"><i class="fas fa-arrow-up" style="color: #28a745; width: 20px; font-size: 1rem;"></i> Donner une priorité élevée à cette candidature</li>
+        <li style="margin: 0.75rem 0; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 0.75rem;"><i class="fas fa-user-tie" style="color: #007bff; width: 20px; font-size: 1rem;"></i> Associer votre nom à cette recommandation</li>
+      </ul>
+    </div>
+  </div>
+  <div class="modal-footer" style="flex-shrink: 0; display: flex; justify-content: flex-end; gap: 1rem; padding: 1.5rem 2rem; border-top: 1px solid rgba(59, 130, 246, 0.2); background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 0 0 20px 20px;">
+    <button class="btn-secondary" onclick="closeRecommendModal()" style="padding: 0.875rem 1.75rem; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; background: linear-gradient(135deg, #64748b, #475569); color: white; border: 1px solid rgba(100, 116, 139, 0.3);"><i class="fas fa-times"></i> Annuler</button>
+    <button class="btn-primary recommend" onclick="confirmRecommendation(${applicationId})" style="padding: 0.875rem 1.75rem; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: 1px solid rgba(243, 156, 18, 0.3); box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);"><i class="fas fa-thumbs-up"></i> Confirmer la recommandation</button>
+  </div>
+</div>`
+
+  document.body.appendChild(modal)
+  document.body.style.overflow = "hidden"
+  requestAnimationFrame(() => {
+    modal.style.opacity = "1"
+    const modalContent = modal.querySelector(".recommend-modal")
+    if (modalContent) modalContent.style.transform = "scale(1)"
+  })
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeRecommendModal() })
+}
+
+function closeRecommendModal() {
+  const modal = document.querySelector(".recommend-modal-overlay")
+  if (!modal) return
+  modal.style.opacity = "0"
+  const modalContent = modal.querySelector(".recommend-modal")
+  if (modalContent) modalContent.style.transform = "scale(0.95)"
+  setTimeout(() => { if (modal.parentElement) modal.remove(); document.body.style.overflow = "auto" }, 300)
+}
+
+async function confirmRecommendation(applicationId) {
+  try {
+    const commentElement = document.getElementById("recommendationComment")
+    const priorityElement = document.getElementById("recommendationPriority")
+    if (!commentElement || !priorityElement) {
+      showNotification("Erreur: éléments du formulaire non trouvés", "error")
+      return
+    }
+    const comment = commentElement.value.trim()
+    const priority = priorityElement.value
+    if (!comment) {
+      showNotification("Le commentaire de recommandation est obligatoire", "warning"); commentElement.focus(); return
+    }
+    if (comment.length < 10) {
+      showNotification("Le commentaire doit contenir au moins 10 caractères", "warning"); commentElement.focus(); return
+    }
+    closeRecommendModal(); showLoading("Traitement de votre recommandation...")
+    const response = await fetch(`/api/applications/${applicationId}/recommend`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ comment, priority }) })
+    const result = await response.json(); hideLoading()
+    if (response.ok && (result.success || result.message)) {
+      showNotification(`✅ ${result.message || "Candidature recommandée avec succès"}`, "success")
+      if (result.recommended_by || result.recommendation_comment) {
+        showNotification("🎯 Les recruteurs et super admins ont été notifiés de votre recommandation", "info")
+      }
+      setTimeout(() => { loadJobData && loadJobData() }, 600)
+    } else {
+      showNotification(result.message || "Erreur lors de la recommandation", "error")
+    }
+  } catch (error) {
+    console.error("❌ Erreur réseau recommandation candidature:", error)
+    hideLoading(); showNotification("❌ Erreur de connexion lors de la recommandation", "error")
+  }
 }
 
 function goBackToDashboard() {
@@ -1532,11 +1774,11 @@ function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
         </div>
         
         <div class="recommendation-form">
-          <label for="recommendationComment">Commentaire de recommandation :</label>
-          <textarea id="recommendationComment" placeholder="Expliquez pourquoi vous recommandez ce candidat..." rows="3" required></textarea>
+          <label for="recommendationComment_${applicationId}">Commentaire de recommandation :</label>
+          <textarea id="recommendationComment_${applicationId}" placeholder="Expliquez pourquoi vous recommandez ce candidat..." rows="3" required></textarea>
           
-          <label for="recommendationPriority">Niveau de recommandation :</label>
-          <select id="recommendationPriority">
+          <label for="recommendationPriority_${applicationId}">Niveau de recommandation :</label>
+          <select id="recommendationPriority_${applicationId}">
             <option value="normal">Recommandation normale</option>
             <option value="high">Recommandation forte</option>
             <option value="urgent">Recommandation urgente</option>
@@ -1569,8 +1811,8 @@ function showRecommendConfirmation(applicationId, candidateName, jobTitle) {
 
 async function confirmRecommendApplication(applicationId) {
   try {
-    const commentElement = document.getElementById("recommendationComment")
-    const priorityElement = document.getElementById("recommendationPriority")
+    const commentElement = document.getElementById(`recommendationComment_${applicationId}`)
+    const priorityElement = document.getElementById(`recommendationPriority_${applicationId}`)
 
     if (!commentElement || !priorityElement) {
       showNotification("Erreur: éléments du formulaire non trouvés", "error")
@@ -2105,11 +2347,138 @@ function updateFilterCounts() {
 
 async function viewQuizResults(applicationId, candidateName) {
   try {
-    // Redirect to the quiz preview page
-    window.open(`/quiz-preview/${applicationId}`, "_blank")
-  } catch (error) {
+
+
+    window.location.href = `/quiz-preview/${applicationId}`  } catch (error) {
     console.error("Erreur ouverture aperçu quiz:", error)
     showNotification("Erreur lors de l'ouverture de l'aperçu du quiz", "error")
+  }
+}
+
+async function viewAIAnalysis(applicationId, candidateName) {
+  try {
+    // Check if there's an existing AI review
+    const response = await fetch(`/api/applications/${applicationId}/quiz-review`)
+    const data = await response.json()
+    
+    if (data.success && data.has_review) {
+      // Show existing review in a modal
+      showAIAnalysisModal(data.quiz_review, data.quiz_review_date, candidateName)
+    } else {
+      // No review exists, redirect to quiz preview to generate one
+      showNotification("Aucune analyse IA disponible. Redirection vers la page de quiz pour générer une analyse.", "info")
+      setTimeout(() => {
+        window.location.href = `/quiz-preview/${applicationId}`
+      }, 2000)
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération de l'analyse IA:", error)
+    showNotification("Erreur lors de la récupération de l'analyse IA", "error")
+  }
+}
+
+function showAIAnalysisModal(review, reviewDate, candidateName) {
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay ai-analysis-modal"
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  `
+  
+  const modalContent = document.createElement("div")
+  modalContent.style.cssText = `
+    background: #1e293b;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    border: 1px solid #475569;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    position: relative;
+  `
+  
+  const header = document.createElement("div")
+  header.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #475569;
+  `
+  
+  const title = document.createElement("h2")
+  title.textContent = `Analyse IA - ${candidateName}`
+  title.style.cssText = `
+    color: #f1f5f9;
+    margin: 0;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  `
+  title.innerHTML = `<i class="fas fa-robot"></i> Analyse IA - ${candidateName}`
+  
+  const closeBtn = document.createElement("button")
+  closeBtn.innerHTML = '<i class="fas fa-times"></i>'
+  closeBtn.style.cssText = `
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+  `
+  closeBtn.onclick = () => document.body.removeChild(modal)
+  
+  const reviewDateElement = document.createElement("div")
+  reviewDateElement.textContent = `Analyse générée le ${new Date(reviewDate).toLocaleDateString('fr-FR')}`
+  reviewDateElement.style.cssText = `
+    color: #94a3b8;
+    font-size: 0.9rem;
+    font-style: italic;
+    margin-bottom: 1rem;
+    text-align: center;
+  `
+  
+  const content = document.createElement("div")
+  content.style.cssText = `
+    color: #e2e8f0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    font-size: 0.95rem;
+    background: #0f172a;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #334155;
+  `
+  content.textContent = review
+  
+  header.appendChild(title)
+  header.appendChild(closeBtn)
+  modalContent.appendChild(header)
+  modalContent.appendChild(reviewDateElement)
+  modalContent.appendChild(content)
+  modal.appendChild(modalContent)
+  
+  document.body.appendChild(modal)
+  
+  // Close modal when clicking outside
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal)
+    }
   }
 }
 
@@ -2442,6 +2811,14 @@ async function validateSkillsAndRemoveOverlay(applicationId) {
   }
 }
 
+function isQuizValid(quizScore) {
+  return quizScore && quizScore > 0 && quizScore !== null && quizScore !== undefined;
+}
+
+function showQuizValidationError() {
+  showNotification("❌ Impossible de valider le quiz : le candidat n'a pas encore complété le quiz ou n'a pas de score valide.", "error");
+}
+
 async function validateQuizAndRemoveOverlay(applicationId) {
   try {
     const app = applications.find((a) => a.id === applicationId)
@@ -2449,11 +2826,17 @@ async function validateQuizAndRemoveOverlay(applicationId) {
       console.error("Application non trouvée")
       return
     }
-
-    const candidateName = app.name || app.candidate_name || "Candidat"
-
-    showLoading("Validation du quiz en cours...")
-
+    
+    // Vérifier que le quiz a un score valide
+    if (!isQuizValid(app.quiz_score)) {
+      showNotification("❌ Impossible de valider le quiz : le candidat n'a pas encore complété le quiz ou n'a pas de score valide.", "error");
+      return;
+    }
+    
+    const candidateName = app.name || app.candidate_name || "Candidat";
+    
+    showLoading("Validation du quiz en cours...");
+    
     const response = await fetch(`/api/applications/${applicationId}/validate-quiz`, {
       method: "POST",
       headers: {
@@ -2657,6 +3040,278 @@ async function generateSkillsQuizConfig() {
   }
 }
 
+function showQuizGenerationPopup() {
+  // Create popup overlay
+  const popupOverlay = document.createElement('div')
+  popupOverlay.className = 'quiz-generation-popup-overlay'
+  popupOverlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+  `
+
+  // Create popup content
+  const popupContent = document.createElement('div')
+  popupContent.className = 'quiz-generation-popup-content'
+  popupContent.style.cssText = `
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    animation: slideIn 0.3s ease;
+  `
+
+  popupContent.innerHTML = `
+    <div style="margin-bottom: 1.5rem;">
+      <i class="fas fa-clock" style="font-size: 3rem; color: #3b82f6; margin-bottom: 1rem;"></i>
+      <h3 style="margin: 0 0 1rem 0; color: #1f2937; font-size: 1.5rem;">Génération du Quiz</h3>
+      <p style="margin: 0; color: #6b7280; line-height: 1.6;">
+        La création peut prendre 5 à 10 secondes par compétence sélectionnée.
+      </p>
+    </div>
+    <div style="display: flex; justify-content: center; gap: 1rem;">
+      <button id="continueQuizGeneration" style="
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      ">
+        <i class="fas fa-check"></i> Continuer
+      </button>
+      <button id="cancelQuizGeneration" style="
+        background: #f3f4f6;
+        color: #6b7280;
+        border: 1px solid #d1d5db;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      ">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+    </div>
+  `
+
+  // Add CSS animations
+  const style = document.createElement('style')
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .quiz-generation-popup-content button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  `
+  document.head.appendChild(style)
+
+  popupOverlay.appendChild(popupContent)
+  document.body.appendChild(popupOverlay)
+
+  // Handle continue button
+  const continueBtn = document.getElementById('continueQuizGeneration')
+  const cancelBtn = document.getElementById('cancelQuizGeneration')
+
+  continueBtn.addEventListener('click', () => {
+    document.body.removeChild(popupOverlay)
+    document.head.removeChild(style)
+    // Continue with quiz generation
+    proceedWithQuizGeneration()
+  })
+
+  cancelBtn.addEventListener('click', () => {
+    document.body.removeChild(popupOverlay)
+    document.head.removeChild(style)
+    // Reset form state
+    const quizForm = document.getElementById("createQuizForm")
+    if (quizForm) {
+      quizForm.dataset.submitting = "false"
+      const submitBtn = quizForm.querySelector(".quiz-create-btn, .btn-primary")
+      if (submitBtn) {
+        submitBtn.disabled = false
+        submitBtn.innerHTML = '<i class="fas fa-magic"></i> Générer le Quiz'
+      }
+    }
+  })
+
+  // Close on overlay click
+  popupOverlay.addEventListener('click', (e) => {
+    if (e.target === popupOverlay) {
+      document.body.removeChild(popupOverlay)
+      document.head.removeChild(style)
+      // Reset form state
+      const quizForm = document.getElementById("createQuizForm")
+      if (quizForm) {
+        quizForm.dataset.submitting = "false"
+        const submitBtn = quizForm.querySelector(".quiz-create-btn, .btn-primary")
+        if (submitBtn) {
+          submitBtn.disabled = false
+          submitBtn.innerHTML = '<i class="fas fa-magic"></i> Générer le Quiz'
+        }
+      }
+    }
+  })
+}
+
+async function proceedWithQuizGeneration() {
+  const quizForm = document.getElementById("createQuizForm")
+  if (!quizForm) return
+
+  const submitBtn = quizForm.querySelector(".quiz-create-btn, .btn-primary")
+  const originalBtnHtml = submitBtn ? submitBtn.innerHTML : null
+  if (submitBtn) {
+    submitBtn.disabled = true
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…'
+  }
+
+  const formData = new FormData(quizForm)
+  const quizData = {
+    title: formData.get("quizTitle"),
+    timeLimit: Number.parseInt(formData.get("quizTime")) || 45,
+    skills: [],
+  }
+
+  let jobSkills = []
+
+  if (currentJob) {
+    if (currentJob.skills && Array.isArray(currentJob.skills)) {
+      jobSkills = currentJob.skills
+    } else if (currentJob.required_skills && Array.isArray(currentJob.required_skills)) {
+      jobSkills = currentJob.required_skills
+    } else if (currentJob.job_skills && Array.isArray(currentJob.job_skills)) {
+      jobSkills = currentJob.job_skills
+    } else if (currentJob.skills_list && Array.isArray(currentJob.skills_list)) {
+      jobSkills = currentJob.skills_list
+    }
+
+    if (jobSkills.length === 0) {
+      const skillsContainer = document.getElementById("jobSkillsContainer")
+      if (skillsContainer) {
+        const skillElements = skillsContainer.querySelectorAll(".skill-tag, .skill-item, [data-skill]")
+        jobSkills = Array.from(skillElements)
+          .map((el) => {
+            return el.textContent?.trim() || el.getAttribute("data-skill") || el.innerText?.trim()
+          })
+          .filter((skill) => skill && skill.length > 0)
+      }
+    }
+  }
+
+  jobSkills.forEach((skill) => {
+    let skillName = ""
+    if (typeof skill === "string") {
+      skillName = skill.trim()
+    } else if (skill && typeof skill === "object") {
+      skillName =
+        skill.skill_name || skill.name || skill.skill || skill.title || skill.text || "Compétence inconnue"
+    } else {
+      skillName = String(skill) || "Compétence inconnue"
+    }
+
+    const skillId = skillName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()
+
+    const questions = Number.parseInt(formData.get(`questions_${skillId}`)) || 0
+    const difficulty = formData.get(`difficulty_${skillId}`) || "medium"
+
+    if (questions > 0) {
+      quizData.skills.push({
+        name: skillName,
+        questions: questions,
+        difficulty: difficulty,
+      })
+    }
+  })
+
+  if (!quizData.title || !quizData.timeLimit || Number.isNaN(quizData.timeLimit)) {
+    showNotification("Veuillez renseigner le titre et le temps limite.", "error")
+    if (submitBtn) {
+      submitBtn.disabled = false
+      if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
+    }
+    quizForm.dataset.submitting = "false"
+    return
+  }
+  if (quizData.skills.length === 0) {
+    showNotification("Veuillez configurer au moins une compétence avec des questions.", "error")
+    if (submitBtn) {
+      submitBtn.disabled = false
+      if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
+    }
+    quizForm.dataset.submitting = "false"
+    return
+  }
+
+  const formControls = quizForm.querySelectorAll("input, select, textarea, button")
+  formControls.forEach((el) => {
+    if (el !== submitBtn) el.disabled = true
+  })
+
+  const candidateId = window.currentQuizCandidateId || null
+
+  try {
+    const response = await fetch("/api/hr/quiz/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: quizData.title,
+        time_limit: quizData.timeLimit,
+        skills: quizData.skills,
+        job_id: currentJob ? currentJob.id || currentJob.job_id : null,
+        candidate_id: candidateId,
+      }),
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      showNotification("Quiz créé avec succès !", "success")
+      closeCreateQuizModal()
+      
+      // Refresh the page to show updated quiz data
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } else {
+      showNotification("Erreur lors de la création du quiz", "error")
+    }
+  } catch (error) {
+    console.error("Erreur lors de la création du quiz:", error)
+    showNotification("Erreur lors de la création du quiz", "error")
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false
+      if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
+    }
+    formControls.forEach((el) => {
+      if (el !== submitBtn) el.disabled = false
+    })
+    quizForm.dataset.submitting = "false"
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const quizForm = document.getElementById("createQuizForm")
 
@@ -2667,139 +3322,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (quizForm.dataset.submitting === "true") {
         return
       }
-      quizForm.dataset.submitting = "true"
-      const submitBtn = quizForm.querySelector(".quiz-create-btn, .btn-primary")
-      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : null
-      if (submitBtn) {
-        submitBtn.disabled = true
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…'
-      }
 
-      const formData = new FormData(quizForm)
-      const quizData = {
-        title: formData.get("quizTitle"),
-        timeLimit: Number.parseInt(formData.get("quizTime")) || 45,
-        skills: [],
-      }
-
-      let jobSkills = []
-
-      if (currentJob) {
-        if (currentJob.skills && Array.isArray(currentJob.skills)) {
-          jobSkills = currentJob.skills
-        } else if (currentJob.required_skills && Array.isArray(currentJob.required_skills)) {
-          jobSkills = currentJob.required_skills
-        } else if (currentJob.job_skills && Array.isArray(currentJob.job_skills)) {
-          jobSkills = currentJob.job_skills
-        } else if (currentJob.skills_list && Array.isArray(currentJob.skills_list)) {
-          jobSkills = currentJob.skills_list
-        }
-
-        if (jobSkills.length === 0) {
-          const skillsContainer = document.getElementById("jobSkillsContainer")
-          if (skillsContainer) {
-            const skillElements = skillsContainer.querySelectorAll(".skill-tag, .skill-item, [data-skill]")
-            jobSkills = Array.from(skillElements)
-              .map((el) => {
-                return el.textContent?.trim() || el.getAttribute("data-skill") || el.innerText?.trim()
-              })
-              .filter((skill) => skill && skill.length > 0)
-          }
-        }
-      }
-
-      jobSkills.forEach((skill) => {
-        let skillName = ""
-        if (typeof skill === "string") {
-          skillName = skill.trim()
-        } else if (skill && typeof skill === "object") {
-          skillName =
-            skill.skill_name || skill.name || skill.skill || skill.title || skill.text || "Compétence inconnue"
-        } else {
-          skillName = String(skill) || "Compétence inconnue"
-        }
-
-        const skillId = skillName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()
-
-        const questions = Number.parseInt(formData.get(`questions_${skillId}`)) || 0
-        const difficulty = formData.get(`difficulty_${skillId}`) || "medium"
-
-        if (questions > 0) {
-          quizData.skills.push({
-            name: skillName,
-            questions: questions,
-            difficulty: difficulty,
-          })
-        }
-      })
-
-      if (!quizData.title || !quizData.timeLimit || Number.isNaN(quizData.timeLimit)) {
-        showNotification("Veuillez renseigner le titre et le temps limite.", "error")
-        if (submitBtn) {
-          submitBtn.disabled = false
-          if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
-        }
-        quizForm.dataset.submitting = "false"
-        return
-      }
-      if (quizData.skills.length === 0) {
-        showNotification("Veuillez configurer au moins une compétence avec des questions.", "error")
-        if (submitBtn) {
-          submitBtn.disabled = false
-          if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
-        }
-        quizForm.dataset.submitting = "false"
-        return
-      }
-
-      const formControls = quizForm.querySelectorAll("input, select, textarea, button")
-      formControls.forEach((el) => {
-        if (el !== submitBtn) el.disabled = true
-      })
-
-      const candidateId = window.currentQuizCandidateId || null
-
-      try {
-        const response = await fetch("/api/hr/quiz/create", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: quizData.title,
-            time_limit: quizData.timeLimit,
-            skills: quizData.skills,
-            job_id: currentJob ? currentJob.id || currentJob.job_id : null,
-            candidate_id: candidateId,
-          }),
-        })
-
-        const result = await response.json()
-
-        if (result.success) {
-          showNotification("Quiz créé avec succès !", "success")
-          closeCreateQuizModal()
-
-          // Refresh the page to show updated quiz data
-          setTimeout(() => {
-            window.location.reload()
-          }, 1000)
-        } else {
-          showNotification("Erreur lors de la création du quiz", "error")
-        }
-      } catch (error) {
-        console.error("Erreur lors de la création du quiz:", error)
-        showNotification("Erreur lors de la création du quiz", "error")
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false
-          if (originalBtnHtml) submitBtn.innerHTML = originalBtnHtml
-        }
-        formControls.forEach((el) => {
-          if (el !== submitBtn) el.disabled = false
-        })
-        quizForm.dataset.submitting = "false"
-      }
+      // Show popup before starting quiz generation
+      showQuizGenerationPopup()
     })
   }
 })

@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Candidat - CV Analyzer Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Professional Corporate Color Scheme */
+            --hr-primary: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            --hr-accent: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            --hr-secondary: linear-gradient(135deg, #64748b 0%, #475569 100%);
+            --hr-success: linear-gradient(135deg, #059669 0%, #047857 100%);
+            --hr-warning: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            --hr-error: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            --hr-info: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+
+            /* Background Colors */
+            --dark-bg: #0f172a;
+            --card-bg: rgba(30, 58, 138, 0.08);
+            --card-hover: rgba(30, 58, 138, 0.12);
+            --border-color: rgba(37, 99, 235, 0.15);
+
+            /* Text Colors */
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+
+            /* Chart Colors */
+            --chart-primary: #1e40af;
+            --chart-secondary: #2563eb;
+            --chart-accent: #3b82f6;
+            --chart-success: #059669;
+            --chart-warning: #d97706;
+            --chart-error: #dc2626;
+            --chart-info: #0891b2;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(ellipse at top, #1e293b 0%, #0f172a 50%, #020617 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Background Effects */
+        .background-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(45deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.05));
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            width: 200px;
+            height: 200px;
+            top: 60%;
+            right: 10%;
+            animation-delay: -7s;
+        }
+
+        .shape-3 {
+            width: 150px;
+            height: 150px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: -14s;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(37, 99, 235, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(37, 99, 235, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: grid-move 20s linear infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(120deg); }
+            66% { transform: translateY(30px) rotate(240deg); }
+        }
+
+        @keyframes grid-move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Header */
+        .profile-header {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .back-btn {
+            background: var(--hr-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(30, 64, 175, 0.3);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-title h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: var(--hr-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .action-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            background: var(--card-hover);
+            transform: translateY(-2px);
+        }
+
+        .action-btn.primary {
+            background: var(--hr-success);
+            color: white;
+            border-color: transparent;
+        }
+
+        .action-btn.danger {
+            background: var(--hr-error);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Main Container */
+        .profile-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 2rem;
+        }
+
+        /* Sidebar */
+        .profile-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .candidate-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .candidate-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--hr-primary);
+        }
+
+        .candidate-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--hr-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            margin: 0 auto 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .candidate-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .candidate-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .candidate-title {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .candidate-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(37, 99, 235, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(37, 99, 235, 0.1);
+        }
+
+        .meta-item i {
+            color: var(--chart-primary);
+            width: 20px;
+        }
+
+        .meta-item span {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .compatibility-score {
+            background: var(--hr-success);
+            color: white;
+            padding: 1rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+        }
+
+        .score-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-badge.pending {
+            background: rgba(217, 119, 6, 0.2);
+            color: var(--chart-warning);
+            border: 1px solid rgba(217, 119, 6, 0.3);
+        }
+
+        .status-badge.accepted {
+            background: rgba(5, 150, 105, 0.2);
+            color: var(--chart-success);
+            border: 1px solid rgba(5, 150, 105, 0.3);
+        }
+
+        .status-badge.rejected {
+            background: rgba(220, 38, 38, 0.2);
+            color: var(--chart-error);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+        }
+
+        /* Contact Card */
+        .contact-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(37, 99, 235, 0.05);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            border: 1px solid rgba(37, 99, 235, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .contact-item:hover {
+            background: rgba(37, 99, 235, 0.1);
+            transform: translateX(5px);
+        }
+
+        .contact-item i {
+            color: var(--chart-primary);
+            width: 20px;
+            font-size: 1.1rem;
+        }
+
+        .contact-item div {
+            flex: 1;
+        }
+
+        .contact-item label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .contact-item span {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .profile-main {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .section-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .section-btn:hover {
+            background: var(--card-hover);
+        }
+
+        .section-btn.active {
+            background: var(--hr-primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Content Sections */
+        .content-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--hr-primary);
+        }
+
+        .section-content {
+            margin-top: 1.5rem;
+        }
+
+        /* Skills Section */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .skill-item {
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .skill-item:hover {
+            background: rgba(37, 99, 235, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .skill-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .skill-level {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Experience Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--hr-primary);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+            padding-left: 2rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -1.5rem;
+            top: 0.5rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--chart-primary);
+            border: 3px solid var(--dark-bg);
+        }
+
+        .timeline-content {
+            background: rgba(37, 99, 235, 0.05);
+            border: 1px solid rgba(37, 99, 235, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .timeline-title {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-company {
+            color: var(--chart-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-period {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .timeline-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Education Grid */
+        .education-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .education-item {
+            background: rgba(37, 99, 235, 0.05);
+            border: 1px solid rgba(37, 99, 235, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .education-item:hover {
+            background: rgba(37, 99, 235, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .education-degree {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .education-school {
+            color: var(--chart-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .education-period {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Certificates Grid */
+        .certificates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .certificate-item {
+            background: rgba(5, 150, 105, 0.1);
+            border: 1px solid rgba(5, 150, 105, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .certificate-item:hover {
+            background: rgba(5, 150, 105, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .certificate-icon {
+            font-size: 2rem;
+            color: var(--chart-success);
+            margin-bottom: 1rem;
+        }
+
+        .certificate-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .certificate-issuer {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Languages */
+        .languages-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .language-item {
+            background: rgba(8, 145, 178, 0.1);
+            border: 1px solid rgba(8, 145, 178, 0.2);
+            border-radius: 20px;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .language-flag {
+            font-size: 1.2rem;
+        }
+
+        .language-name {
+            font-weight: 600;
+        }
+
+        .language-level {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Applications */
+        .applications-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .application-item {
+            background: rgba(37, 99, 235, 0.05);
+            border: 1px solid rgba(37, 99, 235, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .application-item:hover {
+            background: rgba(37, 99, 235, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .application-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .application-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .application-company {
+            color: var(--chart-primary);
+            font-weight: 600;
+        }
+
+        .application-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .application-status.pending {
+            background: rgba(217, 119, 6, 0.2);
+            color: var(--chart-warning);
+            border: 1px solid rgba(217, 119, 6, 0.3);
+        }
+
+        .application-status.accepted {
+            background: rgba(5, 150, 105, 0.2);
+            color: var(--chart-success);
+            border: 1px solid rgba(5, 150, 105, 0.3);
+        }
+
+        .application-status.rejected {
+            background: rgba(220, 38, 38, 0.2);
+            color: var(--chart-error);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+        }
+
+        .application-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .application-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .application-meta-item i {
+            color: var(--chart-primary);
+            width: 16px;
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .loading i {
+            margin-right: 0.5rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .profile-sidebar {
+                order: 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .profile-container {
+                padding: 1rem;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .header-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .skills-grid,
+            .education-grid,
+            .certificates-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--hr-primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--hr-accent);
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="profile-header">
+        <div class="header-content">
+            <div class="header-left">
+                <button class="back-btn" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour
+                </button>
+                <div class="header-title">
+                    <i class="fas fa-user-circle"></i>
+                    <h1>Profil Candidat</h1>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn" onclick="printProfile()">
+                    <i class="fas fa-print"></i>
+                    Imprimer
+                </button>
+                <button class="action-btn" onclick="exportProfile()">
+                    <i class="fas fa-download"></i>
+                    Exporter PDF
+                </button>
+                <button class="action-btn primary" onclick="scheduleInterview()">
+                    <i class="fas fa-calendar-plus"></i>
+                    Planifier Entretien
+                </button>
+                <button class="action-btn danger" onclick="rejectCandidate()">
+                    <i class="fas fa-times"></i>
+                    Rejeter
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="profile-container">
+        <!-- Sidebar -->
+        <div class="profile-sidebar">
+            <!-- Candidate Card -->
+            <div class="candidate-card">
+                <div class="candidate-avatar" id="candidateAvatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h2 class="candidate-name" id="candidateName">Chargement...</h2>
+                <p class="candidate-title" id="candidateTitle">Professionnel</p>
+                
+                <div class="candidate-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-briefcase"></i>
+                        <span id="candidateExperience">0 ans d'expérience</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="candidateLocation">Localisation</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-calendar"></i>
+                        <span id="candidateApplicationDate">Date de candidature</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-file-alt"></i>
+                        <span id="candidateApplications">0 candidatures</span>
+                    </div>
+                </div>
+
+                <div class="compatibility-score">
+                    <div class="score-value" id="compatibilityScore">0%</div>
+                    <div class="score-label">Score de Compatibilité</div>
+                </div>
+
+                <div class="status-badge pending" id="candidateStatus">
+                    <i class="fas fa-clock"></i>
+                    En attente
+                </div>
+            </div>
+
+            <!-- Contact Card -->
+            <div class="contact-card">
+                <h3 class="card-title">
+                    <i class="fas fa-address-book"></i>
+                    Contact
+                </h3>
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <label>Email</label>
+                        <span id="candidateEmail">email@example.com</span>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-phone"></i>
+                    <div>
+                        <label>Téléphone</label>
+                        <span id="candidatePhone">Non renseigné</span>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <i class="fab fa-linkedin"></i>
+                    <div>
+                        <label>LinkedIn</label>
+                        <span id="candidateLinkedin">Non renseigné</span>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <div>
+                        <label>Adresse</label>
+                        <span id="candidateAddress">Non renseignée</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="profile-main">
+            <!-- Profile Overview -->
+            <div class="content-section">
+                <div class="content-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-user-edit"></i>
+                        Présentation
+                    </h2>
+                    <div class="section-actions">
+                        <button class="section-btn active" onclick="showSection('profile')">
+                            <i class="fas fa-user"></i>
+                            Profil
+                        </button>
+                        <button class="section-btn" onclick="showSection('skills')">
+                            <i class="fas fa-cogs"></i>
+                            Compétences
+                        </button>
+                        <button class="section-btn" onclick="showSection('experience')">
+                            <i class="fas fa-briefcase"></i>
+                            Expérience
+                        </button>
+                        <button class="section-btn" onclick="showSection('education')">
+                            <i class="fas fa-graduation-cap"></i>
+                            Formation
+                        </button>
+                        <button class="section-btn" onclick="showSection('applications')">
+                            <i class="fas fa-file-alt"></i>
+                            Candidatures
+                        </button>
+                    </div>
+                </div>
+                <div class="section-content" id="profileContent">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        Chargement du profil...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills Section -->
+            <div class="content-section" id="skillsSection" style="display: none;">
+                <div class="content-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-cogs"></i>
+                        Compétences Techniques
+                    </h2>
+                </div>
+                <div class="section-content" id="skillsContent">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        Chargement des compétences...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Experience Section -->
+            <div class="content-section" id="experienceSection" style="display: none;">
+                <div class="content-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-briefcase"></i>
+                        Expérience Professionnelle
+                    </h2>
+                </div>
+                <div class="section-content" id="experienceContent">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        Chargement de l'expérience...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Education Section -->
+            <div class="content-section" id="educationSection" style="display: none;">
+                <div class="content-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-graduation-cap"></i>
+                        Formation & Certifications
+                    </h2>
+                </div>
+                <div class="section-content" id="educationContent">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        Chargement de la formation...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Applications Section -->
+            <div class="content-section" id="applicationsSection" style="display: none;">
+                <div class="content-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-file-alt"></i>
+                        Historique des Candidatures
+                    </h2>
+                </div>
+                <div class="section-content" id="applicationsContent">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        Chargement des candidatures...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let candidateData = null;
+        const candidateId = {{ candidate_id }};
+        
+
+        // Navigation functions
+        function goBack() {
+            window.history.back();
+        }
+
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.section-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + 'Section').style.display = 'block';
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Action functions
+        function printProfile() {
+            window.print();
+        }
+
+        function exportProfile() {
+            // Implementation for PDF export
+            showNotification('Fonctionnalité d\'export PDF en cours de développement', 'info');
+        }
+
+        function scheduleInterview() {
+            // Implementation for interview scheduling
+            showNotification('Fonctionnalité de planification d\'entretien en cours de développement', 'info');
+        }
+
+        function rejectCandidate() {
+            if (confirm('Êtes-vous sûr de vouloir rejeter ce candidat ?')) {
+                // Implementation for candidate rejection
+                showNotification('Candidat rejeté avec succès', 'success');
+            }
+        }
+
+        // Data loading functions
+        async function loadCandidateData() {
+            try {
+                const [candidateResponse, applicationsResponse] = await Promise.all([
+                    fetch(`/api/candidate/${candidateId}`),
+                    fetch(`/api/candidate/${candidateId}/applications`)
+                ]);
+                
+                const candidateData = await candidateResponse.json();
+                const applicationsData = await applicationsResponse.json();
+                
+                if (candidateData.success) {
+                    window.candidateData = candidateData.candidate;
+                    if (applicationsData.success) {
+                        window.candidateData.applications = applicationsData.applications;
+                    }
+                    displayCandidateData();
+                } else {
+                    showNotification('Erreur lors du chargement des données du candidat', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading candidate data:', error);
+                showNotification('Erreur lors du chargement des données du candidat', 'error');
+            }
+        }
+
+        function displayCandidateData() {
+            if (!window.candidateData) {
+                return;
+            }
+            
+            // Parse JSON strings to arrays
+            try {
+                if (typeof window.candidateData.skills === 'string') {
+                    window.candidateData.skills = JSON.parse(window.candidateData.skills);
+                }
+                if (typeof window.candidateData.education === 'string') {
+                    window.candidateData.education = JSON.parse(window.candidateData.education);
+                }
+                if (typeof window.candidateData.certificates === 'string') {
+                    window.candidateData.certificates = JSON.parse(window.candidateData.certificates);
+                }
+                if (typeof window.candidateData.languages === 'string') {
+                    window.candidateData.languages = JSON.parse(window.candidateData.languages);
+                }
+            } catch (e) {
+                console.error('Erreur lors du parsing JSON:', e);
+            }
+
+            // Update basic info
+            document.getElementById('candidateName').textContent = window.candidateData.name || 'Candidat';
+            document.getElementById('candidateTitle').textContent = window.candidateData.title || 'Professionnel';
+            document.getElementById('candidateEmail').textContent = window.candidateData.email || 'Non renseigné';
+            document.getElementById('candidatePhone').textContent = window.candidateData.phone || 'Non renseigné';
+            document.getElementById('candidateLinkedin').textContent = window.candidateData.linkedin || 'Non renseigné';
+            document.getElementById('candidateAddress').textContent = window.candidateData.address || 'Non renseignée';
+            
+            // Update experience and applications
+            document.getElementById('candidateExperience').textContent = `${window.candidateData.years_of_experience || 0} ans d'expérience`;
+            document.getElementById('candidateApplications').textContent = `${window.candidateData.total_applications || 0} candidatures`;
+            
+            // Update application date
+            if (window.candidateData.created_at) {
+                const date = new Date(window.candidateData.created_at);
+                document.getElementById('candidateApplicationDate').textContent = date.toLocaleDateString('fr-FR');
+            }
+            
+            // Update compatibility score (real data only)
+            const compatibilityScoreContainer = document.querySelector('.compatibility-score');
+            const candidateLevelScore = window.candidateData.compatibility_score ?? window.candidateData.compatibility_percentage;
+            if (candidateLevelScore !== undefined && candidateLevelScore !== null) {
+                document.getElementById('compatibilityScore').textContent = `${Math.round(candidateLevelScore)}%`;
+                compatibilityScoreContainer.style.display = 'block';
+            } else {
+                compatibilityScoreContainer.style.display = 'none';
+            }
+            
+            // Update status based on applications
+            const statusElement = document.getElementById('candidateStatus');
+            if (window.candidateData.accepted_applications > 0) {
+                statusElement.className = 'status-badge accepted';
+                statusElement.innerHTML = '<i class="fas fa-check"></i> Accepté';
+            } else if (window.candidateData.pending_applications > 0) {
+                statusElement.className = 'status-badge pending';
+                statusElement.innerHTML = '<i class="fas fa-clock"></i> En attente';
+            } else {
+                statusElement.className = 'status-badge rejected';
+                statusElement.innerHTML = '<i class="fas fa-times"></i> Rejeté';
+            }
+
+            // Update profile content
+            document.getElementById('profileContent').innerHTML = `
+                <div style="line-height: 1.8; color: var(--text-secondary);">
+                    ${window.candidateData.profile || 'Aucune présentation disponible.'}
+                </div>
+            `;
+
+            // Update skills
+            if (window.candidateData.skills && Array.isArray(window.candidateData.skills) && window.candidateData.skills.length > 0) {
+                const skillsHtml = window.candidateData.skills.map(skill => `
+                    <div class="skill-item">
+                        <div class="skill-name">${skill}</div>
+                        <div class="skill-level">Compétence confirmée</div>
+                    </div>
+                `).join('');
+                document.getElementById('skillsContent').innerHTML = `
+                    <div class="skills-grid">
+                        ${skillsHtml}
+                    </div>
+                `;
+            } else {
+                document.getElementById('skillsContent').innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <i class="fas fa-cogs" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>Aucune compétence renseignée</p>
+                    </div>
+                `;
+            }
+
+            // Update education
+            if (window.candidateData.education && Array.isArray(window.candidateData.education) && window.candidateData.education.length > 0) {
+                const educationHtml = window.candidateData.education.map(edu => `
+                    <div class="education-item">
+                        <div class="education-degree">${edu.degree || 'Formation'}</div>
+                        <div class="education-school">${edu.school || 'Établissement'}</div>
+                        <div class="education-period">${edu.period || 'Période non renseignée'}</div>
+                    </div>
+                `).join('');
+                document.getElementById('educationContent').innerHTML = `
+                    <div class="education-grid">
+                        ${educationHtml}
+                    </div>
+                `;
+            } else {
+                document.getElementById('educationContent').innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <i class="fas fa-graduation-cap" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>Aucune formation renseignée</p>
+                    </div>
+                `;
+            }
+
+            // Update certificates
+            if (window.candidateData.certificates && Array.isArray(window.candidateData.certificates) && window.candidateData.certificates.length > 0) {
+                const certificatesHtml = window.candidateData.certificates.map(cert => `
+                    <div class="certificate-item">
+                        <div class="certificate-icon">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <div class="certificate-name">${cert.name || 'Certification'}</div>
+                        <div class="certificate-issuer">${cert.issuer || 'Organisme'}</div>
+                    </div>
+                `).join('');
+                document.getElementById('educationContent').innerHTML += `
+                    <h3 style="margin: 2rem 0 1rem 0; color: var(--text-primary);">
+                        <i class="fas fa-certificate"></i>
+                        Certifications
+                    </h3>
+                    <div class="certificates-grid">
+                        ${certificatesHtml}
+                    </div>
+                `;
+            }
+
+            // Update languages
+            if (window.candidateData.languages && Array.isArray(window.candidateData.languages) && window.candidateData.languages.length > 0) {
+                const languagesHtml = window.candidateData.languages.map(lang => `
+                    <div class="language-item">
+                        <span class="language-flag">🌐</span>
+                        <span class="language-name">${lang.name || 'Langue'}</span>
+                        <span class="language-level">${lang.level || 'Niveau'}</span>
+                    </div>
+                `).join('');
+                document.getElementById('profileContent').innerHTML += `
+                    <h3 style="margin: 2rem 0 1rem 0; color: var(--text-primary);">
+                        <i class="fas fa-language"></i>
+                        Langues
+                    </h3>
+                    <div class="languages-list">
+                        ${languagesHtml}
+                    </div>
+                `;
+            }
+
+            // Update applications section
+            if (window.candidateData.applications && Array.isArray(window.candidateData.applications) && window.candidateData.applications.length > 0) {
+                const applicationsHtml = window.candidateData.applications.map(app => `
+                    <div class="application-item">
+                        <div class="application-header">
+                            <div>
+                                <div class="application-title">${app.job_title || 'Poste non spécifié'}</div>
+                                <div class="application-company">${app.company_name || 'Entreprise'} - ${app.department_name || 'Département'}</div>
+                            </div>
+                            <div class="application-status ${app.status}">
+                                ${app.status === 'pending' ? 'En attente' : app.status === 'accepted' ? 'Accepté' : app.status === 'rejected' ? 'Rejeté' : app.status}
+                            </div>
+                        </div>
+                        <div class="application-meta">
+                            <div class="application-meta-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>${app.application_date ? new Date(app.application_date).toLocaleDateString('fr-FR') : 'Date non renseignée'}</span>
+                            </div>
+                            ${(
+                                app.compatibility_percentage !== undefined && app.compatibility_percentage !== null
+                            ) || (
+                                app.compatibility_score !== undefined && app.compatibility_score !== null
+                            ) ? `
+                            <div class="application-meta-item">
+                                <i class="fas fa-percentage"></i>
+                                <span>Compatibilité: ${Math.round(app.compatibility_percentage ?? app.compatibility_score)}%</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ${app.job_description ? `
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(37, 99, 235, 0.1);">
+                                <div style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">
+                                    ${app.job_description.length > 200 ? app.job_description.substring(0, 200) + '...' : app.job_description}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+
+                document.getElementById('applicationsContent').innerHTML = `
+                    <div class="applications-list">
+                        ${applicationsHtml}
+                    </div>
+                `;
+            } else {
+                document.getElementById('applicationsContent').innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <i class="fas fa-file-alt" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>Aucune candidature trouvée</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Notification function
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 2rem;
+                right: 2rem;
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 1rem 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                z-index: 1000;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                animation: slideIn 0.3s ease;
+                border-left: 4px solid ${type === 'success' ? 'var(--chart-success)' : type === 'error' ? 'var(--chart-error)' : 'var(--chart-info)'};
+            `;
+            
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle';
+            else if (type === 'error') icon = 'exclamation-circle';
+            else if (type === 'warning') icon = 'exclamation-triangle';
+            
+            notification.innerHTML = `
+                <i class="fas fa-${icon}" style="color: ${type === 'success' ? 'var(--chart-success)' : type === 'error' ? 'var(--chart-error)' : 'var(--chart-info)'};"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCandidateData();
+        });
+    </script>
+</body>
+</html>

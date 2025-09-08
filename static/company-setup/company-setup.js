@@ -130,7 +130,7 @@ function validateStep2() {
   }
 
   // Validation téléphone
-  const phoneRegex = /^[+]?[0-9\s\-$$$$]{10,}$/
+  const phoneRegex = /^[+]?216[0-9\s\-]{8,}$/
   if (!phoneRegex.test(phone.value)) {
     showFieldError(phone, "Veuillez entrer un numéro de téléphone valide")
     isValid = false

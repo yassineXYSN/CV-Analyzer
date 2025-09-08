@@ -137,7 +137,7 @@
                                 <i class="fas fa-map-marker-alt"></i>
                                 Adresse complète
                             </label>
-                            <textarea id="address" name="address" class="form-textarea" placeholder="123 Rue de la République&#10;75001 Paris, France"></textarea>
+                            <textarea id="address" name="address" class="form-textarea" placeholder="123 Avenue Habib Bourguiba&#10;1000 Tunis, Tunisie"></textarea>
                             <div class="input-feedback"></div>
                         </div>
 
@@ -146,7 +146,7 @@
                                 <i class="fas fa-phone"></i>
                                 Téléphone principal
                             </label>
-                            <input type="tel" id="phone" name="phone" class="form-input" placeholder="+33 1 23 45 67 89">
+                            <input type="tel" id="phone" name="phone" class="form-input" placeholder="+216 12 345 678">
                             <div class="input-feedback"></div>
                         </div>
                         
@@ -507,7 +507,7 @@
                 
                 // Phone validation
                 if (field.type === 'tel' && field.value.trim()) {
-                    const phoneRegex = /^[\+]?[0-9\s\-$$$$\.]{8,}$/;
+                    const phoneRegex = /^[\+]?216[0-9\s\-]{8,}$/;
                     if (!phoneRegex.test(field.value)) {
                         feedback.textContent = 'Format de téléphone invalide';
                         feedback.className = 'input-feedback error';

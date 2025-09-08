@@ -113,6 +113,12 @@ class HeaderComponent {
                   }
                 }
               }
+            } else {
+              // Refresh token invalid; clear tokens and fall back to guest
+              try {
+                localStorage.removeItem('client_access_token')
+                localStorage.removeItem('client_refresh_token')
+              } catch (_) {}
             }
           } catch (_) {
             // ignore and fall through
@@ -145,9 +151,9 @@ class HeaderComponent {
         return
       }
 
-      // If no user data found but JWT tokens exist, don't force guest; retry shortly
+      // If tokens were cleared or never existed, go guest; otherwise a short retry if tokens exist
       if (localStorage.getItem('client_access_token') || localStorage.getItem('client_refresh_token')) {
-        setTimeout(() => this.checkAuthStatus(), 300)
+        setTimeout(() => this.checkAuthStatus(), 800)
       } else {
         this.setGuest()
       }
@@ -155,7 +161,7 @@ class HeaderComponent {
       console.error("Auth check error:", error)
       // Avoid forcing guest if JWT tokens exist; retry
       if (localStorage.getItem('client_access_token') || localStorage.getItem('client_refresh_token')) {
-        setTimeout(() => this.checkAuthStatus(), 500)
+        setTimeout(() => this.checkAuthStatus(), 1000)
       } else if (window.currentUser) {
         this.setUser(window.currentUser)
       } else {
@@ -169,6 +175,7 @@ class HeaderComponent {
 
     const userMenuContainer = document.getElementById("userMenuContainer")
     const notificationBellContainer = document.getElementById("notificationBellContainer")
+    const quizzesContainer = document.getElementById("quizzesContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
 
     if (userMenuContainer) {
@@ -177,6 +184,10 @@ class HeaderComponent {
 
     if (notificationBellContainer) {
       notificationBellContainer.style.display = "block"
+    }
+
+    if (quizzesContainer) {
+      quizzesContainer.style.display = "block"
     }
 
     guestMenuContainers.forEach((container) => {
@@ -253,6 +264,7 @@ async updatePlannedInterviewMenu() {
     // Hide user menu and notification bell, show guest menu
     const userMenuContainer = document.getElementById("userMenuContainer")
     const notificationBellContainer = document.getElementById("notificationBellContainer")
+    const quizzesContainer = document.getElementById("quizzesContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
 
     if (userMenuContainer) {
@@ -261,6 +273,10 @@ async updatePlannedInterviewMenu() {
 
     if (notificationBellContainer) {
       notificationBellContainer.style.display = "none"
+    }
+
+    if (quizzesContainer) {
+      quizzesContainer.style.display = "none"
     }
 
     guestMenuContainers.forEach((container) => {

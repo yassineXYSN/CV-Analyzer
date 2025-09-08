@@ -10,21 +10,15 @@ from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCan
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-'''
+
 # The webhook URL from n8n
 url = "https://aminechtourou.app.n8n.cloud/webhook-test/69c5f680-542e-4c5e-82cf-9bd935078c71"
 print("Sending file to n8n...")
-number = [
-    { "skill": "JavaScript", "level": "advanced","nb": 2 },
-    { "skill": "Python", "level": "intermediate","nb": 3 }
-]
-payload = {
-    "number": number,
-    }
+quiz_data = 
 response = requests.post(url, json=payload)
 
 print("Status Code:", response.status_code)
-print("Response:", response.text)'''
+print("Response:", response.text)
 
 
 def get_current_hr_user():
@@ -104,6 +98,7 @@ if __name__ == "__main__":
     send_test_notification_via_api(base_url)'''
     
 
-
+'''
 candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == 35).first()
 print(candidat.user_id)
+'''

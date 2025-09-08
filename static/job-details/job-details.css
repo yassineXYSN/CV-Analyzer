@@ -292,6 +292,7 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 /* Scrollbar personnalisée */
@@ -732,6 +733,71 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
+}
+
+/* Ensure job sections can span full width and details layout remains stable with long content */
+.job-section.full-width,
+.job-section.full-width-description {
+  width: 100%;
+}
+
+/* Make details list flow vertically by default for consistent look with varying content sizes */
+.job-details-grid {
+  grid-template-columns: 1fr;
+}
+
+.job-details-grid .detail-item span {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (min-width: 1024px) {
+  /* Use two columns on large screens, but let long responsibilities take the full row */
+  .job-details-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .job-details-grid .detail-item:has(#jobResponsibilities) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* New card style for detail items */
+.job-details-grid .detail-item {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.job-details-grid .detail-item label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.job-details-grid .detail-item span {
+  color: var(--text-primary);
+}
+
+/* Responsibilities: full-width card with internal scroll if long */
+.job-details-grid .detail-item:has(#jobResponsibilities) span#jobResponsibilities {
+  display: block;
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* Subtle scrollbar for responsibilities */
+.job-details-grid .detail-item:has(#jobResponsibilities) span#jobResponsibilities::-webkit-scrollbar {
+  width: 6px;
+}
+.job-details-grid .detail-item:has(#jobResponsibilities) span#jobResponsibilities::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 
 .detail-item {
@@ -1629,6 +1695,79 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
+}
+
+/* When only one skill, make it compact and centered */
+.skills-grid.single-skill {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 180px));
+  justify-content: flex-start;
+  justify-items: start;
+  max-width: none;
+  margin: 0;
+}
+
+.skills-grid.single-skill .skill-item {
+  width: 140px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Keep skill texts on a single line with truncation */
+.skills-grid .skill-item .skill-name,
+.skills-grid .skill-item .skill-level {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Few skills: airy layout */
+.skills-grid.skills-few {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.2rem;
+}
+
+/* Many skills: compact cards */
+.skills-grid.skills-many {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.skills-grid.skills-many .skill-item {
+  padding: 0.75rem;
+}
+
+/* Tons of skills: very compact, allow vertical scroll in section if needed */
+.skills-grid.skills-tons {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem;
+}
+
+.skills-grid.skills-tons .skill-item {
+  padding: 0.6rem;
+}
+
+/* Ensure the skills section remains usable with very large lists */
+.job-skills-section .skills-list {
+  max-height: 520px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 768px) {
+  .skills-grid.skills-few {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  .skills-grid.skills-many {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  .skills-grid.skills-tons {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
 }
 
 .skill-item {
@@ -3823,6 +3962,30 @@ body {
   background: linear-gradient(135deg, #1d4ed8, #3b82f6);
 }
 
+.btn-analyze-ai {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 0.85rem 1.5rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  min-width: 150px;
+  justify-content: center;
+}
+
+.btn-analyze-ai:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+  background: linear-gradient(135deg, #059669, #10b981);
+}
+
 /* Responsive pour la section quiz */
 @media (max-width: 768px) {
   .quiz-info-grid {
@@ -3835,7 +3998,8 @@ body {
   }
   
   .btn-generate-quiz,
-  .btn-view-quiz {
+  .btn-view-quiz,
+  .btn-analyze-ai {
     width: 100%;
     max-width: 300px;
   }

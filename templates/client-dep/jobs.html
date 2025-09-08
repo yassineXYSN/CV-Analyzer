@@ -1301,7 +1301,7 @@
                         
                         <div class="salary-range">
                             <div class="salary-controls">
-                                <input type="number" name="salary_min" placeholder="Salaire min (€)" 
+                                <input type="number" name="salary_min" placeholder="Salaire min (TND)" 
                                        value="{{ search_params.salary_min if search_params else '' }}" 
                                        class="salary-input" id="salaryMinInput" min="1000" step="1000">
                                 <div class="salary-increment-btns">
@@ -1315,7 +1315,7 @@
                             </div>
                             <span>-</span>
                             <div class="salary-controls">
-                                <input type="number" name="salary_max" placeholder="Salaire max (€)" 
+                                <input type="number" name="salary_max" placeholder="Salaire max (TND)" 
                                        value="{{ search_params.salary_max if search_params else '' }}" 
                                        class="salary-input" id="salaryMaxInput" min="1000" step="1000">
                                 <div class="salary-increment-btns">
@@ -1436,13 +1436,13 @@
                             <div class="job-stats">
                                 {% if job.salary_min and job.salary_max %}
                                 <span class="salary">
-                                    <i class="fas fa-euro-sign"></i>
-                                    {{ "{:,.0f}".format(job.salary_min) }} - {{ "{:,.0f}".format(job.salary_max) }} {{ job.currency }}
+                                    <i class="fas fa-dinar-sign"></i>
+                                    {{ "{:,.0f}".format(job.salary_min) }} - {{ "{:,.0f}".format(job.salary_max) }} TND
                                 </span>
                                 {% elif job.salary_min %}
                                 <span class="salary">
-                                    <i class="fas fa-euro-sign"></i>
-                                    À partir de {{ "{:,.0f}".format(job.salary_min) }} {{ job.currency }}
+                                    <i class="fas fa-dinar-sign"></i>
+                                    À partir de {{ "{:,.0f}".format(job.salary_min) }} TND
                                 </span>
                                 {% endif %}
                                 <span class="applications">
@@ -1700,7 +1700,7 @@
                         errorMessage = 'Le salaire minimum doit être inférieur au salaire maximum';
                         isValid = false;
                     } else if (minValue < 1000 || maxValue < 1000) {
-                        errorMessage = 'Le salaire doit être d\'au moins 1000€';
+                        errorMessage = 'Le salaire doit être d\'au moins 1000 TND';
                         isValid = false;
                     }
 

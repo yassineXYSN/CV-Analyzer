@@ -5,7 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Détails du Poste - CV Analyzer Pro</title>
   <link rel="stylesheet" href="/static/job-details/job-details.css">
+  <link rel="stylesheet" href="/static/hr-dashboard/hr-dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    function googleTranslateElementInit() {
+      var config = {
+        pageLanguage: 'fr',
+        includedLanguages: 'fr,en,ar',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: true
+      };
+      if (document.getElementById('google_translate_global')) {
+        new google.translate.TranslateElement(config, 'google_translate_global');
+      }
+    }
+  </script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <script src="/static/super_admin/gt-persist.js" defer></script>
 </head>
 <body>
   <!-- Background Effects -->
@@ -26,6 +42,7 @@
           </button>
           <h1><i class="fas fa-briefcase"></i> Détails du Poste</h1>
           <div class="header-actions">
+              <div id="google_translate_global" style="margin-right: 8px;"></div>
               <button class="action-btn" onclick="editJob()">
                   <i class="fas fa-edit"></i> Modifier
               </button>
@@ -68,7 +85,7 @@
                   <div class="job-status">
                       <div class="status-badge active" id="jobStatus">ACTIF</div>
                       <div class="salary-info">
-                          <div class="salary-amount" id="jobSalary">€ 45,000 - 65,000</div>
+                          <div class="salary-amount" id="jobSalary">148,500 - 214,500 TND</div>
                           <div class="salary-label">Salaire annuel</div>
                       </div>
                   </div>

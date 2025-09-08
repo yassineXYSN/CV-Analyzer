@@ -405,7 +405,16 @@ function initializeFormSubmission() {
   const progressBar = document.getElementById("progressBar")
   const progressText = document.getElementById("progressText")
 
+  // Track if form is being submitted to prevent double-clicks
+  let isSubmitting = false
+
   uploadForm.addEventListener("submit", (e) => {
+    // Prevent double submission
+    if (isSubmitting) {
+      e.preventDefault()
+      console.log("[v0] Form submission already in progress, ignoring duplicate click")
+      return
+    }
     console.log("[v0] Form submit, selected profiles:", selectedProfiles)
 
     // Validate form
@@ -424,6 +433,9 @@ function initializeFormSubmission() {
       return
     }
 
+    // Set submitting flag to prevent double-clicks
+    isSubmitting = true
+
     const selectedJobsData = selectedProfiles.map((profile) => ({
       id: profile.id,
       title: profile.name,
@@ -436,8 +448,9 @@ function initializeFormSubmission() {
     console.log("[v0] Submitting with job data:", selectedJobsData)
     document.getElementById("selectedJobsData").value = JSON.stringify(selectedJobsData)
 
-    // Show loading state
+    // Show loading state and disable button
     submitBtn.classList.add("loading")
+    submitBtn.disabled = true
     submitText.style.display = "none"
     progressContainer.style.display = "block"
 
@@ -463,6 +476,24 @@ function initializeFormSubmission() {
         progressText.textContent = "Redirection vers les résultats..."
       }
     }, 800)
+
+    // Reset submitting flag after a timeout (in case of errors)
+    setTimeout(() => {
+      isSubmitting = false
+      submitBtn.disabled = false
+      submitBtn.classList.remove("loading")
+      submitText.style.display = "block"
+      progressContainer.style.display = "none"
+    }, 30000) // 30 seconds timeout
+  })
+
+  // Add error handling for form submission
+  uploadForm.addEventListener("error", () => {
+    isSubmitting = false
+    submitBtn.disabled = false
+    submitBtn.classList.remove("loading")
+    submitText.style.display = "block"
+    progressContainer.style.display = "none"
   })
 }
 
