@@ -1,0 +1,484 @@
+{
+  "session_data": {
+    "emotions": [
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.41447001695632935,
+        "timestamp": "2025-09-07T14:58:03.358818"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.43416842818260193,
+        "timestamp": "2025-09-07T14:58:03.424819"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.643257737159729,
+        "timestamp": "2025-09-07T14:58:03.491267"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.520458996295929,
+        "timestamp": "2025-09-07T14:58:03.559287"
+      },
+      {
+        "emotion": "Sad",
+        "interview_emotion": "anxious",
+        "confidence": 0.32116004824638367,
+        "timestamp": "2025-09-07T14:58:03.628282"
+      },
+      {
+        "emotion": "Sad",
+        "interview_emotion": "anxious",
+        "confidence": 0.32116004824638367,
+        "timestamp": "2025-09-07T14:58:03.690984"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4285178482532501,
+        "timestamp": "2025-09-07T14:58:03.756130"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5378499627113342,
+        "timestamp": "2025-09-07T14:58:03.821130"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4442262649536133,
+        "timestamp": "2025-09-07T14:58:03.896266"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.43383631110191345,
+        "timestamp": "2025-09-07T14:58:04.000266"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.41370317339897156,
+        "timestamp": "2025-09-07T14:58:04.103265"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.5439256429672241,
+        "timestamp": "2025-09-07T14:58:04.208266"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4291340708732605,
+        "timestamp": "2025-09-07T14:58:04.314264"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5028789639472961,
+        "timestamp": "2025-09-07T14:58:04.422265"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5677836537361145,
+        "timestamp": "2025-09-07T14:58:04.529266"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.6215259432792664,
+        "timestamp": "2025-09-07T14:58:04.635426"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5738298296928406,
+        "timestamp": "2025-09-07T14:58:04.742427"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.5596113204956055,
+        "timestamp": "2025-09-07T14:58:04.855564"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4771367609500885,
+        "timestamp": "2025-09-07T14:58:04.960563"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.5076436400413513,
+        "timestamp": "2025-09-07T14:58:05.066563"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.42705148458480835,
+        "timestamp": "2025-09-07T14:58:05.168729"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4546372890472412,
+        "timestamp": "2025-09-07T14:58:05.271729"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4156307876110077,
+        "timestamp": "2025-09-07T14:58:05.384861"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4526882767677307,
+        "timestamp": "2025-09-07T14:58:05.489861"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4813881814479828,
+        "timestamp": "2025-09-07T14:58:05.592861"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4631636142730713,
+        "timestamp": "2025-09-07T14:58:05.699860"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.511891782283783,
+        "timestamp": "2025-09-07T14:58:05.812014"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4601685106754303,
+        "timestamp": "2025-09-07T14:58:05.914014"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.43865612149238586,
+        "timestamp": "2025-09-07T14:58:06.020013"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.46292877197265625,
+        "timestamp": "2025-09-07T14:58:06.193015"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.467899352312088,
+        "timestamp": "2025-09-07T14:58:06.299014"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.41399964690208435,
+        "timestamp": "2025-09-07T14:58:06.409182"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5229060649871826,
+        "timestamp": "2025-09-07T14:58:06.520182"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4445800185203552,
+        "timestamp": "2025-09-07T14:58:06.629183"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4666529595851898,
+        "timestamp": "2025-09-07T14:58:06.734182"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4906076490879059,
+        "timestamp": "2025-09-07T14:58:06.845181"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4491409957408905,
+        "timestamp": "2025-09-07T14:58:06.947181"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.452006995677948,
+        "timestamp": "2025-09-07T14:58:07.057316"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4750339686870575,
+        "timestamp": "2025-09-07T14:58:07.174315"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3972918689250946,
+        "timestamp": "2025-09-07T14:58:07.287317"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4268667697906494,
+        "timestamp": "2025-09-07T14:58:07.403317"
+      },
+      {
+        "emotion": "Sad",
+        "interview_emotion": "anxious",
+        "confidence": 0.30486226081848145,
+        "timestamp": "2025-09-07T14:58:07.567317"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4630323052406311,
+        "timestamp": "2025-09-07T14:58:07.567317"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4670426547527313,
+        "timestamp": "2025-09-07T14:58:07.676317"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.5078796148300171,
+        "timestamp": "2025-09-07T14:58:07.783442"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.45174381136894226,
+        "timestamp": "2025-09-07T14:58:07.889443"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5267746448516846,
+        "timestamp": "2025-09-07T14:58:07.997442"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.522386372089386,
+        "timestamp": "2025-09-07T14:58:08.101443"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4133736193180084,
+        "timestamp": "2025-09-07T14:58:08.217442"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4264417886734009,
+        "timestamp": "2025-09-07T14:58:08.324443"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4785425066947937,
+        "timestamp": "2025-09-07T14:58:08.432443"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.442655086517334,
+        "timestamp": "2025-09-07T14:58:08.542443"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.42327001690864563,
+        "timestamp": "2025-09-07T14:58:08.651444"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.43633443117141724,
+        "timestamp": "2025-09-07T14:58:08.764442"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5215478539466858,
+        "timestamp": "2025-09-07T14:58:08.876443"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.47772350907325745,
+        "timestamp": "2025-09-07T14:58:08.981442"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.44489815831184387,
+        "timestamp": "2025-09-07T14:58:09.091581"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5306218862533569,
+        "timestamp": "2025-09-07T14:58:09.195581"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4347628355026245,
+        "timestamp": "2025-09-07T14:58:09.303581"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.5549372434616089,
+        "timestamp": "2025-09-07T14:58:09.418581"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5290641188621521,
+        "timestamp": "2025-09-07T14:58:09.527582"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.621653139591217,
+        "timestamp": "2025-09-07T14:58:09.635582"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.5713744759559631,
+        "timestamp": "2025-09-07T14:58:09.745581"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4040878415107727,
+        "timestamp": "2025-09-07T14:58:09.855582"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.39529693126678467,
+        "timestamp": "2025-09-07T14:58:09.962581"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4967852830886841,
+        "timestamp": "2025-09-07T14:58:10.068581"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.40744444727897644,
+        "timestamp": "2025-09-07T14:58:10.174711"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4105875790119171,
+        "timestamp": "2025-09-07T14:58:10.280711"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.4862944185733795,
+        "timestamp": "2025-09-07T14:58:10.394711"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.452658474445343,
+        "timestamp": "2025-09-07T14:58:10.557870"
+      },
+      {
+        "emotion": "Happy",
+        "interview_emotion": "confident",
+        "confidence": 0.37269318103790283,
+        "timestamp": "2025-09-07T14:58:10.557870"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.431344598531723,
+        "timestamp": "2025-09-07T14:58:10.667870"
+      }
+    ],
+    "timestamps": [],
+    "session_active": false,
+    "session_id": "session_1757253483",
+    "candidate_name": "Yassine Chtourou",
+    "interviewer_name": "HR",
+    "start_time": "2025-09-07 14:58:03.314819",
+    "end_time": "2025-09-07 14:58:10.740870"
+  },
+  "report": {
+    "session_id": "session_1757253483",
+    "candidate_name": "Yassine Chtourou",
+    "interviewer_name": "HR",
+    "session_duration": 7.426051,
+    "session_duration_formatted": "0:07",
+    "total_detections": 72,
+    "average_confidence": 0.4677720119555791,
+    "dominant_emotion": "anxious",
+    "success_rate": 0.0,
+    "key_metrics": {
+      "anxiety_level": 62.5,
+      "confusion_level": 36.1,
+      "confidence_level": 1.4,
+      "neutral_level": 0.0
+    },
+    "emotion_distribution": {
+      "anxious": 62.5,
+      "confused": 36.11111111111111,
+      "confident": 1.3888888888888888,
+      "neutral": 0.0
+    },
+    "interview_result": "FAIL",
+    "overall_assessment": "FAIL - neutral emotions only 0.0% (need \u226550%), session too short",
+    "insights": [
+      "\u26a0\ufe0f Candidate showed insufficient emotional stability (neutral < 50%)",
+      "\u26a0\ufe0f Candidate showed signs of anxiety during the interview",
+      "\u26a0\ufe0f Candidate appeared confused at times",
+      "\u26a0\ufe0f Interview session was very short"
+    ],
+    "recommendations": [
+      "Focus on relaxation techniques and stress management for future interviews",
+      "Consider practicing mindfulness and breathing exercises",
+      "Review technical concepts and practice explaining complex topics clearly",
+      "Work on building confidence through mock interviews and preparation"
+    ],
+    "session_start_time": "2025-09-07 14:58:03",
+    "session_end_time": "2025-09-07 14:58:10"
+  }
+}

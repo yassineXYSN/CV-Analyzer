@@ -1,0 +1,2027 @@
+{
+  "session_data": {
+    "emotions": [
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8646427989006042,
+        "timestamp": "2025-09-08T20:43:16.828163"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8646964430809021,
+        "timestamp": "2025-09-08T20:43:16.893163"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8644940257072449,
+        "timestamp": "2025-09-08T20:43:16.957676"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8644940257072449,
+        "timestamp": "2025-09-08T20:43:17.023818"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7442925572395325,
+        "timestamp": "2025-09-08T20:43:17.088818"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.845854640007019,
+        "timestamp": "2025-09-08T20:43:17.151642"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.869526743888855,
+        "timestamp": "2025-09-08T20:43:17.211653"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.854511022567749,
+        "timestamp": "2025-09-08T20:43:17.272605"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9035530090332031,
+        "timestamp": "2025-09-08T20:43:17.334710"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8268997073173523,
+        "timestamp": "2025-09-08T20:43:17.396347"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8070220351219177,
+        "timestamp": "2025-09-08T20:43:17.456858"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.769512414932251,
+        "timestamp": "2025-09-08T20:43:17.522856"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6191494464874268,
+        "timestamp": "2025-09-08T20:43:17.583856"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6256589293479919,
+        "timestamp": "2025-09-08T20:43:17.643856"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6909151077270508,
+        "timestamp": "2025-09-08T20:43:17.703856"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7705835103988647,
+        "timestamp": "2025-09-08T20:43:17.766756"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6331931948661804,
+        "timestamp": "2025-09-08T20:43:17.831765"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5128085017204285,
+        "timestamp": "2025-09-08T20:43:17.897765"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.47492608428001404,
+        "timestamp": "2025-09-08T20:43:17.961707"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5339884757995605,
+        "timestamp": "2025-09-08T20:43:18.025579"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.49546319246292114,
+        "timestamp": "2025-09-08T20:43:18.093580"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.4951348900794983,
+        "timestamp": "2025-09-08T20:43:18.160579"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.4484533965587616,
+        "timestamp": "2025-09-08T20:43:18.223676"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5373634099960327,
+        "timestamp": "2025-09-08T20:43:18.286677"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6499336361885071,
+        "timestamp": "2025-09-08T20:43:18.347758"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8020581007003784,
+        "timestamp": "2025-09-08T20:43:18.406759"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6444628834724426,
+        "timestamp": "2025-09-08T20:43:18.467758"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6441296339035034,
+        "timestamp": "2025-09-08T20:43:18.527759"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6692863702774048,
+        "timestamp": "2025-09-08T20:43:18.588758"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6519278883934021,
+        "timestamp": "2025-09-08T20:43:18.651768"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.647875964641571,
+        "timestamp": "2025-09-08T20:43:18.709768"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5884037613868713,
+        "timestamp": "2025-09-08T20:43:18.785960"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6221480369567871,
+        "timestamp": "2025-09-08T20:43:18.847953"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7076116800308228,
+        "timestamp": "2025-09-08T20:43:18.915008"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7496220469474792,
+        "timestamp": "2025-09-08T20:43:18.975009"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6294718384742737,
+        "timestamp": "2025-09-08T20:43:19.035016"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6567255258560181,
+        "timestamp": "2025-09-08T20:43:19.098016"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.47486522793769836,
+        "timestamp": "2025-09-08T20:43:19.159749"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.4162437319755554,
+        "timestamp": "2025-09-08T20:43:19.224748"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6857961416244507,
+        "timestamp": "2025-09-08T20:43:19.289748"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7275903224945068,
+        "timestamp": "2025-09-08T20:43:19.353059"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7782918810844421,
+        "timestamp": "2025-09-08T20:43:19.416316"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6407961845397949,
+        "timestamp": "2025-09-08T20:43:19.476433"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6407961845397949,
+        "timestamp": "2025-09-08T20:43:19.534432"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5701696276664734,
+        "timestamp": "2025-09-08T20:43:19.598432"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7153915762901306,
+        "timestamp": "2025-09-08T20:43:19.659432"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8562753796577454,
+        "timestamp": "2025-09-08T20:43:19.720433"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.790937066078186,
+        "timestamp": "2025-09-08T20:43:19.785432"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6694162487983704,
+        "timestamp": "2025-09-08T20:43:19.846433"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.673246443271637,
+        "timestamp": "2025-09-08T20:43:19.907433"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5356532335281372,
+        "timestamp": "2025-09-08T20:43:19.969432"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8443686962127686,
+        "timestamp": "2025-09-08T20:43:20.030434"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8215345740318298,
+        "timestamp": "2025-09-08T20:43:20.092431"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7279528975486755,
+        "timestamp": "2025-09-08T20:43:20.155560"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6201527118682861,
+        "timestamp": "2025-09-08T20:43:20.213677"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7447918057441711,
+        "timestamp": "2025-09-08T20:43:20.275678"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7305774688720703,
+        "timestamp": "2025-09-08T20:43:20.338746"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7575692534446716,
+        "timestamp": "2025-09-08T20:43:20.401745"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6030722260475159,
+        "timestamp": "2025-09-08T20:43:20.463745"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.46940410137176514,
+        "timestamp": "2025-09-08T20:43:20.525745"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.4129623770713806,
+        "timestamp": "2025-09-08T20:43:20.590746"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.40071728825569153,
+        "timestamp": "2025-09-08T20:43:20.652896"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.610966145992279,
+        "timestamp": "2025-09-08T20:43:20.713899"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7404119968414307,
+        "timestamp": "2025-09-08T20:43:20.773897"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7070275545120239,
+        "timestamp": "2025-09-08T20:43:20.834908"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7000495195388794,
+        "timestamp": "2025-09-08T20:43:20.896908"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5423118472099304,
+        "timestamp": "2025-09-08T20:43:20.958907"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5705020427703857,
+        "timestamp": "2025-09-08T20:43:21.020001"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5593825578689575,
+        "timestamp": "2025-09-08T20:43:21.082001"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6146165132522583,
+        "timestamp": "2025-09-08T20:43:21.142142"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5749208331108093,
+        "timestamp": "2025-09-08T20:43:21.203142"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.664429247379303,
+        "timestamp": "2025-09-08T20:43:21.264169"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.683224081993103,
+        "timestamp": "2025-09-08T20:43:21.327169"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6947329044342041,
+        "timestamp": "2025-09-08T20:43:21.387683"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5735683441162109,
+        "timestamp": "2025-09-08T20:43:21.452724"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6357311606407166,
+        "timestamp": "2025-09-08T20:43:21.514928"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.774827778339386,
+        "timestamp": "2025-09-08T20:43:21.577929"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.774827778339386,
+        "timestamp": "2025-09-08T20:43:21.639048"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6739310622215271,
+        "timestamp": "2025-09-08T20:43:21.699558"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7220304608345032,
+        "timestamp": "2025-09-08T20:43:21.759558"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7340424060821533,
+        "timestamp": "2025-09-08T20:43:21.820632"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7774379253387451,
+        "timestamp": "2025-09-08T20:43:21.882630"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7988204956054688,
+        "timestamp": "2025-09-08T20:43:21.940630"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7988204956054688,
+        "timestamp": "2025-09-08T20:43:22.006630"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7988204956054688,
+        "timestamp": "2025-09-08T20:43:22.072665"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7988204956054688,
+        "timestamp": "2025-09-08T20:43:22.129755"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7988204956054688,
+        "timestamp": "2025-09-08T20:43:22.188755"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7988204956054688,
+        "timestamp": "2025-09-08T20:43:22.248760"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.310760"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.370737"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.435738"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.502737"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.570875"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.629875"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.693875"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.753875"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.817875"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.879553"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:22.941554"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:23.002553"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:23.063582"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:23.126454"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:23.190963"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:23.252800"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7757195830345154,
+        "timestamp": "2025-09-08T20:43:23.315800"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7728997468948364,
+        "timestamp": "2025-09-08T20:43:23.380798"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7728997468948364,
+        "timestamp": "2025-09-08T20:43:23.438809"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7504734992980957,
+        "timestamp": "2025-09-08T20:43:23.499825"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7504734992980957,
+        "timestamp": "2025-09-08T20:43:23.563455"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7504734992980957,
+        "timestamp": "2025-09-08T20:43:23.626464"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7998149394989014,
+        "timestamp": "2025-09-08T20:43:23.691337"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7998149394989014,
+        "timestamp": "2025-09-08T20:43:23.749797"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7998149394989014,
+        "timestamp": "2025-09-08T20:43:23.810803"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7846137881278992,
+        "timestamp": "2025-09-08T20:43:23.874450"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8167209029197693,
+        "timestamp": "2025-09-08T20:43:23.932480"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8167209029197693,
+        "timestamp": "2025-09-08T20:43:23.990467"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8167209029197693,
+        "timestamp": "2025-09-08T20:43:24.051679"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8167209029197693,
+        "timestamp": "2025-09-08T20:43:24.108679"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8167209029197693,
+        "timestamp": "2025-09-08T20:43:24.170119"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8167209029197693,
+        "timestamp": "2025-09-08T20:43:24.233799"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.734991729259491,
+        "timestamp": "2025-09-08T20:43:24.299326"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7553135752677917,
+        "timestamp": "2025-09-08T20:43:24.358368"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8026334643363953,
+        "timestamp": "2025-09-08T20:43:24.419878"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6057496070861816,
+        "timestamp": "2025-09-08T20:43:24.483390"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6057496070861816,
+        "timestamp": "2025-09-08T20:43:24.541902"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6087080240249634,
+        "timestamp": "2025-09-08T20:43:24.606423"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.793083906173706,
+        "timestamp": "2025-09-08T20:43:24.667598"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.793083906173706,
+        "timestamp": "2025-09-08T20:43:24.726613"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7281864285469055,
+        "timestamp": "2025-09-08T20:43:24.789612"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8440964818000793,
+        "timestamp": "2025-09-08T20:43:24.856629"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8440964818000793,
+        "timestamp": "2025-09-08T20:43:24.921636"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5194706320762634,
+        "timestamp": "2025-09-08T20:43:24.983639"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5194706320762634,
+        "timestamp": "2025-09-08T20:43:25.042563"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6036372184753418,
+        "timestamp": "2025-09-08T20:43:25.100563"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6760005354881287,
+        "timestamp": "2025-09-08T20:43:25.158522"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5644336938858032,
+        "timestamp": "2025-09-08T20:43:25.218522"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.663993239402771,
+        "timestamp": "2025-09-08T20:43:25.279523"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7187859416007996,
+        "timestamp": "2025-09-08T20:43:25.345471"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7054370045661926,
+        "timestamp": "2025-09-08T20:43:25.403469"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8099592924118042,
+        "timestamp": "2025-09-08T20:43:25.464524"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7766590118408203,
+        "timestamp": "2025-09-08T20:43:25.527497"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6990639567375183,
+        "timestamp": "2025-09-08T20:43:25.588647"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7082539796829224,
+        "timestamp": "2025-09-08T20:43:25.648657"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6808748841285706,
+        "timestamp": "2025-09-08T20:43:25.707657"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.774448037147522,
+        "timestamp": "2025-09-08T20:43:25.767581"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7716825604438782,
+        "timestamp": "2025-09-08T20:43:25.826582"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7255891561508179,
+        "timestamp": "2025-09-08T20:43:25.890581"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7673370242118835,
+        "timestamp": "2025-09-08T20:43:25.952582"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8319651484489441,
+        "timestamp": "2025-09-08T20:43:26.017581"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7752270102500916,
+        "timestamp": "2025-09-08T20:43:26.077582"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7281980514526367,
+        "timestamp": "2025-09-08T20:43:26.136714"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5298563838005066,
+        "timestamp": "2025-09-08T20:43:26.199715"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5698492527008057,
+        "timestamp": "2025-09-08T20:43:26.259670"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5990802645683289,
+        "timestamp": "2025-09-08T20:43:26.344976"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5522855520248413,
+        "timestamp": "2025-09-08T20:43:26.406974"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.736944317817688,
+        "timestamp": "2025-09-08T20:43:26.469858"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7053920030593872,
+        "timestamp": "2025-09-08T20:43:26.529648"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6610530018806458,
+        "timestamp": "2025-09-08T20:43:26.589648"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6610530018806458,
+        "timestamp": "2025-09-08T20:43:26.651649"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.772335410118103,
+        "timestamp": "2025-09-08T20:43:26.721307"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7259910702705383,
+        "timestamp": "2025-09-08T20:43:26.779815"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7259910702705383,
+        "timestamp": "2025-09-08T20:43:26.841816"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8249461650848389,
+        "timestamp": "2025-09-08T20:43:26.904815"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8659829497337341,
+        "timestamp": "2025-09-08T20:43:26.969930"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7851752042770386,
+        "timestamp": "2025-09-08T20:43:27.036931"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7033577561378479,
+        "timestamp": "2025-09-08T20:43:27.100930"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7282902002334595,
+        "timestamp": "2025-09-08T20:43:27.165930"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8636255860328674,
+        "timestamp": "2025-09-08T20:43:27.224931"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6723666191101074,
+        "timestamp": "2025-09-08T20:43:27.286064"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6991795301437378,
+        "timestamp": "2025-09-08T20:43:27.344594"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7416867613792419,
+        "timestamp": "2025-09-08T20:43:27.406592"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8378278613090515,
+        "timestamp": "2025-09-08T20:43:27.475621"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7140896916389465,
+        "timestamp": "2025-09-08T20:43:27.538621"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6815091371536255,
+        "timestamp": "2025-09-08T20:43:27.601620"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5347694754600525,
+        "timestamp": "2025-09-08T20:43:27.661621"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7897891998291016,
+        "timestamp": "2025-09-08T20:43:27.722646"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8199256062507629,
+        "timestamp": "2025-09-08T20:43:27.784645"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7546996474266052,
+        "timestamp": "2025-09-08T20:43:27.853729"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7877957820892334,
+        "timestamp": "2025-09-08T20:43:27.914728"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8564521670341492,
+        "timestamp": "2025-09-08T20:43:27.979728"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8658797740936279,
+        "timestamp": "2025-09-08T20:43:28.041777"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9013092517852783,
+        "timestamp": "2025-09-08T20:43:28.101777"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7801142930984497,
+        "timestamp": "2025-09-08T20:43:28.167777"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7846105694770813,
+        "timestamp": "2025-09-08T20:43:28.231777"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7458744645118713,
+        "timestamp": "2025-09-08T20:43:28.289780"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.734851062297821,
+        "timestamp": "2025-09-08T20:43:28.348779"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6675488948822021,
+        "timestamp": "2025-09-08T20:43:28.407777"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6719680428504944,
+        "timestamp": "2025-09-08T20:43:28.471937"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6331551671028137,
+        "timestamp": "2025-09-08T20:43:28.533891"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.579227089881897,
+        "timestamp": "2025-09-08T20:43:28.595891"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6478327512741089,
+        "timestamp": "2025-09-08T20:43:28.657920"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6540319323539734,
+        "timestamp": "2025-09-08T20:43:28.720043"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6950892210006714,
+        "timestamp": "2025-09-08T20:43:28.870551"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7781233191490173,
+        "timestamp": "2025-09-08T20:43:28.932587"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6619874835014343,
+        "timestamp": "2025-09-08T20:43:28.997587"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6884545683860779,
+        "timestamp": "2025-09-08T20:43:29.059542"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.43971171975135803,
+        "timestamp": "2025-09-08T20:43:29.119552"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6493610143661499,
+        "timestamp": "2025-09-08T20:43:29.179552"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6493610143661499,
+        "timestamp": "2025-09-08T20:43:29.237730"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3827933371067047,
+        "timestamp": "2025-09-08T20:43:29.299731"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.38072964549064636,
+        "timestamp": "2025-09-08T20:43:29.359742"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.34029555320739746,
+        "timestamp": "2025-09-08T20:43:29.422751"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.39332422614097595,
+        "timestamp": "2025-09-08T20:43:29.483751"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.36796343326568604,
+        "timestamp": "2025-09-08T20:43:29.544796"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3627347946166992,
+        "timestamp": "2025-09-08T20:43:29.607796"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.436265230178833,
+        "timestamp": "2025-09-08T20:43:29.666798"
+      },
+      {
+        "emotion": "Angry",
+        "interview_emotion": "anxious",
+        "confidence": 0.3009856343269348,
+        "timestamp": "2025-09-08T20:43:29.728554"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.39353376626968384,
+        "timestamp": "2025-09-08T20:43:29.789597"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.31126469373703003,
+        "timestamp": "2025-09-08T20:43:29.912597"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.432794451713562,
+        "timestamp": "2025-09-08T20:43:29.979598"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4548395276069641,
+        "timestamp": "2025-09-08T20:43:30.048611"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3627932667732239,
+        "timestamp": "2025-09-08T20:43:30.118260"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.35869795083999634,
+        "timestamp": "2025-09-08T20:43:30.196775"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.34249502420425415,
+        "timestamp": "2025-09-08T20:43:30.254774"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3668910264968872,
+        "timestamp": "2025-09-08T20:43:30.316124"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.3218154311180115,
+        "timestamp": "2025-09-08T20:43:30.376124"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.38214126229286194,
+        "timestamp": "2025-09-08T20:43:30.434133"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3606210947036743,
+        "timestamp": "2025-09-08T20:43:30.557580"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3877357840538025,
+        "timestamp": "2025-09-08T20:43:30.617586"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.33376505970954895,
+        "timestamp": "2025-09-08T20:43:30.687585"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3499075472354889,
+        "timestamp": "2025-09-08T20:43:30.751702"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.34731432795524597,
+        "timestamp": "2025-09-08T20:43:30.813702"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.37437811493873596,
+        "timestamp": "2025-09-08T20:43:31.009702"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.37437811493873596,
+        "timestamp": "2025-09-08T20:43:31.073702"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.32250910997390747,
+        "timestamp": "2025-09-08T20:43:31.142872"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.32098376750946045,
+        "timestamp": "2025-09-08T20:43:31.201873"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.32098376750946045,
+        "timestamp": "2025-09-08T20:43:31.263873"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.34621644020080566,
+        "timestamp": "2025-09-08T20:43:31.325873"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.3402620851993561,
+        "timestamp": "2025-09-08T20:43:31.390874"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.355576753616333,
+        "timestamp": "2025-09-08T20:43:31.451873"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3200441896915436,
+        "timestamp": "2025-09-08T20:43:31.515874"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.3926413357257843,
+        "timestamp": "2025-09-08T20:43:31.578873"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.34180182218551636,
+        "timestamp": "2025-09-08T20:43:31.637873"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.35516971349716187,
+        "timestamp": "2025-09-08T20:43:31.893882"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.39601626992225647,
+        "timestamp": "2025-09-08T20:43:31.961554"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5574935078620911,
+        "timestamp": "2025-09-08T20:43:32.026555"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.46799468994140625,
+        "timestamp": "2025-09-08T20:43:32.090555"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.42778730392456055,
+        "timestamp": "2025-09-08T20:43:32.155208"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.3828946053981781,
+        "timestamp": "2025-09-08T20:43:32.220717"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.3728080987930298,
+        "timestamp": "2025-09-08T20:43:32.282725"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.3843512535095215,
+        "timestamp": "2025-09-08T20:43:32.348738"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.461302250623703,
+        "timestamp": "2025-09-08T20:43:32.412915"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3871414065361023,
+        "timestamp": "2025-09-08T20:43:32.477916"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3871414065361023,
+        "timestamp": "2025-09-08T20:43:32.539915"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.3900842070579529,
+        "timestamp": "2025-09-08T20:43:32.600916"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5293095111846924,
+        "timestamp": "2025-09-08T20:43:32.662701"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.49644625186920166,
+        "timestamp": "2025-09-08T20:43:32.726078"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.5298318862915039,
+        "timestamp": "2025-09-08T20:43:32.786592"
+      },
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.4878481328487396,
+        "timestamp": "2025-09-08T20:43:32.853601"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.4629955589771271,
+        "timestamp": "2025-09-08T20:43:32.918609"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7468754649162292,
+        "timestamp": "2025-09-08T20:43:32.980609"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9381807446479797,
+        "timestamp": "2025-09-08T20:43:33.043608"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8305978178977966,
+        "timestamp": "2025-09-08T20:43:33.106609"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8180250525474548,
+        "timestamp": "2025-09-08T20:43:33.169608"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9143853783607483,
+        "timestamp": "2025-09-08T20:43:33.231618"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9078947305679321,
+        "timestamp": "2025-09-08T20:43:33.292618"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8085737824440002,
+        "timestamp": "2025-09-08T20:43:33.353629"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8524966835975647,
+        "timestamp": "2025-09-08T20:43:33.420681"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9085856676101685,
+        "timestamp": "2025-09-08T20:43:33.482683"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8961589932441711,
+        "timestamp": "2025-09-08T20:43:33.550685"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8961589932441711,
+        "timestamp": "2025-09-08T20:43:33.614682"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.85787034034729,
+        "timestamp": "2025-09-08T20:43:33.678681"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7171263694763184,
+        "timestamp": "2025-09-08T20:43:33.739818"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8646978139877319,
+        "timestamp": "2025-09-08T20:43:33.800819"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.841513991355896,
+        "timestamp": "2025-09-08T20:43:33.869548"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8566749095916748,
+        "timestamp": "2025-09-08T20:43:33.933569"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.883124053478241,
+        "timestamp": "2025-09-08T20:43:33.999596"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8780884146690369,
+        "timestamp": "2025-09-08T20:43:34.060569"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8451605439186096,
+        "timestamp": "2025-09-08T20:43:34.124604"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8451605439186096,
+        "timestamp": "2025-09-08T20:43:34.181631"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9047005772590637,
+        "timestamp": "2025-09-08T20:43:34.245218"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8990486860275269,
+        "timestamp": "2025-09-08T20:43:34.305218"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9031238555908203,
+        "timestamp": "2025-09-08T20:43:34.365218"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8712599873542786,
+        "timestamp": "2025-09-08T20:43:34.426218"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8588295578956604,
+        "timestamp": "2025-09-08T20:43:34.484320"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8588295578956604,
+        "timestamp": "2025-09-08T20:43:34.548834"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8069767355918884,
+        "timestamp": "2025-09-08T20:43:34.612362"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8050054907798767,
+        "timestamp": "2025-09-08T20:43:34.672875"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8095210790634155,
+        "timestamp": "2025-09-08T20:43:34.732876"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8706785440444946,
+        "timestamp": "2025-09-08T20:43:34.792875"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8564404249191284,
+        "timestamp": "2025-09-08T20:43:34.854875"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8286241292953491,
+        "timestamp": "2025-09-08T20:43:34.915365"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8558998107910156,
+        "timestamp": "2025-09-08T20:43:34.980232"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8213846683502197,
+        "timestamp": "2025-09-08T20:43:35.040856"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8213846683502197,
+        "timestamp": "2025-09-08T20:43:35.103378"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8101556897163391,
+        "timestamp": "2025-09-08T20:43:35.164946"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7669406533241272,
+        "timestamp": "2025-09-08T20:43:35.229460"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8389841318130493,
+        "timestamp": "2025-09-08T20:43:35.293460"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8315423727035522,
+        "timestamp": "2025-09-08T20:43:35.356459"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8163148164749146,
+        "timestamp": "2025-09-08T20:43:35.423459"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8839004039764404,
+        "timestamp": "2025-09-08T20:43:35.492459"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8924428820610046,
+        "timestamp": "2025-09-08T20:43:35.554459"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9026066064834595,
+        "timestamp": "2025-09-08T20:43:35.615807"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8785268068313599,
+        "timestamp": "2025-09-08T20:43:35.679808"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8767992258071899,
+        "timestamp": "2025-09-08T20:43:35.741831"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8746711611747742,
+        "timestamp": "2025-09-08T20:43:35.803346"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8624577522277832,
+        "timestamp": "2025-09-08T20:43:35.864854"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8347508311271667,
+        "timestamp": "2025-09-08T20:43:35.926893"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.833865761756897,
+        "timestamp": "2025-09-08T20:43:35.985403"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8394178152084351,
+        "timestamp": "2025-09-08T20:43:36.045920"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8394178152084351,
+        "timestamp": "2025-09-08T20:43:36.106920"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8513880968093872,
+        "timestamp": "2025-09-08T20:43:36.166785"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8275066614151001,
+        "timestamp": "2025-09-08T20:43:36.228793"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7662518620491028,
+        "timestamp": "2025-09-08T20:43:36.292793"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8684290647506714,
+        "timestamp": "2025-09-08T20:43:36.358450"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8607467412948608,
+        "timestamp": "2025-09-08T20:43:36.420460"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.850096583366394,
+        "timestamp": "2025-09-08T20:43:36.486695"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.850096583366394,
+        "timestamp": "2025-09-08T20:43:36.548695"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8789465427398682,
+        "timestamp": "2025-09-08T20:43:36.613694"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.643518328666687,
+        "timestamp": "2025-09-08T20:43:36.672694"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6579139828681946,
+        "timestamp": "2025-09-08T20:43:36.733497"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9089535474777222,
+        "timestamp": "2025-09-08T20:43:36.796158"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.897217333316803,
+        "timestamp": "2025-09-08T20:43:36.858671"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9166208505630493,
+        "timestamp": "2025-09-08T20:43:36.920709"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8797597885131836,
+        "timestamp": "2025-09-08T20:43:36.984716"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8918600082397461,
+        "timestamp": "2025-09-08T20:43:37.045709"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.893399715423584,
+        "timestamp": "2025-09-08T20:43:37.107709"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8747937679290771,
+        "timestamp": "2025-09-08T20:43:37.171776"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8726171255111694,
+        "timestamp": "2025-09-08T20:43:37.229034"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.868401825428009,
+        "timestamp": "2025-09-08T20:43:37.287042"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8117129802703857,
+        "timestamp": "2025-09-08T20:43:37.352571"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8305838704109192,
+        "timestamp": "2025-09-08T20:43:37.414572"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7507984638214111,
+        "timestamp": "2025-09-08T20:43:37.475571"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7627403736114502,
+        "timestamp": "2025-09-08T20:43:37.537582"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7039924263954163,
+        "timestamp": "2025-09-08T20:43:37.600581"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7039924263954163,
+        "timestamp": "2025-09-08T20:43:37.663582"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6235318779945374,
+        "timestamp": "2025-09-08T20:43:37.723912"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7781951427459717,
+        "timestamp": "2025-09-08T20:43:37.787912"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8650274276733398,
+        "timestamp": "2025-09-08T20:43:37.854466"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8060315251350403,
+        "timestamp": "2025-09-08T20:43:37.921470"
+      }
+    ],
+    "timestamps": [],
+    "session_active": false,
+    "session_id": "session_1757360596",
+    "candidate_name": "youssef",
+    "interviewer_name": "HR",
+    "start_time": "2025-09-08 20:43:16.814164",
+    "end_time": "2025-09-08 20:43:37.923467"
+  },
+  "report": {
+    "session_id": "session_1757360596",
+    "candidate_name": "youssef",
+    "interviewer_name": "HR",
+    "session_duration": 21.109303,
+    "session_duration_formatted": "0:21",
+    "total_detections": 330,
+    "average_confidence": 0.6917004348653736,
+    "dominant_emotion": "neutral",
+    "success_rate": 87.88,
+    "key_metrics": {
+      "anxiety_level": 10.9,
+      "confusion_level": 1.2,
+      "confidence_level": 0.0,
+      "neutral_level": 87.9
+    },
+    "emotion_distribution": {
+      "anxious": 10.909090909090908,
+      "confused": 1.2121212121212122,
+      "confident": 0.0,
+      "neutral": 87.87878787878788
+    },
+    "interview_result": "FAIL",
+    "overall_assessment": "FAIL - session too short",
+    "insights": [
+      "\u2705 Candidate maintained excellent composure with high neutral emotions",
+      "\u26a0\ufe0f Interview session was very short"
+    ],
+    "recommendations": [
+      "Work on building confidence through mock interviews and preparation"
+    ],
+    "session_start_time": "2025-09-08 20:43:16",
+    "session_end_time": "2025-09-08 20:43:37"
+  }
+}

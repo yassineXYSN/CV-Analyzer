@@ -20,10 +20,10 @@ function formatDateSafe(input, locale = "fr-FR") {
 
 function formatDuration(seconds) {
   if (!seconds || seconds === 0) return "N/A"
-  
+
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = seconds % 60
-  
+
   if (minutes === 0) {
     return `${remainingSeconds}s`
   } else if (remainingSeconds === 0) {
@@ -56,8 +56,6 @@ async function loadCurrentUser() {
   }
 }
 
-
-
 function loadJobData() {
   const urlParams = new URLSearchParams(window.location.search)
   const jobId = urlParams.get("id")
@@ -82,6 +80,81 @@ function loadJobData() {
       showError("Aucun poste sélectionné. Veuillez retourner au dashboard et sélectionner un poste.")
     }
   }
+}
+
+async function loadInterviewDataForApplications() {
+  console.log("[v0] Starting to load interview data for applications:", applications.length)
+
+  for (let i = 0; i < applications.length; i++) {
+    const app = applications[i]
+    console.log("[v0] Processing application ID:", app.id, "for candidate:", app.candidate_profile?.name)
+
+    try {
+      // Fetch interview data for this application
+      const response = await fetch(`/api/interview/${app.id}`)
+      console.log("[v0] API response status for app", app.id, ":", response.status)
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log("[v0] API result for app", app.id, ":", result)
+
+        if (result.success && result.interview) {
+          console.log("[v0] Found interview data for app", app.id, ":", result.interview)
+
+          // Merge interview data with application
+          applications[i].interview_date = result.interview.interview_date
+          applications[i].start_session = result.interview.start_session
+          applications[i].end_session = result.interview.end_session
+          applications[i].candidate_name = result.interview.candidate_name || app.candidate_profile?.name
+          applications[i].interviewer_name = result.interview.interviewer_name
+
+          // Fetch interview results if completed
+          if (result.interview.end_session) {
+            console.log("[v0] Interview completed, fetching results for app", app.id)
+
+            const resultsResponse = await fetch(`/api/interview-result/${app.id}`)
+            console.log("[v0] Results API response status:", resultsResponse.status)
+
+            if (resultsResponse.ok) {
+              const resultsData = await resultsResponse.json()
+              console.log("[v0] Results data for app", app.id, ":", resultsData)
+
+              if (resultsData.success && resultsData.result) {
+                applications[i].interview_result = {
+                  success_rate: resultsData.result.success_rate || 0,
+                  dominant_emotion: resultsData.result.dominant_emotion || "Neutre",
+                  duration: resultsData.result.duration || "N/A",
+                  total_detections: resultsData.result.total_detections || 0,
+                  avg_confidence: resultsData.result.avg_confidence || 0,
+                }
+                console.log("[v0] Merged interview result for app", app.id, ":", applications[i].interview_result)
+              }
+            } else {
+              console.log("[v0] Failed to fetch results for app", app.id, "- status:", resultsResponse.status)
+            }
+          }
+        } else {
+          console.log("[v0] No interview data found for app", app.id, "- result:", result)
+        }
+      } else {
+        console.log("[v0] Failed to fetch interview data for app", app.id, "- status:", response.status)
+      }
+    } catch (error) {
+      console.error(`[v0] Erreur lors du chargement des données d'entretien pour l'application ${app.id}:`, error)
+    }
+  }
+
+  console.log("[v0] Finished loading interview data. Applications with interview data:")
+  applications.forEach((app) => {
+    if (app.interview_date || app.start_session || app.end_session) {
+      console.log("[v0] App", app.id, "has interview data:", {
+        interview_date: app.interview_date,
+        start_session: app.start_session,
+        end_session: app.end_session,
+        interview_result: app.interview_result,
+      })
+    }
+  })
 }
 
 async function loadJobFromAPI(jobId) {
@@ -109,6 +182,7 @@ async function loadJobFromAPI(jobId) {
 
         if (applications && applications.length > 0) {
           await calculateCompatibilityForApplications()
+          await loadInterviewDataForApplications()
         }
 
         hideLoading()
@@ -221,7 +295,7 @@ function displayJobInfo() {
     jobCreated: formatDateSafe(currentJob.created_at),
     assignedEmployee: currentJob.assigned_employee_name || "Non assigné",
     jobApplications: getApplicationsCount(),
-    daysRemaining: getDaysRemaining()
+    daysRemaining: getDaysRemaining(),
   }
 
   Object.entries(elements).forEach(([id, value]) => {
@@ -251,7 +325,9 @@ function getSalaryText() {
 function getApplicationsCount() {
   return typeof currentJob.applications_count === "number" && !isNaN(currentJob.applications_count)
     ? currentJob.applications_count
-    : Array.isArray(applications) ? applications.length : 0
+    : Array.isArray(applications)
+      ? applications.length
+      : 0
 }
 
 function getDaysRemaining() {
@@ -299,7 +375,7 @@ function renderJobSkills() {
     return
   }
 
-  const validSkills = currentJob.skills.filter(skill => skill && typeof skill === "object")
+  const validSkills = currentJob.skills.filter((skill) => skill && typeof skill === "object")
 
   if (validSkills.length === 0) {
     skillsContainer.innerHTML = `
@@ -318,7 +394,8 @@ function renderJobSkills() {
           .map((skill) => {
             const skillName = skill.name || skill.skill_name || skill.skill || "Compétence non spécifiée"
             const skillLevel = skill.level || skill.skill_level || skill.experience || "N/A"
-            const isRequired = skill.required !== undefined ? skill.required : skill.is_required !== undefined ? skill.is_required : true
+            const isRequired =
+              skill.required !== undefined ? skill.required : skill.is_required !== undefined ? skill.is_required : true
 
             let formattedLevel = "N/A"
             if (skillLevel && typeof skillLevel === "string" && skillLevel.length > 0) {
@@ -343,11 +420,11 @@ function renderJobSkills() {
 }
 
 function initializeSkillsValidationState() {
-  applications.forEach(app => {
+  applications.forEach((app) => {
     const quizSection = document.getElementById(`quiz-section-${app.id}`)
     const validateBtn = document.getElementById(`validate-btn-${app.id}`)
     const validationStatus = document.getElementById(`validation-status-${app.id}`)
-    
+
     if (app.skills_validated) {
       if (quizSection) {
         quizSection.classList.remove("locked")
@@ -356,13 +433,13 @@ function initializeSkillsValidationState() {
           overlay.remove()
         }
       }
-      
+
       if (validateBtn) {
         validateBtn.classList.add("validated")
         validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé'
         validateBtn.disabled = true
       }
-      
+
       if (validationStatus) {
         validationStatus.classList.add("success")
       }
@@ -515,9 +592,11 @@ function renderApplicationsWithCompatibility(filter = "all") {
             </div>
             
             <!-- SECTION 2: QUIZ (VISIBLE SEULEMENT SI COMPÉTENCES VALIDÉES) -->
-            <div class="detail-section quiz-section ${!app.skills_validated ? 'locked' : ''}" id="quiz-section-${app.id}">
+            <div class="detail-section quiz-section ${!app.skills_validated ? "locked" : ""}" id="quiz-section-${app.id}">
               
-              ${!app.skills_validated ? `
+              ${
+                !app.skills_validated
+                  ? `
                 <div class="quiz-validation-overlay">
                   <div class="quiz-validation-number">2</div>
                   <div class="quiz-validation-message">En attente de validation des compétences</div>
@@ -525,7 +604,9 @@ function renderApplicationsWithCompatibility(filter = "all") {
                     <i class="fas fa-check-double"></i> Valider les compétences
                   </button>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
 
               <h4>
                 <i class="fas fa-chart-bar"></i> Évaluation Quiz
@@ -538,7 +619,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                     quiz_score: app.quiz_score,
                     quiz_duration: app.quiz_duration,
                     quiz_correct_answers: app.quiz_correct_answers,
-                    quiz_total_questions: app.quiz_total_questions
+                    quiz_total_questions: app.quiz_total_questions,
                   })});</script>
                   <div class="quiz-info-grid">
                     <div class="quiz-info-item">
@@ -547,7 +628,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       </div>
                       <div class="info-content">
                         <div class="info-label">Score</div>
-                        <div class="info-value">${!app.quiz_id ? 'en attente de generation de quiz' : (!app.quiz_score ? 'en attente du condidat' : app.quiz_score + '%')}</div>
+                        <div class="info-value">${!app.quiz_id ? "en attente de generation de quiz" : !app.quiz_score ? "en attente du condidat" : app.quiz_score + "%"}</div>
                       </div>
                     </div>
                     
@@ -557,7 +638,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       </div>
                       <div class="info-content">
                         <div class="info-label">Durée</div>
-                        <div class="info-value">${!app.quiz_id ? 'en attente de generation de quiz' : (!app.quiz_duration ? 'en attente du condidat' : formatDuration(app.quiz_duration))}</div>
+                        <div class="info-value">${!app.quiz_id ? "en attente de generation de quiz" : !app.quiz_duration ? "en attente du condidat" : formatDuration(app.quiz_duration)}</div>
                       </div>
                     </div>
                     
@@ -567,113 +648,56 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       </div>
                       <div class="info-content">
                         <div class="info-label">Correctes</div>
-                        <div class="info-value">${!app.quiz_id ? 'en attente de generation de quiz' : (!app.quiz_correct_answers ? 'en attente du condidat' : app.quiz_correct_answers)}</div>
+                        <div class="info-value">${!app.quiz_id ? "en attente de generation de quiz" : !app.quiz_correct_answers ? "en attente du condidat" : app.quiz_correct_answers}</div>
                       </div>
                     </div>
                   </div>
                   
                   <script>console.log('DEBUG: Quiz data for ${candidateName}:', {
-                    quiz_id: ${app.quiz_id || 'null'},
-                    quiz_score: ${app.quiz_score || 'null'},
-                    quiz_duration: ${app.quiz_duration || 'null'},
-                    quiz_correct_answers: ${app.quiz_correct_answers || 'null'},
-                    quiz_total_questions: ${app.quiz_total_questions || 'null'}
+                    quiz_id: ${app.quiz_id || "null"},
+                    quiz_score: ${app.quiz_score || "null"},
+                    quiz_duration: ${app.quiz_duration || "null"},
+                    quiz_correct_answers: ${app.quiz_correct_answers || "null"},
+                    quiz_total_questions: ${app.quiz_total_questions || "null"}
                   });</script>
                 </div>
                 
                 <div class="quiz-actions">
                   <div class="quiz-actions-row">
-                    ${!app.quiz_id ? `
+                    ${
+                      !app.quiz_id
+                        ? `
                       <button class="btn-generate-quiz" onclick="openCreateQuizModal(${app.candidate_id || app.candidate_profile_id || app.id}, '${candidateName}')">
                         <i class="fas fa-magic"></i> Générer Quiz
                       </button>
-                    ` : ''}
-                    ${app.quiz_id ? `
+                    `
+                        : ""
+                    }
+                    ${
+                      app.quiz_id
+                        ? `
                       <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
                         <i class="fas fa-eye"></i> Voir Quiz
                       </button>
-                    ` : ''}
+                    `
+                        : ""
+                    }
                   </div>
                 </div>
               </div>
             </div>
             
-            <!-- SECTION 3: PROGRAMMATION D'ENTRETIEN -->
-            <div class="detail-section interview-section ${!app.quiz_validated ? 'locked' : ''}" id="interview-section-${app.id}">
-              
-              ${!app.quiz_validated ? `
-                <div class="interview-validation-overlay">
-                  <div class="interview-validation-number">3</div>
-                  <div class="interview-validation-message">En attente de validation du quiz</div>
-                  <button class="btn-schedule-interview-overlay" onclick="validateQuizAndRemoveOverlay(${app.id})" id="validate-quiz-btn-overlay-${app.id}">
-                    <i class="fas fa-check-double"></i> Valider le quiz
-                  </button>
-                </div>
-              ` : ''}
-                
+            <!-- Replaced entire interview section with results-only section -->
+            <div class="detail-section interview-section" id="interview-section-${app.id}">
               <h4>
-                <i class="fas fa-calendar-alt"></i> Programmation d'entretien
-                <span class="interview-status-badge ${getInterviewStatusClass(app.interview_status || 'not_scheduled')}">${getInterviewStatusText(app.interview_status || 'not_scheduled')}</span>
+                <i class="fas fa-video"></i> Entretien
+                ${getInterviewStatusBadge(app)}
               </h4>
               
               <div class="interview-content">
-                <div class="interview-overview">
-                  <div class="interview-info-grid">
-                    <div class="interview-info-item">
-                      <div class="info-icon">
-                        <i class="fas fa-calendar-check"></i>
-                      </div>
-                      <div class="info-content">
-                        <div class="info-label">Date prévue</div>
-                        <div class="info-value">${app.interview_date ? formatDate(app.interview_date) : 'Non programmé'}</div>
-                      </div>
-                    </div>
-                    
-                    <div class="interview-info-item">
-                      <div class="info-icon">
-                        <i class="fas fa-clock"></i>
-                      </div>
-                      <div class="info-content">
-                        <div class="info-label">Heure</div>
-                        <div class="info-value">${app.interview_time || 'Non définie'}</div>
-                      </div>
-                    </div>
-                    
-
-                    
-                    <div class="interview-info-item">
-                      <div class="info-icon">
-                        <i class="fas fa-users"></i>
-                      </div>
-                      <div class="info-content">
-                        <div class="info-label">Type</div>
-                        <div class="info-value">${app.interview_type || 'À définir'}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="interview-actions">
-                  <div class="interview-actions-row">
-                    <button class="btn-schedule-interview" onclick="openScheduleInterviewModal(${app.id}, '${candidateName}')">
-                      <i class="fas fa-calendar-plus"></i> Programmer un entretien
-                    </button>
-
-                    <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})" ${!app.interview_date ? 'disabled' : ''}>
-                      <i class="fas fa-calendar-times"></i> Reprogrammer
-                    </button>
-                  </div>
-                </div>
-                
-                ${app.interview_notes ? `
-                <div class="interview-notes">
-                  <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
-                  <p>${app.interview_notes}</p>
-                </div>
-                ` : ''}
+                ${getInterviewContent(app)}
               </div>
             </div>
-            
 
           </div>
           
@@ -699,7 +723,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
 
   updateFilterCounts()
 }
-
 
 function toggleCandidateCard(appId) {
   const expandedContent = document.getElementById(`expanded-${appId}`)
@@ -762,8 +785,6 @@ function getCompatibilityIcon(percentage) {
   return "times-circle"
 }
 
-
-
 async function viewCompatibilityDetails(applicationId) {
   try {
     showLoading("Chargement des détails de compatibilité...")
@@ -796,7 +817,6 @@ function showDarkCompatibilityModal(
   compatibilitySource,
   compatibilityReason,
 ) {
-
   const modal = document.createElement("div")
   modal.className = "modal-overlay compatibility-modal-overlay"
   modal.style.cssText = `
@@ -1347,10 +1367,10 @@ function getStatusText(status) {
 }
 
 function initializeQuizValidationState() {
-  applications.forEach(app => {
+  applications.forEach((app) => {
     const interviewSection = document.getElementById(`interview-section-${app.id}`)
     const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${app.id}`)
-    
+
     if (app.quiz_validated) {
       if (interviewSection) {
         interviewSection.classList.remove("locked")
@@ -1359,7 +1379,7 @@ function initializeQuizValidationState() {
           overlay.remove()
         }
       }
-      
+
       if (validateQuizBtn) {
         validateQuizBtn.disabled = true
         validateQuizBtn.innerHTML = '<i class="fas fa-check"></i> Quiz Validé'
@@ -1910,8 +1930,6 @@ function filterApplications(filter) {
   renderApplicationsWithCompatibility(filter)
 }
 
-
-
 function viewCandidateProfile(candidateId) {
   window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
 }
@@ -2085,12 +2103,10 @@ function updateFilterCounts() {
   }
 }
 
-
-
 async function viewQuizResults(applicationId, candidateName) {
   try {
     // Redirect to the quiz preview page
-    window.open(`/quiz-preview/${applicationId}`, '_blank')
+    window.open(`/quiz-preview/${applicationId}`, "_blank")
   } catch (error) {
     console.error("Erreur ouverture aperçu quiz:", error)
     showNotification("Erreur lors de l'ouverture de l'aperçu du quiz", "error")
@@ -2098,7 +2114,6 @@ async function viewQuizResults(applicationId, candidateName) {
 }
 
 function showQuizResultsModal(quizData, candidateName, applicationId) {
-
   const modal = document.createElement("div")
   modal.className = "modal-overlay quiz-results-modal"
   modal.style.cssText = `
@@ -2363,146 +2378,139 @@ function getQuizScoreClass(score) {
   return "very-low"
 }
 
-
-
-
-
 async function validateSkillsAndRemoveOverlay(applicationId) {
   try {
-    const app = applications.find(a => a.id === applicationId);
+    const app = applications.find((a) => a.id === applicationId)
     if (!app) {
-      console.error("Application non trouvée");
-      return;
+      console.error("Application non trouvée")
+      return
     }
-    
-    const candidateName = app.name || app.candidate_name || "Candidat";
-    
-    showLoading("Validation des compétences en cours...");
-    
+
+    const candidateName = app.name || app.candidate_name || "Candidat"
+
+    showLoading("Validation des compétences en cours...")
+
     const response = await fetch(`/api/applications/${applicationId}/validate-skills`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         validated: true,
-        notes: "Compétences validées par l'équipe RH"
-      })
-    });
-    
-    const result = await response.json();
-    hideLoading();
-    
+        notes: "Compétences validées par l'équipe RH",
+      }),
+    })
+
+    const result = await response.json()
+    hideLoading()
+
     if (result.success) {
-      app.skills_validated = true;
-      app.skills_validated_at = new Date().toISOString();
-      
-      const validateBtn = document.getElementById(`validate-btn-${applicationId}`);
-      const validationStatus = document.getElementById(`validation-status-${applicationId}`);
-      const quizSection = document.getElementById(`quiz-section-${applicationId}`);
-      
+      app.skills_validated = true
+      app.skills_validated_at = new Date().toISOString()
+
+      const validateBtn = document.getElementById(`validate-btn-${applicationId}`)
+      const validationStatus = document.getElementById(`validation-status-${applicationId}`)
+      const quizSection = document.getElementById(`quiz-section-${applicationId}`)
+
       if (validateBtn) {
-        validateBtn.classList.add("validated");
-        validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé';
-        validateBtn.disabled = true;
+        validateBtn.classList.add("validated")
+        validateBtn.innerHTML = '<i class="fas fa-check"></i> Validé'
+        validateBtn.disabled = true
       }
-      
+
       if (validationStatus) {
-        validationStatus.classList.add("success");
-        validationStatus.style.display = 'block';
+        validationStatus.classList.add("success")
+        validationStatus.style.display = "block"
       }
-      
+
       if (quizSection) {
-        quizSection.classList.remove("locked");
-        const overlay = quizSection.querySelector(".quiz-validation-overlay");
+        quizSection.classList.remove("locked")
+        const overlay = quizSection.querySelector(".quiz-validation-overlay")
         if (overlay) {
-          overlay.remove();
+          overlay.remove()
         }
       }
-      
-      showNotification(`✅ Analyse des compétences validée pour ${candidateName}`, "success");
+
+      showNotification(`✅ Analyse des compétences validée pour ${candidateName}`, "success")
     } else {
-      showNotification(result.message || "Erreur lors de la validation", "error");
+      showNotification(result.message || "Erreur lors de la validation", "error")
     }
   } catch (error) {
-    hideLoading();
-    console.error("Erreur validation compétences:", error);
-    showNotification("Erreur de connexion lors de la validation", "error");
+    hideLoading()
+    console.error("Erreur validation compétences:", error)
+    showNotification("Erreur de connexion lors de la validation", "error")
   }
 }
 
 async function validateQuizAndRemoveOverlay(applicationId) {
   try {
-    const app = applications.find(a => a.id === applicationId);
+    const app = applications.find((a) => a.id === applicationId)
     if (!app) {
-      console.error("Application non trouvée");
-      return;
+      console.error("Application non trouvée")
+      return
     }
-    
-    const candidateName = app.name || app.candidate_name || "Candidat";
-    
-    showLoading("Validation du quiz en cours...");
-    
+
+    const candidateName = app.name || app.candidate_name || "Candidat"
+
+    showLoading("Validation du quiz en cours...")
+
     const response = await fetch(`/api/applications/${applicationId}/validate-quiz`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         validated: true,
-        notes: "Quiz validé par l'équipe RH"
-      })
-    });
-    
-    const result = await response.json();
-    
+        notes: "Quiz validé par l'équipe RH",
+      }),
+    })
+
+    const result = await response.json()
+
     if (result.success) {
-      app.quiz_validated = true;
-      app.quiz_validated_at = new Date().toISOString();
-      
-      const interviewSection = document.getElementById(`interview-section-${applicationId}`);
+      app.quiz_validated = true
+      app.quiz_validated_at = new Date().toISOString()
+
+      const interviewSection = document.getElementById(`interview-section-${applicationId}`)
       if (interviewSection) {
-        interviewSection.classList.remove('locked');
-        const overlay = interviewSection.querySelector('.interview-validation-overlay');
+        interviewSection.classList.remove("locked")
+        const overlay = interviewSection.querySelector(".interview-validation-overlay")
         if (overlay) {
-          overlay.remove();
+          overlay.remove()
         }
       }
-      
-      hideLoading();
-      showNotification(`✅ Quiz validé pour ${candidateName}`, "success");
-      
-      const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${applicationId}`);
+
+      hideLoading()
+      showNotification(`✅ Quiz validé pour ${candidateName}`, "success")
+
+      const validateQuizBtn = document.getElementById(`validate-quiz-btn-overlay-${applicationId}`)
       if (validateQuizBtn) {
-        validateQuizBtn.disabled = true;
-        validateQuizBtn.innerHTML = '<i class="fas fa-check"></i> Quiz Validé';
+        validateQuizBtn.disabled = true
+        validateQuizBtn.innerHTML = '<i class="fas fa-check"></i> Quiz Validé'
       }
-      
     } else {
-      hideLoading();
-      showNotification(result.message || "Erreur lors de la validation", "error");
+      hideLoading()
+      showNotification(result.message || "Erreur lors de la validation", "error")
     }
   } catch (error) {
-    hideLoading();
-    console.error("Erreur validation quiz:", error);
-    showNotification("Erreur de connexion lors de la validation", "error");
+    hideLoading()
+    console.error("Erreur validation quiz:", error)
+    showNotification("Erreur de connexion lors de la validation", "error")
   }
 }
-
-
 
 function handleOpenCreateQuizClick(buttonEl) {
   if (!buttonEl) return
   if (buttonEl.dataset.loading === "true") return
-  
+
   buttonEl.dataset.loading = "true"
   buttonEl.disabled = true
   const originalHtml = buttonEl.innerHTML
   buttonEl.dataset.originalHtml = originalHtml
   buttonEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Ouverture...</span>'
-  
+
   openCreateQuizModal()
-  
+
   setTimeout(() => {
     try {
       buttonEl.disabled = false
@@ -2771,7 +2779,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (result.success) {
           showNotification("Quiz créé avec succès !", "success")
           closeCreateQuizModal()
-          
+
           // Refresh the page to show updated quiz data
           setTimeout(() => {
             window.location.reload()
@@ -2796,48 +2804,54 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 })
 
-
-
 function getInterviewStatusClass(status) {
   const statusClasses = {
-    'not_scheduled': 'status-not-scheduled',
-    'scheduled': 'status-scheduled',
-    'completed': 'status-completed',
-    'cancelled': 'status-cancelled',
-    'rescheduled': 'status-rescheduled'
+    not_scheduled: "status-not-scheduled",
+    scheduled: "status-scheduled",
+    completed: "status-completed",
+    cancelled: "status-cancelled",
+    rescheduled: "status-rescheduled",
+    passed: "status-passed",
+    failed: "status-failed",
   }
-  return statusClasses[status] || 'status-not-scheduled'
+  return statusClasses[status] || "status-not-scheduled"
 }
 
 function getInterviewStatusText(status) {
   const statusTexts = {
-    'not_scheduled': 'Non programmé',
-    'scheduled': 'Programmé',
-    'completed': 'Terminé',
-    'cancelled': 'Annulé',
-    'rescheduled': 'Reprogrammé'
+    not_scheduled: "Non programmé",
+    scheduled: "Programmé",
+    completed: "Terminé",
+    cancelled: "Annulé",
+    rescheduled: "Reprogrammé",
+    passed: "Réussi",
+    failed: "Échoué",
   }
-  return statusTexts[status] || 'Non programmé'
+  return statusTexts[status] || "Non programmé"
+}
+
+function viewInterviewResults(applicationId) {
+  window.open(`/interview-results?application_id=${applicationId}`, "_blank")
 }
 
 function formatDate(dateString) {
-  if (!dateString) return 'Non défini'
+  if (!dateString) return "Non défini"
   try {
     const date = new Date(dateString)
-    return date.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("fr-FR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     })
   } catch (error) {
-    return 'Date invalide'
+    return "Date invalide"
   }
 }
 
 function openScheduleInterviewModal(applicationId, candidateName) {
-  const modal = document.createElement('div')
-  modal.className = 'modal-overlay interview-modal-overlay'
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay interview-modal-overlay"
   modal.style.cssText = `
     position: fixed;
     top: 0;
@@ -3014,8 +3028,8 @@ function openScheduleInterviewModal(applicationId, candidateName) {
   document.body.appendChild(modal)
 
   // Gérer la soumission du formulaire
-  const form = modal.querySelector('#interview-form')
-  form.addEventListener('submit', function(e) {
+  const form = modal.querySelector("#interview-form")
+  form.addEventListener("submit", (e) => {
     e.preventDefault()
     scheduleInterview(applicationId, candidateName, form)
   })
@@ -3023,13 +3037,13 @@ function openScheduleInterviewModal(applicationId, candidateName) {
 
 function scheduleInterview(applicationId, candidateName, form) {
   const formData = {
-    date: form.querySelector('#interview-date').value,
-    time: form.querySelector('#interview-time').value,
-    type: form.querySelector('#interview-type').value,
-    notes: form.querySelector('#interview-notes').value
+    date: form.querySelector("#interview-date").value,
+    time: form.querySelector("#interview-time").value,
+    type: form.querySelector("#interview-type").value,
+    notes: form.querySelector("#interview-notes").value,
   }
 
-  form.closest('.modal-overlay').remove()
+  form.closest(".modal-overlay").remove()
   showNotification(`Entretien programmé pour ${candidateName}`, "success")
 }
 
@@ -3040,3 +3054,215 @@ function viewInterviewDetails(applicationId) {
 function rescheduleInterview(applicationId) {
   showNotification("Fonctionnalité en cours de développement", "info")
 }
+
+function getInterviewStatusBadge(app) {
+  const now = new Date()
+  const interviewDate = new Date(app.interview_date || app.scheduled_at)
+
+  if (app.end_session) {
+    const successRate = app.interview_result?.success_rate || 0
+    return `<span class="interview-status-badge completed ${successRate >= 50 ? "success" : "failure"}">
+      <i class="fas fa-check-circle"></i> ${successRate >= 50 ? "Réussi" : "Échoué"} (${successRate}%)
+    </span>`
+  } else if (app.start_session) {
+    return `<span class="interview-status-badge started">
+      <i class="fas fa-play-circle"></i> En cours
+    </span>`
+  } else if (app.interview_date && interviewDate < now) {
+    return `<span class="interview-status-badge overdue">
+      <i class="fas fa-exclamation-triangle"></i> En retard
+    </span>`
+  } else if (app.interview_date) {
+    return `<span class="interview-status-badge upcoming">
+      <i class="fas fa-clock"></i> Programmé
+    </span>`
+  } else {
+    return `<span class="interview-status-badge not-scheduled">
+      <i class="fas fa-calendar-plus"></i> Non programmé
+    </span>`
+  }
+}
+
+function getInterviewContent(app) {
+  console.log("[v0] Generating interview content for app", app.id, "with data:", {
+    interview_date: app.interview_date,
+    start_session: app.start_session,
+    end_session: app.end_session,
+    interview_result: app.interview_result,
+  })
+
+  const now = new Date()
+
+  // Check if interview data exists
+  if (!app.interview_date && !app.start_session && !app.end_session) {
+    console.log("[v0] No interview data found for app", app.id, "- showing no data message")
+    return `
+      <div class="interview-no-data-content">
+        <div class="no-interview-message">
+          <i class="fas fa-calendar-times"></i>
+          <p>Aucun entretien programmé</p>
+          <small>L'entretien n'a pas encore été planifié pour ce candidat</small>
+        </div>
+      </div>`
+  }
+
+  const interviewDate = new Date(app.interview_date)
+  const timeDiff = interviewDate - now
+//////fes9i9aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  // Completed interview - show results
+  if (app.end_session && app.interview_result) {
+    console.log("[v0] Showing completed interview results for app", app.id)
+    return `
+      <div class="interview-results-content">
+        <div class="results-overview">
+          <div class="result-score">
+            <div class="score-circle ${app.interview_result.success_rate >= 60 ? "success" : "failure"}">
+              <span class="score-percentage">${app.interview_result.success_rate}%</span>
+              <span class="score-label">Taux de réussite</span>
+            </div>
+          </div>
+          
+          <div class="results-details">
+            <div class="result-detail-item">
+              <i class="fas fa-smile"></i>
+              <div class="detail-content">
+                <span class="detail-label">Émotion dominante</span>
+                <span class="detail-value">${app.interview_result.dominant_emotion}</span>
+              </div>
+            </div>
+            
+            <div class="result-detail-item">
+              <i class="fas fa-clock"></i>
+              <div class="detail-content">
+                <span class="detail-label">Durée</span>
+                <span class="detail-value">${app.interview_result.duration}</span>
+              </div>
+            </div>
+            
+            <div class="result-detail-item">
+              <i class="fas fa-eye"></i>
+              <div class="detail-content">
+                <span class="detail-label">Détections</span>
+                <span class="detail-value">${app.interview_result.total_detections}</span>
+              </div>
+            </div>
+            
+            <div class="result-detail-item">
+              <i class="fas fa-percentage"></i>
+              <div class="detail-content">
+                <span class="detail-label">Confiance moyenne</span>
+                <span class="detail-value">${app.interview_result.avg_confidence}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+       
+      </div>`
+  }
+
+  // Started interview
+  else if (app.start_session) {
+    console.log("[v0] Showing started interview for app", app.id)
+    return `
+      <div class="interview-active-content">
+        <div class="interview-info">
+          <p><i class="fas fa-calendar"></i> <strong>Date:</strong> ${formatDateSafe(app.interview_date)}</p>
+          <p><i class="fas fa-user"></i> <strong>Candidat:</strong> ${app.candidate_name || "N/A"}</p>
+        </div>
+        <div class="interview-actions">
+          <a href="/interview/${app.id}" class="btn-join-interview">
+            <i class="fas fa-video"></i> Rejoindre l'entretien
+          </a>
+        </div>
+      </div>`
+  }
+
+  // Upcoming interview
+  else if (app.interview_date && timeDiff > 0) {
+    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24)
+    const minutes = Math.floor((timeDiff / (1000 * 60)) % 60)
+
+    return `
+      <div class="interview-upcoming-content">
+        <div class="interview-info">
+          <p><i class="fas fa-calendar"></i> <strong>Date:</strong> ${formatDateSafe(app.interview_date)}</p>
+          <p><i class="fas fa-user"></i> <strong>Candidat:</strong> ${app.candidate_name || "N/A"}</p>
+        </div>
+        
+        <div class="countdown-display upcoming">
+          <i class="fas fa-clock"></i> Temps restant: ${days}j ${hours}h ${minutes}m
+        </div>
+        
+        <div class="interview-actions">
+          ${
+            timeDiff <= 3600000
+              ? `
+            <a href="/interview/${app.id}" class="btn-start-session">
+              <i class="fas fa-play"></i> Démarrer l'entretien
+            </a>
+          `
+              : `
+            <button class="btn-waiting" disabled>
+              <i class="fas fa-hourglass-half"></i> En attente
+            </button>
+          `
+          }
+        </div>
+      </div>`
+  }
+
+  // Overdue interview
+  else if (app.interview_date && timeDiff <= 0) {
+    return `
+      <div class="interview-overdue-content">
+        <div class="interview-info">
+          <p><i class="fas fa-calendar"></i> <strong>Date:</strong> ${formatDateSafe(app.interview_date)}</p>
+          <p><i class="fas fa-user"></i> <strong>Candidat:</strong> ${app.candidate_name || "N/A"}</p>
+        </div>
+        
+        <div class="overdue-message">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>Entretien en retard</span>
+        </div>
+        
+        <div class="interview-actions">
+          <a href="/interview/${app.id}" class="btn-start-overdue">
+            <i class="fas fa-play"></i> Démarrer maintenant
+          </a>
+        </div>
+      </div>`
+  }
+
+  // Fallback - no interview scheduled
+  return `
+    <div class="interview-no-data-content">
+      <div class="no-interview-message">
+        <i class="fas fa-calendar-times"></i>
+        <p>Aucun entretien programmé</p>
+        <small>L'entretien n'a pas encore été planifié pour ce candidat</small>
+      </div>
+    </div>`
+}
+function viewDetailedInterviewResults(applicationId) {
+  // Open interview results in new window
+  window.open(`/interview-results?application_id=${applicationId}`, "_blank")
+}
+
+function updateScoreCircle(element, percentage) {
+  if (element) {
+    element.style.setProperty("--score-angle", `${percentage * 3.6}deg`)
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const scoreCircles = document.querySelectorAll(".score-circle")
+  scoreCircles.forEach((circle) => {
+    const percentageElement = circle.querySelector(".score-percentage")
+    if (percentageElement) {
+      const percentage = Number.parseInt(percentageElement.textContent)
+      updateScoreCircle(circle, percentage)
+    }
+  })
+})

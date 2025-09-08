@@ -570,7 +570,7 @@ class Interview(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # <-- ici
+    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     application_id = Column(Integer, ForeignKey("applications.id"), nullable=False)
 
     status = Column(
@@ -586,9 +586,18 @@ class Interview(Base):
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
 
+    success_rate = Column(Numeric(5, 2), nullable=True)  # Neutral emotion percentage
+    neutral_rate = Column(Numeric(5, 2), nullable=True)  # Neutral emotion percentage
+    dominant_emotion = Column(String(50), nullable=True)  # Most dominant emotion
+    total_detections = Column(Integer, nullable=True)  # Total emotion detections
+    avg_confidence = Column(Numeric(5, 2), nullable=True)  # Average confidence
+    session_duration = Column(Integer, nullable=True)  # Duration in seconds
+    interview_result = Column(String(20), nullable=True)  # PASS/FAIL
+    rate = Column(Integer, nullable=True)  # Rating 1-5 based on performance
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relations
-    candidate = relationship("User", backref="interviews")  # <-- utiliser User
+    candidate = relationship("User", backref="interviews")
     application = relationship("Application", backref="interviews")

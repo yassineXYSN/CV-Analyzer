@@ -2,20 +2,17 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Entretien planifié</title>
+    <title>Mes Entretiens Planifiés</title>
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/client-dep/css/analyze.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            /* Updated background to match homepage */
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            min-height: 100vh;
-        }
+        /* Inherit global theme from analyze.css */
         header {
             background-color: rgba(30, 41, 59, 0.9);
             color: white;
@@ -25,7 +22,7 @@
             backdrop-filter: blur(10px);
         }
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 2rem auto;
             background: rgba(255, 255, 255, 0.95);
             padding: 2rem;
@@ -41,194 +38,390 @@
             max-width: 100%;
             margin: 0 auto;
         }
+        
+        /* Updated event styles for different interview states */
         .fc-event {
-            background-color: #1cc88a !important;
             border: none !important;
             color: white !important;
             font-weight: bold;
             text-align: center;
+            cursor: pointer;
         }
-        /* Style for completed interviews */
+        
+        /* Upcoming interviews */
+        .fc-event.upcoming {
+            background-color: #1cc88a !important;
+        }
+        
+        /* Started interviews */
+        .fc-event.started {
+            background-color: #f6c23e !important;
+            color: #333 !important;
+        }
+        
+        /* Completed interviews */
         .fc-event.completed {
             background-color: #6c757d !important;
             text-decoration: line-through !important;
-            opacity: 0.7;
-            position: relative;
+            opacity: 0.8;
         }
-        .fc-event.completed::after {
-            content: "✓ Terminé";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 0.8em;
-            color: white;
-            font-weight: bold;
+        
+        /* Overdue interviews */
+        .fc-event.overdue {
+            background-color: #e74a3b !important;
         }
+
         .fc-toolbar-title {
             font-size: 1.25rem;
             font-weight: 600;
         }
-        #startSessionBtn {
+        
+        /* Interview details modal */
+        .interview-modal {
             display: none;
-            padding: 0.5rem 1rem;
-            font-size: 1rem;
-            background-color: #4e73df;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
         }
-        /* Style for completed status */
-        .completed-status {
-            background-color: #28a745;
-            color: white;
+        
+        .interview-modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .interview-info {
+            margin-bottom: 1rem;
+        }
+        
+        .interview-info p {
+            margin: 0.5rem 0;
+        }
+        
+        .countdown-display {
+            background: #f8f9fa;
             padding: 1rem;
             border-radius: 8px;
             text-align: center;
-            margin-top: 1rem;
+            margin: 1rem 0;
             font-weight: bold;
         }
-        .view-results-btn {
-            background-color: #17a2b8;
-            color: white;
+        
+        .countdown-display.upcoming {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .countdown-display.started {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .countdown-display.completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .countdown-display.overdue {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .btn {
             padding: 0.5rem 1rem;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 0.5rem;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
         }
+        
+        .btn-primary {
+            background-color: #4e73df;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #1cc88a;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
+            }
+            .interview-modal-content {
+                width: 95%;
+                margin: 5% auto;
             }
         }
     </style>
 </head>
 <body>
 
-<header>Mon Entretien Planifié</header>
+<header>Mes Entretiens Planifiés</header>
 <div class="container">
-    <h2>Calendrier de votre entretien</h2>
+    <h2>Calendrier de vos entretiens</h2>
     <div id="calendar"></div>
-    <div id="countdown" style="text-align:center; margin-top:1rem; font-size:1.2rem; color:#4e73df;"></div>
     
-    <!-- Show completion status if interview is done -->
-    {% if is_completed %}
-    <div class="completed-status">
-        <i class="fas fa-check-circle"></i> Entretien terminé avec succès !
-        <br>
-        <button class="view-results-btn" onclick="viewResults()">
-            <i class="fas fa-chart-bar"></i> Voir les résultats
-        </button>
+    <div id="interviewsStats" style="text-align: center; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+        <div id="statsContent">Chargement des statistiques...</div>
     </div>
-    {% else %}
-    <div style="text-align:center; margin-top:1rem;">
-        <button id="startSessionBtn">Démarrer l'entretien</button>
+</div>
+
+<!-- Interview details modal -->
+<div id="interviewModal" class="interview-modal">
+    <div class="interview-modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Détails de l'entretien</h3>
+            <button class="modal-close" onclick="closeInterviewModal()">&times;</button>
+        </div>
+        <div id="modalContent">
+            <!-- Content will be populated by JavaScript -->
+        </div>
     </div>
-    {% endif %}
 </div>
 
 <!-- FullCalendar JS -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
 <script>
+let allInterviews = [];
+let calendar;
+
 document.addEventListener('DOMContentLoaded', function() {
-    const interviewDateStr = "{{ interview_date | string | default('') }}";
-    const applicationId = "{{ application_id | string | default('') }}";
-    const isCompleted = {{ 'true' if is_completed else 'false' }};
-    const sessionEnded = {{ 'true' if interview_session_end else 'false' }}; // pass from backend
+    initializeCalendar();
+    loadAllInterviews();
+    
+    setInterval(updateStats, 60000);
+});
 
-    const interviewDate = interviewDateStr ? new Date(interviewDateStr) : null;
-    const countdownEl = document.getElementById('countdown');
-    const startBtn = document.getElementById('startSessionBtn');
-
-    // FullCalendar
+function initializeCalendar() {
     const calendarEl = document.getElementById('calendar');
-    const calendar = new FullCalendar.Calendar(calendarEl, {
+    calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'fr',
         themeSystem: 'standard',
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: ''
+            right: 'dayGridMonth,listWeek'
         },
-        events: interviewDate ? [
-            {
-                title: sessionEnded ? 'Entretien (Terminé)' : 'Entretien',
-                start: interviewDate,
-                allDay: true,
-                className: sessionEnded ? 'completed' : ''
-            }
-        ] : [],
+        events: [],
         eventClick: function(info) {
-            if (sessionEnded) {
-                alert('Entretien terminé le: ' + info.event.start.toLocaleString() + '\nCliquez sur "Voir les résultats" pour plus de détails.');
-            } else {
-                alert('Entretien prévu le: ' + info.event.start.toLocaleString());
-            }
-        }
+            showInterviewDetails(info.event.extendedProps.interviewData);
+        },
+        height: 'auto'
     });
     calendar.render();
+}
 
-    // Countdown / minute timer
-    function updateCountdown() {
-        if (!interviewDate) {
-            countdownEl.innerText = "Aucune interview planifiée";
-            startBtn.style.display = "none";
-            return;
-        }
-
-        const now = new Date();
-        const diff = interviewDate - now;
-
-        if (sessionEnded) {
-            countdownEl.innerHTML = '<i class="fas fa-check-circle" style="color: #28a745;"></i> Entretien terminé avec succès !';
-            startBtn.style.display = "none";
-            return;
-        }
-
-        if (diff > 0) {
-            // Before interview starts
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-            const minutes = Math.floor((diff / (1000 * 60)) % 60);
-            const seconds = Math.floor((diff / 1000) % 60);
-
-            countdownEl.innerText = `Temps restant avant l'entretien: ${days}j ${hours}h ${minutes}m ${seconds}s`;
-            startBtn.style.display = "none";
+async function loadAllInterviews() {
+    try {
+        const response = await fetch('/api/interviews/user/all', {
+            credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            allInterviews = data.interviews;
+            displayInterviewsInCalendar();
+            updateStats();
         } else {
-            // Interview started
-            countdownEl.innerText = "Entretien en cours...";
-            startBtn.style.display = "inline-block";
-
-            startBtn.onclick = function() {
-                if(applicationId) {
-                    window.location.href = `/interview/${applicationId}`;
-                } else {
-                    console.error("Application ID non défini, impossible de rediriger.");
-                }
-            };
+            console.error('Failed to load interviews:', data.message);
+            document.getElementById('statsContent').innerHTML = 'Erreur lors du chargement des entretiens';
         }
-    }
-
-    const timer = setInterval(updateCountdown, 1000);
-    updateCountdown();
-});
-
-
-function viewResults() {
-    const applicationId = "{{ application_id | default('') }}";
-    if (applicationId) {
-        window.location.href = `/interview-results?application_id=${applicationId}`;
+    } catch (error) {
+        console.error('Error loading interviews:', error);
+        document.getElementById('statsContent').innerHTML = 'Erreur de connexion';
     }
 }
-</script>
 
-<script>
-const applicationId = "{{ application_id | default('') }}";
-console.log("Application ID:", applicationId);
+function displayInterviewsInCalendar() {
+    const events = allInterviews.map(interview => {
+        const interviewDate = new Date(interview.interview_date || interview.scheduled_at);
+        const now = new Date();
+        
+        let className = 'upcoming';
+        let title = `${interview.job_title} - ${interview.company_name}`;
+        
+        if (interview.end_session) {
+            className = 'completed';
+            title = `✓ ${title} (Terminé)`;
+        } else if (interview.start_session) {
+            className = 'started';
+            title = `⏳ ${title} (En cours)`;
+        } else if (interviewDate < now) {
+            className = 'overdue';
+            title = `⚠️ ${title} (En retard)`;
+        }
+        
+        return {
+            title: title,
+            start: interviewDate,
+            allDay: false,
+            className: className,
+            extendedProps: {
+                interviewData: interview
+            }
+        };
+    });
+    
+    calendar.removeAllEvents();
+    calendar.addEventSource(events);
+}
+
+function showInterviewDetails(interview) {
+    const modal = document.getElementById('interviewModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    
+    modalTitle.textContent = `${interview.job_title} - ${interview.company_name}`;
+    
+    const interviewDate = new Date(interview.interview_date || interview.scheduled_at);
+    const now = new Date();
+    const timeDiff = interviewDate - now;
+    
+    let statusInfo = '';
+    let countdownInfo = '';
+    let actionButtons = '';
+    
+    if (interview.end_session) {
+        statusInfo = '<div class="countdown-display completed"><i class="fas fa-check-circle"></i> Entretien terminé avec succès</div>';
+       
+    } else if (interview.start_session) {
+        statusInfo = '<div class="countdown-display started"><i class="fas fa-play-circle"></i> Entretien en cours</div>';
+        actionButtons = `<div class="action-buttons">
+            <a href="/interview/${interview.application_id}" class="btn btn-success">
+                <i class="fas fa-video"></i> Rejoindre l'entretien
+            </a>
+        </div>`;
+    } else if (timeDiff > 0) {
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
+        
+        countdownInfo = `<div class="countdown-display upcoming">
+            <i class="fas fa-clock"></i> Temps restant: ${days}j ${hours}h ${minutes}m
+        </div>`;
+        
+        if (timeDiff <= 3600000) { // 1 hour = 3600000 milliseconds
+            actionButtons = `<div class="action-buttons">
+                <a href="/interview/${interview.application_id}" class="btn btn-success">
+                    <i class="fas fa-play"></i> Démarrer la session
+                </a>
+            </div>`;
+        } else {
+            actionButtons = `<div class="action-buttons">
+                <button class="btn btn-secondary" disabled>
+                    <i class="fas fa-hourglass-half"></i> En attente
+                </button>
+            </div>`;
+        }
+    } else {
+        statusInfo = '<div class="countdown-display overdue"><i class="fas fa-exclamation-triangle"></i> Entretien en retard</div>';
+        actionButtons = `<div class="action-buttons">
+            <a href="/interview/${interview.application_id}" class="btn btn-primary">
+                <i class="fas fa-video"></i> Démarrer l'entretien
+            </a>
+        </div>`;
+    }
+    
+    modalContent.innerHTML = `
+        <div class="interview-info">
+            <p><strong><i class="fas fa-briefcase"></i> Poste:</strong> ${interview.job_title}</p>
+            <p><strong><i class="fas fa-building"></i> Entreprise:</strong> ${interview.company_name}</p>
+            <p><strong><i class="fas fa-calendar"></i> Date:</strong> ${interviewDate.toLocaleString('fr-FR')}</p>
+            <p><strong><i class="fas fa-info-circle"></i> Statut:</strong> ${interview.status}</p>
+        </div>
+        ${statusInfo}
+        ${countdownInfo}
+        ${actionButtons}
+    `;
+    
+    modal.style.display = 'block';
+}
+
+function closeInterviewModal() {
+    document.getElementById('interviewModal').style.display = 'none';
+}
+
+function updateStats() {
+    const now = new Date();
+    const upcoming = allInterviews.filter(i => !i.start_session && !i.end_session && new Date(i.interview_date || i.scheduled_at) > now);
+    const started = allInterviews.filter(i => i.start_session && !i.end_session);
+    const completed = allInterviews.filter(i => i.end_session);
+    const overdue = allInterviews.filter(i => !i.start_session && !i.end_session && new Date(i.interview_date || i.scheduled_at) < now);
+    
+    const statsContent = document.getElementById('statsContent');
+    statsContent.innerHTML = `
+        <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1rem;">
+            <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: #1cc88a;">${upcoming.length}</div>
+                <div style="font-size: 0.9rem; color: #666;">À venir</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: #f6c23e;">${started.length}</div>
+                <div style="font-size: 0.9rem; color: #666;">En cours</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: #6c757d;">${completed.length}</div>
+                <div style="font-size: 0.9rem; color: #666;">Terminés</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: #e74a3b;">${overdue.length}</div>
+                <div style="font-size: 0.9rem; color: #666;">En retard</div>
+            </div>
+        </div>
+    `;
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('interviewModal');
+    if (event.target === modal) {
+        closeInterviewModal();
+    }
+}
 </script>
 
 </body>

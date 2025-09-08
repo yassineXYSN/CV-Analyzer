@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse,JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from database import SessionLocal
-from databaseclient.models import User, Application, Job, Company, ProfileCandidat, Notification
+from databaseclient.models import User, Application, Job, Company, ProfileCandidat, Notification, Interview, InterviewStatus
 from routers.client_dep.dependencies import get_db, get_current_user, require_auth
 from sqlalchemy.orm import Session, joinedload
 from fastapi.templating import Jinja2Templates
@@ -375,6 +375,47 @@ async def ping_user_notification(user_id: int):
     }
     success = await manager.send_personal_message(message, user_id)
     return {"success": success}
+
+@router.get("/api/interviews/user/all")
+async def get_all_user_interviews(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Get all interviews for the current user"""
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return JSONResponse(
+            status_code=401,
+            content={"success": False, "message": "Authentication required"}
+        )
+    
+    # Get all interviews for the current user
+    interviews = db.query(Interview).options(
+        joinedload(Interview.application).joinedload(Application.job).joinedload(Job.company)
+    ).filter(Interview.candidate_id == current_user.id).all()
+    
+    interview_list = []
+    for interview in interviews:
+        if interview.application and interview.application.job:
+            interview_data = {
+                "id": interview.id,
+                "application_id": interview.application_id,
+                "job_title": interview.application.job.title,
+                "company_name": interview.application.job.company.company_name if interview.application.job.company else "Non spécifié",
+                "scheduled_at": interview.scheduled_at.isoformat() if interview.scheduled_at else None,
+                "interview_date": interview.application.interview_date.isoformat() if interview.application.interview_date else None,
+                "start_session": interview.start_session,
+                "end_session": interview.end_session,
+                "status": interview.status.value if interview.status else "pending",
+                "is_completed": interview.start_session and interview.end_session
+            }
+            interview_list.append(interview_data)
+    
+    return JSONResponse({
+        "success": True,
+        "interviews": interview_list
+    })
+
 # -------------------------------
 # Respond to interview invitation
 # -------------------------------
@@ -447,6 +488,7 @@ async def respond_interview(
         "message": "Réponse enregistrée",
         "redirect": redirect_url
     })
+
 # -------------------------------
 # Get specific notification
 # -------------------------------
@@ -488,7 +530,6 @@ async def get_notifications(application_id: int, db: Session = Depends(get_db), 
         })
 
     return JSONResponse(status_code=200, content={"success": True, "notifications": notifications_data})
-
 
 @router.get("/{application_id}/slots")
 def get_interview_slots(application_id: int, db: Session = Depends(get_db)):

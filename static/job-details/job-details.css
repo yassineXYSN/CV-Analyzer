@@ -1,3 +1,229 @@
+.interview-results-section {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid #e9ecef;
+}
+
+.interview-results-section h4 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.interview-result-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.interview-result-badge.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.interview-result-badge.failure {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.interview-result-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.interview-results-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.results-overview {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.result-score {
+  display: flex;
+  justify-content: center;
+}
+
+.score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 4px solid;
+}
+
+.score-circle.success {
+  border-color: #28a745;
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+}
+
+.score-circle.failure {
+  border-color: #dc3545;
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+}
+
+.score-percentage {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.score-label {
+  font-size: 12px;
+  color: #6c757d;
+  text-align: center;
+}
+
+.results-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.result-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.result-detail-item i {
+  color: #6c757d;
+  font-size: 18px;
+  width: 20px;
+}
+
+.detail-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #6c757d;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.detail-value {
+  font-size: 16px;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.results-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-view-detailed-results,
+.btn-download-results {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-view-detailed-results {
+  background: #007bff;
+  color: white;
+}
+
+.btn-view-detailed-results:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+}
+
+.btn-download-results {
+  background: #28a745;
+  color: white;
+}
+
+.btn-download-results:hover {
+  background: #1e7e34;
+  transform: translateY(-2px);
+}
+
+.interview-feedback {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.interview-feedback h5 {
+  margin-bottom: 12px;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.no-results-content {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.no-results-icon i {
+  font-size: 48px;
+  color: #6c757d;
+  margin-bottom: 16px;
+}
+
+.no-results-message h5 {
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.no-results-message p {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .results-overview {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .results-details {
+    grid-template-columns: 1fr;
+  }
+
+  .results-actions {
+    flex-direction: column;
+  }
+}
+
 :root {
   /* Système de couleurs unifié */
   --primary-blue: #3b82f6;
@@ -2719,6 +2945,30 @@ body {
   box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5) !important;
 }
 
+/* Make interview section header visually consistent with quiz */
+.interview-section h4 {
+  color: white;
+  background: #3b82f6;
+  font-size: 1.3rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 1rem 1.5rem;
+  border-radius: 15px;
+  border: 2px solid white;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5);
+}
+
+.interview-section h4 i {
+  color: white;
+  font-size: 1.2rem;
+}
+
 .quiz-section-header h4 i {
   color: white !important;
   font-size: 1.2rem !important;
@@ -3696,30 +3946,31 @@ body {
 }
 
 .interview-section {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.02));
-  border: 2px solid rgba(16, 185, 129, 0.2);
-  border-radius: 16px;
-  padding: 1.5rem;
+  /* Match quiz/compatibility card styling */
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0%;
+  background: var(--card);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
 }
 
 .interview-section::before {
+  /* Use the same thin top accent as quiz */
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #10b981, #059669, #34d399);
-  border-radius: 16px 16px 0 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-blue), var(--success-green));
+  border-radius: 12px 12px 0 0;
 }
 
 .interview-section:hover {
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
-  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
 }
 
 .interview-status-badge {
@@ -3781,26 +4032,26 @@ body {
   gap: 0.75rem;
   padding: 1rem;
   background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.1);
   border-radius: 12px;
   transition: all 0.3s ease;
 }
 
 .interview-info-item:hover {
   background: rgba(15, 23, 42, 0.8);
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: rgba(59, 130, 246, 0.3);
   transform: translateY(-1px);
 }
 
-.info-icon {
+.interview-section .info-icon {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #10b981;
+  color: #3b82f6;
   font-size: 1.1rem;
   flex-shrink: 0;
 }

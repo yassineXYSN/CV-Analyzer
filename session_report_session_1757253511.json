@@ -1,0 +1,209 @@
+{
+  "session_data": {
+    "emotions": [
+      {
+        "emotion": "Fear",
+        "interview_emotion": "anxious",
+        "confidence": 0.36470261216163635,
+        "timestamp": "2025-09-07T14:58:31.485578"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6924406290054321,
+        "timestamp": "2025-09-07T14:58:31.580586"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6250228881835938,
+        "timestamp": "2025-09-07T14:58:31.675739"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.48610955476760864,
+        "timestamp": "2025-09-07T14:58:31.770747"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.44186931848526,
+        "timestamp": "2025-09-07T14:58:31.896742"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6347876191139221,
+        "timestamp": "2025-09-07T14:58:32.048871"
+      },
+      {
+        "emotion": "Surprise",
+        "interview_emotion": "confused",
+        "confidence": 0.546555757522583,
+        "timestamp": "2025-09-07T14:58:32.048871"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7920695543289185,
+        "timestamp": "2025-09-07T14:58:32.147877"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8665978908538818,
+        "timestamp": "2025-09-07T14:58:32.250871"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.9389320611953735,
+        "timestamp": "2025-09-07T14:58:32.356991"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8802660703659058,
+        "timestamp": "2025-09-07T14:58:32.461985"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.879275918006897,
+        "timestamp": "2025-09-07T14:58:32.564991"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.8098613619804382,
+        "timestamp": "2025-09-07T14:58:32.659984"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6258099675178528,
+        "timestamp": "2025-09-07T14:58:32.759991"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.7397005558013916,
+        "timestamp": "2025-09-07T14:58:32.863985"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6928532123565674,
+        "timestamp": "2025-09-07T14:58:32.960990"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6998187303543091,
+        "timestamp": "2025-09-07T14:58:33.137136"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6183674931526184,
+        "timestamp": "2025-09-07T14:58:33.241129"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6216104030609131,
+        "timestamp": "2025-09-07T14:58:33.347137"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6216104030609131,
+        "timestamp": "2025-09-07T14:58:33.448129"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5720861554145813,
+        "timestamp": "2025-09-07T14:58:33.548129"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6680763959884644,
+        "timestamp": "2025-09-07T14:58:33.647263"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.4843943119049072,
+        "timestamp": "2025-09-07T14:58:33.747263"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6878501176834106,
+        "timestamp": "2025-09-07T14:58:33.852262"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.5580621361732483,
+        "timestamp": "2025-09-07T14:58:33.948269"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.6700512170791626,
+        "timestamp": "2025-09-07T14:58:34.048392"
+      },
+      {
+        "emotion": "Neutral",
+        "interview_emotion": "neutral",
+        "confidence": 0.43676021695137024,
+        "timestamp": "2025-09-07T14:58:34.146386"
+      }
+    ],
+    "timestamps": [],
+    "session_active": false,
+    "session_id": "session_1757253511",
+    "candidate_name": "Yassine Chtourou",
+    "interviewer_name": "HR",
+    "start_time": "2025-09-07 14:58:31.164893",
+    "end_time": "2025-09-07 14:58:34.150385"
+  },
+  "report": {
+    "session_id": "session_1757253511",
+    "candidate_name": "Yassine Chtourou",
+    "interviewer_name": "HR",
+    "session_duration": 2.985492,
+    "session_duration_formatted": "0:02",
+    "total_detections": 27,
+    "average_confidence": 0.6539089834248578,
+    "dominant_emotion": "neutral",
+    "success_rate": 92.59,
+    "key_metrics": {
+      "anxiety_level": 3.7,
+      "confusion_level": 3.7,
+      "confidence_level": 0.0,
+      "neutral_level": 92.6
+    },
+    "emotion_distribution": {
+      "anxious": 3.7037037037037033,
+      "confused": 3.7037037037037033,
+      "confident": 0.0,
+      "neutral": 92.5925925925926
+    },
+    "interview_result": "FAIL",
+    "overall_assessment": "FAIL - session too short",
+    "insights": [
+      "\u2705 Candidate maintained excellent composure with high neutral emotions",
+      "\u26a0\ufe0f Interview session was very short"
+    ],
+    "recommendations": [
+      "Work on building confidence through mock interviews and preparation"
+    ],
+    "session_start_time": "2025-09-07 14:58:31",
+    "session_end_time": "2025-09-07 14:58:34"
+  }
+}

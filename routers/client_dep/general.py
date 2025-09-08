@@ -140,29 +140,26 @@ def get_job_details(job_id: int, db: Session = Depends(get_db)):
 @router.get("/planned-interview", response_class=HTMLResponse)
 async def planned_interview_page(request: Request, db: Session = Depends(get_db)):
     """
-    Page de l'entretien planifié pour l'utilisateur connecté.
-    Affiche la prochaine interview planifiée et l'application_id pour la redirection.
+    Page des entretiens planifiés pour l'utilisateur connecté.
+    Affiche tous les entretiens planifiés dans un calendrier.
     """
     current_user = get_current_user(request, db)
     if not current_user:
         # Redirige vers login si l'utilisateur n'est pas connecté
         return templates.TemplateResponse("client-dep/auth/login.html", {
             "request": request,
-            "error": "Vous devez être connecté pour voir votre entretien planifié"
+            "error": "Vous devez être connecté pour voir vos entretiens planifiés"
         })
 
-    # Récupère la dernière notification d'entretien planifié accepté
-    notification = db.query(Notification).filter(
+    # Récupère toutes les notifications d'entretien planifiés acceptés
+    notifications = db.query(Notification).filter(
         Notification.user_id == current_user.id,
         Notification.type == "interview_scheduled",
         Notification.response_status == 1  # accepté
-    ).order_by(Notification.created_at.desc()).first()
+    ).order_by(Notification.created_at.desc()).all()
 
-    interview_date = None
-    application_id = None
-    is_completed = False
-
-    if notification:
+    interviews = []
+    for notification in notifications:
         # Récupère l'application liée à la notification
         application = db.query(Application).filter(Application.id == notification.application_id).first()
         if application and application.interview_date:
@@ -172,12 +169,15 @@ async def planned_interview_page(request: Request, db: Session = Depends(get_db)
             import os
             result_file = f"interview_results/result_{application_id}.json"
             is_completed = os.path.exists(result_file)
+            
+            interviews.append({
+                "interview_date": interview_date,
+                "application_id": application_id,
+                "is_completed": is_completed
+            })
 
     return templates.TemplateResponse("client-dep/planned-interview.html", {
         "request": request,
-        "interview_date": interview_date,
-        "application_id": application_id,
-        "is_completed":  interview.end_session,  # Pass completion status to template
-        "interview_session_end": interview.end_session
-
+        "current_user": current_user,
+        "interviews": interviews
     })

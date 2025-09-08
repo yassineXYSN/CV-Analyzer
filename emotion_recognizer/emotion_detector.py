@@ -272,17 +272,17 @@ class EmotionDetector:
         
         # Save session data
         filename = f"session_report_{self.session_data['session_id']}.json"
-        with open(filename, 'w') as f:
-            json.dump({
-                'session_data': self.session_data,
-                'report': report
-            }, f, indent=2)
+        with open(filename, 'w') as f: json.dump({
+        'session_data': self.session_data,
+        'report': report
+    }, f, indent=2, default=str)
+
         
         print(f"✅ Session ended. Report saved: {filename}")
         return report
     
     def generate_report(self):
-        """Generate detailed emotion analysis report with pass/fail logic"""
+        """Generate detailed emotion analysis report with pass/fail logic based on neutral >= 50%"""
         emotions = [e['interview_emotion'] for e in self.session_data['emotions']]
         
         if not emotions:
@@ -312,26 +312,23 @@ class EmotionDetector:
         anxious_percentage = emotion_percentages.get('anxious', 0)
         confused_percentage = emotion_percentages.get('confused', 0)
         
-        # Positive indicators (confident + neutral should be majority)
-        positive_emotions = confident_percentage + neutral_percentage
-        negative_emotions = anxious_percentage + confused_percentage
-        
-        # Pass criteria: 
-        # 1. Positive emotions >= 60%
-        # 2. Average confidence >= 0.5
-        # 3. Session duration >= 30 seconds (minimum interview time)
         interview_passed = (
-            positive_emotions >= 60.0 and 
-            avg_confidence >= 0.5 and 
+            neutral_percentage >= 50.0 and 
+            avg_confidence >= 0.4 and 
             duration_seconds >= 30
         )
         
+        # Calculate success rate (neutral percentage)
+        success_rate = neutral_percentage
+        
         # Generate insights
         insights = []
-        if confident_percentage > 40:
-            insights.append("✅ Candidate showed strong confidence throughout the interview")
-        if neutral_percentage > 30:
-            insights.append("✅ Candidate maintained composure and stayed calm")
+        if neutral_percentage >= 50:
+            insights.append("✅ Candidate maintained excellent composure with high neutral emotions")
+        if confident_percentage > 30:
+            insights.append("✅ Candidate showed good confidence levels")
+        if neutral_percentage < 50:
+            insights.append("⚠️ Candidate showed insufficient emotional stability (neutral < 50%)")
         if anxious_percentage > 30:
             insights.append("⚠️ Candidate showed signs of anxiety during the interview")
         if confused_percentage > 25:
@@ -343,12 +340,12 @@ class EmotionDetector:
         
         # Overall assessment
         if interview_passed:
-            overall_assessment = "PASS - Candidate demonstrated good emotional stability and confidence"
+            overall_assessment = f"PASS - Candidate achieved {neutral_percentage:.1f}% neutral emotions (≥50% required)"
         else:
             reasons = []
-            if positive_emotions < 60:
-                reasons.append("insufficient positive emotions")
-            if avg_confidence < 0.5:
+            if neutral_percentage < 50:
+                reasons.append(f"neutral emotions only {neutral_percentage:.1f}% (need ≥50%)")
+            if avg_confidence < 0.4:
                 reasons.append("low detection confidence")
             if duration_seconds < 30:
                 reasons.append("session too short")
@@ -363,13 +360,12 @@ class EmotionDetector:
             'total_detections': total_detections,
             'average_confidence': float(avg_confidence),
             'dominant_emotion': max(emotion_counts, key=emotion_counts.get),
+            'success_rate': round(success_rate, 2),  # Added success rate field
             'key_metrics': {
                 'anxiety_level': round(anxious_percentage, 1),
                 'confusion_level': round(confused_percentage, 1),
                 'confidence_level': round(confident_percentage, 1),
                 'neutral_level': round(neutral_percentage, 1),
-                'positive_emotions': round(positive_emotions, 1),
-                'negative_emotions': round(negative_emotions, 1)
             },
             'emotion_distribution': emotion_percentages,
             'interview_result': 'PASS' if interview_passed else 'FAIL',
@@ -384,21 +380,24 @@ class EmotionDetector:
         """Generate recommendations based on emotion analysis"""
         recommendations = []
         
+        neutral_pct = emotion_percentages.get('neutral', 0)
         anxious_pct = emotion_percentages.get('anxious', 0)
         confused_pct = emotion_percentages.get('confused', 0)
         confident_pct = emotion_percentages.get('confident', 0)
         
+        if neutral_pct < 50:
+            recommendations.append("Focus on relaxation techniques and stress management for future interviews")
         if anxious_pct > 30:
-            recommendations.append("Consider stress management techniques for future interviews")
+            recommendations.append("Consider practicing mindfulness and breathing exercises")
         if confused_pct > 25:
-            recommendations.append("Review technical concepts and practice explaining complex topics")
+            recommendations.append("Review technical concepts and practice explaining complex topics clearly")
         if confident_pct < 20:
-            recommendations.append("Work on building confidence through mock interviews")
+            recommendations.append("Work on building confidence through mock interviews and preparation")
         if avg_confidence < 0.4:
             recommendations.append("Ensure good lighting and camera positioning for better analysis")
         
-        if not recommendations:
-            recommendations.append("Great performance! Continue with current interview preparation approach")
+        if neutral_pct >= 50 and not recommendations:
+            recommendations.append("Excellent emotional control! Continue with current interview preparation approach")
         
         return recommendations
 

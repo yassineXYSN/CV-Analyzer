@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
+from requests import Session
 from databasehr.database import SessionLocal
-from databasehr.models import Department, Employee, Job, Application, HRAdmin, ProfileCandidat, Contact
+from databasehr.models import Department, Employee, Job, HRAdmin, ProfileCandidat, Contact
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import date
@@ -10,7 +11,9 @@ from jwt_utils import get_current_hr_user, get_optional_current_hr_user
 from typing import Dict, Any, Optional
 import os
 from datetime import datetime, timedelta
-from databasehr.models import User, Application, Notification
+from databasehr.models import User, Notification
+from databaseclient.models import Application
+from routers.client_dep.dependencies import get_db
 
 # Configuration des templates
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -643,114 +646,144 @@ async def quiz_preview_page(request: Request, application_id: int):
             content={"error": f"Erreur lors du chargement de l'aperçu du quiz: {str(e)}"}
         )
     # Schedule interview endpoint
+
 @router.post("/api/schedule-interview/{application_id}")
-async def schedule_interview(application_id: int, schedule_data: dict):
+async def schedule_interview(application_id: int, schedule_data: dict, db: Session = Depends(get_db)):
     import logging
     logger = logging.getLogger(__name__)
     logger.info(f"Received schedule_data: {schedule_data}")
 
     try:
+        # Vérifier session utilisateur
         user_id = current_user_session.get("user_id")
         if not user_id:
-            return JSONResponse(status_code=401, content={"success": False, "message": "Utilisateur non connecté"})
+            return JSONResponse(
+                status_code=401,
+                content={"success": False, "message": "Utilisateur non connecté"}
+            )
 
+        # Vérifier entreprise associée
         company = get_user_company(user_id)
         if not company:
-            return JSONResponse(status_code=404, content={"success": False, "message": "Aucune entreprise associée"})
-
-        db: Session = SessionLocal()
-        try:
-            application = db.query(Application).filter(
-                Application.id == application_id,
-                Application.job.has(company_id=company.id)
-            ).first()
-
-            if not application:
-                return JSONResponse(
-                    status_code=404,
-                    content={"success": False,
-                             "message": f"Candidature {application_id} introuvable ou non associée à votre entreprise"}
-                )
-
-            admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
-            if not admin:
-                return JSONResponse(status_code=403, content={"success": False, "message": "Utilisateur non autorisé (non administrateur RH)"})
-
-            slots = schedule_data.get("slots", [])
-            if not slots:
-                return JSONResponse(status_code=400, content={"success": False, "message": "Aucun créneau sélectionné"})
-
-            # Vérification format des créneaux
-            for slot in slots:
-                try:
-                    datetime.strptime(slot, "%Y-%m-%d %H:%M")
-                except ValueError:
-                    return JSONResponse(
-                        status_code=400,
-                        content={"success": False, "message": f"Format de créneau invalide: {slot}. Attendu: YYYY-MM-DD HH:MM"}
-                    )
-
-            # 🔹 Mise à jour de la candidature
-            application.status = "interview_scheduled"
-            application.interview_slots = ",".join(slots)
-            db.commit()
-
-            # 🔹 Récupération ou création de l'utilisateur
-            candidate = application.candidate_profile
-            user = db.query(User).filter(User.email == candidate.contact.email).first()
-            if not user:
-                user = User(
-                    email=candidate.contact.email,
-                    first_name=candidate.name.split(" ")[0] if candidate.name else "Unknown",
-                    last_name=' '.join(candidate.name.split(" ")[1:]) if len(candidate.name.split(" ")) > 1 else "",
-                    password_hash="",
-                    is_active=True,
-                    is_verified=False,
-                    created_at=datetime.now()
-                )
-                db.add(user)
-                db.commit()
-                db.refresh(user)
-
-            # 🔹 Envoyer une notification par créneau
-            created_notifications = []
-            for slot in slots:
-                notification = Notification(
-                    user_id=user.id,
-                    type="interview_scheduled",
-                    title="Entretien planifié !",
-                    message=f"Votre entretien pour le poste de {application.job.title} chez {company.company_name} est prévu pour le créneau : {slot}.",
-                    is_read=False,
-                    application_id=application.id,
-                    job_id=application.job.id,
-                    status="interview_scheduled",
-                    company_name=company.company_name,
-                    job_title=application.job.title,
-                    admin_name=f"{admin.first_name} {admin.last_name}",
-                    scheduled_slots=slot,  # 🔹 chaque notif porte un créneau unique
-                    chosen_slot=None
-                )
-                db.add(notification)
-                created_notifications.append(notification)
-
-            db.commit()
-
             return JSONResponse(
-                status_code=200,
+                status_code=404,
+                content={"success": False, "message": "Aucune entreprise associée"}
+            )
+
+        # Vérifier que la candidature existe bien et est liée à l’entreprise
+        base_application = db.query(Application).filter(
+            Application.id == application_id,
+            Application.job.has(company_id=company.id)
+        ).first()
+
+        if not base_application:
+            return JSONResponse(
+                status_code=404,
                 content={
-                    "success": True,
-                    "message": f"{len(created_notifications)} notifications envoyées",
-                    "slots": slots
+                    "success": False,
+                    "message": f"Candidature {application_id} introuvable ou non associée à votre entreprise"
                 }
             )
 
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Erreur lors de la planification de l'entretien: {e}")
-            return JSONResponse(status_code=500, content={"success": False, "message": f"Erreur serveur: {str(e)}"})
-        finally:
-            db.close()
+        # Vérifier que l’utilisateur est un administrateur RH
+        admin = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+        if not admin:
+            return JSONResponse(
+                status_code=403,
+                content={"success": False, "message": "Utilisateur non autorisé (non administrateur RH)"}
+            )
+
+        # Vérifier présence et format des créneaux
+        slots = schedule_data.get("slots", [])
+        if not slots:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "Aucun créneau sélectionné"}
+            )
+
+        for slot in slots:
+            try:
+                datetime.strptime(slot, "%Y-%m-%d %H:%M")
+            except ValueError:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "success": False,
+                        "message": f"Format de créneau invalide: {slot}. Attendu: YYYY-MM-DD HH:MM"
+                    }
+                )
+
+        # 🔹 Récupération ou création de l’utilisateur lié au candidat
+        candidate = base_application.candidate_profile
+        user = db.query(User).filter(User.email == candidate.contact.email).first()
+        if not user:
+            user = User(
+                email=candidate.contact.email,
+                first_name=candidate.name.split(" ")[0] if candidate.name else "Unknown",
+                last_name=' '.join(candidate.name.split(" ")[1:]) if len(candidate.name.split(" ")) > 1 else "",
+                password_hash="",
+                is_active=True,
+                is_verified=False,
+                created_at=datetime.now()
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        created_applications = []
+        created_notifications = []
+
+        # 🔹 Pour chaque slot, créer une nouvelle Application + Notification
+        for slot in slots:
+            new_app = Application(
+                user_id=base_application.user_id,
+                job_id=base_application.job_id,
+                candidate_profile_id=base_application.candidate_profile_id,
+                status="interview_scheduled",
+                created_at=datetime.now()
+            )
+            db.add(new_app)
+            db.commit()
+            db.refresh(new_app)
+            created_applications.append(new_app)
+
+            notification = Notification(
+                user_id=user.id,
+                type="interview_scheduled",
+                title="Entretien planifié !",
+                message=(
+                    f"Votre entretien pour le poste de {base_application.job.title} "
+                    f"chez {company.company_name} est prévu pour le créneau : {slot}."
+                ),
+                is_read=False,
+                application_id=new_app.id,  # ✅ notification rattachée à la nouvelle application
+                job_id=base_application.job.id,
+                status="interview_scheduled",
+                company_name=company.company_name,
+                job_title=base_application.job.title,
+                admin_name=f"{admin.first_name} {admin.last_name}",
+                scheduled_slots=slot,  # ✅ slot uniquement dans Notification
+                chosen_slot=None
+            )
+            db.add(notification)
+            created_notifications.append(notification)
+
+        db.commit()
+
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "message": f"{len(created_applications)} nouvelles candidatures créées avec notifications",
+                "applications": [app.id for app in created_applications],
+                "slots": slots
+            }
+        )
 
     except Exception as e:
-        logger.error(f"Erreur interne: {e}")
-        return JSONResponse(status_code=500, content={"success": False, "message": f"Erreur interne: {str(e)}"})
+        logger.error(f"Erreur lors de la planification de l'entretien: {e}")
+        db.rollback()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Erreur serveur: {str(e)}"}
+        )

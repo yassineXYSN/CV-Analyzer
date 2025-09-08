@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Results Dashboard</title>
+    <link rel="stylesheet" href="/static/client-dep/css/analyze.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Inherit global theme from analyze.css */
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .results-grid {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border-left: 5px solid #ddd;
+            transition: transform 0.2s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .result-card.passed {
+            border-left-color: #28a745;
+        }
+
+        .result-card.failed {
+            border-left-color: #dc3545;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .result-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-passed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            text-align: center;
+        }
+
+        .detail-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .no-results h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Interview Results Dashboard</h1>
+            <p>View all completed interview sessions and their emotion analysis results</p>
+        </div>
+
+        <div class="content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Recent Interview Results</h2>
+                <button class="refresh-btn" onclick="loadResults()">🔄 Refresh</button>
+            </div>
+
+            <div id="resultsContainer" class="results-grid">
+                <!-- Results will be loaded here -->
+            </div>
+
+            <div id="noResults" class="no-results" style="display: none;">
+                <h3>No Interview Results Found</h3>
+                <p>Complete some interview sessions to see results here.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadResults() {
+            try {
+                const response = await fetch('/get_all_interview_results');
+                const data = await response.json();
+                
+                if (data.success && Object.keys(data.results).length > 0) {
+                    displayResults(data.results);
+                    document.getElementById('noResults').style.display = 'none';
+                } else {
+                    document.getElementById('resultsContainer').innerHTML = '';
+                    document.getElementById('noResults').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading results:', error);
+                document.getElementById('resultsContainer').innerHTML = '<p>Error loading results</p>';
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+
+            Object.entries(results).forEach(([applicationId, result]) => {
+                const report = result.report;
+                const passed = result.passed;
+                
+                const card = document.createElement('div');
+                card.className = `result-card ${passed ? 'passed' : 'failed'}`;
+                
+                card.innerHTML = `
+                    <div class="result-header">
+                        <div class="result-title">
+                            Application #${applicationId} - ${report.candidate_name}
+                        </div>
+                        <div class="result-status ${passed ? 'status-passed' : 'status-failed'}">
+                            ${passed ? 'PASSED' : 'FAILED'}
+                        </div>
+                    </div>
+                    
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <div class="detail-value">${report.success_rate}%</div>
+                            <div class="detail-label">Neutral Rate</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-value">${report.session_duration_formatted}</div>
+                            <div class="detail-label">Duration</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-value">${report.total_detections}</div>
+                            <div class="detail-label">Detections</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-value">${Math.round(report.average_confidence * 100)}%</div>
+                            <div class="detail-label">Confidence</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-value">${report.dominant_emotion}</div>
+                            <div class="detail-label">Dominant</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-value">${new Date(result.timestamp).toLocaleDateString()}</div>
+                            <div class="detail-label">Date</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                        <strong>Assessment:</strong> ${report.overall_assessment}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Load results when page loads
+        document.addEventListener('DOMContentLoaded', loadResults);
+    </script>
+</body>
+</html>
