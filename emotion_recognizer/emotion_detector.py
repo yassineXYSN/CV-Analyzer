@@ -72,15 +72,24 @@ class EmotionDetector:
                 return None
         
         try:
-            # Load the pre-trained model
-            model = keras.models.load_model(model_path)
+            # Load the pre-trained model (ignore old optimizer configs)
+            model = keras.models.load_model(model_path, compile=False)
+
+            # Recompile if tu veux continuer l'entraînement ou évaluer
+            from keras.optimizers import Adam
+            model.compile(
+                optimizer=Adam(learning_rate=0.0001),
+                loss="categorical_crossentropy",
+                metrics=["accuracy"]
+            )
+
             print(f"✅ Successfully loaded model: {model_path}")
             print(f"Model input shape: {model.input_shape}")
             print(f"Model output shape: {model.output_shape}")
             return model
         except Exception as e:
             print(f"❌ Error loading model: {e}")
-            return None
+        return None
     
     def preprocess_face(self, face_img):
         """Preprocess face image for model prediction"""

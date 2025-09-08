@@ -695,11 +695,36 @@ function renderApplicationsWithCompatibility(filter = "all") {
               </div>
             </div>
             
-            <!-- Replaced entire interview section with results-only section -->
-            <div class="detail-section interview-section" id="interview-section-${app.id}">
+            <!-- SECTION 3: INTERVIEW (VISIBLE SEULEMENT SI QUIZ VALIDÉ) -->
+            <div class="detail-section interview-section ${!app.quiz_validated ? "locked" : ""}" id="interview-section-${app.id}">
+              
+              ${
+                !app.quiz_validated
+                  ? `
+                <div class="interview-validation-overlay">
+                  <div class="interview-validation-number">3</div>
+                  <div class="interview-validation-message">
+                    ${isQuizValid(app.quiz_score) 
+                      ? "En attente de validation du quiz" 
+                      : "Le candidat n'a pas encore complété le quiz"
+                    }
+                  </div>
+                  ${isDeptHead ? '' : `
+                  <button class="btn-validate-quiz-overlay ${!isQuizValid(app.quiz_score) ? 'disabled' : ''}" 
+                          onclick="validateQuizAndRemoveOverlay(${app.id})" 
+                          id="validate-quiz-btn-overlay-${app.id}"
+                          ${!isQuizValid(app.quiz_score) ? 'disabled' : ''}>
+                    <i class="fas fa-check-double"></i> 
+                    ${isQuizValid(app.quiz_score) ? 'Valider le quiz' : 'Quiz non complété'}
+                  </button>
+                  `}
+                </div>
+              `
+                  : ""
+              }
+
               <h4>
-                <i class="fas fa-video"></i> Entretien
-                ${getInterviewStatusBadge(app)}
+                <i class="fas fa-calendar-alt"></i> Interview
               </h4>
               
               <div class="interview-content">
@@ -3582,28 +3607,28 @@ function rescheduleInterview(applicationId) {
 
 function getInterviewStatusBadge(app) {
   const now = new Date()
-  const interviewDate = new Date(app.interview_date || app.scheduled_at)
+  const interviewDate = app.interview_date ? new Date(app.interview_date) : null
 
   if (app.end_session) {
     const successRate = app.interview_result?.success_rate || 0
-    return `<span class="interview-status-badge completed ${successRate >= 50 ? "success" : "failure"}">
-      <i class="fas fa-check-circle"></i> ${successRate >= 50 ? "Réussi" : "Échoué"} (${successRate}%)
+    return `<span class="interview-status-badge ${getInterviewStatusClass('completed')} ${successRate >= 50 ? "success" : "failure"}">
+      ${getInterviewStatusText('completed')} (${successRate}%)
     </span>`
   } else if (app.start_session) {
-    return `<span class="interview-status-badge started">
-      <i class="fas fa-play-circle"></i> En cours
+    return `<span class="interview-status-badge ${getInterviewStatusClass('scheduled')}">
+      ${getInterviewStatusText('scheduled')}
     </span>`
-  } else if (app.interview_date && interviewDate < now) {
-    return `<span class="interview-status-badge overdue">
-      <i class="fas fa-exclamation-triangle"></i> En retard
+  } else if (app.interview_date && interviewDate && interviewDate < now) {
+    return `<span class="interview-status-badge ${getInterviewStatusClass('cancelled')}">
+      En retard
     </span>`
   } else if (app.interview_date) {
-    return `<span class="interview-status-badge upcoming">
-      <i class="fas fa-clock"></i> Programmé
+    return `<span class="interview-status-badge ${getInterviewStatusClass('scheduled')}">
+      ${getInterviewStatusText('scheduled')}
     </span>`
   } else {
-    return `<span class="interview-status-badge not-scheduled">
-      <i class="fas fa-calendar-plus"></i> Non programmé
+    return `<span class="interview-status-badge ${getInterviewStatusClass('not_scheduled')}">
+      ${getInterviewStatusText('not_scheduled')}
     </span>`
   }
 }
@@ -3617,90 +3642,181 @@ function getInterviewContent(app) {
   })
 
   const now = new Date()
+  const candidateName = app.candidate_profile?.name || app.candidate_name || "N/A"
+  const isDeptHead = currentUser?.role === "department_head"
 
-  // Check if interview data exists
+  // Check if interview data exists - show basic info grid like old file
   if (!app.interview_date && !app.start_session && !app.end_session) {
     console.log("[v0] No interview data found for app", app.id, "- showing no data message")
     return `
-      <div class="interview-no-data-content">
-        <div class="no-interview-message">
-          <i class="fas fa-calendar-times"></i>
-          <p>Aucun entretien programmé</p>
-          <small>L'entretien n'a pas encore été planifié pour ce candidat</small>
-        </div>
-      </div>`
-  }
-
-  const interviewDate = new Date(app.interview_date)
-  const timeDiff = interviewDate - now
-//////fes9i9aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-  // Completed interview - show results
-  if (app.end_session && app.interview_result) {
-    console.log("[v0] Showing completed interview results for app", app.id)
-    return `
-      <div class="interview-results-content">
-        <div class="results-overview">
-          <div class="result-score">
-            <div class="score-circle ${app.interview_result.success_rate >= 60 ? "success" : "failure"}">
-              <span class="score-percentage">${app.interview_result.success_rate}%</span>
-              <span class="score-label">Taux de réussite</span>
+      <div class="interview-overview">
+        <div class="interview-info-grid">
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Date prévue</div>
+              <div class="info-value">Non programmé</div>
             </div>
           </div>
           
-          <div class="results-details">
-            <div class="result-detail-item">
-              <i class="fas fa-smile"></i>
-              <div class="detail-content">
-                <span class="detail-label">Émotion dominante</span>
-                <span class="detail-value">${app.interview_result.dominant_emotion}</span>
-              </div>
-            </div>
-            
-            <div class="result-detail-item">
+          <div class="interview-info-item">
+            <div class="info-icon">
               <i class="fas fa-clock"></i>
-              <div class="detail-content">
-                <span class="detail-label">Durée</span>
-                <span class="detail-value">${app.interview_result.duration}</span>
-              </div>
             </div>
-            
-            <div class="result-detail-item">
-              <i class="fas fa-eye"></i>
-              <div class="detail-content">
-                <span class="detail-label">Détections</span>
-                <span class="detail-value">${app.interview_result.total_detections}</span>
-              </div>
+            <div class="info-content">
+              <div class="info-label">Heure</div>
+              <div class="info-value">Non définie</div>
             </div>
-            
-            <div class="result-detail-item">
-              <i class="fas fa-percentage"></i>
-              <div class="detail-content">
-                <span class="detail-label">Confiance moyenne</span>
-                <span class="detail-value">${app.interview_result.avg_confidence}%</span>
-              </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Type</div>
+              <div class="info-value">À définir</div>
             </div>
           </div>
         </div>
-        
-       
-      </div>`
+      </div>
+      
+      ${isDeptHead ? '' : `
+      <div class="interview-actions">
+        <div class="interview-actions-row">
+          <button class="btn-schedule-interview" onclick="openScheduleInterviewModal(${app.id}, '${candidateName}')">
+            <i class="fas fa-calendar-plus"></i> Programmer un entretien
+          </button>
+
+          <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})" disabled>
+            <i class="fas fa-calendar-times"></i> Reprogrammer
+          </button>
+        </div>
+      </div>
+      `}`
+  }
+
+  const interviewDate = app.interview_date ? new Date(app.interview_date) : null
+  const timeDiff = interviewDate ? interviewDate - now : 0
+
+  // Completed interview - show results with exact old file structure
+  if (app.end_session && app.interview_result) {
+    console.log("[v0] Showing completed interview results for app", app.id)
+    return `
+      <div class="interview-overview">
+        <div class="interview-info-grid">
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Date prévue</div>
+              <div class="info-value">${formatDateSafe(app.interview_date)}</div>
+            </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Heure</div>
+              <div class="info-value">${app.interview_time || 'Terminé'}</div>
+            </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Type</div>
+              <div class="info-value">${app.interview_type || 'Terminé'}</div>
+            </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-percentage"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Résultat</div>
+              <div class="info-value ${app.interview_result.success_rate >= 60 ? "success" : "failure"}">${app.interview_result.success_rate}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="interview-actions">
+        <div class="interview-actions-row">
+          <button class="btn-view-interview" onclick="viewInterviewResults(${app.id})">
+            <i class="fas fa-chart-line"></i> Voir les résultats détaillés
+          </button>
+        </div>
+      </div>
+      
+      ${app.interview_notes ? `
+      <div class="interview-notes">
+        <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
+        <p>${app.interview_notes}</p>
+      </div>
+      ` : ''}`
   }
 
   // Started interview
   else if (app.start_session) {
     console.log("[v0] Showing started interview for app", app.id)
     return `
-      <div class="interview-active-content">
-        <div class="interview-info">
-          <p><i class="fas fa-calendar"></i> <strong>Date:</strong> ${formatDateSafe(app.interview_date)}</p>
-          <p><i class="fas fa-user"></i> <strong>Candidat:</strong> ${app.candidate_name || "N/A"}</p>
+      <div class="interview-overview">
+        <div class="interview-info-grid">
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Date prévue</div>
+              <div class="info-value">${formatDateSafe(app.interview_date)}</div>
+            </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Heure</div>
+              <div class="info-value">${app.interview_time || 'En cours'}</div>
+            </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Type</div>
+              <div class="info-value">${app.interview_type || 'En cours'}</div>
+            </div>
+          </div>
         </div>
-        <div class="interview-actions">
+      </div>
+      
+      <div class="interview-actions">
+        <div class="interview-actions-row">
           <a href="/interview/${app.id}" class="btn-join-interview">
             <i class="fas fa-video"></i> Rejoindre l'entretien
           </a>
         </div>
-      </div>`
+      </div>
+      
+      ${app.interview_notes ? `
+      <div class="interview-notes">
+        <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
+        <p>${app.interview_notes}</p>
+      </div>
+      ` : ''}`
   }
 
   // Upcoming interview
@@ -3710,17 +3826,42 @@ function getInterviewContent(app) {
     const minutes = Math.floor((timeDiff / (1000 * 60)) % 60)
 
     return `
-      <div class="interview-upcoming-content">
-        <div class="interview-info">
-          <p><i class="fas fa-calendar"></i> <strong>Date:</strong> ${formatDateSafe(app.interview_date)}</p>
-          <p><i class="fas fa-user"></i> <strong>Candidat:</strong> ${app.candidate_name || "N/A"}</p>
+      <div class="interview-overview">
+        <div class="interview-info-grid">
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Date prévue</div>
+              <div class="info-value">${formatDateSafe(app.interview_date)}</div>
+            </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Heure</div>
+              <div class="info-value">${app.interview_time || 'Non définie'}</div>
+            </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Type</div>
+              <div class="info-value">${app.interview_type || 'À définir'}</div>
+            </div>
+          </div>
         </div>
-        
-        <div class="countdown-display upcoming">
-          <i class="fas fa-clock"></i> Temps restant: ${days}j ${hours}h ${minutes}m
-        </div>
-        
-        <div class="interview-actions">
+      </div>
+      
+      <div class="interview-actions">
+        <div class="interview-actions-row">
           ${
             timeDiff <= 3600000
               ? `
@@ -3730,45 +3871,133 @@ function getInterviewContent(app) {
           `
               : `
             <button class="btn-waiting" disabled>
-              <i class="fas fa-hourglass-half"></i> En attente
+              <i class="fas fa-hourglass-half"></i> En attente (${days}j ${hours}h ${minutes}m)
             </button>
           `
           }
+          ${isDeptHead ? '' : `
+          <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})">
+            <i class="fas fa-calendar-times"></i> Reprogrammer
+          </button>
+          `}
         </div>
-      </div>`
+      </div>
+      
+      ${app.interview_notes ? `
+      <div class="interview-notes">
+        <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
+        <p>${app.interview_notes}</p>
+      </div>
+      ` : ''}`
   }
 
   // Overdue interview
   else if (app.interview_date && timeDiff <= 0) {
     return `
-      <div class="interview-overdue-content">
-        <div class="interview-info">
-          <p><i class="fas fa-calendar"></i> <strong>Date:</strong> ${formatDateSafe(app.interview_date)}</p>
-          <p><i class="fas fa-user"></i> <strong>Candidat:</strong> ${app.candidate_name || "N/A"}</p>
+      <div class="interview-overview">
+        <div class="interview-info-grid">
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Date prévue</div>
+              <div class="info-value">${formatDateSafe(app.interview_date)}</div>
+            </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Heure</div>
+              <div class="info-value">${app.interview_time || 'En retard'}</div>
+            </div>
+          </div>
+          
+          <div class="interview-info-item">
+            <div class="info-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Type</div>
+              <div class="info-value">${app.interview_type || 'En retard'}</div>
+            </div>
+          </div>
         </div>
-        
-        <div class="overdue-message">
-          <i class="fas fa-exclamation-triangle"></i>
-          <span>Entretien en retard</span>
-        </div>
-        
-        <div class="interview-actions">
+      </div>
+      
+      <div class="interview-actions">
+        <div class="interview-actions-row">
           <a href="/interview/${app.id}" class="btn-start-overdue">
             <i class="fas fa-play"></i> Démarrer maintenant
           </a>
+          ${isDeptHead ? '' : `
+          <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})">
+            <i class="fas fa-calendar-times"></i> Reprogrammer
+          </button>
+          `}
         </div>
-      </div>`
+      </div>
+      
+      ${app.interview_notes ? `
+      <div class="interview-notes">
+        <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
+        <p>${app.interview_notes}</p>
+      </div>
+      ` : ''}`
   }
 
   // Fallback - no interview scheduled
   return `
-    <div class="interview-no-data-content">
-      <div class="no-interview-message">
-        <i class="fas fa-calendar-times"></i>
-        <p>Aucun entretien programmé</p>
-        <small>L'entretien n'a pas encore été planifié pour ce candidat</small>
+    <div class="interview-overview">
+      <div class="interview-info-grid">
+        <div class="interview-info-item">
+          <div class="info-icon">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div class="info-content">
+            <div class="info-label">Date prévue</div>
+            <div class="info-value">Non programmé</div>
+          </div>
+        </div>
+        
+        <div class="interview-info-item">
+          <div class="info-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="info-content">
+            <div class="info-label">Heure</div>
+            <div class="info-value">Non définie</div>
+          </div>
+        </div>
+        
+        <div class="interview-info-item">
+          <div class="info-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="info-content">
+            <div class="info-label">Type</div>
+            <div class="info-value">À définir</div>
+          </div>
+        </div>
       </div>
-    </div>`
+    </div>
+    
+    ${isDeptHead ? '' : `
+    <div class="interview-actions">
+      <div class="interview-actions-row">
+        <button class="btn-schedule-interview" onclick="openScheduleInterviewModal(${app.id}, '${candidateName}')">
+          <i class="fas fa-calendar-plus"></i> Programmer un entretien
+        </button>
+
+        <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})" disabled>
+          <i class="fas fa-calendar-times"></i> Reprogrammer
+        </button>
+      </div>
+    </div>
+    `}`
 }
 function viewDetailedInterviewResults(applicationId) {
   // Open interview results in new window

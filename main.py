@@ -101,7 +101,7 @@ async def favicon():
     png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO3nSxkAAAAASUVORK5CYII="
     return Response(content=base64.b64decode(png_b64), media_type="image/png")
 
-'''# 404 Error Handler
+# 404 Error Handler
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     """Handle 404 and other HTTP errors with custom error pages"""
@@ -119,7 +119,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Handle validation errors"""
     return templates.TemplateResponse("client-dep/404.html", {"request": request})
-'''
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
