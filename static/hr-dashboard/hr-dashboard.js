@@ -1,4 +1,3 @@
-console.log("🎯 FRONTEND: Dashboard Core chargé avec succès")
 
 // Variables globales
 let departments = []
@@ -14,7 +13,6 @@ window.applications = []
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 FRONTEND: Dashboard initializing...")
   
   // Check authentication first
   if (!checkAuthentication()) {
@@ -23,14 +21,12 @@ document.addEventListener("DOMContentLoaded", () => {
   
   initializeDashboard()
   initializeSkillsSystem()
-  console.log("✅ FRONTEND: Dashboard initialized")
 })
 
 // Check if user is authenticated
 function checkAuthentication() {
   const token = localStorage.getItem('hr_access_token');
   if (!token) {
-    console.log("❌ FRONTEND: No authentication token found, redirecting to login");
     window.location.replace("/hr-login");
     return false;
   }
@@ -40,13 +36,11 @@ function checkAuthentication() {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const now = Math.floor(Date.now() / 1000);
     if (payload.exp && payload.exp < now) {
-      console.log("❌ FRONTEND: Token expired, redirecting to login");
       localStorage.clear();
       window.location.replace("/hr-login");
       return false;
     }
   } catch (error) {
-    console.log("❌ FRONTEND: Invalid token, redirecting to login");
     localStorage.clear();
     window.location.replace("/hr-login");
     return false;
@@ -59,7 +53,6 @@ function checkAuthentication() {
 window.addEventListener('pageshow', function(event) {
   if (event.persisted) {
     // Page was loaded from cache, check authentication again
-    console.log("🔄 FRONTEND: Page loaded from cache, checking authentication");
     if (!checkAuthentication()) {
       return;
     }
@@ -70,7 +63,6 @@ window.addEventListener('pageshow', function(event) {
 window.addEventListener('popstate', function(event) {
   const token = localStorage.getItem('hr_access_token');
   if (!token) {
-    console.log("🚫 FRONTEND: Back button blocked - no authentication");
     window.location.replace("/hr-login");
   }
 });
@@ -78,39 +70,32 @@ window.addEventListener('popstate', function(event) {
 // Fonction d'initialisation
 async function initializeDashboard() {
   try {
-    console.log("🔄 FRONTEND: Début initialisation")
     // Charger l'utilisateur actuel
     await loadCurrentUser()
     // Charger les données de base
     await Promise.all([loadDepartments(), loadEmployees(), loadJobs(), loadDashboardStats()])
     // Load applications with compatibility AFTER other data is loaded
     await loadDashboardData()
-    console.log("✅ FRONTEND: Initialisation terminée")
   } catch (error) {
-    console.error("❌ FRONTEND: Erreur lors de l'initialisation:", error)
+    console.error("Erreur lors de l'initialisation:", error)
   }
 }
 
 async function loadDashboardData() {
-  console.log("📊 FRONTEND: Loading dashboard data...")
   try {
     // Load applications with compatibility (use the enhanced function if available)
     if (typeof window.loadApplicationsWithFilters === "function") {
-      console.log("🎯 FRONTEND: Using enhanced applications loader with compatibility")
       await window.loadApplicationsWithFilters()
     } else {
-      console.log("⚠️ FRONTEND: Falling back to basic applications loader")
       await loadApplications()
     }
-    console.log("✅ FRONTEND: Dashboard data loaded successfully")
   } catch (error) {
-    console.error("❌ FRONTEND: Error loading dashboard data:", error)
+    console.error("Error loading dashboard data:", error)
   }
 }
 
 // FONCTION DE BASE: Charger les candidatures depuis l'API (fallback)
 async function loadApplications() {
-  console.log("📋 FRONTEND: Chargement des candidatures (mode basique)")
   try {
     const response = await fetch("/api/applications", {
       headers: {
@@ -126,35 +111,23 @@ async function loadApplications() {
         matched_skills_count: typeof app.matched_skills_count === "number" ? app.matched_skills_count : 0,
         total_job_skills: typeof app.total_job_skills === "number" ? app.total_job_skills : 0,
       }))
-      console.log(
-        "🔍 FRONTEND: Fallback processed applications with compatibility:",
-        window.applications.map((app) => ({
-          id: app.id,
-          compatibility_percentage: app.compatibility_percentage,
-          matched_skills_count: app.matched_skills_count,
-          total_job_skills: app.total_job_skills,
-        })),
-      )
-      console.log(`✅ FRONTEND: ${window.applications.length} candidatures chargées`)
       // Check if we have compatibility data
       if (window.applications.length > 0 && window.applications[0].compatibility_percentage !== undefined) {
-        console.log("🎯 FRONTEND: Compatibility data detected, using enhanced rendering")
         if (typeof window.renderApplicationsWithCompatibility === "function") {
           window.renderApplicationsWithCompatibility()
         } else {
           renderApplicationsWithCompatibility()
         }
       } else {
-        console.log("📋 FRONTEND: No compatibility data, using basic rendering")
         renderApplicationsWithCompatibility()
       }
     } else {
-      console.error("❌ FRONTEND: Erreur chargement candidatures:", result.message)
+      console.error("Erreur chargement candidatures:", result.message)
       window.applications = []
       renderApplicationsWithCompatibility()
     }
   } catch (error) {
-    console.error("❌ FRONTEND: Erreur réseau chargement candidatures:", error)
+    console.error("Erreur réseau chargement candidatures:", error)
     window.applications = []
     renderApplicationsWithCompatibility()
   }
@@ -162,11 +135,10 @@ async function loadApplications() {
 
 // FONCTION MISE À JOUR: Rendu des candidatures avec témoin de recommandation et compatibilité
 function renderApplicationsWithCompatibility(filter = "all") {
-  console.log("📋 FRONTEND: Rendu des candidatures combiné, filtre:", filter)
 
   const container = document.getElementById("applicationsContainer")
   if (!container) {
-    console.error("❌ FRONTEND: Container candidatures non trouvé")
+    console.error("Container candidatures non trouvé")
     return
   }
 
@@ -499,12 +471,11 @@ function removeSlot(slot) {
 
 // --- Nouvelle fonction pour appeler le backend ---
 function sendInterviewNotification(applicationId, candidateId, slots) {
-  console.log(`📤 FRONTEND: Sending interview notification for application ${applicationId}, candidate ${candidateId}, slots: ${slots.join(", ")}`);
 
   // Validate slots format (e.g., "YYYY-MM-DD HH:MM")
   const slotRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
   if (!Array.isArray(slots) || slots.length === 0 || !slots.every(s => typeof s === 'string' && slotRegex.test(s))) {
-    console.error("❌ FRONTEND: Invalid slots format. Expected format: YYYY-MM-DD HH:MM");
+    console.error("Invalid slots format. Expected format: YYYY-MM-DD HH:MM");
     showNotification("Erreur: Les créneaux doivent être au format YYYY-MM-DD HH:MM", "error");
     return Promise.reject(new Error("Invalid slots format"));
   }
@@ -512,7 +483,7 @@ function sendInterviewNotification(applicationId, candidateId, slots) {
   // Validate currentUser
   const recruiterId = currentUser ? currentUser.id : null;
   if (!recruiterId) {
-    console.error("❌ FRONTEND: No current user or recruiter_id found");
+    console.error("No current user or recruiter_id found");
     showNotification("Erreur: Utilisateur non connecté", "error");
     return Promise.reject(new Error("No current user"));
   }
@@ -545,7 +516,6 @@ function sendInterviewNotification(applicationId, candidateId, slots) {
         showNotification(`Erreur: ${data.message || data.detail || "Échec de l'envoi de la notification"}`, "error");
         throw new Error(data.message || data.detail || "Failed to send notification");
       }
-      console.log("✅ FRONTEND: Interview notification sent successfully");
       showNotification("✅ Notification d'entretien envoyée avec succès", "success");
       return data;
     })
@@ -695,7 +665,6 @@ function initializeSkillsSystem() {
   window.clearJobSkills = clearJobSkills
   window.getLevelText = getLevelText
 
-  console.log("🔧 FRONTEND: Skills system initialized")
 }
 
 // Add a skill to the job
@@ -731,7 +700,6 @@ function addSkill() {
     required: isRequired,
   })
 
-  console.log(`✅ FRONTEND: Skill added: ${skillName} (${skillLevel}, ${isRequired ? "Required" : "Optional"})`)
 
   // Reset inputs and refresh display
   skillNameInput.value = ""
@@ -744,7 +712,6 @@ function addSkill() {
 function removeSkill(index) {
   if (index >= 0 && index < jobSkills.length) {
     const removedSkill = jobSkills.splice(index, 1)[0]
-    console.log(`🗑️ FRONTEND: Skill removed: ${removedSkill.name}`)
     renderSkillsList()
   }
 }
@@ -787,7 +754,6 @@ function renderSkillsList() {
     )
     .join("")
 
-  console.log(`📋 FRONTEND: Skills list rendered with ${jobSkills.length} skills`)
 }
 
 // Get French text for skill level
@@ -805,7 +771,6 @@ function getLevelText(level) {
 function clearJobSkills() {
   jobSkills = []
   renderSkillsList()
-  console.log("🧹 FRONTEND: All job skills cleared")
 }
 
 // FONCTION CORRIGÉE: Afficher la modal de recommandation
@@ -1414,7 +1379,7 @@ function closeAIReasonModal() {
   }
 }
 
-// Compatibility helper functions (fallback if compatibility.js not loaded)
+// Compatibility helper functions
 function getCompatibilityClass(percentage) {
   if (percentage >= 75) return "high"
   if (percentage >= 50) return "medium"
@@ -1440,7 +1405,6 @@ function getInitials(name) {
 }
 
 function filterApplications(status) {
-  console.log("🔍 FRONTEND: Filtrage candidatures:", status)
   if (typeof window.renderApplicationsWithCompatibility === "function") {
     window.renderApplicationsWithCompatibility(status)
   } else {
@@ -1448,20 +1412,16 @@ function filterApplications(status) {
   }
 }
 
-// Filter applications by compatibility (fallback)
+// Filter applications by compatibility
 function filterApplicationsByCompatibility(compatibilityLevel) {
-  console.log("🔍 FRONTEND: Filtering applications by compatibility:", compatibilityLevel)
   if (typeof window.loadApplicationsWithFilters === "function") {
     const statusFilter = document.querySelector(".filter-select").value || "all"
     window.loadApplicationsWithFilters(statusFilter, compatibilityLevel)
-  } else {
-    console.log("⚠️ FRONTEND: Enhanced compatibility filtering not available")
   }
 }
 
-// View compatibility details (fallback)
+// View compatibility details
 function viewCompatibilityDetails(applicationId) {
-  console.log("🔍 FRONTEND: Viewing compatibility details for application:", applicationId)
   if (typeof window.viewCompatibilityDetails === "function") {
     window.viewCompatibilityDetails(applicationId)
   } else {
@@ -1469,9 +1429,8 @@ function viewCompatibilityDetails(applicationId) {
   }
 }
 
-// Update application status (fallback)
+// Update application status
 function updateApplicationStatus(applicationId, newStatus) {
-  console.log("📝 FRONTEND: Updating application status:", { applicationId, newStatus })
   if (typeof window.updateApplicationStatus === "function") {
     window.updateApplicationStatus(applicationId, newStatus)
   } else {
@@ -1481,7 +1440,6 @@ function updateApplicationStatus(applicationId, newStatus) {
 
 // Fonction pour charger l'utilisateur actuel
 async function loadCurrentUser() {
-  console.log("👤 FRONTEND: Chargement utilisateur actuel")
   try {
     const response = await fetch("/api/current-user", {
       headers: {
@@ -1493,7 +1451,6 @@ async function loadCurrentUser() {
     console.log("API Response:", result)
     if (result.success) {
       currentUser = result.user
-      console.log("✅ FRONTEND: Utilisateur chargé:", currentUser)
       updateUserDisplay()
       // Adapter l'interface selon le rôle
       adaptInterfaceForRole()
@@ -1511,16 +1468,13 @@ async function loadCurrentUser() {
 // FONCTION MISE À JOUR: Adapter l'interface selon le rôle
 function adaptInterfaceForRole() {
   if (!currentUser) return
-  console.log(`🔧 FRONTEND: Adaptation interface pour le rôle: ${currentUser.role}`)
 
   // Restrictions pour CHEF DE DÉPARTEMENT
   if (currentUser.role === "department_head") {
-    console.log("🔒 FRONTEND: Mode chef de département activé")
     // Masquer tous les boutons de création de département
     const createDeptButtons = document.querySelectorAll('[onclick="openDepartmentModal()"]')
     createDeptButtons.forEach((btn) => {
       btn.style.display = "none"
-      console.log("🚫 FRONTEND: Bouton création département masqué")
     })
 
     // Masquer le bouton "Nouveau Département" dans les actions rapides
@@ -1529,7 +1483,6 @@ function adaptInterfaceForRole() {
       const actionInfo = card.querySelector(".action-info h3")
       if (actionInfo && actionInfo.textContent.includes("Nouveau Département")) {
         card.style.display = "none"
-        console.log("🚫 FRONTEND: Action rapide création département masquée")
       }
     })
 
@@ -1537,7 +1490,6 @@ function adaptInterfaceForRole() {
     const addBtnInSidebar = document.querySelector(".sidebar-actions .add-btn")
     if (addBtnInSidebar) {
       addBtnInSidebar.style.display = "none"
-      console.log("🚫 FRONTEND: Bouton + sidebar départements masqué")
     }
 
     // Ajouter un indicateur visuel
@@ -1548,12 +1500,10 @@ function adaptInterfaceForRole() {
   }
   // Restrictions pour RECRUTEUR
   else if (currentUser.role === "recruiter") {
-    console.log("🔍 FRONTEND: Mode recruteur activé")
     // Masquer tous les boutons de création de département
     const createDeptButtons = document.querySelectorAll('[onclick="openDepartmentModal()"]')
     createDeptButtons.forEach((btn) => {
       btn.style.display = "none"
-      console.log("🚫 FRONTEND: Bouton création département masqué pour recruteur")
     })
 
     // Masquer le bouton "Nouveau Département" dans les actions rapides
@@ -1565,7 +1515,6 @@ function adaptInterfaceForRole() {
         (actionInfo.textContent.includes("Nouveau Département") || actionInfo.textContent.includes("Nouveau Poste"))
       ) {
         card.style.display = "none"
-        console.log("🚫 FRONTEND: Action rapide masquée pour recruteur:", actionInfo.textContent)
       }
     })
 
@@ -1573,7 +1522,6 @@ function adaptInterfaceForRole() {
     const addBtnInSidebar = document.querySelector(".sidebar-actions .add-btn")
     if (addBtnInSidebar) {
       addBtnInSidebar.style.display = "none"
-      console.log("🚫 FRONTEND: Bouton + sidebar départements masqué pour recruteur")
     }
 
     // Ajouter un indicateur visuel
@@ -1584,7 +1532,6 @@ function adaptInterfaceForRole() {
   }
   // Mode SUPER ADMIN (accès complet)
   else if (currentUser.role === "super_admin") {
-    console.log("👑 FRONTEND: Mode Super Admin - Accès complet")
     // Ajouter un indicateur visuel
     const roleElement = document.getElementById("userRoleDisplay")
     if (roleElement) {
@@ -1627,7 +1574,6 @@ function updateUserDisplay() {
 
 // Fonction pour charger les statistiques du dashboard
 async function loadDashboardStats() {
-  console.log("📊 FRONTEND: Chargement statistiques dashboard")
   try {
     const response = await fetch("/api/dashboard-stats", {
       headers: {
@@ -1638,7 +1584,6 @@ async function loadDashboardStats() {
     const result = await response.json()
     if (result.success) {
       const stats = result.stats
-      console.log("✅ FRONTEND: Statistiques chargées:", stats)
       updateStatsDisplay(stats)
     } else {
       console.error("❌ FRONTEND: Erreur chargement statistiques:", result.message)
@@ -1670,7 +1615,6 @@ function updateStatsDisplay(stats) {
   updateStatChangeClass(jobChange, stats.job_change || "+0%")
   updateStatChangeClass(empChange, stats.emp_change || "+0%")
 
-  console.log("✅ FRONTEND: Statistiques affichées")
 }
 
 // Fonction pour mettre à jour les classes de couleur des changements
@@ -1688,12 +1632,10 @@ function updateStatChangeClass(element, change) {
 
 // Fonctions de navigation
 function openCompanyProfile() {
-  console.log("🏢 FRONTEND: Ouverture profil entreprise")
   window.location.href = "/company-profile"
 }
 
 function logout() {
-  console.log("🚪 FRONTEND: Déconnexion")
   
   // Clear all authentication data
   localStorage.removeItem('hr_access_token');
@@ -1787,7 +1729,6 @@ function resetManagerFields() {
 
 // Charger les chefs de département disponibles
 async function loadAvailableManagers() {
-  console.log("👥 FRONTEND: Chargement des chefs disponibles")
   try {
     const response = await fetch("/api/available-managers", {
       headers: {
@@ -1800,7 +1741,6 @@ async function loadAvailableManagers() {
 
     if (result.success) {
       const managers = result.managers || []
-      console.log(`✅ FRONTEND: ${managers.length} chefs disponibles`)
 
       select.innerHTML = '<option value="">Sélectionner un chef de département</option>'
       managers.forEach((manager) => {
@@ -1825,7 +1765,6 @@ async function loadAvailableManagers() {
 
 // FONCTIONS MODALES AMÉLIORÉES POUR LE CSS
 function openDepartmentModal() {
-  console.log("🏢 FRONTEND: Ouverture modal département")
   closeAllModals()
   const modal = document.getElementById("departmentModal")
   if (modal) {
@@ -1850,7 +1789,6 @@ function openDepartmentModal() {
 }
 
 function closeDepartmentModal() {
-  console.log("🏢 FRONTEND: Fermeture modal département")
   const modal = document.getElementById("departmentModal")
   if (modal) {
     modal.classList.remove("show")
@@ -1868,7 +1806,6 @@ function closeDepartmentModal() {
 }
 
 function openJobModal(preselectedDeptId = null) {
-  console.log("💼 FRONTEND: Ouverture modal poste")
   closeAllModals()
 
   const modal = document.getElementById("jobModal")
@@ -1915,7 +1852,6 @@ function openJobModal(preselectedDeptId = null) {
 }
 
 function closeJobModal() {
-  console.log("💼 FRONTEND: Fermeture modal poste")
 
   const modal = document.getElementById("jobModal")
   if (modal) {
@@ -1932,7 +1868,6 @@ function closeJobModal() {
 }
 
 function closeEmployeeModal() {
-  console.log("👤 FRONTEND: Fermeture modal employé")
   const modal = document.getElementById("employeeModal")
   if (modal) {
     modal.classList.remove("show")
@@ -1947,7 +1882,6 @@ function closeEmployeeModal() {
 
 // Fonction pour basculer l'expansion d'un département
 function toggleDepartmentExpansion(departmentId) {
-  console.log("🔄 FRONTEND: Basculer expansion département:", departmentId)
   if (expandedDepartments.has(departmentId)) {
     expandedDepartments.delete(departmentId)
   } else {
@@ -1964,7 +1898,6 @@ function toggleDepartmentExpansion(departmentId) {
 
 // FONCTION MODIFIÉE: Créer un département avec chef optionnel
 async function createDepartment() {
-  console.log("🏢 FRONTEND: Début création département")
   const name = document.getElementById("departmentName").value.trim()
   const description = document.getElementById("departmentDescription").value.trim()
   const color = document.getElementById("departmentColor").value
@@ -2034,7 +1967,6 @@ async function createDepartment() {
     }
   }
 
-  console.log("📤 FRONTEND: Envoi données département:", departmentData)
 
   try {
     showLoading("Création du département en cours...")
@@ -2051,7 +1983,6 @@ async function createDepartment() {
     hideLoading()
 
     if (result.success) {
-      console.log("✅ FRONTEND: Département créé avec succès")
       showNotification(result.message || "Département créé avec succès!", "success")
       closeDepartmentModal()
       await refreshDashboard()
@@ -2068,7 +1999,6 @@ async function createDepartment() {
 
 // Fonction pour créer un poste - AMÉLIORÉE AVEC SKILLS
 async function createJob() {
-  console.log("💼 FRONTEND: Début création poste")
 
   const title = document.getElementById("jobTitle").value.trim()
   const departmentId = document.getElementById("jobDepartment").value
@@ -2132,7 +2062,6 @@ async function createJob() {
     skills: skillsData,
   }
 
-  console.log("📤 FRONTEND: Envoi données poste avec compétences:", jobData)
 
   try {
     showLoading("Création du poste en cours...")
@@ -2523,14 +2452,13 @@ function viewEmployeeProfile(employeeId) {
   }
 }
 
-// Fonctions placeholder
+// Export data
 function exportData() {
-  console.log("📊 FRONTEND: Export données")
   showNotification("Fonctionnalité en cours de développement", "info")
 }
 
+// Generate report
 function generateReport() {
-  console.log("📈 FRONTEND: Génération rapport")
   window.location.href = "/hr-reports"
 }
 
@@ -2652,8 +2580,8 @@ function formatDate(dateString) {
 
 // Fonctions d'interaction avec les candidatures
 function viewCandidateProfile(candidateId) {
-  console.log("👤 FRONTEND: Ouverture profil candidat:", candidateId)
-  window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
+  console.log("👤 FRONTEND: Navigation vers candidate-profile pour le candidat:", candidateId)
+  window.location.href = `/candidate-profile/${candidateId}`
 }
 
 // FONCTION CORRIGÉE: Voir les détails d'un poste
@@ -2661,6 +2589,7 @@ function viewJobDetails(jobId) {
   console.log("💼 FRONTEND: Navigation vers job-details pour le poste:", jobId)
   window.location.href = `/job-details?id=${jobId}`
 }
+
 
 function filterApplicationByName() {
   const input = document.getElementById("applicationSearchInput")

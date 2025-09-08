@@ -617,8 +617,12 @@ function renderApplicationsWithCompatibility(filter = "all") {
                 <div class="interview-validation-overlay">
                   <div class="interview-validation-number">3</div>
                   <div class="interview-validation-message">En attente de validation du quiz</div>
-                  <button class="btn-schedule-interview-overlay" onclick="validateQuizAndRemoveOverlay(${app.id})" id="validate-quiz-btn-overlay-${app.id}">
-                    <i class="fas fa-check-double"></i> Valider le quiz
+                  <button class="btn-schedule-interview-overlay ${!isQuizValid(app.quiz_score) ? 'disabled' : ''}" 
+                          onclick="${!isQuizValid(app.quiz_score) ? 'showQuizValidationError()' : `validateQuizAndRemoveOverlay(${app.id})`}" 
+                          id="validate-quiz-btn-overlay-${app.id}"
+                          ${!isQuizValid(app.quiz_score) ? 'disabled' : ''}>
+                    <i class="fas fa-check-double"></i> 
+                    ${!isQuizValid(app.quiz_score) ? 'Quiz non complété' : 'Valider le quiz'}
                   </button>
                 </div>
               ` : ''}
@@ -2806,11 +2810,25 @@ async function validateSkillsAndRemoveOverlay(applicationId) {
   }
 }
 
+function isQuizValid(quizScore) {
+  return quizScore && quizScore > 0 && quizScore !== null && quizScore !== undefined;
+}
+
+function showQuizValidationError() {
+  showNotification("❌ Impossible de valider le quiz : le candidat n'a pas encore complété le quiz ou n'a pas de score valide.", "error");
+}
+
 async function validateQuizAndRemoveOverlay(applicationId) {
   try {
     const app = applications.find(a => a.id === applicationId);
     if (!app) {
       console.error("Application non trouvée");
+      return;
+    }
+    
+    // Vérifier que le quiz a un score valide
+    if (!isQuizValid(app.quiz_score)) {
+      showNotification("❌ Impossible de valider le quiz : le candidat n'a pas encore complété le quiz ou n'a pas de score valide.", "error");
       return;
     }
     
@@ -3557,3 +3575,46 @@ function viewInterviewDetails(applicationId) {
 function rescheduleInterview(applicationId) {
   showNotification("Fonctionnalité en cours de développement", "info")
 }
+
+// Ajouter les styles CSS pour le bouton désactivé
+function addDisabledButtonStyles() {
+  if (document.getElementById('quiz-validation-styles')) return;
+  
+  const style = document.createElement('style');
+  style.id = 'quiz-validation-styles';
+  style.textContent = `
+    .btn-schedule-interview-overlay.disabled {
+      background: #6b7280 !important;
+      color: #9ca3af !important;
+      cursor: not-allowed !important;
+      opacity: 0.6 !important;
+      pointer-events: none !important;
+    }
+    
+    .btn-schedule-interview-overlay.disabled:hover {
+      background: #6b7280 !important;
+      color: #9ca3af !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    
+    .btn-schedule-interview-overlay:not(.disabled) {
+      background: linear-gradient(135deg, #10b981, #059669) !important;
+      color: white !important;
+      cursor: pointer !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    
+    .btn-schedule-interview-overlay:not(.disabled):hover {
+      background: linear-gradient(135deg, #059669, #047857) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+    }
+  `;
+  
+  document.head.appendChild(style);
+}
+
+// Initialiser les styles au chargement
+document.addEventListener('DOMContentLoaded', addDisabledButtonStyles);
