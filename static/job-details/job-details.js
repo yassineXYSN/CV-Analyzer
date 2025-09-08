@@ -3399,9 +3399,32 @@ function formatDate(dateString) {
   }
 }
 
+// Available time slots (same as dashboard)
+const availableSlots = {
+  "09:00": "09:00 - 10:00",
+  "10:00": "10:00 - 11:00",
+  "11:00": "11:00 - 12:00",
+  "14:00": "14:00 - 15:00",
+  "15:00": "15:00 - 16:00",
+  "16:00": "16:00 - 17:00",
+};
+
+// Selected slots for each candidate
+const selectedSlotsByCandidate = {};
+let currentDay = null;
+let currentAppId = null;
+let currentCandidateId = null;
+
 function openScheduleInterviewModal(applicationId, candidateName) {
+  currentAppId = applicationId;
+  currentCandidateId = applicationId; // Using applicationId as candidateId for simplicity
+
+  if (!selectedSlotsByCandidate[currentCandidateId]) {
+    selectedSlotsByCandidate[currentCandidateId] = [];
+  }
   const modal = document.createElement("div")
   modal.className = "modal-overlay interview-modal-overlay"
+  modal.id = "schedulerModal"
   modal.style.cssText = `
     position: fixed;
     top: 0;
@@ -3409,193 +3432,302 @@ function openScheduleInterviewModal(applicationId, candidateName) {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 25000;
-    padding: 2rem;
+    z-index: 1000;
   `
 
   modal.innerHTML = `
-    <div class="modal-content" style="
+    <div class="scheduler-container" style="
+      background: var(--card);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
       max-width: 600px;
-      width: 95%;
-      max-height: 90vh;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      max-height: 80vh;
       overflow-y: auto;
-      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-      border-radius: 20px;
-      border: 2px solid rgba(59, 130, 246, 0.4);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     ">
-      <div class="modal-header" style="
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 20px 20px 0 0;
-        border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+      <div class="header" style="
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
       ">
-        <h3 style="margin: 0; display: flex; align-items: center; gap: 1rem; font-size: 1.5rem;">
-          <i class="fas fa-calendar-plus" style="color: #3b82f6;"></i> 
-          Programmer un entretien
-        </h3>
-        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()" style="
-          position: absolute;
-          top: 2rem;
-          right: 2rem;
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          color: white;
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
+        <h1 style="
+          color: var(--text-primary);
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin: 0 0 0.5rem 0;
           display: flex;
           align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          font-size: 1.2rem;
-        ">&times;</button>
+          gap: 0.5rem;
+        ">
+          <i class="fas fa-calendar-alt"></i> Programmer un entretien
+        </h1>
+        <p id="candidate-info" style="
+          color: var(--text-secondary);
+          margin: 0;
+          font-size: 0.95rem;
+        ">Planification d'entretien pour ${candidateName}</p>
       </div>
       
-      <div class="modal-body" style="padding: 2rem;">
-        <div class="candidate-info" style="
-          background: rgba(59, 130, 246, 0.1);
-          border: 1px solid rgba(59, 130, 246, 0.3);
-          border-radius: 12px;
-          padding: 1rem;
-          margin-bottom: 2rem;
-        ">
-          <h4 style="margin: 0 0 0.5rem 0; color: #f8fafc;">
-            <i class="fas fa-user" style="color: #3b82f6; margin-right: 0.5rem;"></i>
-            ${candidateName}
-          </h4>
-          <p style="margin: 0; color: #cbd5e1; font-size: 0.9rem;">
-            Application ID: ${applicationId}
-          </p>
+      <div class="content">
+        <div class="day-picker" style="margin-bottom: 1rem;">
+          <label for="daySelect" style="
+            display: block;
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+          ">
+            <i class="fas fa-calendar-alt"></i> Choisir un jour :
+          </label>
+          <input type="date" id="daySelect" style="
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+          ">
         </div>
         
-        <form id="interview-form" style="display: flex; flex-direction: column; gap: 1.5rem;">
-          <div class="form-group">
-            <label style="display: block; color: #f8fafc; font-weight: 600; margin-bottom: 0.5rem;">
-              <i class="fas fa-calendar" style="color: #3b82f6; margin-right: 0.5rem;"></i>
-              Date de l'entretien
-            </label>
-            <input type="date" id="interview-date" required style="
-              width: 100%;
-              padding: 0.75rem;
-              border: 1px solid rgba(59, 130, 246, 0.3);
-              border-radius: 8px;
-              background: rgba(15, 23, 42, 0.8);
-              color: #f8fafc;
-              font-size: 1rem;
-            ">
-          </div>
-          
-          <div class="form-group">
-            <label style="display: block; color: #f8fafc; font-weight: 600; margin-bottom: 0.5rem;">
-              <i class="fas fa-clock" style="color: #3b82f6; margin-right: 0.5rem;"></i>
-              Heure de l'entretien
-            </label>
-            <input type="time" id="interview-time" required style="
-              width: 100%;
-              padding: 0.75rem;
-              border: 1px solid rgba(59, 130, 246, 0.3);
-              border-radius: 8px;
-              background: rgba(15, 23, 42, 0.8);
-              color: #f8fafc;
-              font-size: 1rem;
-            ">
-          </div>
-          
-
-          
-          <div class="form-group">
-            <label style="display: block; color: #f8fafc; font-weight: 600; margin-bottom: 0.5rem;">
-              <i class="fas fa-users" style="color: #3b82f6; margin-right: 0.5rem;"></i>
-              Type d'entretien
-            </label>
-            <select id="interview-type" required style="
-              width: 100%;
-              padding: 0.75rem;
-              border: 1px solid rgba(59, 130, 246, 0.3);
-              border-radius: 8px;
-              background: rgba(15, 23, 42, 0.8);
-              color: #f8fafc;
-              font-size: 1rem;
-            ">
-              <option value="">Sélectionner un type</option>
-              <option value="premier_contact">Premier contact</option>
-              <option value="technique">Entretien technique</option>
-              <option value="rh">Entretien RH</option>
-              <option value="final">Entretien final</option>
-              <option value="autre">Autre</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label style="display: block; color: #f8fafc; font-weight: 600; margin-bottom: 0.5rem;">
-              <i class="fas fa-sticky-note" style="color: #3b82f6; margin-right: 0.5rem;"></i>
-              Notes (optionnel)
-            </label>
-            <textarea id="interview-notes" rows="3" style="
-              width: 100%;
-              padding: 0.75rem;
-              border: 1px solid rgba(59, 130, 246, 0.3);
-              border-radius: 8px;
-              background: rgba(15, 23, 42, 0.8);
-              color: #f8fafc;
-              font-size: 1rem;
-              resize: vertical;
-            " placeholder="Ajoutez des notes ou instructions pour l'entretien..."></textarea>
-          </div>
-          
-          <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
-            <button type="button" onclick="this.closest('.modal-overlay').remove()" style="
-              padding: 0.75rem 1.5rem;
-              border: 1px solid rgba(107, 114, 128, 0.3);
-              border-radius: 8px;
-              background: transparent;
-              color: #9ca3af;
-              cursor: pointer;
-              font-weight: 600;
-            ">Annuler</button>
-            <button type="submit" style="
-              padding: 0.75rem 1.5rem;
-              border: none;
-              border-radius: 8px;
-              background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-              color: white;
-              cursor: pointer;
-              font-weight: 600;
-              box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-            ">Programmer l'entretien</button>
-          </div>
-        </form>
+        <p class="selection-limit" style="
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+          margin-bottom: 1rem;
+          font-style: italic;
+        ">Vous ne pouvez sélectionner que 3 créneaux par jour.</p>
+        
+        <div id="timeSlotsContainer" class="time-slots-grid" style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 10px;
+          margin-bottom: 1rem;
+        "></div>
+        
+        <div id="selected-slots" class="selected-slots" style="
+          background: rgba(59, 130, 246, 0.1);
+          border: 1px solid rgba(59, 130, 246, 0.2);
+          border-radius: 8px;
+          padding: 1rem;
+          margin-bottom: 1rem;
+        ">
+          <h3 style="
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          ">
+            <i class="fas fa-check-circle"></i> Créneaux sélectionnés
+          </h3>
+          <div id="selected-list" style="
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+          ">Aucun créneau sélectionné</div>
+        </div>
+        
+        <div class="actions" style="
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-end;
+          padding-top: 1rem;
+          border-top: 1px solid var(--border-color);
+        ">
+          <button class="btn btn-secondary" onclick="closeScheduler()" style="
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          ">
+            <i class="fas fa-arrow-left"></i> Retour
+          </button>
+          <button class="btn btn-primary" onclick="confirmSchedule()" style="
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
+            color: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          ">
+            <i class="fas fa-paper-plane"></i> Envoyer
+          </button>
+        </div>
       </div>
     </div>
   `
 
   document.body.appendChild(modal)
 
-  // Gérer la soumission du formulaire
-  const form = modal.querySelector("#interview-form")
-  form.addEventListener("submit", (e) => {
-    e.preventDefault()
-    scheduleInterview(applicationId, candidateName, form)
-  })
+  // Initialize the scheduler
+  const today = new Date().toISOString().split("T")[0];
+  const dayInput = document.getElementById("daySelect");
+  dayInput.setAttribute("min", today);
+  dayInput.value = today;
+  dayInput.addEventListener("change", showTimeSlots);
+
+  showTimeSlots();
 }
 
-function scheduleInterview(applicationId, candidateName, form) {
-  const formData = {
-    date: form.querySelector("#interview-date").value,
-    time: form.querySelector("#interview-time").value,
-    type: form.querySelector("#interview-type").value,
-    notes: form.querySelector("#interview-notes").value,
+function closeScheduler() {
+  const modal = document.getElementById("schedulerModal");
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function showTimeSlots() {
+  currentDay = document.getElementById("daySelect").value;
+  const container = document.getElementById("timeSlotsContainer");
+  container.innerHTML = "";
+
+  Object.keys(availableSlots).forEach((time) => {
+    const div = document.createElement("div");
+    div.classList.add("time-slot");
+    div.style.cssText = `
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+    `;
+    div.textContent = availableSlots[time];
+    div.onclick = () => toggleTimeSlot(time, div);
+    container.appendChild(div);
+  });
+}
+
+function toggleTimeSlot(time, element) {
+  const candidateSlots = selectedSlotsByCandidate[currentCandidateId] || [];
+  const slotKey = `${currentDay} ${time}`;
+  
+  if (candidateSlots.includes(slotKey)) {
+    // Remove slot
+    const index = candidateSlots.indexOf(slotKey);
+    candidateSlots.splice(index, 1);
+    element.style.background = "var(--bg-secondary)";
+    element.style.borderColor = "var(--border-color)";
+    element.style.color = "var(--text-primary)";
+  } else {
+    // Add slot (max 3)
+    if (candidateSlots.length >= 3) {
+      showNotification("Vous ne pouvez sélectionner que 3 créneaux maximum", "warning");
+      return;
+    }
+    candidateSlots.push(slotKey);
+    element.style.background = "linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark))";
+    element.style.borderColor = "var(--primary-blue)";
+    element.style.color = "white";
+  }
+  
+  updateSelectedSlotsDisplay();
+}
+
+function updateSelectedSlotsDisplay() {
+  const candidateSlots = selectedSlotsByCandidate[currentCandidateId] || [];
+  const selectedList = document.getElementById("selected-list");
+  
+  if (candidateSlots.length === 0) {
+    selectedList.textContent = "Aucun créneau sélectionné";
+    selectedList.style.color = "var(--text-secondary)";
+  } else {
+    selectedList.innerHTML = candidateSlots.map(slot => {
+      const [date, time] = slot.split(" ");
+      const formattedDate = new Date(date).toLocaleDateString("fr-FR");
+      return `<div style="margin-bottom: 0.25rem;">${formattedDate} - ${availableSlots[time]}</div>`;
+    }).join("");
+    selectedList.style.color = "var(--text-primary)";
+  }
+}
+
+function confirmSchedule() {
+  const candidateSlots = selectedSlotsByCandidate[currentCandidateId] || [];
+  if (candidateSlots.length === 0) {
+    showNotification("Veuillez sélectionner au moins un créneau.", "warning");
+    return;
   }
 
-  form.closest(".modal-overlay").remove()
-  showNotification(`Entretien programmé pour ${candidateName}`, "success")
+  sendInterviewNotification(currentAppId, currentCandidateId, candidateSlots);
+  closeScheduler();
 }
+
+function sendInterviewNotification(applicationId, candidateId, slots) {
+  // Validate slots format (e.g., "YYYY-MM-DD HH:MM")
+  const slotRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+  if (!Array.isArray(slots) || slots.length === 0 || !slots.every(s => typeof s === 'string' && slotRegex.test(s))) {
+    console.error("Invalid slots format. Expected format: YYYY-MM-DD HH:MM");
+    showNotification("Erreur: Les créneaux doivent être au format YYYY-MM-DD HH:MM", "error");
+    return Promise.reject(new Error("Invalid slots format"));
+  }
+
+  // Validate currentUser
+  const recruiterId = currentUser ? currentUser.id : null;
+  if (!recruiterId) {
+    console.error("No current user or recruiter_id found");
+    showNotification("Erreur: Utilisateur non connecté", "error");
+    return Promise.reject(new Error("No current user"));
+  }
+
+  // Log the payload for debugging
+  const payload = {
+    application_id: applicationId,
+    candidate_id: candidateId,
+    slots: slots,
+    recruiter_id: recruiterId
+  };
+  console.log("Request payload:", payload);
+
+  return fetch(`/api/schedule-interview/${applicationId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((res) => {
+      if (!res.ok) {
+        return res.json().then((data) => {
+          throw new Error(data.message || data.detail || `HTTP error! status: ${res.status}`);
+        });
+      }
+      return res.json();
+    })
+    .then((data) => {
+      if (!data.success) {
+        console.error(`❌ FRONTEND: Failed to send notification: ${data.message || data.detail}`);
+        showNotification(`Erreur: ${data.message || data.detail || "Échec de l'envoi de la notification"}`, "error");
+        throw new Error(data.message || data.detail || "Failed to send notification");
+      }
+      showNotification("✅ Notification d'entretien envoyée avec succès", "success");
+      return data;
+    })
+    .catch((err) => {
+      console.error("❌ FRONTEND: Error during API call:", err);
+      showNotification(`Erreur serveur: ${err.message || "Veuillez réessayer plus tard"}`, "error");
+      throw err;
+    });
+}
+
 
 function viewInterviewDetails(applicationId) {
   showNotification("Fonctionnalité en cours de développement", "info")
