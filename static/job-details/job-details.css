@@ -509,6 +509,71 @@ body {
   gap: 1.5rem;
 }
 
+/* Ensure job sections can span full width and details layout remains stable with long content */
+.job-section.full-width,
+.job-section.full-width-description {
+  width: 100%;
+}
+
+/* Make details list flow vertically by default for consistent look with varying content sizes */
+.job-details-grid {
+  grid-template-columns: 1fr;
+}
+
+.job-details-grid .detail-item span {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (min-width: 1024px) {
+  /* Use two columns on large screens, but let long responsibilities take the full row */
+  .job-details-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .job-details-grid .detail-item:has(#jobResponsibilities) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* New card style for detail items */
+.job-details-grid .detail-item {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.job-details-grid .detail-item label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.job-details-grid .detail-item span {
+  color: var(--text-primary);
+}
+
+/* Responsibilities: full-width card with internal scroll if long */
+.job-details-grid .detail-item:has(#jobResponsibilities) span#jobResponsibilities {
+  display: block;
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* Subtle scrollbar for responsibilities */
+.job-details-grid .detail-item:has(#jobResponsibilities) span#jobResponsibilities::-webkit-scrollbar {
+  width: 6px;
+}
+.job-details-grid .detail-item:has(#jobResponsibilities) span#jobResponsibilities::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
 .detail-item {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid var(--border-color);

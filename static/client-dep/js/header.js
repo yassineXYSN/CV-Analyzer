@@ -113,6 +113,12 @@ class HeaderComponent {
                   }
                 }
               }
+            } else {
+              // Refresh token invalid; clear tokens and fall back to guest
+              try {
+                localStorage.removeItem('client_access_token')
+                localStorage.removeItem('client_refresh_token')
+              } catch (_) {}
             }
           } catch (_) {
             // ignore and fall through
@@ -145,9 +151,9 @@ class HeaderComponent {
         return
       }
 
-      // If no user data found but JWT tokens exist, don't force guest; retry shortly
+      // If tokens were cleared or never existed, go guest; otherwise a short retry if tokens exist
       if (localStorage.getItem('client_access_token') || localStorage.getItem('client_refresh_token')) {
-        setTimeout(() => this.checkAuthStatus(), 300)
+        setTimeout(() => this.checkAuthStatus(), 800)
       } else {
         this.setGuest()
       }
@@ -155,7 +161,7 @@ class HeaderComponent {
       console.error("Auth check error:", error)
       // Avoid forcing guest if JWT tokens exist; retry
       if (localStorage.getItem('client_access_token') || localStorage.getItem('client_refresh_token')) {
-        setTimeout(() => this.checkAuthStatus(), 500)
+        setTimeout(() => this.checkAuthStatus(), 1000)
       } else if (window.currentUser) {
         this.setUser(window.currentUser)
       } else {
