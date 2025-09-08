@@ -17,6 +17,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadUsersFromAPI()
   loadCompanyOptions()
   loadDashboardData()
+  // Apply saved theme if any
+  const savedTheme = localStorage.getItem('admin_theme') || 'dark'
+  applyTheme(savedTheme)
+  highlightActiveTheme(savedTheme)
   console.log("[v0] Admin interface loaded successfully")
 })
 
@@ -570,6 +574,26 @@ function showTab(tabName) {
       loadSettingsData()
       break
   }
+}
+
+// Simple Theme Switcher
+function applyTheme(theme) {
+  const root = document.documentElement
+  root.classList.remove('theme-light', 'theme-blue', 'theme-emerald', 'theme-purple')
+  // base dark is default
+  if (theme === 'light') root.classList.add('theme-light')
+  if (theme === 'blue') root.classList.add('theme-blue')
+  if (theme === 'emerald') root.classList.add('theme-emerald')
+  if (theme === 'purple') root.classList.add('theme-purple')
+  localStorage.setItem('admin_theme', theme)
+  showNotification(`Thème appliqué: ${theme}`, 'info')
+  highlightActiveTheme(theme)
+}
+
+function highlightActiveTheme(theme) {
+  document.querySelectorAll('.theme-option').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-theme') === theme)
+  })
 }
 
 // Load Companies

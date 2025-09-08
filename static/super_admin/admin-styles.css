@@ -23,6 +23,169 @@
   --hr-error: #ef4444;
 }
 
+/* Light theme override */
+.theme-light {
+  --background-primary: #f8fafc;
+  --background-secondary: #ffffff;
+  --background-tertiary: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --card-bg: rgba(255,255,255,0.8);
+  --border-color: rgba(15, 23, 42, 0.1);
+}
+
+/* Accent themes (keep dark base, tweak accents) */
+.theme-blue { --hr-accent: #3b82f6; --hr-primary: #1d4ed8; }
+.theme-emerald { --hr-accent: #10b981; --hr-primary: #059669; }
+.theme-purple { --hr-accent: #8b5cf6; --hr-primary: #7c3aed; }
+
+/* Component-level tuning for light theme */
+.theme-light body {
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 50%, #e5eaf0 100%);
+  color: var(--text-primary);
+}
+
+.theme-light .profile-header,
+.theme-light .info-section,
+.theme-light .section-card,
+.theme-light .users-table-container,
+.theme-light .analytics-card,
+.theme-light .settings-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.theme-light .tab-btn {
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+.theme-light .tab-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: var(--text-primary);
+}
+
+.theme-light .tab-btn.active {
+  background: linear-gradient(135deg, var(--hr-primary), var(--hr-accent));
+  color: #fff;
+}
+
+.theme-light .overview-card,
+.theme-light .company-card,
+.theme-light .admin-card-full {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.theme-light .overview-icon,
+.theme-light .health-icon {
+  box-shadow: none;
+}
+
+.theme-light .company-description,
+.theme-light .email,
+.theme-light .table-user-email,
+.theme-light .chart-placeholder p {
+  color: var(--text-muted);
+}
+
+.theme-light .users-table thead {
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.theme-light .users-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.theme-light .search-input,
+.theme-light .filter-select,
+.theme-light .form-group input,
+.theme-light .form-group select,
+.theme-light .form-group textarea {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+.theme-light .search-input:focus,
+.theme-light .filter-select:focus,
+.theme-light .form-group input:focus,
+.theme-light .form-group select:focus,
+.theme-light .form-group textarea:focus {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.45);
+}
+
+.theme-light .modal {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+}
+.theme-light .modal-header {
+  color: #ffffff;
+}
+
+.theme-light .company-details-panel {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 18px 48px rgba(15,23,42,0.08);
+}
+
+/* Google Translate widget on light theme */
+.theme-light .goog-te-gadget { color: var(--text-secondary) !important; }
+.theme-light .goog-te-gadget-simple {
+  background: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+.theme-light .goog-te-gadget-simple a,
+.theme-light .goog-te-gadget-simple .goog-te-menu-value,
+.theme-light .goog-te-gadget-simple .goog-te-menu-value span { color: var(--text-primary) !important; }
+.theme-light .goog-te-gadget-simple img { filter: none; opacity: 1; }
+
+/* Buttons remain vibrant on light */
+.theme-light .add-admin-btn,
+.theme-light .btn-create,
+.theme-light .btn-save,
+.theme-light .btn-view-all {
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25);
+}
+
+/* Theme option buttons */
+.theme-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.theme-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.theme-option .swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--sw);
+  border: 1px solid rgba(0,0,0,.1);
+}
+.theme-option:hover { transform: translateY(-2px); border-color: rgba(59,130,246,.45); box-shadow: 0 6px 18px rgba(59,130,246,.15); }
+.theme-option.active { outline: 2px solid rgba(59,130,246,.6); outline-offset: 2px; }
+
+/* Accent theme backgrounds for polish */
+.theme-blue body { background: linear-gradient(135deg, #0f172a 0%, #0e1b36 50%, #0b1630 100%); }
+.theme-emerald body { background: linear-gradient(135deg, #0f172a 0%, #0d1f1a 50%, #0a1a15 100%); }
+.theme-purple body { background: linear-gradient(135deg, #0f172a 0%, #151235 50%, #120f2f 100%); }
+
 /* Base Styles */
 * {
   margin: 0;
