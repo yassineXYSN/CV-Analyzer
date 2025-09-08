@@ -718,6 +718,11 @@ box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
                         <button class="notification-btn" onclick="markAsRead({{ notification.id }})">
                             ✓ Marquer comme lu
                         </button>
+                        {% if notification.message == 'A new quiz has been created for you. Please check your quizzes page to start.' %}
+                        <a href="/quizzes" class="notification-btn">
+                            ❓ Mes Quiz
+                        </a>
+                        {% endif %}
                                                  {% if notification.type == 'interview_scheduled' %}
 <button class="notification-btn"
     onclick="viewInterviewDetail({{ notification.application_id }})">
@@ -1013,6 +1018,7 @@ function closeModal() {
         const date = new Date(notification.timestamp);
         const formattedTime = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} à ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
+        const isQuizCreation = notification.message === 'A new quiz has been created for you. Please check your quizzes page to start.';
         notificationElement.innerHTML = `
             <div class="notification-header">
                 <h3 class="notification-title">${notification.title}</h3>
@@ -1035,6 +1041,7 @@ function closeModal() {
                 <button class="notification-btn" onclick="markAsRead(${notification.notification_id})">
                     ✓ Marquer comme lu
                 </button>
+                ${isQuizCreation ? `<a href=\"/quizzes\" class=\"notification-btn\">❓ Mes Quiz</a>` : ''}
             </div>
         `;
         

@@ -104,7 +104,6 @@
                         </div>
 
                         <div class="user-dropdown-menu">
-                            <a href="/dashboard" class="dropdown-item"><i class="fas fa-tachometer-alt"></i><span>Tableau de bord</span></a>
                             <a href="#" id="profileLink" class="dropdown-item">
                                 <i class="fas fa-user-circle"></i><span>Mon profil</span>
                             </a>                      
@@ -113,7 +112,6 @@
                             <a href="/notifications" class="dropdown-item"><i class="fas fa-bell"></i><span>Notifications</span></a>
                             <a href="/saved-jobs" class="dropdown-item"><i class="fas fa-heart"></i><span>Offres sauvegardées</span></a>
                             <div class="dropdown-divider"></div>
-                            <a href="/settings" class="dropdown-item"><i class="fas fa-cog"></i><span>Paramètres</span></a>
                             <button class="dropdown-item logout-btn" onclick="HeaderComponent.logout()">
                                 <i class="fas fa-sign-out-alt"></i><span>Déconnexion</span>
                             </button>
@@ -226,6 +224,7 @@
         gap: 0.5rem;
         border-radius: 8px;
         transition: all 0.3s ease;
+        white-space: nowrap;
     }
 
     .nav-link:hover {
