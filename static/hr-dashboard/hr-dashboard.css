@@ -39,12 +39,10 @@ body {
   overflow-x: hidden;
   line-height: 1.6;
   padding: 2rem;
-  overflow: hidden;
+  overflow:auto;
 }
 
-/* ===== SCROLLBARS INVISIBLES POUR LES FORMULAIRES SPÉCIFIQUES ===== */
 
-/* Scrollbars invisibles pour les modals de département et job */
 #departmentModal .modal-body::-webkit-scrollbar,
 #jobModal .modal-body::-webkit-scrollbar,
 #departmentModal .form-section::-webkit-scrollbar,
@@ -120,6 +118,7 @@ body {
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  
 }
 
 /* Background Effects */
