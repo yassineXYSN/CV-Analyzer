@@ -2198,7 +2198,7 @@ function filterApplications(filter) {
 }
 
 function viewCandidateProfile(candidateId) {
-  window.open(`/employee-profile?candidate_id=${candidateId}`, "_blank")
+  window.location.href = `/candidate-profile/${candidateId}`
 }
 
 function showLoading(message) {
