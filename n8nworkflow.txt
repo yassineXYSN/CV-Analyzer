@@ -1040,73 +1040,6 @@
       "id": "df4ee1c7-5010-483b-ae4d-e1cf8b1401de",
       "name": "Quiz creation",
       "webhookId": "69c5f680-542e-4c5e-82cf-9bd935078c71"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ { \"ReviewParagraph\": $json.choices[0].message.content.ReviewParagraph } }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.4,
-      "position": [
-        -1184,
-        -144
-      ],
-      "id": "068ab0c8-a1b9-46fe-8269-b0de4c754ae1",
-      "name": "Respond to Webhook4"
-    },
-    {
-      "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "gpt-4o-mini",
-          "mode": "list",
-          "cachedResultName": "GPT-4O-MINI"
-        },
-        "messages": {
-          "values": [
-            {
-              "content": "=You are an HR assistant analyzing a candidate’s application for a job. Use the structured sections below to form an honest and concise review.\n\nCandidate Profile\n\nName: {{ $json.body.candidate_profile.name }}\n\nTitle: {{ $json.body.candidate_profile.title }}\n\nEducation: {{ $json.body.candidate_profile.education }}\n\nLanguages: {{ $json.body.candidate_profile.languages }}\n\nCertificates: {{ $json.body.candidate_profile.certificates }}\n\nSkills: {{ $json.body.candidate_profile.skills }}\n\nJob Information\n\nJob Title: {{ $json.body.job_info.title }}\n\nRequirements: {{ $json.body.job_info.requirements }}\n\nResponsibilities: {{ $json.body.job_info.responsibilities }}\n\nSkills Required: {{ $json.body.job_info.skills }}\n\nSalary Range:{{ $json.body.job_info.salary_min }}  - {{ $json.body.job_info.salary_max }} {{ $json.body.job_info.currency }}\n\nEmployment Type: {{ $json.body.job_info.employment_type }}\n\nPriority: {{ $json.body.job_info.priority }}\n\nCompatibility\n\nCompatibility Score: {{ $json.body.application_info.compatibility_score }}\n\nReason: {{ $json.body.application_info.compatibility_reason }}\n\nQuiz Performance\n\nQuiz Title: {{ $json.body.quiz_data.quiz_info.title }}\n\nScore: {{ $json.body.quiz_data.attempt_info.score }}%\n\nTotal Questions: {{ $json.body.quiz_data.quiz_info.total_questions }}\n\nCorrect Answers: {{ $json.body.quiz_data.attempt_info.total_correct }}\n\nDuration: {{ $json.body.quiz_data.attempt_info.duration_seconds }} seconds\n\nQuestion Breakdown: {{ $json.body.quiz_data.questions }} \n\nTask for the AI:\n\nProvide a brief review of the candidate’s strengths and weaknesses.\n\nAssess if the candidate seems like a good fit for the job (Yes/No).\n\nKeep the answer professional, balanced, and under 200 words.\n\nYour Output Format:\n\nReviewParagraph: a brief paragraph to say if the condidat is a good fit or not",
-              "role": "assistant"
-            }
-          ]
-        },
-        "simplify": false,
-        "jsonOutput": true,
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 1.8,
-      "position": [
-        -1856,
-        -192
-      ],
-      "id": "395c6402-e5f2-4c37-a271-c29662cdb6c0",
-      "name": "Compatibility1",
-      "credentials": {
-        "openAiApi": {
-          "id": "xQ6ZUUGF7MtDV8U9",
-          "name": "n8n free OpenAI API credits"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "analyze-quiz",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        -2240,
-        -256
-      ],
-      "id": "12e347df-a7ac-4bd6-81af-8be25fee268c",
-      "name": "Analyze quiz webhook",
-      "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
     }
   ],
   "connections": {
@@ -1620,28 +1553,6 @@
         [
           {
             "node": "Split Out",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compatibility1": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook4",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Analyze quiz webhook": {
-      "main": [
-        [
-          {
-            "node": "Compatibility1",
             "type": "main",
             "index": 0
           }
