@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 # JWT Configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "my-super-secret-jwt-key-for-development-only-12345")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 120
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 # Password hashing

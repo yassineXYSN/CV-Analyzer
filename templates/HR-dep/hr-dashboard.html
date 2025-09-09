@@ -839,51 +839,114 @@
                 </div>
 
                 <!-- Section Description détaillée -->
-                <div class="form-section">
-                    <h4><i class="fas fa-file-text"></i> Description détaillée du poste</h4>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-info-circle"></i>
-                            Description générale du poste *
-                        </label>
-                        <textarea 
-                            id="jobDescription" 
-                            class="form-textarea" 
-                            placeholder="Décrivez le poste, l'environnement de travail, les objectifs principaux..."
-                            rows="4"
-                            required
-                        ></textarea>
+                <div class="form-section description-form-enhanced">
+                    <div class="form-section-header">
+                        <div class="section-icon-wrapper">
+                            <div class="section-icon">
+                                <i class="fas fa-file-text"></i>
+                            </div>
+                            <div class="section-title-content">
+                                <h4>Description détaillée du poste</h4>
+                                <p class="section-subtitle">Définissez les détails essentiels du poste à pourvoir</p>
+                            </div>
+                        </div>
+                        <div class="form-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="descriptionProgress"></div>
+                            </div>
+                            <span class="progress-text">0% complété</span>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-list"></i>
-                            Exigences
-                        </label>
-                        <textarea 
-                            id="jobRequirements" 
-                            class="form-textarea" 
-                            placeholder="Compétences et qualifications requises..."
-                        ></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-tasks"></i>
-                            Responsabilités
-                        </label>
-                        <textarea 
-                            id="jobResponsibilities" 
-                            class="form-textarea" 
-                            placeholder="Principales responsabilités du poste..."
-                        ></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-user"></i>
-                            Employé assigné (optionnel)
-                        </label>
-                        <select id="jobEmployee" class="form-select">
-                            <option value="">Aucun employé assigné</option>
-                        </select>
+
+                    <div class="form-fields-grid">
+                        <div class="form-field-card primary">
+                            <div class="field-header">
+                                <div class="field-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <label class="form-label-enhanced">
+                                    Description générale du poste *
+                                </label>
+                            </div>
+                            <div class="field-content">
+                                <textarea 
+                                    id="jobDescription" 
+                                    class="form-textarea-enhanced" 
+                                    placeholder="Décrivez le poste, l'environnement de travail, les objectifs principaux..."
+                                    rows="4"
+                                    required
+                                ></textarea>
+                                <div class="field-footer">
+                                    <span class="char-count">0 caractères</span>
+                                    <span class="field-tip">Minimum 50 caractères recommandé</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-field-card">
+                            <div class="field-header">
+                                <div class="field-icon">
+                                    <i class="fas fa-list"></i>
+                                </div>
+                                <label class="form-label-enhanced">
+                                    Exigences
+                                </label>
+                            </div>
+                            <div class="field-content">
+                                <textarea 
+                                    id="jobRequirements" 
+                                    class="form-textarea-enhanced" 
+                                    placeholder="Compétences et qualifications requises..."
+                                    rows="3"
+                                ></textarea>
+                                <div class="field-footer">
+                                    <span class="char-count">0 caractères</span>
+                                    <span class="field-tip">Listez les compétences techniques et soft skills</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-field-card">
+                            <div class="field-header">
+                                <div class="field-icon">
+                                    <i class="fas fa-tasks"></i>
+                                </div>
+                                <label class="form-label-enhanced">
+                                    Responsabilités
+                                </label>
+                            </div>
+                            <div class="field-content">
+                                <textarea 
+                                    id="jobResponsibilities" 
+                                    class="form-textarea-enhanced" 
+                                    placeholder="Principales responsabilités du poste..."
+                                    rows="3"
+                                ></textarea>
+                                <div class="field-footer">
+                                    <span class="char-count">0 caractères</span>
+                                    <span class="field-tip">Détaillez les missions quotidiennes</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-field-card">
+                            <div class="field-header">
+                                <div class="field-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <label class="form-label-enhanced">
+                                    Employé assigné (optionnel)
+                                </label>
+                            </div>
+                            <div class="field-content">
+                                <select id="jobEmployee" class="form-select-enhanced">
+                                    <option value="">Aucun employé assigné</option>
+                                </select>
+                                <div class="field-footer">
+                                    <span class="field-tip">Sélectionnez le responsable du recrutement</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">

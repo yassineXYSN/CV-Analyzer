@@ -95,38 +95,83 @@
                 <!-- Main Content -->
                 <div class="job-main">
                     <!-- Description -->
-                    <div class="content-section">
-                        <h2 class="section-title">
-                            <i class="fas fa-file-alt"></i>
-                            Description du poste
-                        </h2>
-                        <div class="job-description">
-                            {{ job.description | safe }}
+                    <div class="content-section description-section">
+                        <div class="section-header-enhanced">
+                            <div class="section-title-wrapper">
+                                <div class="section-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <h2 class="section-title">
+                                    Description du poste
+                                </h2>
+                            </div>
+                            <div class="section-badge">
+                                <span class="badge-text">Informations clés</span>
+                            </div>
+                        </div>
+                        <div class="job-description-enhanced">
+                            <div class="description-content">
+                                {{ job.description | safe }}
+                            </div>
+                            <div class="description-footer">
+                                <div class="description-stats">
+                                    <div class="stat-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Lecture: ~3 min</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <i class="fas fa-eye"></i>
+                                        <span>Détails complets</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Requirements -->
                     {% if job.requirements %}
-                    <div class="content-section">
-                        <h2 class="section-title">
-                            <i class="fas fa-check-circle"></i>
-                            Exigences
-                        </h2>
-                        <div class="job-description">
-                            {{ job.requirements | safe }}
+                    <div class="content-section requirements-section">
+                        <div class="section-header-enhanced">
+                            <div class="section-title-wrapper">
+                                <div class="section-icon requirements-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <h2 class="section-title">
+                                    Exigences
+                                </h2>
+                            </div>
+                            <div class="section-badge requirements-badge">
+                                <span class="badge-text">Compétences requises</span>
+                            </div>
+                        </div>
+                        <div class="job-description-enhanced">
+                            <div class="description-content">
+                                {{ job.requirements | safe }}
+                            </div>
                         </div>
                     </div>
                     {% endif %}
 
                     <!-- Responsibilities -->
                     {% if job.responsibilities %}
-                    <div class="content-section">
-                        <h2 class="section-title">
-                            <i class="fas fa-tasks"></i>
-                            Responsabilités
-                        </h2>
-                        <div class="job-description">
-                            {{ job.responsibilities | safe }}
+                    <div class="content-section responsibilities-section">
+                        <div class="section-header-enhanced">
+                            <div class="section-title-wrapper">
+                                <div class="section-icon responsibilities-icon">
+                                    <i class="fas fa-tasks"></i>
+                                </div>
+                                <h2 class="section-title">
+                                    Responsabilités
+                                </h2>
+                            </div>
+                            <div class="section-badge responsibilities-badge">
+                                <span class="badge-text">Missions principales</span>
+                            </div>
+                        </div>
+                        <div class="job-description-enhanced">
+                            <div class="description-content">
+                                {{ job.responsibilities | safe }}
+                            </div>
                         </div>
                     </div>
                     {% endif %}

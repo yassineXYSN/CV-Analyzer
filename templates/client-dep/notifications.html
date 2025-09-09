@@ -837,38 +837,107 @@ async function viewInterviewDetail(applicationId) {
         const data = await res.json();
 
         if (!data.success) {
-            alert("Erreur : " + (data.message || "Impossible de charger la notification"));
+            showNotificationToast({
+                type: 'error',
+                message: data.message || "Impossible de charger la notification"
+            });
             return;
         }
 
         const notifications = data.notifications || [];
         if (!notifications.length) {
-            alert("Aucune notification pour cette candidature");
+            showNotificationToast({
+                type: 'info',
+                message: "Aucune notification pour cette candidature"
+            });
             return;
         }
 
         const modal = document.createElement('div');
         modal.id = 'interviewModal';
-        modal.className = 'modal';
+        modal.className = 'interview-modal-enhanced';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
 
         let bodyHTML = '';
-        notifications.forEach(notif => {
+        notifications.forEach((notif, index) => {
             // ✅ Si déjà accepté
             if (notif.response_status === 'accepted') {
+                const interviewDate = notif.interview_date ? new Date(notif.interview_date) : null;
+                const formattedDate = interviewDate ? interviewDate.toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }) : 'Non défini';
+
+                const formattedTime = interviewDate ? interviewDate.toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : 'Non défini';
+
                 bodyHTML += `
-                    <div class="notif-item" data-id="${notif.id}">
-                        <p><strong>Poste :</strong> ${notif.job_title}</p>
-                        <p><strong>Entreprise :</strong> ${notif.company_name}</p>
-                        <p><strong>Recruteur :</strong> ${notif.admin_name}</p>
-                        <p><em>✅ Vous avez déjà accepté cet entretien pour le créneau : ${notif.chosen_slot}</em></p>
-                        <hr>
+                    <div class="interview-card accepted" data-id="${notif.id}" style="animation-delay: ${index * 0.1}s">
+                        <div class="interview-header">
+                            <div class="interview-icon success">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="interview-title">
+                                <h3>${notif.job_title}</h3>
+                                <p class="company-name">${notif.company_name}</p>
+                            </div>
+                            <div class="interview-status">
+                                <span class="status-badge accepted">Accepté</span>
+                            </div>
+                        </div>
+                        
+                        <div class="interview-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <i class="fas fa-user-tie"></i>
+                                    <span class="label">Recruteur :</span>
+                                    <span class="value">${notif.admin_name}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span class="label">Date :</span>
+                                    <span class="value">${formattedDate}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span class="label">Heure :</span>
+                                    <span class="value">${formattedTime}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="accepted-info">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Vous avez accepté cet entretien pour le créneau : <strong>${notif.chosen_slot}</strong></span>
+                            </div>
+                        </div>
                     </div>
                 `;
                 return;
             }
 
             // Options pour les créneaux
-            let slotOptions = `<option value="">Sélectionner un créneau</option>`;
+            let slotOptions = `<option value="">Sélectionnez un créneau</option>`;
             if (notif.scheduled_slot) {
                 const slots = notif.scheduled_slot.split(',');
                 slots.forEach(slot => {
@@ -876,32 +945,113 @@ async function viewInterviewDetail(applicationId) {
                 });
             }
 
+            const interviewDate = notif.interview_date ? new Date(notif.interview_date) : null;
+            const formattedDate = interviewDate ? interviewDate.toLocaleDateString('fr-FR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) : 'Non défini';
+
+            const formattedTime = interviewDate ? interviewDate.toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'Non défini';
+
             bodyHTML += `
-                <div class="notif-item" data-id="${notif.id}">
-                    <p><strong>Poste :</strong> ${notif.job_title}</p>
-                    <p><strong>Entreprise :</strong> ${notif.company_name}</p>
-                    <p><strong>Recruteur :</strong> ${notif.admin_name}</p>
-                    <label for="chosenSlot_${notif.id}"><strong>Créneau :</strong></label>
-                    <select id="chosenSlot_${notif.id}" class="chosen-slot">
-                        ${slotOptions}
-                    </select>
-                    <br>
-                    <button class="btn btn-accept" onclick="respondInterview(${notif.application_id}, 'accepted', ${notif.id})">Accepter</button>
-                    <button class="btn btn-decline" onclick="respondInterview(${notif.application_id}, 'rejected', ${notif.id})">Refuser</button>
-                    <hr>
+                <div class="interview-card" data-id="${notif.id}" style="animation-delay: ${index * 0.1}s">
+                    <div class="interview-header">
+                        <div class="interview-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="interview-title">
+                            <h3>${notif.job_title}</h3>
+                            <p class="company-name">${notif.company_name}</p>
+                        </div>
+                        <div class="interview-status">
+                            <span class="status-badge pending">En attente</span>
+                        </div>
+                    </div>
+                    
+                    <div class="interview-details">
+                        <div class="detail-row">
+                            <div class="detail-item">
+                                <i class="fas fa-user-tie"></i>
+                                <span class="label">Recruteur :</span>
+                                <span class="value">${notif.admin_name}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span class="label">Date :</span>
+                                <span class="value">${formattedDate}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-clock"></i>
+                                <span class="label">Heure :</span>
+                                <span class="value">${formattedTime}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="slot-selection">
+                            <div class="slot-header">
+                                <i class="fas fa-clock"></i>
+                                <span>Choisissez votre créneau préféré :</span>
+                            </div>
+                            <select id="chosenSlot_${notif.id}" class="slot-selector">
+                                ${slotOptions}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="interview-actions">
+                        <button class="action-btn accept-btn" onclick="respondInterview(${notif.application_id}, 'accepted', ${notif.id})">
+                            <i class="fas fa-check"></i>
+                            <span>Accepter l'entretien</span>
+                        </button>
+                        <button class="action-btn decline-btn" onclick="respondInterview(${notif.application_id}, 'rejected', ${notif.id})">
+                            <i class="fas fa-times"></i>
+                            <span>Refuser</span>
+                        </button>
+                    </div>
                 </div>
             `;
         });
 
         modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Entretiens planifiés</h2>
-                    <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div class="modal-content-enhanced">
+                <div class="modal-header-enhanced">
+                    <div class="header-content">
+                        <div class="header-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div class="header-text">
+                            <h2>Entretiens Planifiés</h2>
+                            <p>Confirmez votre participation aux entretiens</p>
+                        </div>
+                    </div>
+                    <button class="modal-close-enhanced" onclick="closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="modal-body">${bodyHTML}</div>
-                <div class="modal-footer">
-                    <button class="btn btn-close" onclick="closeModal()">Fermer</button>
+                
+                <div class="modal-body-enhanced">
+                    <div class="interview-list">
+                        ${bodyHTML}
+                    </div>
+                </div>
+                
+                <div class="modal-footer-enhanced">
+                    <div class="footer-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Veuillez confirmer votre participation dans les plus brefs délais</span>
+                    </div>
+                    <button class="btn-secondary" onclick="closeModal()">
+                        <i class="fas fa-arrow-left"></i>
+                        Retour
+                    </button>
                 </div>
             </div>
         `;
@@ -909,11 +1059,23 @@ async function viewInterviewDetail(applicationId) {
         const existingModal = document.getElementById('interviewModal');
         if (existingModal) existingModal.remove();
         document.body.appendChild(modal);
-        modal.style.display = 'block';
+        
+        // Animation d'apparition
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 10);
+
+        // Ajouter les styles CSS si pas déjà présents
+        if (!document.getElementById('interview-modal-styles')) {
+            addInterviewModalStyles();
+        }
 
     } catch (err) {
         console.error(err);
-        alert("Erreur lors du chargement des notifications");
+        showNotificationToast({
+            type: 'error',
+            message: "Erreur lors du chargement des notifications"
+        });
     }
 }
 
@@ -922,9 +1084,18 @@ async function respondInterview(applicationId, response, notificationId) {
     const chosenSlot = slotSelect && response === 'accepted' ? slotSelect.value : null;
 
     if (response === 'accepted' && (!chosenSlot || chosenSlot === "")) {
-        alert("Veuillez sélectionner un créneau horaire.");
+        showNotificationToast({
+            type: 'warning',
+            message: "Veuillez sélectionner un créneau horaire."
+        });
         return;
     }
+
+    // Afficher un indicateur de chargement
+    const button = event.target.closest('.action-btn');
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Envoi en cours...</span>';
+    button.disabled = true;
 
     try {
         const res = await fetch(`/api/respond-interview/${applicationId}`, {
@@ -937,31 +1108,66 @@ async function respondInterview(applicationId, response, notificationId) {
         const data = await res.json();
 
         if (data.success) {
-            alert(data.message);
+            showNotificationToast({
+                type: 'success',
+                message: data.message
+            });
+            
+            // Fermer le modal avec animation
             closeModal();
 
             if (response === 'accepted') {
-                // 🔹 Redirection vers la page des entretiens planifiés
-                window.location.href = '/planned-interview';
+                // Redirection vers la page des entretiens planifiés après un délai
+                setTimeout(() => {
+                    window.location.href = '/planned-interview';
+                }, 1500);
             } else if (response === 'rejected') {
-                // 🔹 Afficher la notification détaillée puis rediriger vers la home
-                viewInterviewDetail(applicationId);
+                // Redirection vers l'accueil après un délai
                 setTimeout(() => {
                     window.location.href = '/';
-                }, 5000); // 5 secondes avant de revenir à l'accueil
+                }, 2000);
             }
         } else {
-            alert("Erreur: " + data.message);
+            showNotificationToast({
+                type: 'error',
+                message: "Erreur: " + data.message
+            });
+            // Restaurer le bouton
+            button.innerHTML = originalContent;
+            button.disabled = false;
         }
     } catch (err) {
         console.error('Error in respondInterview:', err);
-        alert("Erreur lors de l'envoi de la réponse");
+        showNotificationToast({
+            type: 'error',
+            message: "Erreur lors de l'envoi de la réponse"
+        });
+        // Restaurer le bouton
+        button.innerHTML = originalContent;
+        button.disabled = false;
     }
 }
 
 function closeModal() {
     const modal = document.getElementById('interviewModal');
-    if (modal) modal.remove();
+    if (modal) {
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    }
+}
+
+// Fonction pour ajouter les styles CSS du modal amélioré
+function addInterviewModalStyles() {
+    // Vérifier si le fichier CSS n'est pas déjà chargé
+    if (!document.getElementById('interview-modal-styles')) {
+        const link = document.createElement('link');
+        link.id = 'interview-modal-styles';
+        link.rel = 'stylesheet';
+        link.href = '/static/client-dep/css/interview-modal.css';
+        document.head.appendChild(link);
+    }
 }
 
 

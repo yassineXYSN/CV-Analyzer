@@ -1,0 +1,16 @@
+{
+  "session_data": {
+    "emotions": [],
+    "timestamps": [],
+    "session_active": false,
+    "session_id": "session_1757383233",
+    "candidate_name": "Youssef DAMMAK",
+    "interviewer_name": "HR",
+    "start_time": "2025-09-09 03:00:33.863551",
+    "end_time": "2025-09-09 03:02:36.670458"
+  },
+  "report": {
+    "message": "No emotion data recorded",
+    "interview_result": "INCOMPLETE"
+  }
+}

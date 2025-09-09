@@ -433,6 +433,259 @@
             margin-bottom: 0.5rem;
         }
 
+        /* Enhanced Description Section Styles */
+        .description-section {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .description-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-gradient);
+        }
+
+        .section-header-enhanced {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(96, 165, 250, 0.1);
+        }
+
+        .section-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(59, 130, 246, 0.3));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            transition: var(--transition);
+        }
+
+        .section-icon i {
+            font-size: 1.2rem;
+            color: var(--info-color);
+        }
+
+        .section-icon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(96, 165, 250, 0.2);
+        }
+
+        .requirements-icon {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3));
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .requirements-icon i {
+            color: var(--success-color);
+        }
+
+        .responsibilities-icon {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3));
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .responsibilities-icon i {
+            color: var(--warning-color);
+        }
+
+        .section-badge {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            transition: var(--transition);
+        }
+
+        .section-badge:hover {
+            background: rgba(96, 165, 250, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .requirements-badge {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .requirements-badge:hover {
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .responsibilities-badge {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .responsibilities-badge:hover {
+            background: rgba(245, 158, 11, 0.15);
+        }
+
+        .badge-text {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .job-description-enhanced {
+            position: relative;
+        }
+
+        .description-content {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .description-content h3 {
+            color: var(--text-primary);
+            margin: 1.5rem 0 1rem 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .description-content h4 {
+            color: var(--text-primary);
+            margin: 1.2rem 0 0.8rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .description-content ul {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .description-content li {
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .description-content li::marker {
+            color: var(--info-color);
+        }
+
+        .description-content p {
+            margin-bottom: 1rem;
+        }
+
+        .description-content strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .description-footer {
+            border-top: 1px solid rgba(96, 165, 250, 0.1);
+            padding-top: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .description-stats {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .description-stats .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .description-stats .stat-item i {
+            color: var(--info-color);
+            font-size: 0.9rem;
+        }
+
+        /* Additional Animations and Effects */
+        .description-section,
+        .requirements-section,
+        .responsibilities-section {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .description-section:nth-child(1) { animation-delay: 0.1s; }
+        .requirements-section { animation-delay: 0.2s; }
+        .responsibilities-section { animation-delay: 0.3s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-icon {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .section-badge {
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Hover effects for better interactivity */
+        .description-section:hover,
+        .requirements-section:hover,
+        .responsibilities-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .description-content:hover {
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+
+        /* Focus states for accessibility */
+        .section-icon:focus,
+        .section-badge:focus {
+            outline: 2px solid var(--info-color);
+            outline-offset: 2px;
+        }
+
         /* Job Stats */
         .job-stats {
             display: grid;
@@ -757,6 +1010,36 @@
             .job-stats {
                 grid-template-columns: 1fr;
             }
+
+            /* Enhanced sections responsive */
+            .section-header-enhanced {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .section-title-wrapper {
+                width: 100%;
+            }
+
+            .section-badge {
+                align-self: flex-end;
+            }
+
+            .description-stats {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+
+            .section-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .section-icon i {
+                font-size: 1rem;
+            }
         }
 
         @media (max-width: 480px) {
@@ -774,5 +1057,41 @@
 
             .content-section {
                 padding: 1.5rem;
+            }
+
+            /* Enhanced sections mobile */
+            .section-header-enhanced {
+                margin-bottom: 1.5rem;
+                padding-bottom: 0.75rem;
+            }
+
+            .section-title {
+                font-size: 1.3rem;
+            }
+
+            .section-icon {
+                width: 35px;
+                height: 35px;
+            }
+
+            .section-badge {
+                padding: 0.4rem 0.8rem;
+            }
+
+            .badge-text {
+                font-size: 0.8rem;
+            }
+
+            .description-content {
+                font-size: 0.95rem;
+                line-height: 1.7;
+            }
+
+            .description-stats {
+                gap: 1rem;
+            }
+
+            .description-stats .stat-item {
+                font-size: 0.85rem;
             }
         }

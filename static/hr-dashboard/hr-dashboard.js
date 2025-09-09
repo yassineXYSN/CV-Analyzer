@@ -2998,4 +2998,119 @@ function hideLoading() {
   }
 }
 
+// ===== FONCTIONS POUR LE FORMULAIRE DESCRIPTION AMÉLIORÉ =====
+
+// Initialiser les fonctionnalités du formulaire amélioré
+function initializeEnhancedDescriptionForm() {
+  const descriptionForm = document.querySelector('.description-form-enhanced');
+  if (!descriptionForm) return;
+
+  // Ajouter les event listeners pour les champs
+  const textareas = descriptionForm.querySelectorAll('.form-textarea-enhanced');
+  textareas.forEach(textarea => {
+    textarea.addEventListener('input', handleTextareaInput);
+    textarea.addEventListener('focus', handleFieldFocus);
+    textarea.addEventListener('blur', handleFieldBlur);
+  });
+
+  // Initialiser le compteur de progression
+  updateDescriptionProgress();
+}
+
+// Gérer l'input des textareas
+function handleTextareaInput(event) {
+  const textarea = event.target;
+  const charCount = textarea.parentElement.querySelector('.char-count');
+  
+  if (charCount) {
+    const count = textarea.value.length;
+    charCount.textContent = `${count} caractères`;
+    
+    // Changer la couleur selon la longueur
+    if (count < 50) {
+      charCount.style.color = '#ef4444'; // Rouge
+    } else if (count < 100) {
+      charCount.style.color = '#f59e0b'; // Orange
+    } else {
+      charCount.style.color = '#10b981'; // Vert
+    }
+  }
+  
+  // Mettre à jour la progression
+  updateDescriptionProgress();
+}
+
+// Gérer le focus des champs
+function handleFieldFocus(event) {
+  const fieldCard = event.target.closest('.form-field-card');
+  if (fieldCard) {
+    fieldCard.style.transform = 'translateY(-2px)';
+    fieldCard.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
+  }
+}
+
+// Gérer la perte de focus des champs
+function handleFieldBlur(event) {
+  const fieldCard = event.target.closest('.form-field-card');
+  if (fieldCard) {
+    fieldCard.style.transform = 'translateY(0)';
+    fieldCard.style.boxShadow = 'none';
+  }
+}
+
+// Mettre à jour la barre de progression
+function updateDescriptionProgress() {
+  const progressFill = document.getElementById('descriptionProgress');
+  const progressText = document.querySelector('.progress-text');
+  
+  if (!progressFill || !progressText) return;
+
+  const fields = [
+    document.getElementById('jobDescription'),
+    document.getElementById('jobRequirements'),
+    document.getElementById('jobResponsibilities')
+  ];
+
+  let completedFields = 0;
+  let totalFields = fields.length;
+
+  fields.forEach(field => {
+    if (field && field.value.trim().length >= 50) {
+      completedFields++;
+    }
+  });
+
+  const percentage = Math.round((completedFields / totalFields) * 100);
+  
+  progressFill.style.width = `${percentage}%`;
+  progressText.textContent = `${percentage}% complété`;
+
+  // Changer la couleur de la barre selon le pourcentage
+  if (percentage < 33) {
+    progressFill.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+  } else if (percentage < 66) {
+    progressFill.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+  } else {
+    progressFill.style.background = 'linear-gradient(90deg, #10b981, #34d399)';
+  }
+}
+
+// Fonction pour éditer la description du poste (depuis job-details.html)
+function editJobDescription() {
+  // Cette fonction sera appelée depuis le bouton "Modifier" dans job-details.html
+  console.log('Édition de la description du poste...');
+  
+  // Ici vous pouvez ajouter la logique pour ouvrir un modal d'édition
+  // ou rediriger vers une page d'édition
+  showNotification('Fonctionnalité d\'édition en cours de développement', 'info');
+}
+
+// Initialiser le formulaire amélioré au chargement de la page
+document.addEventListener('DOMContentLoaded', () => {
+  // Attendre un peu pour que tous les éléments soient chargés
+  setTimeout(() => {
+    initializeEnhancedDescriptionForm();
+  }, 500);
+});
+
 console.log("✅ FRONTEND: Dashboard Core script chargé et fonctionnel")
