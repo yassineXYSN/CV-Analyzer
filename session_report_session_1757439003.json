@@ -1,0 +1,16 @@
+{
+  "session_data": {
+    "emotions": [],
+    "timestamps": [],
+    "session_active": false,
+    "session_id": "session_1757439003",
+    "candidate_name": "Zied AMEUR",
+    "interviewer_name": "HR",
+    "start_time": "2025-09-09 18:30:03.975749",
+    "end_time": "2025-09-09 18:32:08.229194"
+  },
+  "report": {
+    "message": "No emotion data recorded",
+    "interview_result": "INCOMPLETE"
+  }
+}
