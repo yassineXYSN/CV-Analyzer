@@ -177,6 +177,7 @@ class HeaderComponent {
     const notificationBellContainer = document.getElementById("notificationBellContainer")
     const quizzesContainer = document.getElementById("quizzesContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
+    const plannedInterviewContainer = document.getElementById("plannedInterviewContainer")
 
     if (userMenuContainer) {
       userMenuContainer.style.display = "block"
@@ -188,6 +189,10 @@ class HeaderComponent {
 
     if (quizzesContainer) {
       quizzesContainer.style.display = "block"
+    }
+
+    if (plannedInterviewContainer) {
+      plannedInterviewContainer.style.display = "block"
     }
 
     guestMenuContainers.forEach((container) => {
@@ -208,53 +213,46 @@ class HeaderComponent {
     this.fetchNotificationCount()
     this.setupNotificationWebSocket()
 
-    // 🔹 NEW: Show "Entretien planifié" only if response_status == 1
+    // Update the displayed slot/date if available (does not affect visibility)
     this.updatePlannedInterviewMenu()
 }
 
 async updatePlannedInterviewMenu() {
-    const container = document.getElementById("plannedInterviewContainer");
-    const slotContainer = document.getElementById("plannedInterviewSlot"); // où afficher la date
-    if (!container || !this.currentUser?.id) return;
+    const slotContainer = document.getElementById("plannedInterviewSlot")
+    if (!this.currentUser?.id || !slotContainer) return
 
     try {
-        // 🔹 Récupérer toutes les applications récentes de l'utilisateur
-        const resp = await fetch(`/api/applications/user/${this.currentUser.id}`);
+        const resp = await fetch(`/api/applications/user/${this.currentUser.id}`)
         if (!resp.ok) {
-            container.style.display = "none";
-            return;
+            slotContainer.textContent = ""
+            return
         }
 
-        const data = await resp.json();
-        // Chercher la première application avec interview_date défini
-        const appWithInterview = data.applications?.find(app => app.interview_date);
+        const data = await resp.json()
+        const appWithInterview = data.applications?.find(app => app.interview_date)
 
         if (appWithInterview) {
-            // Récupérer la notification correspondante
-            const notifResp = await fetch(`/api/notification/${appWithInterview.id}`);
+            const notifResp = await fetch(`/api/notification/${appWithInterview.id}`)
             if (!notifResp.ok) {
-                container.style.display = "none";
-                return;
+                slotContainer.textContent = ""
+                return
             }
-            const notifData = await notifResp.json();
-            const notification = notifData.notification;
+            const notifData = await notifResp.json()
+            const notification = notifData.notification
 
-            if (notification && notification.response_status == 1) {
-                container.style.display = "block";
-                if (slotContainer && notification.interview_date) {
-                    const date = new Date(notification.interview_date);
-                    slotContainer.textContent = `Entretien planifié le ${date.toLocaleString()}`;
-                }
+            if (notification && notification.interview_date) {
+                const date = new Date(notification.interview_date)
+                slotContainer.textContent = `le ${date.toLocaleString()}`
             } else {
-                container.style.display = "none";
+                slotContainer.textContent = ""
             }
         } else {
-            container.style.display = "none";
+            slotContainer.textContent = ""
         }
 
     } catch (error) {
-        console.error("Erreur lors de la vérification de l'entretien planifié:", error);
-        container.style.display = "none";
+        console.error("Erreur lors de la vérification de l'entretien planifié:", error)
+        slotContainer.textContent = ""
     }
 }
 
@@ -266,6 +264,7 @@ async updatePlannedInterviewMenu() {
     const notificationBellContainer = document.getElementById("notificationBellContainer")
     const quizzesContainer = document.getElementById("quizzesContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
+    const plannedInterviewContainer = document.getElementById("plannedInterviewContainer")
 
     if (userMenuContainer) {
       userMenuContainer.style.display = "none"
@@ -277,6 +276,10 @@ async updatePlannedInterviewMenu() {
 
     if (quizzesContainer) {
       quizzesContainer.style.display = "none"
+    }
+
+    if (plannedInterviewContainer) {
+      plannedInterviewContainer.style.display = "none"
     }
 
     guestMenuContainers.forEach((container) => {

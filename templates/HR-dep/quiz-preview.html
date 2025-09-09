@@ -661,7 +661,7 @@
             Retour
         </button>
         
-        <button class="ai-analyze-button" id="aiAnalyzeButton" onclick="handleAIAnalysis()">
+        <button class="ai-analyze-button" id="aiAnalyzeButton">
             <i class="fas {{ 'fa-plus-circle' if not quiz_data.attempt or not quiz_data.attempt.id else 'fa-robot' }}"></i>
             <span id="aiButtonText">{{ 'Ajouter Question' if not quiz_data.attempt or not quiz_data.attempt.id else 'Analyser avec AI' }}</span>
         </button>
@@ -953,19 +953,22 @@
             .then(data => {
                 console.log('AI Analysis response:', data);
                 if (data.success) {
-                    // Display the analysis data in a modal
-                    displayAnalysisResults(data.analysis_data);
-                    
-                    // If we have a quiz review, display it
+                    // No popup/modal. Show review section if available and notify success.
                     if (data.quiz_review) {
                         hasExistingReview = true;
                         updateButtonForExistingReview();
                         displayExistingReview(data.quiz_review, new Date().toISOString());
                     }
-                    
-                    alert('Analyse AI terminée! Les données sont affichées ci-dessous.');
+                    if (typeof showNotification === 'function') {
+                        showNotification('Analyse IA terminée', 'success');
+                    }
                 } else {
-                    alert('Erreur lors de l\'analyse AI: ' + (data.message || 'Erreur inconnue'));
+                    const msg = 'Erreur lors de l\'analyse AI: ' + (data.message || 'Erreur inconnue');
+                    if (typeof showNotification === 'function') {
+                        showNotification(msg, 'error');
+                    } else {
+                        alert(msg);
+                    }
                 }
             })
             .catch(error => {
@@ -986,126 +989,8 @@
         }
         
         function displayAnalysisResults(analysisData) {
-            // Create a modal to display the analysis results
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.8);
-                z-index: 10000;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                padding: 20px;
-            `;
-            
-            const modalContent = document.createElement('div');
-            modalContent.style.cssText = `
-                background: #1e293b;
-                border-radius: 12px;
-                padding: 2rem;
-                max-width: 90%;
-                max-height: 90%;
-                overflow-y: auto;
-                border: 1px solid #475569;
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-            `;
-            
-            const header = document.createElement('div');
-            header.style.cssText = `
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 1.5rem;
-                padding-bottom: 1rem;
-                border-bottom: 1px solid #475569;
-            `;
-            
-            const title = document.createElement('h2');
-            title.textContent = 'Analyse AI - Données Complètes';
-            title.style.cssText = `
-                color: #f1f5f9;
-                margin: 0;
-                font-size: 1.5rem;
-            `;
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.innerHTML = '<i class="fas fa-times"></i>';
-            closeBtn.style.cssText = `
-                background: #dc2626;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 0.5rem;
-                cursor: pointer;
-                font-size: 1rem;
-            `;
-            closeBtn.onclick = () => document.body.removeChild(modal);
-            
-            header.appendChild(title);
-            header.appendChild(closeBtn);
-            
-            const content = document.createElement('div');
-            content.style.cssText = `
-                color: #e2e8f0;
-                font-family: 'Courier New', monospace;
-                font-size: 0.9rem;
-                line-height: 1.4;
-                white-space: pre-wrap;
-                background: #0f172a;
-                padding: 1rem;
-                border-radius: 8px;
-                border: 1px solid #334155;
-                max-height: 60vh;
-                overflow-y: auto;
-            `;
-            
-            // Format the JSON data nicely
-            content.textContent = JSON.stringify(analysisData, null, 2);
-            
-            const downloadBtn = document.createElement('button');
-            downloadBtn.innerHTML = '<i class="fas fa-download"></i> Télécharger JSON';
-            downloadBtn.style.cssText = `
-                background: #059669;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 0.75rem 1rem;
-                cursor: pointer;
-                font-size: 0.9rem;
-                margin-top: 1rem;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            `;
-            downloadBtn.onclick = () => {
-                const blob = new Blob([JSON.stringify(analysisData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `quiz_analysis_${analysisData.application_info.application_id}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            };
-            
-            modalContent.appendChild(header);
-            modalContent.appendChild(content);
-            modalContent.appendChild(downloadBtn);
-            modal.appendChild(modalContent);
-            
-            document.body.appendChild(modal);
-            
-            // Close modal when clicking outside
-            modal.onclick = (e) => {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                }
-            };
+            // Removed popup modal. Optionally log or handle data silently.
+            console.log('AI analysis data received (modal suppressed).');
         }
         
         // Track button clicks to prevent double-clicks
