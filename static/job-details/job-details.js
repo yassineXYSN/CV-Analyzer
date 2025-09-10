@@ -407,13 +407,14 @@ function renderJobSkills() {
 
             return `
                 <div class="skill-item">
-                  <div class="skill-name">${skillName}</div>
+                  <div class="skill-name" data-tooltip="${skillName}">${skillName}</div>
                   <div class="skill-level">${formattedLevel}</div>
                   ${
                     isRequired
-                      ? `<span class="skill-required-badge">Requis</span>`
-                      : `<span class="skill-optional-badge">Optionnel</span>`
+                      ? `<span class=\"skill-required-badge\">Requis</span>`
+                      : `<span class=\"skill-optional-badge\">Optionnel</span>`
                   }
+                  <div class="skill-collapsible"></div>
                 </div>
               `
           })
@@ -1095,7 +1096,7 @@ function showDarkCompatibilityModal(
                   border-radius: 12px;
                 ">
                   <div class="skill-info">
-                    <span class="skill-name" style="
+                    <span class="skill-name" data-tooltip="${skill.name || skill.skill_name || 'Compétence non spécifiée'}" style="
                       color: #f8fafc;
                       font-weight: 600;
                       display: block;
@@ -1182,7 +1183,7 @@ function showDarkCompatibilityModal(
                   border-radius: 12px;
                 ">
                   <div class="skill-info">
-                    <span class="skill-name" style="
+                    <span class="skill-name" data-tooltip="${skill.name || skill.skill_name || 'Compétence non spécifiée'}" style="
                       color: #f8fafc;
                       font-weight: 600;
                       display: block;

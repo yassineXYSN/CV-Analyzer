@@ -178,11 +178,11 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="twitterUrl">
-                                <i class="fab fa-twitter"></i>
-                                Twitter (optionnel)
+                            <label class="form-label" for="facebookUrl">
+                                <i class="fab fa-facebook"></i>
+                                Facebook (optionnel)
                             </label>
-                            <input type="url" id="twitterUrl" name="twitter_url" class="form-input" placeholder="https://twitter.com/votre-entreprise">
+                            <input type="url" id="facebookUrl" name="facebook_url" class="form-input" placeholder="https://facebook.com/votre-entreprise">
                             <div class="input-feedback"></div>
                         </div>
                     </div>
@@ -244,9 +244,9 @@
                                     <i class="fab fa-linkedin"></i>
                                     <span>LinkedIn</span>
                                 </div>
-                                <div class="social-item" id="previewTwitter" style="display: none;">
-                                    <i class="fab fa-twitter"></i>
-                                    <span>Twitter</span>
+                                <div class="social-item" id="previewFacebook" style="display: none;">
+                                    <i class="fab fa-facebook"></i>
+                                    <span>Facebook</span>
                                 </div>
                             </div>
                         </div>
@@ -556,7 +556,7 @@
             const website = document.getElementById('website').value;
             const address = document.getElementById('address').value;
             const linkedin = document.getElementById('linkedinUrl').value;
-            const twitter = document.getElementById('twitterUrl').value;
+            const facebook = document.getElementById('facebookUrl').value;
             
             // Update contact items
             updateContactItem('previewEmail', email);
@@ -566,11 +566,11 @@
             
             // Update social links
             updateSocialItem('previewLinkedin', linkedin);
-            updateSocialItem('previewTwitter', twitter);
+            updateSocialItem('previewFacebook', facebook);
             
             // Show/hide social links container
             const socialContainer = document.getElementById('socialLinks');
-            if (linkedin || twitter) {
+            if (linkedin || facebook) {
                 socialContainer.style.display = 'flex';
             } else {
                 socialContainer.style.display = 'none';

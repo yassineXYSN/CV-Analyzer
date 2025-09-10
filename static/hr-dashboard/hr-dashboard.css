@@ -42,6 +42,12 @@ body {
   overflow:auto;
 }
 
+/* Désactiver toutes les animations/transitions sur la page Statistiques RH */
+*, *::before, *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
 
 #departmentModal .modal-body::-webkit-scrollbar,
 #jobModal .modal-body::-webkit-scrollbar,

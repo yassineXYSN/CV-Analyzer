@@ -113,7 +113,6 @@ class Company(Base):
     
     # Réseaux sociaux
     linkedin_url = Column(String(255))
-    twitter_url = Column(String(255))
     facebook_url = Column(String(255))
     
     # Métadonnées

@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
+import json
 from .email_service import EmailService, generate_verification_token, save_verification_token, verify_token
 from routers.hr.schemas import CompanyCreate, EmployeeCreate
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List
+import asyncio
 import os
 from datetime import datetime, timedelta
 from auth_utils import hash_password, create_admin_user, authenticate_user
@@ -15,6 +17,41 @@ from sqlalchemy import func, extract
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 templates = Jinja2Templates(directory="templates")
+
+# --- Simple in-memory event broadcaster (SSE) ---
+subscribers: List[asyncio.Queue] = []
+
+async def publish_event(event: dict):
+    """Publish an event to all SSE subscribers."""
+    to_remove = []
+    for queue in subscribers:
+        try:
+            await queue.put(event)
+        except Exception:
+            to_remove.append(queue)
+    # cleanup broken queues
+    for q in to_remove:
+        if q in subscribers:
+            subscribers.remove(q)
+
+@router.get("/events")
+async def admin_events():
+    """Server-Sent Events stream for admin UI real-time updates."""
+    queue: asyncio.Queue = asyncio.Queue()
+    subscribers.append(queue)
+
+    async def event_generator():
+        try:
+            while True:
+                data = await queue.get()
+                yield f"data: {json.dumps(data)}\n\n"
+        except asyncio.CancelledError:
+            pass
+        finally:
+            if queue in subscribers:
+                subscribers.remove(queue)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.get("/", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
@@ -273,6 +310,27 @@ async def create_user(user_data: dict, db: Session = Depends(get_db)):
             db.commit()
             raise HTTPException(status_code=500, detail="Erreur lors de l'envoi de l'email de vérification")
         
+        # Broadcast user_created event for real-time admin UI update
+        try:
+            await publish_event({
+                "type": "user_created",
+                "user": {
+                    "id": db_admin.id,
+                    "name": f"{db_admin.first_name} {db_admin.last_name}",
+                    "first_name": db_admin.first_name,
+                    "last_name": db_admin.last_name,
+                    "email": db_admin.email,
+                    "position": db_admin.role,
+                    "user_type": "admin",
+                    "is_active": db_admin.is_active,
+                    "is_verified": db_admin.is_verified,
+                    "created_at": db_admin.created_at.isoformat() if db_admin.created_at else None
+                },
+                "timestamp": datetime.now().isoformat()
+            })
+        except Exception:
+            pass
+
         return {
             "message": "Utilisateur créé avec succès. Un email de vérification a été envoyé.", 
             "id": db_admin.id,
@@ -320,6 +378,16 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
     user = verify_token(db, token)
     if user:
         # Rediriger vers la page de connexion HR avec un message de confirmation
+        # Broadcast real-time verification event
+        try:
+            await publish_event({
+                "type": "user_verified",
+                "user_id": user.id,
+                "email": user.email,
+                "timestamp": datetime.now().isoformat()
+            })
+        except Exception:
+            pass
         return RedirectResponse(url="/hr-login?message=email_verified")
     else:
         raise HTTPException(status_code=400, detail="Token invalide ou expiré")
@@ -392,6 +460,27 @@ async def create_user_secure(user_data: dict, db: Session = Depends(get_db)):
                 db.add(access)
                 db.commit()
         
+        # Broadcast user_created event as well
+        try:
+            await publish_event({
+                "type": "user_created",
+                "user": {
+                    "id": user_id,
+                    "name": f"{user.first_name} {user.last_name}" if user else None,
+                    "first_name": getattr(user, 'first_name', None),
+                    "last_name": getattr(user, 'last_name', None),
+                    "email": getattr(user, 'email', None),
+                    "position": role,
+                    "user_type": "admin",
+                    "is_active": getattr(user, 'is_active', True),
+                    "is_verified": getattr(user, 'is_verified', False),
+                    "created_at": user.created_at.isoformat() if user and user.created_at else None
+                },
+                "timestamp": datetime.now().isoformat()
+            })
+        except Exception:
+            pass
+
         return {
             "message": "Utilisateur créé avec succès via auth_utils", 
             "id": user_id,

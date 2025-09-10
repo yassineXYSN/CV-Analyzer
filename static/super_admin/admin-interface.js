@@ -17,6 +17,48 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadUsersFromAPI()
   loadCompanyOptions()
   loadDashboardData()
+  // Start real-time updates listener (SSE)
+  try {
+    const evtSource = new EventSource('/admin/events')
+    evtSource.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data || '{}')
+        if (data.type === 'user_verified') {
+          console.log('[SSE] User verified event received:', data)
+          // Update users state
+          const idx = users.findIndex(u => String(u.id) === String(data.user_id))
+          if (idx !== -1) {
+            users[idx].is_verified = true
+            users[idx].last_login = data.timestamp || users[idx].last_login
+          }
+          // Refresh UI elements if present
+          try { loadUsers() } catch {}
+          try { loadUsersTable() } catch {}
+          try { loadRecentActivity() } catch {}
+          showNotification(`Utilisateur vérifié: ${data.email || data.user_id}`, 'success')
+        } else if (data.type === 'user_created' && data.user) {
+          console.log('[SSE] User created event received:', data)
+          // Add to users list if not present
+          const exists = users.some(u => String(u.id) === String(data.user.id))
+          if (!exists) {
+            users.push(data.user)
+          }
+          // Refresh UI
+          try { loadUsers() } catch {}
+          try { loadUsersTable() } catch {}
+          updateStatistics()
+          showNotification(`Nouvel utilisateur: ${data.user.email || data.user.name}`, 'info')
+        }
+      } catch (err) {
+        console.warn('[SSE] Failed to parse event:', err)
+      }
+    }
+    evtSource.onerror = (err) => {
+      console.warn('[SSE] EventSource error:', err)
+    }
+  } catch (e) {
+    console.warn('[SSE] Unable to initialize EventSource:', e)
+  }
   // Apply saved theme if any
   const savedTheme = localStorage.getItem('admin_theme') || 'dark'
   applyTheme(savedTheme)

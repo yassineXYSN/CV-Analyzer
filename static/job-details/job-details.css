@@ -1965,7 +1965,7 @@ body {
 
 .skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -1997,25 +1997,34 @@ body {
   max-width: 100%;
 }
 
+/* Reserve space for the badge at top-right to avoid overlap */
+.skills-grid .skill-item .skill-name { padding-right: 84px; }
+
+/* Allow proper truncation within grid items */
+.skills-grid .skill-item { min-width: 0; }
+
+/* Enable styled tooltips for long skill names without clipping */
+.skills-grid .skill-item { overflow: visible; }
+.skills-grid .skill-item .skill-name {
+  position: relative;
+}
+.skills-grid .skill-item .skill-name[data-tooltip]:hover::after,
+.skills-grid .skill-item .skill-name[data-tooltip]:focus::after,
+.skills-grid .skill-item .skill-name[data-tooltip]:hover::before,
+.skills-grid .skill-item .skill-name[data-tooltip]:focus::before { display: none; content: none; }
+
 /* Few skills: airy layout */
 .skills-grid.skills-few {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.2rem;
 }
 
 /* Many skills: compact cards */
 .skills-grid.skills-many {
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 0.75rem;
-}
-
-.skills-grid.skills-many .skill-item {
-  padding: 0.75rem;
 }
 
 /* Tons of skills: very compact, allow vertical scroll in section if needed */
 .skills-grid.skills-tons {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.5rem;
 }
 
@@ -2030,16 +2039,17 @@ body {
   scrollbar-width: thin;
 }
 
-@media (max-width: 768px) {
-  .skills-grid.skills-few {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
-  .skills-grid.skills-many {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  }
-  .skills-grid.skills-tons {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  }
+@media (max-width: 1400px) {
+  .skills-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (max-width: 1200px) {
+  .skills-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 992px) {
+  .skills-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 576px) {
+  .skills-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .skill-item {
@@ -2050,16 +2060,17 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  transition: var(--transition-standard);
+  transition: var(--transition-standard), transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
 }
 
 .skill-item:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.04);
   border-color: rgba(37, 99, 235, 0.5);
   background: rgba(37, 99, 235, 0.05);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.26);
 }
 
 .skill-name {
@@ -2067,6 +2078,17 @@ body {
   color: var(--text-primary);
   font-size: 1.1rem;
 }
+
+/* Reveal long names on hover: from single-line to multiline */
+.skills-grid .skill-item .skill-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 84px; }
+.skills-grid .skill-item:hover .skill-name { white-space: normal; overflow: visible; text-overflow: clip; }
+
+/* Collapsible area for extra content if needed */
+.skills-grid .skill-item .skill-collapsible { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.2s ease, opacity 0.2s ease; }
+.skills-grid .skill-item:hover .skill-collapsible { max-height: 180px; opacity: 1; }
+
+/* Prefer native expansion over overlay */
+.skills-grid .skill-item:hover .skill-expanded { display: none !important; }
 
 .skill-level {
   color: var(--text-secondary);
@@ -5398,4 +5420,39 @@ body {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Expanded overlay on hover for full content without shifting layout */
+.skills-grid { overflow: visible; }
+.skills-grid .skill-item { position: relative; z-index: 1; }
+.skills-grid .skill-item .skill-expanded {
+  display: none;
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  max-width: 460px;
+  min-width: 260px;
+  padding: 1rem 1rem 1.25rem 1rem;
+  border-radius: var(--border-radius-md);
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  z-index: 50;
+}
+.skills-grid .skill-item:hover { z-index: 60; }
+.skills-grid .skill-item:hover .skill-expanded { display: block; }
+.skills-grid .skill-item .skill-expanded .skill-name-full {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 0.35rem;
+  padding-right: 84px;
+}
+.skills-grid .skill-item .skill-expanded .skill-level-full {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-transform: capitalize;
 }

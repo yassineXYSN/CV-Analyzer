@@ -13,6 +13,7 @@ import os
 from fastapi.templating import Jinja2Templates
 import databasehr.models as models
 from datetime import datetime
+from .admin_router import publish_event
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates_dir = os.path.join(current_dir, '../../templates')
@@ -199,6 +200,27 @@ async def create_user(user_data: dict):
             
             db.add(db_admin)
             db.commit()
+
+            # Diffuser l'évènement temps réel vers l'interface admin
+            try:
+                await publish_event({
+                    "type": "user_created",
+                    "user": {
+                        "id": db_admin.id,
+                        "name": f"{db_admin.first_name} {db_admin.last_name}",
+                        "first_name": db_admin.first_name,
+                        "last_name": db_admin.last_name,
+                        "email": db_admin.email,
+                        "position": db_admin.role,
+                        "user_type": "admin",
+                        "is_active": db_admin.is_active,
+                        "is_verified": db_admin.is_verified,
+                        "created_at": db_admin.created_at.isoformat() if db_admin.created_at else None
+                    },
+                    "timestamp": datetime.now().isoformat()
+                })
+            except Exception:
+                pass
             db.refresh(db_admin)
             new_user_id = db_admin.id
             
