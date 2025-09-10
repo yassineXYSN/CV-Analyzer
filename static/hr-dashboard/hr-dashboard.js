@@ -3145,7 +3145,6 @@ function initializeWebSocket() {
         reconnectInterval = null;
       }
       updateConnectionStatus('connected');
-      showNotification("Connexion temps réel établie", "success");
     };
     
     dashboardWebSocket.onmessage = (event) => {
