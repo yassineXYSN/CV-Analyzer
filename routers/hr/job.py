@@ -6,6 +6,8 @@ from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
 from datetime import datetime, date
 from typing import Optional, List
+from .admin_router import publish_event
+from .websocket_manager import hr_websocket_manager
 
 class SkillRequest(BaseModel):
     skill_name: str
@@ -111,8 +113,47 @@ async def create_job(job_data: JobRequest):
             # Commit toutes les modifications
             db.commit()
 
+            # Récupérer les informations du département
+            department = db.query(Department).filter(Department.id == new_job.department_id).first()
+            
+            # Préparer les données du job pour la diffusion
+            job_data_for_broadcast = {
+                "id": new_job.id,
+                "title": new_job.title,
+                "description": new_job.description,
+                "employment_type": new_job.employment_type,
+                "priority": new_job.priority,
+                "status": new_job.status,
+                "department_id": new_job.department_id,
+                "department_name": department.name if department else "N/A",
+                "salary_min": float(new_job.salary_min) if new_job.salary_min else None,
+                "salary_max": float(new_job.salary_max) if new_job.salary_max else None,
+                "currency": new_job.currency,
+                "deadline": new_job.deadline.isoformat() if new_job.deadline else None,
+                "created_at": new_job.created_at.isoformat() if new_job.created_at else None,
+                "company_id": company.id,
+                "company_name": company.company_name,
+                "skills_count": skills_added
+            }
+            
+            # Diffuser l'événement de création de job en temps réel via WebSocket
+            try:
+                await hr_websocket_manager.broadcast_job_created(job_data_for_broadcast, company.id)
+            except Exception as e:
+                print(f"Erreur lors de la diffusion WebSocket job_created: {e}")
+            
+            # Diffuser aussi via SSE pour l'admin interface
+            try:
+                await publish_event({
+                    "type": "job_created",
+                    "job": job_data_for_broadcast,
+                    "timestamp": datetime.now().isoformat()
+                })
+            except Exception as e:
+                print(f"Erreur lors de la diffusion SSE job_created: {e}")
+
             # Préparer le message de réponse
-            message = f"Poste '{job_data.title}' créé avec succès"
+            message = f"Poste '{new_job.title}' créé avec succès"
             if skills_added > 0:
                 message += f" avec {skills_added} compétence(s)"
             if skills_errors:

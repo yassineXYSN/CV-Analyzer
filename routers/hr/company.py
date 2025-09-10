@@ -32,7 +32,6 @@ class CompanySetupRequest(BaseModel):
     email: Optional[str] = None
     website: Optional[str] = None
     linkedin_url: Optional[str] = None
-    twitter_url: Optional[str] = None
     facebook_url: Optional[str] = None
 
 class CreateUserRequest(BaseModel):
@@ -229,10 +228,13 @@ async def create_user(user_data: dict):
             
             # Création des permissions
             permissions_data = user_data.get('permissions', {})
+            # Pour les chefs de département, forcer can_manage_applications à False
+            can_manage_applications = False if user_data.get('role') == 'department_head' else permissions_data.get('can_manage_applications', False)
+            
             permissions = models.AdminPermissions(
                 admin_id=new_user_id,
                 can_add_department=permissions_data.get('can_add_department', False),
-                can_manage_applications=permissions_data.get('can_manage_applications', False),
+                can_manage_applications=can_manage_applications,
                 can_recommend_candidates=permissions_data.get('can_recommend_candidates', False)
             )
             db.add(permissions)
@@ -321,7 +323,7 @@ async def get_user_details(admin_id: int):
                     "is_active": admin.is_active,
                     "permissions": {
                         "can_add_department": bool(getattr(permissions, 'can_add_department', False)),
-                        "can_manage_applications": bool(getattr(permissions, 'can_manage_applications', False)),
+                        "can_manage_applications": False if admin.role == 'department_head' else bool(getattr(permissions, 'can_manage_applications', False)),
                         "can_recommend_candidates": bool(getattr(permissions, 'can_recommend_candidates', False)),
                     },
                     "departments": departments,
@@ -382,7 +384,11 @@ async def update_user(admin_id: int, update: UpdateUserRequest):
 
             if update.permissions is not None:
                 perms.can_add_department = bool(update.permissions.get('can_add_department', getattr(perms, 'can_add_department', False)))
-                perms.can_manage_applications = bool(update.permissions.get('can_manage_applications', getattr(perms, 'can_manage_applications', False)))
+                # Pour les chefs de département, forcer can_manage_applications à False
+                if admin.role == 'department_head':
+                    perms.can_manage_applications = False
+                else:
+                    perms.can_manage_applications = bool(update.permissions.get('can_manage_applications', getattr(perms, 'can_manage_applications', False)))
                 perms.can_recommend_candidates = bool(update.permissions.get('can_recommend_candidates', getattr(perms, 'can_recommend_candidates', False)))
 
             # Departments (only for department_head)

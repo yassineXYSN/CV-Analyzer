@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from requests import Session
 from databasehr.database import SessionLocal
@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from databasehr.models import User, Notification
 from databaseclient.models import Application
 from routers.client_dep.dependencies import get_db
+from .websocket_manager import hr_websocket_manager
 
 # Configuration des templates
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -787,3 +788,50 @@ async def schedule_interview(application_id: int, schedule_data: dict, db: Sessi
             status_code=500,
             content={"success": False, "message": f"Erreur serveur: {str(e)}"}
         )
+
+@router.websocket("/ws/dashboard/{user_id}")
+async def dashboard_websocket(websocket: WebSocket, user_id: int):
+    """WebSocket endpoint pour les mises à jour en temps réel du dashboard HR"""
+    try:
+        # Vérifier que l'utilisateur existe et récupérer son entreprise
+        db = SessionLocal()
+        try:
+            user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
+            if not user:
+                await websocket.close(code=1008, reason="Utilisateur non trouvé")
+                return
+            
+            company = get_user_company(user_id)
+            if not company:
+                await websocket.close(code=1008, reason="Aucune entreprise associée")
+                return
+            
+            # Connecter l'utilisateur
+            await hr_websocket_manager.connect(websocket, company.id, user_id)
+            
+            # Garder la connexion ouverte
+            while True:
+                try:
+                    # Attendre des messages du client (heartbeat)
+                    data = await websocket.receive_text()
+                    # Echo back pour maintenir la connexion
+                    await websocket.send_text(f'{{"type": "heartbeat", "timestamp": "{datetime.now().isoformat()}"}}')
+                except WebSocketDisconnect:
+                    break
+                except Exception as e:
+                    print(f"WebSocket error: {e}")
+                    break
+                    
+        finally:
+            db.close()
+            
+    except Exception as e:
+        print(f"Dashboard WebSocket error: {e}")
+    finally:
+        # Déconnecter l'utilisateur
+        try:
+            company = get_user_company(user_id)
+            if company:
+                hr_websocket_manager.disconnect(websocket, company.id, user_id)
+        except:
+            pass

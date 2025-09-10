@@ -2337,14 +2337,22 @@ style.textContent = `
 document.head.appendChild(style)
 
 function updateFilterCounts() {
-  if (!applications || applications.length === 0) return
-
+  // Initialiser les compteurs à 0 par défaut
   const counts = {
-    all: applications.length,
-    pending: applications.filter((app) => app.status === "pending").length,
-    reviewed: applications.filter((app) => app.status === "reviewed").length,
-    accepted: applications.filter((app) => app.status === "accepted").length,
-    rejected: applications.filter((app) => app.status === "rejected").length,
+    all: 0,
+    pending: 0,
+    reviewed: 0,
+    accepted: 0,
+    rejected: 0,
+  }
+
+  // Mettre à jour les compteurs si des candidatures existent
+  if (applications && applications.length > 0) {
+    counts.all = applications.length
+    counts.pending = applications.filter((app) => app.status === "pending").length
+    counts.reviewed = applications.filter((app) => app.status === "reviewed").length
+    counts.accepted = applications.filter((app) => app.status === "accepted").length
+    counts.rejected = applications.filter((app) => app.status === "rejected").length
   }
 
   const filterButtons = document.querySelectorAll(".filter-btn")

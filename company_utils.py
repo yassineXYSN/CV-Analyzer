@@ -30,7 +30,6 @@ def create_company(user_id: int, company_data: dict):
             email=clean_data.get('email'),
             website=clean_data.get('website'),
             linkedin_url=clean_data.get('linkedin_url'),
-            twitter_url=clean_data.get('twitter_url'),
             facebook_url=clean_data.get('facebook_url'),
             setup_completed=True,
             created_by=user_id

@@ -76,6 +76,8 @@ async function initializeDashboard() {
     await Promise.all([loadDepartments(), loadEmployees(), loadJobs(), loadDashboardStats()])
     // Load applications with compatibility AFTER other data is loaded
     await loadDashboardData()
+    // Initialiser la connexion WebSocket
+    initializeWebSocket()
   } catch (error) {
     console.error("Erreur lors de l'initialisation:", error)
   }
@@ -3113,4 +3115,405 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 500);
 });
 
+// ===== FONCTIONS WEBSOCKET POUR MISE À JOUR EN TEMPS RÉEL =====
+
+// Variables WebSocket
+let dashboardWebSocket = null
+let reconnectInterval = null
+
+// Initialiser la connexion WebSocket
+function initializeWebSocket() {
+  if (!currentUser || !currentUser.id) {
+    console.log("Utilisateur non connecté, impossible d'initialiser WebSocket");
+    return;
+  }
+
+  updateConnectionStatus('connecting');
+  
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}/ws/dashboard/${currentUser.id}`;
+  
+  console.log(`Tentative de connexion WebSocket: ${wsUrl}`);
+  
+  try {
+    dashboardWebSocket = new WebSocket(wsUrl);
+    
+    dashboardWebSocket.onopen = () => {
+      console.log("WebSocket dashboard connecté");
+      if (reconnectInterval) {
+        clearInterval(reconnectInterval);
+        reconnectInterval = null;
+      }
+      updateConnectionStatus('connected');
+      showNotification("Connexion temps réel établie", "success");
+    };
+    
+    dashboardWebSocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        handleWebSocketMessage(data);
+      } catch (error) {
+        console.error("Erreur parsing message WebSocket:", error);
+      }
+    };
+    
+    dashboardWebSocket.onerror = (error) => {
+      console.error("Erreur WebSocket dashboard:", error);
+      updateConnectionStatus('disconnected');
+    };
+    
+    dashboardWebSocket.onclose = (event) => {
+      console.log("WebSocket dashboard fermé:", event.code, event.reason);
+      updateConnectionStatus('disconnected');
+      if (event.code !== 1000) { // Pas une fermeture normale
+        scheduleReconnect();
+      }
+    };
+    
+  } catch (error) {
+    console.error("Erreur création WebSocket:", error);
+    scheduleReconnect();
+  }
+}
+
+// Gérer les messages WebSocket
+function handleWebSocketMessage(data) {
+  console.log("Message WebSocket reçu:", data);
+  
+  switch (data.type) {
+    case 'connection_established':
+      console.log("Connexion WebSocket établie");
+      break;
+      
+    case 'job_created':
+      handleNewJob(data.job);
+      break;
+      
+    case 'job_updated':
+      handleUpdatedJob(data.job);
+      break;
+      
+    case 'job_deleted':
+      handleDeletedJob(data.job_id);
+      break;
+      
+    case 'dashboard_stats_updated':
+      handleUpdatedStats(data.stats);
+      break;
+      
+    case 'heartbeat':
+      // Ignorer les heartbeats
+      break;
+      
+    default:
+      console.log("Type de message WebSocket non géré:", data.type);
+  }
+}
+
+// Gérer un nouveau job créé
+function handleNewJob(jobData) {
+  console.log("🆕 Nouveau job reçu:", jobData);
+  
+  // Ajouter le job à la liste locale
+  jobs.unshift(jobData);
+  console.log(`📊 Total des jobs après ajout: ${jobs.length}`);
+  
+  // Mettre à jour l'affichage des départements
+  console.log("🔄 Mise à jour de l'affichage des départements...");
+  updateDepartmentJobsDisplay();
+  
+  // Mettre à jour les statistiques
+  updateDashboardStats();
+  
+  // Afficher une notification
+  showNotification(`Nouveau poste créé: ${jobData.title}`, "success");
+  
+  // Ajouter une animation pour le nouveau job
+  highlightNewJob(jobData.id);
+}
+
+// Gérer un job mis à jour
+function handleUpdatedJob(jobData) {
+  console.log("Job mis à jour reçu:", jobData);
+  
+  // Trouver et mettre à jour le job dans la liste
+  const jobIndex = jobs.findIndex(job => job.id === jobData.id);
+  if (jobIndex !== -1) {
+    jobs[jobIndex] = jobData;
+    
+    // Mettre à jour l'affichage
+    updateDepartmentJobsDisplay();
+    updateDashboardStats();
+    
+    showNotification(`Poste mis à jour: ${jobData.title}`, "info");
+  }
+}
+
+// Gérer un job supprimé
+function handleDeletedJob(jobId) {
+  console.log("Job supprimé reçu:", jobId);
+  
+  // Retirer le job de la liste
+  jobs = jobs.filter(job => job.id !== jobId);
+  
+  // Mettre à jour l'affichage
+  updateDepartmentJobsDisplay();
+  updateDashboardStats();
+  
+  showNotification("Poste supprimé", "warning");
+}
+
+// Gérer les statistiques mises à jour
+function handleUpdatedStats(stats) {
+  console.log("Statistiques mises à jour reçues:", stats);
+  updateDashboardStatsDisplay(stats);
+}
+
+// Mettre à jour l'affichage des jobs dans les départements
+function updateDepartmentJobsDisplay() {
+  console.log("Mise à jour de l'affichage des jobs dans les départements");
+  
+  // Mettre à jour la liste des jobs pour chaque département
+  departments.forEach(dept => {
+    const deptJobs = jobs.filter(job => job.department_id === dept.id);
+    dept.jobs = deptJobs;
+  });
+  
+  // Re-rendre les départements si la fonction existe
+  if (typeof renderDepartmentsList === 'function') {
+    console.log("Re-rendu des départements");
+    renderDepartmentsList(departments);
+  } else {
+    console.log("Fonction renderDepartmentsList non trouvée, mise à jour manuelle");
+    // Mise à jour manuelle des éléments de job dans les départements
+    updateDepartmentJobElements();
+  }
+}
+
+// Mettre à jour manuellement les éléments de job dans les départements
+function updateDepartmentJobElements() {
+  console.log("Mise à jour manuelle des éléments de job dans les départements");
+  
+  // Trouver tous les conteneurs de départements avec la bonne classe
+  const departmentContainers = document.querySelectorAll('.department-card-enhanced');
+  console.log(`Trouvé ${departmentContainers.length} conteneurs de départements`);
+  
+  departmentContainers.forEach(container => {
+    const departmentId = container.dataset.id; // Utiliser data-id au lieu de data-department-id
+    console.log(`Traitement du département ID: ${departmentId}`);
+    
+    if (departmentId) {
+      const deptId = parseInt(departmentId);
+      const deptJobs = jobs.filter(job => job.department_id === deptId);
+      console.log(`Jobs trouvés pour le département ${deptId}:`, deptJobs.length);
+      
+      // Mettre à jour le compteur de jobs dans le header
+      const jobCountElement = container.querySelector('.department-stats .stat-value');
+      if (jobCountElement) {
+        jobCountElement.textContent = deptJobs.length;
+        console.log(`Compteur de jobs mis à jour: ${deptJobs.length}`);
+      }
+      
+      // Mettre à jour la liste des jobs dans les détails
+      const jobsList = container.querySelector('.items-list');
+      if (jobsList) {
+        console.log("Mise à jour de la liste des jobs");
+        // Vider la liste existante
+        jobsList.innerHTML = '';
+        
+        // Ajouter les nouveaux jobs
+        deptJobs.forEach(job => {
+          const jobElement = createJobElement(job);
+          jobsList.appendChild(jobElement);
+        });
+        console.log(`${deptJobs.length} jobs ajoutés à la liste`);
+      } else {
+        console.log("Liste des jobs non trouvée dans ce département");
+      }
+    }
+  });
+}
+
+// Créer un élément de job pour l'affichage
+function createJobElement(job) {
+  const jobElement = document.createElement('div');
+  jobElement.className = 'item-card job-item new-job-highlight';
+  jobElement.dataset.jobId = job.id;
+  
+  const salaryText = job.salary_min && job.salary_max 
+    ? `${job.salary_min} - ${job.salary_max} ${job.currency || 'TND'}`
+    : 'Salaire non spécifié';
+  
+  const priorityClass = job.priority || 'normal';
+  const priorityLabel = getPriorityLabel(priorityClass);
+  
+  jobElement.innerHTML = `
+    <div class="item-avatar">
+      <i class="fas fa-briefcase"></i>
+    </div>
+    <div class="item-info">
+      <div class="item-title">
+        <strong>${job.title || "Titre non défini"}</strong>
+        <span class="priority-badge priority-${priorityClass}">${priorityLabel}</span>
+      </div>
+      <div class="item-details">
+        <span class="item-type">${job.employment_type || "Type non défini"}</span>
+        <span class="item-salary">${salaryText}</span>
+      </div>
+      <div class="item-meta">
+        ${job.assigned_employee_id ? '<span class="status-filled"><i class="fas fa-check"></i> Poste pourvu</span>' : '<span class="status-open"><i class="fas fa-clock"></i> Ouvert</span>'}
+        ${job.skills_count ? `<span class="skills-count"><i class="fas fa-cogs"></i> ${job.skills_count}</span>` : ""}
+      </div>
+    </div>
+    <div class="item-actions">
+      <button class="btn-icon-small" onclick="viewJobDetails(${job.id})" title="Voir les détails">
+        <i class="fas fa-eye"></i>
+      </button>
+    </div>
+  `;
+  
+  // Retirer l'animation après 3 secondes
+  setTimeout(() => {
+    jobElement.classList.remove('new-job-highlight');
+  }, 3000);
+  
+  return jobElement;
+}
+
+// Fonction utilitaire pour obtenir le label de priorité
+function getPriorityLabel(priority) {
+  const labels = {
+    'low': 'Faible',
+    'normal': 'Normal',
+    'urgent': 'Urgent'
+  };
+  return labels[priority] || 'Normal';
+}
+
+// Mettre à jour les statistiques du dashboard
+function updateDashboardStats() {
+  // Recalculer les statistiques basées sur les données locales
+  const stats = {
+    total_departments: departments.length,
+    total_employees: employees.length,
+    total_jobs: jobs.length,
+    urgent_jobs: jobs.filter(job => job.priority === 'urgent').length,
+    total_applications: window.applications.length
+  };
+  
+  updateDashboardStatsDisplay(stats);
+}
+
+// Mettre à jour l'affichage des statistiques
+function updateDashboardStatsDisplay(stats) {
+  // Mettre à jour les cartes de statistiques
+  const statsCards = document.querySelectorAll('.stat-card');
+  statsCards.forEach(card => {
+    const statType = card.dataset.stat;
+    const valueElement = card.querySelector('.stat-value');
+    
+    if (valueElement && stats[statType] !== undefined) {
+      valueElement.textContent = stats[statType];
+    }
+  });
+}
+
+// Mettre en évidence un nouveau job
+function highlightNewJob(jobId) {
+  const jobElement = document.querySelector(`[data-job-id="${jobId}"]`);
+  if (jobElement) {
+    jobElement.classList.add('new-job-highlight');
+    setTimeout(() => {
+      jobElement.classList.remove('new-job-highlight');
+    }, 3000);
+  }
+}
+
+// Mettre à jour l'indicateur de connexion
+function updateConnectionStatus(status) {
+  const indicator = document.getElementById('realtimeIndicator');
+  if (!indicator) return;
+  
+  const statusDot = indicator.querySelector('.status-dot');
+  const statusText = indicator.querySelector('span');
+  
+  // Retirer toutes les classes de statut
+  indicator.classList.remove('connected', 'disconnected', 'connecting');
+  
+  switch (status) {
+    case 'connected':
+      indicator.classList.add('connected');
+      statusText.textContent = 'Temps réel';
+      break;
+    case 'disconnected':
+      indicator.classList.add('disconnected');
+      statusText.textContent = 'Hors ligne';
+      break;
+    case 'connecting':
+      indicator.classList.add('connecting');
+      statusText.textContent = 'Connexion...';
+      break;
+  }
+}
+
+// Programmer une reconnexion
+function scheduleReconnect() {
+  if (reconnectInterval) return;
+  
+  console.log("Programmation de la reconnexion WebSocket dans 5 secondes...");
+  reconnectInterval = setInterval(() => {
+    if (dashboardWebSocket && dashboardWebSocket.readyState === WebSocket.CLOSED) {
+      console.log("Tentative de reconnexion WebSocket...");
+      initializeWebSocket();
+    } else if (dashboardWebSocket && dashboardWebSocket.readyState === WebSocket.OPEN) {
+      clearInterval(reconnectInterval);
+      reconnectInterval = null;
+    }
+  }, 5000);
+}
+
+// Fermer la connexion WebSocket
+function closeWebSocket() {
+  if (dashboardWebSocket) {
+    dashboardWebSocket.close(1000, "Page fermée");
+    dashboardWebSocket = null;
+  }
+  if (reconnectInterval) {
+    clearInterval(reconnectInterval);
+    reconnectInterval = null;
+  }
+}
+
+// Fermer WebSocket avant de quitter la page
+window.addEventListener('beforeunload', closeWebSocket);
+
+// Fonction de test pour simuler l'ajout d'un job (à supprimer en production)
+function testAddJob() {
+  console.log("🧪 Test d'ajout de job simulé");
+  
+  const testJob = {
+    id: Date.now(),
+    title: "Test Job - " + new Date().toLocaleTimeString(),
+    description: "Description du job de test",
+    employment_type: "CDI",
+    priority: "normal",
+    status: "active",
+    department_id: 1, // Assumer que le département 1 existe
+    department_name: "Test Department",
+    salary_min: 3000,
+    salary_max: 5000,
+    currency: "EUR",
+    created_at: new Date().toISOString(),
+    company_id: 1,
+    company_name: "Test Company",
+    skills_count: 0
+  };
+  
+  handleNewJob(testJob);
+}
+
+// Exposer la fonction de test globalement pour le débogage
+window.testAddJob = testAddJob;
+
 console.log("✅ FRONTEND: Dashboard Core script chargé et fonctionnel")
+console.log("🧪 Fonction de test disponible: testAddJob()")

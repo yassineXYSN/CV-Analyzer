@@ -14,7 +14,6 @@ class CompanyCreate(BaseModel):
     email: Optional[str] = None
     website: Optional[str] = None
     linkedin_url: Optional[str] = None
-    twitter_url: Optional[str] = None
     facebook_url: Optional[str] = None
     setup_completed: Optional[int] = 1
     created_by: Optional[int] = None

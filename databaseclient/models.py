@@ -108,7 +108,6 @@ class Company(Base):
     email = Column(String(255))
     website = Column(String(255))
     linkedin_url = Column(String(255))
-    twitter_url = Column(String(255))
     facebook_url = Column(String(255))
     setup_completed = Column(Integer, default=0)
     created_by = Column(Integer, ForeignKey("hr_admins.id"))
