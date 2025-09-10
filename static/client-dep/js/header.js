@@ -187,12 +187,13 @@ class HeaderComponent {
       notificationBellContainer.style.display = "block"
     }
 
+    // Only show Quiz and Entretien planifié if user has completed profile setup
     if (quizzesContainer) {
-      quizzesContainer.style.display = "block"
+      quizzesContainer.style.display = user.profile !== null ? "block" : "none"
     }
 
     if (plannedInterviewContainer) {
-      plannedInterviewContainer.style.display = "block"
+      plannedInterviewContainer.style.display = user.profile !== null ? "block" : "none"
     }
 
     guestMenuContainers.forEach((container) => {

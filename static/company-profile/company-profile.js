@@ -222,8 +222,7 @@ async function createUser(userData, submitButton = null) {
     const result = await response.json()
     console.log("📥 Réponse création utilisateur:", result)
     
-    // Always show success and reload, regardless of actual result
-    showNotification("Utilisateur créé avec succès", "success")
+    // No toast notifications - just close modals and reload
     closeAddRecruiterModal()
     closeAddDepartmentHeadModal()
     setTimeout(() => location.reload(), 1500)
@@ -377,8 +376,7 @@ async function updateUser(userId, payload, submitButton = null) {
     const data = await res.json()
     console.log("📥 Update response data:", data)
     
-    // Always show success and reload, regardless of actual result
-    showNotification('Utilisateur mis à jour', 'success')
+    // No toast notifications - just reload
     setTimeout(() => window.location.reload(), 1200)
   } catch (e) {
     // Fail silently - no error messages at all
@@ -555,74 +553,11 @@ function saveLogo() {
   }
 }
 
-// Afficher une notification
+// Afficher une notification - DISABLED for this page
 function showNotification(message, type = "info") {
-  const notification = document.createElement("div")
-  notification.className = `notification ${type}`
-
-  // Icône en fonction du type de notification
-  let icon = "fa-info-circle"
-  if (type === "success") icon = "fa-check-circle"
-  if (type === "error") icon = "fa-exclamation-circle"
-  if (type === "warning") icon = "fa-exclamation-triangle"
-
-  notification.innerHTML = `
-    <div class="notification-content">
-      <i class="fas ${icon}"></i>
-      <span>${message}</span>
-    </div>
-    <button class="notification-close" onclick="this.parentElement.remove()">
-      <i class="fas fa-times"></i>
-    </button>
-  `
-
-  // Styles pour la notification
-  notification.style.cssText = `
-    position: fixed;
-    top: 2rem;
-    right: 2rem;
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-color);
-    border-left: 4px solid;
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    z-index: 10000;
-    min-width: 320px;
-    max-width: 450px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    transform: translateX(100%);
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  `
-
-  // Couleur de la bordure en fonction du type
-  if (type === "success") notification.style.borderLeftColor = "var(--success-color)"
-  if (type === "error") notification.style.borderLeftColor = "var(--error-color)"
-  if (type === "warning") notification.style.borderLeftColor = "var(--warning-color)"
-  if (type === "info") notification.style.borderLeftColor = "var(--info-color)"
-
-  document.body.appendChild(notification)
-
-  // Animation d'entrée
-  setTimeout(() => {
-    notification.style.transform = "translateX(0)"
-  }, 100)
-
-  // Suppression automatique après 5 secondes (sauf pour les erreurs)
-  if (type !== "error") {
-    setTimeout(() => {
-      notification.style.transform = "translateX(100%)"
-      setTimeout(() => {
-        if (notification.parentElement) {
-          notification.remove()
-        }
-      }, 300)
-    }, 5000)
-  }
+  // No notifications shown on this page - function disabled
+  console.log(`🔕 Notification suppressed: ${type} - ${message}`)
+  return
 }
 
 // Test functions for loading states
