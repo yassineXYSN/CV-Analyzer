@@ -12,10 +12,16 @@ from sqlalchemy.orm import Session
 
 
 # The webhook URL from n8n
-url = "https://aminechtourou.app.n8n.cloud/webhook-test/69c5f680-542e-4c5e-82cf-9bd935078c71"
+url = "https://aboudachtourou.app.n8n.cloud/webhook/analyze-quiz"
 print("Sending file to n8n...")
-quiz_data = 
-response = requests.post(url, json=payload)
+quiz_data = {
+    "quiz_id": 1,
+    "questions": [
+        {"question_id": 1, "answer": "A"},
+        {"question_id": 2, "answer": "B"},
+    ]
+}
+response = requests.post(url, json=quiz_data)
 
 print("Status Code:", response.status_code)
 print("Response:", response.text)

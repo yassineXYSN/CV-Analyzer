@@ -224,8 +224,8 @@
                                 {{ admin.first_name[0] }}{{ admin.last_name[0] }}
                             </div>
                             <div class="user-info">
-                                <h4>{{ admin.first_name }} {{ admin.last_name }}</h4>
-                                <div class="user-email">{{ admin.email }}</div>
+                                <h4 title="{{ admin.first_name }} {{ admin.last_name }}">{{ admin.first_name }} {{ admin.last_name }}</h4>
+                                <div class="user-email" title="{{ admin.email }}">{{ admin.email }}</div>
                                 <div class="user-meta">
                                     <span class="user-role">
                                     {% if admin.role == "super_admin" %}

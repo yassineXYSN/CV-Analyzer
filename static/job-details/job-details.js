@@ -183,6 +183,7 @@ async function loadJobFromAPI(jobId) {
         if (applications && applications.length > 0) {
           await calculateCompatibilityForApplications()
           await loadInterviewDataForApplications()
+          await loadQuizReviewsForApplications()
         }
 
         hideLoading()
@@ -685,9 +686,10 @@ function renderApplicationsWithCompatibility(filter = "all") {
                       <button class="btn-view-quiz" onclick="viewQuizResults(${app.id}, '${candidateName}')">
                         <i class="fas fa-eye"></i> Voir Quiz
                       </button>
+                      <br>
                       ${app.quiz_score && app.quiz_score > 0 ? `
                         <button class="btn-analyze-ai" onclick="viewAIAnalysis(${app.id}, '${candidateName}')">
-                          <i class="fas fa-robot"></i> Analyse IA
+                          <i class="fas fa-robot"></i> ${app.has_quiz_review ? 'Voir analyse' : 'Analyse IA'}
                         </button>
                       ` : ''}
                     ` : ''}
@@ -842,22 +844,19 @@ function showDarkCompatibilityModal(
   compatibilitySource,
   compatibilityReason,
 ) {
+  console.log("[Compatibility Modal] Creating modal with data:", compatibilityData)
+  console.log("[Compatibility Modal] Percentage:", compatibilityPercentage)
+  
+  // Check if modal already exists and remove it
+  const existingModal = document.querySelector('.compatibility-modal-overlay')
+  if (existingModal) {
+    console.log("[Compatibility Modal] Removing existing modal")
+    existingModal.remove()
+  }
+  
   const modal = document.createElement("div")
   modal.className = "modal-overlay compatibility-modal-overlay"
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 25000;
-    padding: 2rem;
-  `
+  // Remove inline styles to let CSS take precedence
 
   modal.innerHTML = `
     <div class="modal-content" style="
@@ -1263,11 +1262,26 @@ function showDarkCompatibilityModal(
   </div>
 `
 
+  console.log("[Compatibility Modal] Adding modal to DOM")
   document.body.appendChild(modal)
+  console.log("[Compatibility Modal] Modal added to DOM, checking visibility")
+  console.log("[Compatibility Modal] Modal element:", modal)
+  console.log("[Compatibility Modal] Modal computed style:", window.getComputedStyle(modal))
+  
+  // Force modal to be visible
+  setTimeout(() => {
+    console.log("[Compatibility Modal] Checking modal visibility after timeout")
+    modal.style.display = 'flex'
+    modal.style.opacity = '1'
+    modal.style.visibility = 'visible'
+    console.log("[Compatibility Modal] Modal style after force show:", modal.style.cssText)
+  }, 100)
 
   // Close modal when clicking outside
   modal.addEventListener("click", (e) => {
+    console.log("[Compatibility Modal] Modal clicked, target:", e.target)
     if (e.target === modal) {
+      console.log("[Compatibility Modal] Closing modal")
       modal.remove()
     }
   })
@@ -2389,46 +2403,155 @@ async function viewQuizResults(applicationId, candidateName) {
   }
 }
 
+async function loadQuizReviewsForApplications() {
+  console.log("[Quiz Reviews] Starting to load quiz reviews for applications:", applications.length)
+
+  for (let i = 0; i < applications.length; i++) {
+    const app = applications[i]
+    console.log("[Quiz Reviews] Processing application ID:", app.id, "for candidate:", app.candidate_profile?.name)
+
+    try {
+      // Fetch quiz review data for this application
+      const response = await fetch(`/api/applications/${app.id}/quiz-review`)
+      console.log("[Quiz Reviews] Response status for app", app.id, ":", response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log("[Quiz Reviews] Response data for app", app.id, ":", data)
+        
+        if (data.success) {
+          // Add quiz review information to the application object
+          app.has_quiz_review = data.has_review
+          app.quiz_review = data.quiz_review
+          app.quiz_review_date = data.quiz_review_date
+          console.log("[Quiz Reviews] Application", app.id, "has review:", data.has_review)
+        } else {
+          app.has_quiz_review = false
+          app.quiz_review = null
+          app.quiz_review_date = null
+          console.log("[Quiz Reviews] Application", app.id, "failed to load review:", data.message)
+        }
+      } else {
+        app.has_quiz_review = false
+        app.quiz_review = null
+        app.quiz_review_date = null
+        console.log("[Quiz Reviews] Application", app.id, "HTTP error:", response.status)
+      }
+    } catch (error) {
+      console.error("[Quiz Reviews] Error fetching quiz review for application", app.id, ":", error)
+      app.has_quiz_review = false
+      app.quiz_review = null
+      app.quiz_review_date = null
+    }
+  }
+  
+  console.log("[Quiz Reviews] Completed loading quiz reviews for all applications")
+  console.log("[Quiz Reviews] Final applications data:", applications.map(app => ({
+    id: app.id,
+    has_quiz_review: app.has_quiz_review,
+    quiz_review_exists: !!app.quiz_review
+  })))
+  
+  // Update button texts based on loaded data
+  applications.forEach(app => {
+    if (app.quiz_score && app.quiz_score > 0) {
+      updateAnalyzeButtonText(app.id, app.has_quiz_review)
+    }
+  })
+}
+
 async function viewAIAnalysis(applicationId, candidateName) {
+  console.log("[viewAIAnalysis] Called with applicationId:", applicationId, "candidateName:", candidateName)
+  console.log("[viewAIAnalysis] Available applications:", applications.length)
+  
+  // Get the button for loading state
+  const button = document.querySelector(`button[onclick*="viewAIAnalysis(${applicationId}"]`)
+  const originalButtonContent = button ? button.innerHTML : ''
+  
   try {
-    // Check if there's an existing AI review
-    const response = await fetch(`/api/applications/${applicationId}/quiz-review`)
-    const data = await response.json()
+    // Find the application in our loaded data
+    const app = applications.find(a => a.id === applicationId)
+    console.log("[viewAIAnalysis] Found app:", app)
+    console.log("[viewAIAnalysis] App has_quiz_review:", app?.has_quiz_review)
+    console.log("[viewAIAnalysis] App quiz_review:", app?.quiz_review ? "EXISTS" : "NULL")
     
-    if (data.success && data.has_review) {
-      // Show existing review in a modal
-      showAIAnalysisModal(data.quiz_review, data.quiz_review_date, candidateName)
+    if (app && app.has_quiz_review && app.quiz_review) {
+      console.log("[viewAIAnalysis] Showing modal with existing review")
+      // Show existing review in a modal using already loaded data
+      showAIAnalysisModal(app.quiz_review, app.quiz_review_date, candidateName)
     } else {
-      // No review exists, redirect to quiz preview to generate one
-      showNotification("Aucune analyse IA disponible. Redirection vers la page de quiz pour générer une analyse.", "info")
-      setTimeout(() => {
-        window.location.href = `/quiz-preview/${applicationId}`
-      }, 2000)
+      console.log("[viewAIAnalysis] No review exists in loaded data, checking API directly")
+      
+      // Show loading state while checking API
+      if (button) {
+        button.disabled = true
+        button.innerHTML = '<i class="fas fa-circle-notch spinning"></i> Vérification...'
+        button.style.opacity = '0.7'
+      }
+      
+      // Fallback: Check API directly in case data wasn't loaded properly
+      try {
+        const response = await fetch(`/api/applications/${applicationId}/quiz-review`)
+        const data = await response.json()
+        
+        if (data.success && data.has_review) {
+          console.log("[viewAIAnalysis] Found review via API, showing modal")
+          // Reset button state
+          if (button) {
+            button.disabled = false
+            button.innerHTML = originalButtonContent
+            button.style.opacity = '1'
+          }
+          showAIAnalysisModal(data.quiz_review, data.quiz_review_date, candidateName)
+        } else {
+          console.log("[viewAIAnalysis] No review exists, generating one automatically")
+          // No review exists, generate one automatically using the same logic as quiz preview
+          await generateAIAnalysis(applicationId, candidateName)
+        }
+      } catch (apiError) {
+        console.error("[viewAIAnalysis] API fallback error:", apiError)
+        showNotification("Erreur lors de la récupération de l'analyse IA", "error")
+        
+        // Reset button state on error
+        if (button) {
+          button.disabled = false
+          button.innerHTML = originalButtonContent
+          button.style.opacity = '1'
+        }
+      }
     }
   } catch (error) {
     console.error("Erreur lors de la récupération de l'analyse IA:", error)
     showNotification("Erreur lors de la récupération de l'analyse IA", "error")
+    
+    // Reset button state on error
+    if (button) {
+      button.disabled = false
+      button.innerHTML = originalButtonContent
+      button.style.opacity = '1'
+    }
   }
 }
 
 function showAIAnalysisModal(review, reviewDate, candidateName) {
+  console.log("[AI Analysis Modal] Creating modal for:", candidateName)
+  console.log("[AI Analysis Modal] Review exists:", !!review)
+  console.log("[AI Analysis Modal] Review content:", review)
+  console.log("[AI Analysis Modal] Review date:", reviewDate)
+  
+  // Check if modal already exists and remove it
+  const existingModal = document.querySelector('.ai-analysis-modal')
+  if (existingModal) {
+    console.log("[AI Analysis Modal] Removing existing modal")
+    existingModal.remove()
+  }
+  
   const modal = document.createElement("div")
   modal.className = "modal-overlay ai-analysis-modal"
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 10000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-  `
+  // Remove inline styles to let CSS take precedence
   
   const modalContent = document.createElement("div")
+  modalContent.className = "ai-analysis-modal-content"
   modalContent.style.cssText = `
     background: #1e293b;
     border-radius: 16px;
@@ -2506,15 +2629,171 @@ function showAIAnalysisModal(review, reviewDate, candidateName) {
   modalContent.appendChild(content)
   modal.appendChild(modalContent)
   
+  console.log("[AI Analysis Modal] Adding modal to DOM")
   document.body.appendChild(modal)
+  console.log("[AI Analysis Modal] Modal added to DOM, checking visibility")
+  console.log("[AI Analysis Modal] Modal element:", modal)
+  console.log("[AI Analysis Modal] Modal computed style:", window.getComputedStyle(modal))
+  
+  // Force modal to be visible
+  setTimeout(() => {
+    console.log("[AI Analysis Modal] Checking modal visibility after timeout")
+    modal.style.display = 'flex'
+    modal.style.opacity = '1'
+    modal.style.visibility = 'visible'
+    console.log("[AI Analysis Modal] Modal style after force show:", modal.style.cssText)
+  }, 100)
   
   // Close modal when clicking outside
   modal.onclick = (e) => {
+    console.log("[AI Analysis Modal] Modal clicked, target:", e.target)
     if (e.target === modal) {
+      console.log("[AI Analysis Modal] Closing modal")
       document.body.removeChild(modal)
     }
   }
 }
+
+// Test function to verify modal works
+function testAIModal() {
+  console.log("[TEST] Testing AI Modal")
+  showAIAnalysisModal("This is a test review content. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "2024-01-15T10:30:00Z", "Test Candidate")
+}
+
+// Test function for compatibility modal
+function testCompatibilityModal() {
+  console.log("[TEST] Testing Compatibility Modal")
+  const testData = {
+    matched_count: 8,
+    missing_count: 3,
+    total_job_skills: 11,
+    matched_skills: [
+      { skill_name: "JavaScript", level: "advanced", is_required: true },
+      { skill_name: "React", level: "intermediate", is_required: true },
+      { skill_name: "Node.js", level: "intermediate", is_required: false }
+    ],
+    missing_skills: [
+      { skill_name: "Python", level: "beginner", is_required: true },
+      { skill_name: "Docker", level: "intermediate", is_required: false }
+    ]
+  }
+  showDarkCompatibilityModal(testData, 75, "ai", "This candidate shows strong technical skills with excellent JavaScript and React experience. The missing Python skills can be developed through training.")
+}
+
+// Test function for AI analysis generation
+function testAIGeneration(applicationId = 1) {
+  console.log("[TEST] Testing AI Analysis Generation for application:", applicationId)
+  generateAIAnalysis(applicationId, "Test Candidate")
+}
+
+// Test function for loading state
+function testLoadingState(applicationId = 1) {
+  console.log("[TEST] Testing Loading State for application:", applicationId)
+  const button = document.querySelector(`button[onclick*="viewAIAnalysis(${applicationId}"]`)
+  if (button) {
+    button.disabled = true
+    button.innerHTML = '<i class="fas fa-circle-notch spinning"></i> Test Loading...'
+    button.style.opacity = '0.7'
+    
+    // Reset after 3 seconds
+    setTimeout(() => {
+      button.disabled = false
+      button.innerHTML = '<i class="fas fa-robot"></i> Analyse IA'
+      button.style.opacity = '1'
+    }, 3000)
+  } else {
+    console.log("[TEST] Button not found for application:", applicationId)
+  }
+}
+
+// Function to generate AI analysis automatically (same logic as quiz preview)
+async function generateAIAnalysis(applicationId, candidateName) {
+  console.log("[generateAIAnalysis] Starting AI analysis generation for application:", applicationId)
+  
+  // Get the button and show loading state
+  const button = document.querySelector(`button[onclick*="viewAIAnalysis(${applicationId}"]`)
+  const originalButtonContent = button ? button.innerHTML : ''
+  
+  try {
+    // Show loading state on button
+    if (button) {
+      button.disabled = true
+      button.innerHTML = '<i class="fas fa-circle-notch spinning"></i> Génération...'
+      button.style.opacity = '0.7'
+    }
+    
+    // Show loading notification
+    showNotification("Génération de l'analyse IA en cours...", "info")
+    
+    // Make request to AI analysis endpoint (same as quiz preview)
+    const response = await fetch(`/api/applications/${applicationId}/ai-analyze-quiz`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    
+    const data = await response.json()
+    console.log("[generateAIAnalysis] AI analysis response:", data)
+    
+    if (data.success) {
+      console.log("[generateAIAnalysis] AI analysis successful, showing modal")
+      // Show the generated review in a modal
+      showAIAnalysisModal(data.quiz_review, new Date().toISOString(), candidateName)
+      
+      // Update the application data in our loaded applications
+      const app = applications.find(a => a.id === applicationId)
+      if (app) {
+        app.has_quiz_review = true
+        app.quiz_review = data.quiz_review
+        app.quiz_review_date = new Date().toISOString()
+        console.log("[generateAIAnalysis] Updated application data with new review")
+      }
+      
+      // Update the button text to show "Voir analyse"
+      updateAnalyzeButtonText(applicationId, true)
+      
+      showNotification("Analyse IA générée avec succès!", "success")
+    } else {
+      console.error("[generateAIAnalysis] AI analysis failed:", data.message)
+      showNotification(`Erreur lors de la génération de l'analyse IA: ${data.message || 'Erreur inconnue'}`, "error")
+      
+      // Reset button to original state on error
+      if (button) {
+        button.disabled = false
+        button.innerHTML = originalButtonContent
+        button.style.opacity = '1'
+      }
+    }
+  } catch (error) {
+    console.error("[generateAIAnalysis] Error during AI analysis:", error)
+    showNotification("Erreur lors de la génération de l'analyse IA", "error")
+    
+    // Reset button to original state on error
+    if (button) {
+      button.disabled = false
+      button.innerHTML = originalButtonContent
+      button.style.opacity = '1'
+    }
+  }
+}
+
+// Function to update the analyze button text
+function updateAnalyzeButtonText(applicationId, hasReview) {
+  const button = document.querySelector(`button[onclick*="viewAIAnalysis(${applicationId}"]`)
+  if (button) {
+    const icon = button.querySelector('i')
+    if (icon) {
+      button.innerHTML = `<i class="fas fa-robot"></i> ${hasReview ? 'Voir analyse' : 'Analyse IA'}`
+    }
+  }
+}
+
+// Make test functions globally available
+window.testAIModal = testAIModal
+window.testCompatibilityModal = testCompatibilityModal
+window.testAIGeneration = testAIGeneration
+window.testLoadingState = testLoadingState
 
 function showQuizResultsModal(quizData, candidateName, applicationId) {
   const modal = document.createElement("div")
