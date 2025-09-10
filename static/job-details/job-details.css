@@ -2161,6 +2161,91 @@ body {
   animation: modalFadeOut 0.3s ease forwards;
 }
 
+/* AI Analysis Modal Specific Styles */
+.ai-analysis-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  z-index: 30000 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 20px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Compatibility Modal Specific Styles */
+.compatibility-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  z-index: 30000 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 2rem !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Loading Button Styles */
+.btn-analyze-ai:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+  background: linear-gradient(135deg, #64748b, #475569) !important;
+  color: #cbd5e1 !important;
+}
+
+/* Spinner animation for loading states */
+.spinning {
+  animation: spin 1s linear infinite !important;
+  display: inline-block !important;
+}
+
+.btn-analyze-ai .fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+.btn-analyze-ai .fa-circle-notch {
+  animation: spin 1s linear infinite;
+}
+
+.btn-analyze-ai .fa-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Ensure all spinner icons rotate */
+.btn-analyze-ai i[class*="spinner"],
+.btn-analyze-ai i[class*="spin"],
+.btn-analyze-ai i[class*="circle-notch"] {
+  animation: spin 1s linear infinite;
+}
+
+/* Force animation on any element with inline style animation */
+[style*="animation: spin"] {
+  animation: spin 1s linear infinite !important;
+}
+
+/* Additional spinner classes */
+.fa-circle-notch.spinning,
+.fa-spinner.spinning {
+  animation: spin 1s linear infinite !important;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .confirmation-modal {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
   backdrop-filter: blur(20px);

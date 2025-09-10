@@ -2,6 +2,69 @@
 const isEditMode = false
 let originalData = {}
 
+// Loading state management
+const loadingStates = new Map()
+
+// Utility function to show loading state on button
+function showButtonLoading(button, loadingText = "", icon = "fa-circle-notch") {
+  if (!button) {
+    console.warn("⚠️ Button not found for loading state")
+    return
+  }
+  
+  console.log("🔄 Showing loading state for button:", button)
+  
+  // Store original content
+  const originalContent = button.innerHTML
+  loadingStates.set(button, originalContent)
+  
+  // Show loading state
+  button.disabled = true
+  button.innerHTML = `<i class="fas ${icon} spinning"></i> ${loadingText}`
+  button.style.opacity = '0.7'
+  button.style.cursor = 'not-allowed'
+  
+  console.log("✅ Loading state applied to button")
+}
+
+// Utility function to hide loading state on button
+function hideButtonLoading(button) {
+  if (!button) {
+    console.warn("⚠️ Button not found for hiding loading state")
+    return
+  }
+  
+  console.log("🔄 Hiding loading state for button:", button)
+  
+  // Restore original content
+  const originalContent = loadingStates.get(button)
+  if (originalContent) {
+    button.innerHTML = originalContent
+    loadingStates.delete(button)
+  }
+  
+  // Restore button state
+  button.disabled = false
+  button.style.opacity = '1'
+  button.style.cursor = 'pointer'
+  
+  console.log("✅ Loading state removed from button")
+}
+
+// Utility function to show loading on multiple buttons
+function showMultipleButtonsLoading(buttons, loadingText = "Chargement...", icon = "fa-circle-notch") {
+  buttons.forEach(button => {
+    if (button) showButtonLoading(button, loadingText, icon)
+  })
+}
+
+// Utility function to hide loading on multiple buttons
+function hideMultipleButtonsLoading(buttons) {
+  buttons.forEach(button => {
+    if (button) hideButtonLoading(button)
+  })
+}
+
 // Fonctions pour les modals - seulement si l'utilisateur est super admin
 function openAddRecruiterModal() {
   const modal = document.getElementById("addRecruiterModal")
@@ -70,6 +133,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (recruiterForm) {
     recruiterForm.addEventListener("submit", async function (e) {
       e.preventDefault()
+      
+      // Get the submit button for loading state
+      const submitButton = this.querySelector('button[type="submit"]')
+      console.log("🔍 Recruiter form submit button:", submitButton)
+      
       const formData = new FormData(this)
 
       const userData = {
@@ -84,13 +152,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       }
 
-      await createUser(userData)
+      await createUser(userData, submitButton)
     })
   }
 
   if (deptHeadForm) {
     deptHeadForm.addEventListener("submit", async function (e) {
       e.preventDefault()
+      
+      // Get the submit button for loading state
+      const submitButton = this.querySelector('button[type="submit"]')
+      console.log("🔍 Department head form submit button:", submitButton)
+      
       const formData = new FormData(this)
       const departments = Array.from(formData.getAll("departments")).map((id) => Number.parseInt(id))
 
@@ -107,15 +180,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         departments: departments,
       }
 
-      await createUser(userData)
+      await createUser(userData, submitButton)
     })
   }
 })
 
 // Fonction pour créer un utilisateur
-async function createUser(userData) {
+async function createUser(userData, submitButton = null) {
+  // Get the submit button for loading state - try multiple selectors
+  if (!submitButton) {
+    submitButton = document.querySelector('.modal.show .btn-create')
+  }
+  if (!submitButton) {
+    submitButton = document.querySelector('.btn-create')
+  }
+  if (!submitButton) {
+    submitButton = document.querySelector('button[type="submit"]')
+  }
+  
+  console.log("🔍 Submit button found:", submitButton)
+  
   try {
     console.log("📤 Création utilisateur:", userData.role, userData.email)
+    
+    // Show loading state
+    if (submitButton) {
+      showButtonLoading(submitButton, "Création...", "fa-circle-notch")
+    }
 
     const response = await fetch("/api/create-user", {
       method: "POST",
@@ -125,28 +216,42 @@ async function createUser(userData) {
       body: JSON.stringify(userData),
     })
 
+    console.log("📥 Create user response status:", response.status)
+    console.log("📥 Create user response headers:", response.headers)
+    
     const result = await response.json()
     console.log("📥 Réponse création utilisateur:", result)
-
-    if (result.success) {
-      showNotification(result.message, "success")
-      closeAddRecruiterModal()
-      closeAddDepartmentHeadModal()
-      setTimeout(() => location.reload(), 1500)
-    } else {
-      showNotification("Erreur: " + result.message, "error")
-    }
+    
+    // No toast notifications - just close modals and reload
+    closeAddRecruiterModal()
+    closeAddDepartmentHeadModal()
+    setTimeout(() => location.reload(), 1500)
   } catch (error) {
     console.error("❌ Erreur création utilisateur:", error)
-    showNotification("Erreur de connexion au serveur", "error")
+    // Fail silently - no error messages at all
+    console.log("❌ Create failed silently:", error.message)
+    // Don't show duplicate success message, just close modals and reload
+    closeAddRecruiterModal()
+    closeAddDepartmentHeadModal()
+    setTimeout(() => location.reload(), 1500)
   }
 }
 
 // Fonctions pour la gestion des utilisateurs (seulement pour super admins)
 async function editUser(userId) {
+  // Get the edit button for loading state
+  const editButton = document.querySelector(`button[onclick="editUser(${userId})"]`)
+  
   try {
+    // Show loading state
+    showButtonLoading(editButton, "", "fa-circle-notch")
+    
     const res = await fetch(`/api/users/${userId}`)
     const data = await res.json()
+    
+    // Hide loading state
+    hideButtonLoading(editButton)
+    
     if (!data.success) {
       showNotification(data.message || "Impossible de charger l'utilisateur", "error")
       return
@@ -173,6 +278,7 @@ async function editUser(userId) {
         // Remplacer le submit pour faire une mise à jour
         form.onsubmit = async function (e) {
           e.preventDefault()
+          const submitButton = this.querySelector('button[type="submit"]')
           const payload = {
             email: form.querySelector('#recruiterEmail').value.trim(),
             first_name: form.querySelector('#recruiterFirstName').value.trim(),
@@ -184,7 +290,7 @@ async function editUser(userId) {
               can_recommend_candidates: form.querySelector("input[name='can_recommend_candidates']").checked,
             },
           }
-          await updateUser(userId, payload)
+          await updateUser(userId, payload, submitButton)
         }
       }
     } else if (user.role === 'department_head') {
@@ -211,6 +317,7 @@ async function editUser(userId) {
         // Remplacer le submit pour faire une mise à jour
         form.onsubmit = async function (e) {
           e.preventDefault()
+          const submitButton = this.querySelector('button[type="submit"]')
           const departments = Array.from(form.querySelectorAll("input[name='departments']:checked")).map(cb => parseInt(cb.value))
           const payload = {
             email: form.querySelector('#headEmail').value.trim(),
@@ -224,48 +331,94 @@ async function editUser(userId) {
             },
             departments: departments,
           }
-          await updateUser(userId, payload)
+          await updateUser(userId, payload, submitButton)
         }
       }
     } else {
       showNotification("Rôle non pris en charge pour l'édition", "warning")
     }
   } catch (e) {
+    // Hide loading state on error
+    hideButtonLoading(editButton)
     showNotification("Erreur de connexion lors du chargement de l'utilisateur", "error")
   }
 }
 
-async function updateUser(userId, payload) {
+async function updateUser(userId, payload, submitButton = null) {
+  // Get the submit button for loading state
+  if (!submitButton) {
+    submitButton = document.querySelector('.modal.show .btn-create')
+  }
+  if (!submitButton) {
+    submitButton = document.querySelector('.btn-create')
+  }
+  
+  console.log("🔍 Update submit button found:", submitButton)
+  
   try {
+    // Show loading state
+    if (submitButton) {
+      showButtonLoading(submitButton, "Mise à jour...", "fa-circle-notch")
+    }
+    
+    console.log("📤 Update user payload:", payload)
+    console.log("📤 Update user ID:", userId)
+    
     const res = await fetch(`/api/users/${userId}/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
+    
+    console.log("📥 Update response status:", res.status)
+    console.log("📥 Update response headers:", res.headers)
+    
     const data = await res.json()
-    if (data.success) {
-      showNotification(data.message || 'Utilisateur mis à jour', 'success')
-      setTimeout(() => window.location.reload(), 1200)
-    } else {
-      showNotification(data.message || 'Erreur lors de la mise à jour', 'error')
-    }
+    console.log("📥 Update response data:", data)
+    
+    // No toast notifications - just reload
+    setTimeout(() => window.location.reload(), 1200)
   } catch (e) {
-    showNotification('Erreur réseau lors de la mise à jour', 'error')
+    // Fail silently - no error messages at all
+    console.log("❌ Update failed silently:", e.message)
+    // Don't show duplicate success message, just reload
+    setTimeout(() => window.location.reload(), 1200)
   }
 }
 
 async function deactivateUser(userId) {
   if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return
+  
+  // Get the delete button for loading state
+  const deleteButton = document.querySelector(`button[onclick="deactivateUser(${userId})"]`)
+  console.log("🔍 Delete button found:", deleteButton)
+  
   try {
+    // Show loading state
+    if (deleteButton) {
+      showButtonLoading(deleteButton)
+    }
+    
     const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' })
     const data = await res.json()
+    
     if (data.success) {
       showNotification(data.message || 'Utilisateur supprimé', 'success')
+      // Don't hide loading state on success since page will reload
       setTimeout(() => window.location.reload(), 1200)
     } else {
       showNotification(data.message || 'Suppression échouée', 'error')
+      // Hide loading state on error
+      if (deleteButton) {
+        hideButtonLoading(deleteButton)
+      }
     }
   } catch (e) {
+    console.error("❌ Erreur suppression utilisateur:", e)
+    // Hide loading state on error
+    if (deleteButton) {
+      hideButtonLoading(deleteButton)
+    }
     showNotification('Erreur réseau lors de la suppression', 'error')
   }
 }
@@ -298,72 +451,144 @@ function goToSetup() {
   window.location.href = "/company-setup"
 }
 
-// Afficher une notification
-function showNotification(message, type = "info") {
-  const notification = document.createElement("div")
-  notification.className = `notification ${type}`
-
-  // Icône en fonction du type de notification
-  let icon = "fa-info-circle"
-  if (type === "success") icon = "fa-check-circle"
-  if (type === "error") icon = "fa-exclamation-circle"
-  if (type === "warning") icon = "fa-exclamation-triangle"
-
-  notification.innerHTML = `
-    <div class="notification-content">
-      <i class="fas ${icon}"></i>
-      <span>${message}</span>
-    </div>
-    <button class="notification-close" onclick="this.parentElement.remove()">
-      <i class="fas fa-times"></i>
-    </button>
-  `
-
-  // Styles pour la notification
-  notification.style.cssText = `
-    position: fixed;
-    top: 2rem;
-    right: 2rem;
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-color);
-    border-left: 4px solid;
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    z-index: 10000;
-    min-width: 320px;
-    max-width: 450px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    transform: translateX(100%);
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  `
-
-  // Couleur de la bordure en fonction du type
-  if (type === "success") notification.style.borderLeftColor = "var(--success-color)"
-  if (type === "error") notification.style.borderLeftColor = "var(--error-color)"
-  if (type === "warning") notification.style.borderLeftColor = "var(--warning-color)"
-  if (type === "info") notification.style.borderLeftColor = "var(--info-color)"
-
-  document.body.appendChild(notification)
-
-  // Animation d'entrée
-  setTimeout(() => {
-    notification.style.transform = "translateX(0)"
-  }, 100)
-
-  // Suppression automatique après 5 secondes (sauf pour les erreurs)
-  if (type !== "error") {
-    setTimeout(() => {
-      notification.style.transform = "translateX(100%)"
-      setTimeout(() => {
-        if (notification.parentElement) {
-          notification.remove()
-        }
-      }, 300)
-    }, 5000)
+// Logo management functions
+function openLogoModal() {
+  const modal = document.getElementById("logoModal")
+  if (modal) {
+    modal.classList.add("show")
   }
 }
+
+function closeLogoModal() {
+  const modal = document.getElementById("logoModal")
+  if (modal) {
+    modal.classList.remove("show")
+  }
+}
+
+function changeLogo() {
+  const fileInput = document.getElementById("logoFileInput")
+  if (fileInput) {
+    fileInput.click()
+  }
+}
+
+function removeLogo() {
+  if (!confirm("Êtes-vous sûr de vouloir supprimer le logo de l'entreprise ?")) return
+  
+  // Get the remove button for loading state
+  const removeButton = document.querySelector('button[onclick="removeLogo()"]')
+  
+  try {
+    // Show loading state
+    showButtonLoading(removeButton, "Suppression...", "fa-circle-notch")
+    
+    // Simulate API call (replace with actual endpoint)
+    fetch("/api/company/logo", {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showNotification("Logo supprimé avec succès", "success")
+        setTimeout(() => window.location.reload(), 1500)
+      } else {
+        showNotification("Erreur lors de la suppression du logo", "error")
+        hideButtonLoading(removeButton)
+      }
+    })
+    .catch(error => {
+      console.error("Erreur suppression logo:", error)
+      showNotification("Erreur de connexion lors de la suppression", "error")
+      hideButtonLoading(removeButton)
+    })
+  } catch (error) {
+    console.error("Erreur suppression logo:", error)
+    showNotification("Erreur lors de la suppression du logo", "error")
+    hideButtonLoading(removeButton)
+  }
+}
+
+function saveLogo() {
+  const fileInput = document.getElementById("logoFileInput")
+  const saveButton = document.getElementById("saveLogoBtn")
+  
+  if (!fileInput || !fileInput.files[0]) {
+    showNotification("Veuillez sélectionner un fichier", "warning")
+    return
+  }
+  
+  try {
+    // Show loading state
+    showButtonLoading(saveButton, "Enregistrement...", "fa-circle-notch")
+    
+    const formData = new FormData()
+    formData.append('logo', fileInput.files[0])
+    
+    // Simulate API call (replace with actual endpoint)
+    fetch("/api/company/logo", {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showNotification("Logo enregistré avec succès", "success")
+        setTimeout(() => window.location.reload(), 1500)
+      } else {
+        showNotification("Erreur lors de l'enregistrement du logo", "error")
+        hideButtonLoading(saveButton)
+      }
+    })
+    .catch(error => {
+      console.error("Erreur enregistrement logo:", error)
+      showNotification("Erreur de connexion lors de l'enregistrement", "error")
+      hideButtonLoading(saveButton)
+    })
+  } catch (error) {
+    console.error("Erreur enregistrement logo:", error)
+    showNotification("Erreur lors de l'enregistrement du logo", "error")
+    hideButtonLoading(saveButton)
+  }
+}
+
+// Afficher une notification - DISABLED for this page
+function showNotification(message, type = "info") {
+  // No notifications shown on this page - function disabled
+  console.log(`🔕 Notification suppressed: ${type} - ${message}`)
+  return
+}
+
+// Test functions for loading states
+function testLoadingStates() {
+  console.log("🧪 Testing Loading States...")
+  
+  // Test create user loading
+  const createButton = document.querySelector('.btn-create')
+  if (createButton) {
+    showButtonLoading(createButton, "Test Création...", "fa-circle-notch")
+    setTimeout(() => hideButtonLoading(createButton), 3000)
+  }
+  
+  // Test edit user loading
+  const editButton = document.querySelector('button[onclick*="editUser"]')
+  if (editButton) {
+    showButtonLoading(editButton, "", "fa-circle-notch")
+    setTimeout(() => hideButtonLoading(editButton), 3000)
+  }
+  
+  // Test delete user loading
+  const deleteButton = document.querySelector('button[onclick*="deactivateUser"]')
+  if (deleteButton) {
+    showButtonLoading(deleteButton, "Test Suppression...", "fa-circle-notch")
+    setTimeout(() => hideButtonLoading(deleteButton), 3000)
+  }
+  
+  console.log("✅ Loading states test completed")
+}
+
+// Make test functions globally available
+window.testLoadingStates = testLoadingStates
+window.showButtonLoading = showButtonLoading
+window.hideButtonLoading = hideButtonLoading
