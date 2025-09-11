@@ -597,9 +597,9 @@ ${
 `
   }
 
-  // Pour les super admins : pas de boutons d'action
-  if (currentUser.role === "super_admin") {
-    return "" // Pas de boutons pour les super admins
+  // Pour les admins : pas de boutons d'action
+  if (currentUser.role === "admin") {
+    return "" // Pas de boutons pour les admins
   }
 
   return ""
@@ -1532,8 +1532,8 @@ function adaptInterfaceForRole() {
       roleElement.style.color = "#10b981"
     }
   }
-  // Mode SUPER ADMIN (accès complet)
-  else if (currentUser.role === "super_admin") {
+  // Mode ADMIN (accès complet)
+  else if (currentUser.role === "admin") {
     // Ajouter un indicateur visuel
     const roleElement = document.getElementById("userRoleDisplay")
     if (roleElement) {
@@ -1548,7 +1548,7 @@ function updateUserDisplay() {
     const userName = `${currentUser.first_name} ${currentUser.last_name}`
     const userInitials = `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
     const roleTranslations = {
-      super_admin: "Admin",
+      admin: "Admin",
       recruiter: "Recruteur",
       department_head: "Chef de Département",
     }
@@ -1836,10 +1836,19 @@ function openJobModal(preselectedDeptId = null) {
       }, 100)
     }
 
+    // Définir les limites de date (aujourd'hui et dans 1 an)
+    const today = new Date()
+    const maxDate = new Date()
+    maxDate.setFullYear(today.getFullYear() + 1)
+    
+    const deadlineInput = document.getElementById("jobDeadline")
+    deadlineInput.min = today.toISOString().split("T")[0]
+    deadlineInput.max = maxDate.toISOString().split("T")[0]
+    
     // Définir la date limite par défaut (dans 30 jours)
     const deadline = new Date()
     deadline.setDate(deadline.getDate() + 30)
-    document.getElementById("jobDeadline").value = deadline.toISOString().split("T")[0]
+    deadlineInput.value = deadline.toISOString().split("T")[0]
 
     // Animation d'entrée
     requestAnimationFrame(() => {
@@ -2040,6 +2049,24 @@ async function createJob() {
   if (salaryMin && salaryMax && Number.parseFloat(salaryMin) > Number.parseFloat(salaryMax)) {
     showNotification("Le salaire minimum ne peut pas être supérieur au salaire maximum", "warning")
     return
+  }
+
+  // Validation de la date limite
+  if (deadline) {
+    const deadlineDate = new Date(deadline)
+    const today = new Date()
+    const maxDate = new Date()
+    maxDate.setFullYear(today.getFullYear() + 1)
+    
+    if (deadlineDate < today) {
+      showNotification("La date limite ne peut pas être dans le passé", "warning")
+      return
+    }
+    
+    if (deadlineDate > maxDate) {
+      showNotification("La date limite ne peut pas dépasser 1 an", "warning")
+      return
+    }
   }
 
   // Prepare skills data

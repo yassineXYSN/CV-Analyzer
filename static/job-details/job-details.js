@@ -1393,7 +1393,7 @@ function renderCandidateActions(app) {
   }
 
   // Pour les administrateurs
-  if (currentUser && currentUser.role === "super_admin") {
+  if (currentUser && currentUser.role === "admin") {
     const parts = []
     
     if (app.status === "accepted_pending_validation") {
@@ -1914,7 +1914,7 @@ async function confirmRecommendApplication(applicationId) {
 }
 
 function showAcceptConfirmation(applicationId, candidateName, jobTitle, departmentName) {
-  const isAdmin = currentUser && currentUser.role === "super_admin"
+  const isAdmin = currentUser && currentUser.role === "admin"
   const modalTitle = isAdmin ? "Accepter définitivement" : "Accepter la candidature"
   const modalDescription = isAdmin
     ? "En tant qu'administrateur, votre acceptation sera définitive et créera immédiatement l'employé."

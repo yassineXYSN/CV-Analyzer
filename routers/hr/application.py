@@ -606,7 +606,7 @@ async def update_application_status(application_id: int, status_data: dict):
                 return {"success": False, "message": "Statut manquant"}
 
             # Accepté → créer employé, mettre à jour le poste et rejeter les autres
-            if new_status == 'accepted' and current_admin.role in ['recruiter', 'super_admin']:
+            if new_status == 'accepted' and current_admin.role in ['recruiter', 'admin']:
                 candidate = db.query(ProfileCandidat).filter(ProfileCandidat.id == application.candidate_profile_id).first()
                 job = db.query(Job).filter(Job.id == application.job_id).first()
                 contact = db.query(Contact).filter(Contact.id == candidate.contact_id).first() if candidate else None
@@ -1056,7 +1056,7 @@ def validate_application_skills(
             return {"success": False, "message": "Utilisateur non trouvé"}
         
         # Vérifier que l'utilisateur a les droits (admin ou recruteur)
-        if current_admin.role not in ['super_admin', 'department_head', 'recruiter']:
+        if current_admin.role not in ['admin', 'department_head', 'recruiter']:
             return {"success": False, "message": "Permissions insuffisantes pour valider les compétences"}
         
         # Récupérer la candidature

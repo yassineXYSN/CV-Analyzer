@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadDashboardData()
   // Start real-time updates listener (SSE)
   try {
-    const evtSource = new EventSource('/admin/events')
+    const evtSource = new EventSource('/super-admin/events')
     evtSource.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data || '{}')
@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function loadCompaniesFromAPI() {
   try {
     console.log("[v0] Loading companies from API...")
-    const response = await fetch("/admin/api/companies")
+    const response = await fetch("/super-admin/api/companies")
     if (response.ok) {
       companies = await response.json()
       console.log("[v0] Companies loaded:", companies)
@@ -86,7 +86,7 @@ async function loadCompaniesFromAPI() {
 
 async function loadUsersFromAPI() {
   try {
-    const response = await fetch("/admin/api/users")
+    const response = await fetch("/super-admin/api/users")
     if (response.ok) {
       users = await response.json()
       console.log("Users loaded:", users) // Check what data you're receiving
@@ -163,7 +163,7 @@ async function loadCompanyAdmins(companyId) {
 
     // First try to get admins via dedicated API endpoint
     try {
-      const response = await fetch(`/admin/api/companies/${companyId}/admins`)
+      const response = await fetch(`/super-admin/api/companies/${companyId}/admins`)
       console.log("[v0] API response status:", response.status)
 
       if (response.ok) {
@@ -217,7 +217,7 @@ async function loadDashboardData() {
   
   try {
     // Charger les statistiques réelles depuis l'API
-    const statsResponse = await fetch('/admin/api/stats')
+    const statsResponse = await fetch('/super-admin/api/stats')
     const stats = await statsResponse.json()
     
     // Update overview cards with real data
@@ -238,7 +238,8 @@ async function loadDashboardData() {
     
     const adminCount = users.filter(user => 
       user.role === "super_admin" || 
-      user.role === "hr_manager" || 
+      user.role === "hr_manager" ||
+      user.role === "admin" | 
       user.role === "hr_admin"
     ).length
     document.getElementById("total-admins-count").textContent = adminCount
@@ -252,7 +253,7 @@ async function loadRecentActivity() {
   
   try {
     // Charger l'activité récente depuis l'API
-    const response = await fetch('/admin/api/recent-activity')
+    const response = await fetch('/super-admin/api/recent-activity')
     recentActivities = await response.json()
     renderRecentActivityList()
   } catch (error) {
@@ -416,7 +417,7 @@ async function loadAnalyticsData() {
   
   try {
     // Charger les données d'analytics depuis l'API
-    const response = await fetch('/admin/api/analytics')
+    const response = await fetch('/super-admin/api/analytics')
     const analytics = await response.json()
     
     // Mettre à jour les cartes d'analytics avec les vraies données
@@ -988,6 +989,7 @@ function loadUsersTable() {
 function getUserTypeForTable(position) {
   const typeMap = {
     super_admin: "Admin",
+    admin: "Admin",
     hr_manager: "Admin",
     hr_admin: "Admin",
     department_head: "Member",
@@ -1261,6 +1263,7 @@ function formatRoleDisplay(role) {
 
   const roleMap = {
     SUPER_ADMIN: "Admin",
+    ADMIN: "Admin",
     DEPARTMENT_HEAD: "Chef de département",
     RECRUITER: "Recruteur",
     HR_ADMIN: "Admin RH",
@@ -1302,7 +1305,7 @@ async function createCompany(event) {
   }
 
   try {
-    const response = await fetch("/admin/api/companies", {
+    const response = await fetch("/super-admin/api/companies", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1358,7 +1361,7 @@ async function updateCompany(event) {
   }
 
   try {
-    const response = await fetch(`/admin/api/companies/${companyId}`, {
+    const response = await fetch(`/super-admin/api/companies/${companyId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -1397,7 +1400,7 @@ async function deleteCompany(companyId) {
         // Conversion de l'ID en string si nécessaire (certaines APIs l'attendent en string)
         const companyIdStr = companyId.toString()
 
-        const response = await fetch(`/admin/api/companies/${companyIdStr}`, {
+        const response = await fetch(`/super-admin/api/companies/${companyIdStr}`, {
           method: "DELETE",
         })
 
@@ -1440,7 +1443,7 @@ async function createUser(event) {
 
   try {
     console.log("[v0] Creating user with data:", userData)
-    const response = await fetch("/admin/api/users", {
+    const response = await fetch("/super-admin/api/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1486,7 +1489,7 @@ async function createUser(event) {
 
 async function resendVerification(userId) {
   try {
-    const response = await fetch(`/admin/api/users/${userId}/resend-verification`, {
+    const response = await fetch(`/super-admin/api/users/${userId}/resend-verification`, {
       method: "POST",
     })
 
@@ -1524,7 +1527,7 @@ async function deleteUser(userId) {
       try {
         showNotification("Suppression en cours...", "info")
 
-        const response = await fetch(`/admin/api/users/${userId}`, {
+        const response = await fetch(`/super-admin/api/users/${userId}`, {
           method: "DELETE",
         })
 

@@ -41,19 +41,57 @@
             }
         }
 
-        // Form submission with detailed logging
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        // Login type switching
+        function switchLoginType(type) {
+            const hrForm = document.getElementById('hrLoginForm');
+            const superAdminForm = document.getElementById('superAdminLoginForm');
+            
+            // Internal buttons (both forms have the same IDs)
+            const hrBtnInternal = document.getElementById('hrLoginBtnInternal');
+            const superAdminBtnInternal = document.getElementById('superAdminLoginBtnInternal');
+            
+            if (type === 'hr') {
+                hrForm.style.display = 'block';
+                superAdminForm.style.display = 'none';
+                
+                // Update internal buttons
+                if (hrBtnInternal) {
+                    hrBtnInternal.classList.add('active');
+                    superAdminBtnInternal.classList.remove('active');
+                }
+                
+                // Update body class for HR theme
+                document.body.classList.remove('super-admin-theme');
+                document.body.classList.add('hr-theme');
+            } else if (type === 'super_admin') {
+                hrForm.style.display = 'none';
+                superAdminForm.style.display = 'block';
+                
+                // Update internal buttons
+                if (hrBtnInternal) {
+                    hrBtnInternal.classList.remove('active');
+                    superAdminBtnInternal.classList.add('active');
+                }
+                
+                // Update body class for Super Admin theme
+                document.body.classList.remove('hr-theme');
+                document.body.classList.add('super-admin-theme');
+            }
+        }
+
+        // HR Form submission with detailed logging
+        document.getElementById('hrLoginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             console.log('🔐 FRONTEND: Début du processus de connexion');
             
-            const submitBtn = document.querySelector('.submit-btn');
-            const btnContent = document.querySelector('.btn-content');
-            const loadingSpinner = document.querySelector('.loading-spinner');
-            const errorMessage = document.querySelector('.error-message');
-            const successMessage = document.querySelector('.success-message');
-            const errorText = document.querySelector('.error-message .message-text');
-            const successText = document.querySelector('.success-message .message-text');
+            const submitBtn = document.querySelector('#hrLoginForm .submit-btn');
+            const btnContent = document.querySelector('#hrLoginForm .btn-content');
+            const loadingSpinner = document.querySelector('#hrLoginForm .loading-spinner');
+            const errorMessage = document.querySelector('#hrLoginForm .error-message');
+            const successMessage = document.querySelector('#hrLoginForm .success-message');
+            const errorText = document.querySelector('#hrLoginForm .error-message .message-text');
+            const successText = document.querySelector('#hrLoginForm .success-message .message-text');
             
             // Get form data
             const email = document.getElementById('email').value.trim();
@@ -164,9 +202,13 @@
             });
         });
 
-        // Auto-focus on first input
+        // Auto-focus on first input and set default theme
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🎯 FRONTEND: Page chargée, focus sur email');
+            
+            // Set default HR theme
+            document.body.classList.add('hr-theme');
+            
             document.getElementById('email').focus();
         });
 
@@ -174,6 +216,77 @@
         document.getElementById('password').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Super Admin Form submission
+        document.getElementById('superAdminLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            console.log('👑 FRONTEND: Début du processus de connexion Super Admin');
+            
+            const submitBtn = document.querySelector('#superAdminLoginForm .submit-btn');
+            const btnContent = document.querySelector('#superAdminLoginForm .btn-content');
+            const loadingSpinner = document.querySelector('#superAdminLoginForm .loading-spinner');
+            const errorMessage = document.querySelector('#superAdminLoginForm .error-message');
+            const successMessage = document.querySelector('#superAdminLoginForm .success-message');
+            const errorText = document.querySelector('#superAdminLoginForm .error-message .message-text');
+            const successText = document.querySelector('#superAdminLoginForm .success-message .message-text');
+            
+            // Get form data
+            const email = document.getElementById('superAdminEmail').value.trim();
+            const password = document.getElementById('superAdminPassword').value;
+            
+            // Validation
+            if (!email || !password) {
+                errorText.textContent = 'Veuillez remplir tous les champs';
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+                return;
+            }
+            
+            // Show loading state
+            btnContent.style.display = 'none';
+            loadingSpinner.style.display = 'flex';
+            submitBtn.disabled = true;
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            try {
+                console.log('👑 FRONTEND: Envoi de la requête de connexion Super Admin');
+                
+                const response = await fetch('/super-admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                console.log('👑 FRONTEND: Réponse reçue:', data);
+                
+                if (data.success) {
+                    successText.textContent = 'Connexion Super Admin réussie ! Redirection...';
+                    successMessage.style.display = 'block';
+                    
+                    // Redirect to super admin dashboard
+                    setTimeout(() => {
+                        window.location.href = '/super-admin/';
+                    }, 1500);
+                } else {
+                    errorText.textContent = data.message || 'Identifiants Super Admin incorrects';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('👑 FRONTEND: Erreur de connexion Super Admin:', error);
+                errorText.textContent = 'Erreur de connexion. Veuillez réessayer.';
+                errorMessage.style.display = 'block';
+            } finally {
+                // Reset button state
+                btnContent.style.display = 'flex';
+                loadingSpinner.style.display = 'none';
+                submitBtn.disabled = false;
             }
         });
 

@@ -14,7 +14,7 @@ function checkPermission(action) {
   }
 
   const permissions = {
-    super_admin: {
+    admin: {
       create_department: true,
       create_job: true,
       create_user: true,

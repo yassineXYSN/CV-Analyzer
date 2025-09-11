@@ -203,7 +203,7 @@
                         <h2><i class="fas fa-users"></i> Utilisateurs ({{ company_admins|length }})</h2>
                         
                         <!-- MODIFICATION 1: Affichage conditionnel des boutons SANS message pour non-super admins -->
-                        {% if is_super_admin %}
+                        {% if is_admin %}
                             <div class="header-actions">
                                 <button class="btn-add" onclick="openAddRecruiterModal()">
                                     <i class="fas fa-user-plus"></i>
@@ -228,7 +228,7 @@
                                 <div class="user-email" title="{{ admin.email }}">{{ admin.email }}</div>
                                 <div class="user-meta">
                                     <span class="user-role">
-                                    {% if admin.role == "super_admin" %}
+                                    {% if admin.role == "admin" %}
                                         Admin
                                     {% else %}
                                         {{ admin.role|title }}
@@ -246,12 +246,12 @@
                             </div>
                             
                             <!-- Actions utilisateur (optionnel - seulement pour super admins) -->
-                            {% if is_super_admin %}
+                            {% if is_admin %}
                             <div class="user-actions">
                                 <button class="btn-icon-small" onclick="editUser({{ admin.id }})" title="Modifier l'utilisateur">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                {% if admin.role != 'super_admin' %}
+                                {% if admin.role != 'admin' %}
                                 <button class="btn-icon-small btn-danger" onclick="deactivateUser({{ admin.id }})" title="Désactiver l'utilisateur">
                                     <i class="fas fa-user-slash"></i>
                                 </button>
@@ -282,7 +282,7 @@
     </div>
 
     <!-- Modals affichés seulement pour les super admins -->
-    {% if is_super_admin %}
+    {% if is_admin %}
     <!-- Modal Ajouter Recruteur -->
     <div class="modal-overlay" id="addRecruiterModal">
         <div class="modal">
@@ -504,11 +504,11 @@
     <script>
         // Initialisation spécifique à la page
         document.addEventListener('DOMContentLoaded', function() {
-            // Vérifier si l'utilisateur est super admin
-            const isSuperAdmin = {{ 'true' if is_super_admin else 'false' }};
+            // Vérifier si l'utilisateur est admin
+            const isAdmin = {{ 'true' if is_admin else 'false' }};
             
-            // Si ce n'est pas un super admin, s'assurer que les modals sont bien cachés
-            if (!isSuperAdmin) {
+            // Si ce n'est pas un admin, s'assurer que les modals sont bien cachés
+            if (!isAdmin) {
                 const recruiterModal = document.getElementById('addRecruiterModal');
                 const deptHeadModal = document.getElementById('addDepartmentHeadModal');
                 

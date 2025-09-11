@@ -84,7 +84,7 @@ class HRAdmin(Base):
     password_hash = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    role = Column(Enum('super_admin', 'recruiter', 'department_head'), default='recruiter')
+    role = Column(Enum('super_admin', 'recruiter', 'department_head','admin'), default='recruiter')
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)  # Nouveau champ
     last_login = Column(DateTime)
@@ -495,3 +495,4 @@ class QuizAnswer(Base):
     # Relationships
     attempt = relationship("QuizAttempt", backref="answers")
     question = relationship("QuizQuestion")
+

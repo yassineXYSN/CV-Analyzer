@@ -53,16 +53,16 @@ class UpdateUserRequest(BaseModel):
     permissions: Optional[dict] = None
     departments: Optional[list[int]] = None
 
-def check_super_admin_permission(user_id: int) -> bool:
+def check_admin_permission(user_id: int) -> bool:
     """
-    Vérifie si l'utilisateur actuel est un super admin
+    Vérifie si l'utilisateur actuel est un admin
     """
     db = SessionLocal()
     try:
         user = db.query(models.HRAdmin).filter(models.HRAdmin.id == user_id).first()
         if not user:
             return False
-        return user.role == "super_admin"
+        return user.role == "admin"
     except Exception as e:
         print(f"Erreur lors de la vérification des permissions: {e}")
         return False
@@ -91,8 +91,8 @@ def company_profile_page(request: Request):
         if not user_id:
             return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
         
-        # Vérification des permissions super admin
-        is_super_admin = check_super_admin_permission(user_id)
+        # Vérification des permissions admin
+        is_admin = check_admin_permission(user_id)
         
         # Récupération des données de l'entreprise
         company = get_user_company(user_id)
@@ -109,7 +109,7 @@ def company_profile_page(request: Request):
             "company": company,
             "company_admins": company_admins,
             "departments": departments,
-            "is_super_admin": is_super_admin  # Nouveau paramètre pour les permissions
+            "is_admin": is_admin  # Nouveau paramètre pour les permissions
         })
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
@@ -162,8 +162,8 @@ async def create_user(user_data: dict):
         if not current_user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
         
-        # NOUVELLE VÉRIFICATION: Seuls les super admins peuvent créer des utilisateurs
-        if not check_super_admin_permission(current_user_id):
+        # NOUVELLE VÉRIFICATION: Seuls les admins peuvent créer des utilisateurs
+        if not check_admin_permission(current_user_id):
             return {
                 "success": False, 
                 "message": "Accès refusé. Seuls les super administrateurs peuvent créer des comptes recruteur et chef de département."
@@ -171,10 +171,10 @@ async def create_user(user_data: dict):
         
         # Vérification supplémentaire du rôle demandé
         requested_role = user_data.get('role', '')
-        if requested_role not in ['recruiter', 'department_head']:
+        if requested_role not in ['admin', 'recruiter', 'department_head']:
             return {
                 "success": False,
-                "message": "Rôle non autorisé. Seuls les rôles 'recruiter' et 'department_head' peuvent être créés."
+                "message": "Rôle non autorisé. Seuls les rôles 'admin', 'recruiter' et 'department_head' peuvent être créés."
             }
         
         db = SessionLocal()
@@ -274,6 +274,7 @@ async def create_user(user_data: dict):
             db.commit()
             
             role_names = {
+                'admin': 'Admin',
                 'recruiter': 'Recruteur',
                 'department_head': 'Chef de Département'
             }
@@ -299,7 +300,7 @@ async def get_user_details(admin_id: int):
         if not current_user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
 
-        if not check_super_admin_permission(current_user_id):
+        if not check_admin_permission(current_user_id):
             return {"success": False, "message": "Accès refusé"}
 
         db = SessionLocal()
@@ -343,7 +344,7 @@ async def update_user(admin_id: int, update: UpdateUserRequest):
         if not current_user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
 
-        if not check_super_admin_permission(current_user_id):
+        if not check_admin_permission(current_user_id):
             return {"success": False, "message": "Accès refusé"}
 
         db = SessionLocal()
@@ -416,7 +417,7 @@ async def delete_user(admin_id: int):
         if not current_user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
 
-        if not check_super_admin_permission(current_user_id):
+        if not check_admin_permission(current_user_id):
             return {"success": False, "message": "Accès refusé"}
 
         db = SessionLocal()
@@ -425,9 +426,9 @@ async def delete_user(admin_id: int):
             if not admin:
                 return {"success": False, "message": "Utilisateur non trouvé"}
 
-            # Prevent deleting last super_admin or self if desired; here allow deleting non-super_admin
-            if admin.role == 'super_admin':
-                return {"success": False, "message": "Impossible de supprimer un super administrateur"}
+            # Prevent deleting last admin or self if desired; here allow deleting non-admin
+            if admin.role == 'admin':
+                return {"success": False, "message": "Impossible de supprimer un administrateur"}
 
             # Delete relations
             db.query(models.AdminCompanyAccess).filter(models.AdminCompanyAccess.admin_id == admin.id).delete()
@@ -486,13 +487,13 @@ async def check_user_permissions():
         if not user_id:
             return {"success": False, "message": "Utilisateur non connecté"}
         
-        is_super_admin = check_super_admin_permission(user_id)
+        is_admin = check_admin_permission(user_id)
         
         return {
             "success": True,
             "permissions": {
-                "is_super_admin": is_super_admin,
-                "can_create_users": is_super_admin
+                "is_admin": is_admin,
+                "can_create_users": is_admin
             }
         }
     except Exception as e:

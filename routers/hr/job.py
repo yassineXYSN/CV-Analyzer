@@ -4,7 +4,7 @@ from databasehr.database import SessionLocal
 from databasehr.models import Job, Department, Employee, Application, ProfileCandidat, Contact, HRAdmin, JobSkill, Notification, User, Quiz, QuizAttempt
 from databasehr.session_manager import current_user_session
 from company_utils import get_user_company
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Optional, List
 from .admin_router import publish_event
 from .websocket_manager import hr_websocket_manager
@@ -40,6 +40,30 @@ async def create_job(job_data: JobRequest):
         company = get_user_company(user_id)
         if not company:
             raise HTTPException(status_code=404, detail="Aucune entreprise associée")
+        
+        # Validation de la date limite (ne doit pas dépasser 1 an)
+        if job_data.deadline:
+            try:
+                deadline_date = datetime.strptime(job_data.deadline, "%Y-%m-%d").date()
+                max_deadline = date.today() + timedelta(days=365)  # 1 an maximum
+                
+                if deadline_date > max_deadline:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"La date limite ne peut pas dépasser 1 an. Date maximum autorisée: {max_deadline.strftime('%d/%m/%Y')}"
+                    )
+                
+                if deadline_date < date.today():
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="La date limite ne peut pas être dans le passé"
+                    )
+                    
+            except ValueError:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Format de date invalide. Utilisez le format YYYY-MM-DD"
+                )
         
         db = SessionLocal()
         try:
@@ -540,8 +564,8 @@ async def accept_application(application_id: int, status_data: dict):
             
             status = status_data.get("status", "accepted_pending_validation")
             
-            # Seuls les super admins peuvent accepter définitivement
-            if status == "accepted" and admin.role != "super_admin":
+            # Seuls les admins peuvent accepter définitivement
+            if status == "accepted" and admin.role != "admin":
                 return {"success": False, "message": "Seuls les administrateurs peuvent valider définitivement"}
             
             application.status = status

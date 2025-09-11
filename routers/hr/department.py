@@ -271,7 +271,7 @@ async def get_departments():
                 print(f"📋 Départements assignés trouvés: {len(departments)}")
                 
             else:
-                # Pour les super_admin et recruiter, montrer tous les départements
+                # Pour les admin et recruiter, montrer tous les départements
                 print(f"👑 Admin/Recruteur connecté: {current_admin.role}")
                 departments = db.query(Department).outerjoin(
                     HRAdmin, Department.manager_id == HRAdmin.id

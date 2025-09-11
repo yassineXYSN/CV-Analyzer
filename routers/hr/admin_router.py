@@ -14,7 +14,7 @@ from databasehr.database import get_db
 from databasehr.models import Company, Employee, AdminCompanyAccess, HRAdmin, Job, Application, Department, ActivityLog
 from sqlalchemy import func, extract
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix="/super-admin", tags=["super-admin"])
 
 templates = Jinja2Templates(directory="templates")
 
@@ -749,6 +749,50 @@ async def get_company_admins(company_id: int, db: Session = Depends(get_db)):
         }
         for admin in admins
     ]
+
+@router.post("/login")
+async def super_admin_login(login_data: dict, db: Session = Depends(get_db)):
+    """Authentifier un super admin"""
+    try:
+        email = login_data.get("email")
+        password = login_data.get("password")
+        
+        if not email or not password:
+            return {"success": False, "message": "Email et mot de passe requis"}
+        
+        # Vérifier si l'utilisateur existe et est un super admin
+        user = db.query(HRAdmin).filter(HRAdmin.email == email).first()
+        
+        if not user:
+            return {"success": False, "message": "Email ou mot de passe incorrect"}
+        
+        # Vérifier le mot de passe
+        from auth_utils import verify_password
+        if not verify_password(password, user.password_hash):
+            return {"success": False, "message": "Email ou mot de passe incorrect"}
+        
+        # Vérifier que c'est un super admin
+        if user.role != "super_admin":
+            return {"success": False, "message": "Accès refusé. Seuls les super administrateurs peuvent accéder à cette interface."}
+        
+        # Mettre à jour la dernière connexion
+        user.last_login = datetime.now()
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Connexion super admin réussie",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.role
+            }
+        }
+        
+    except Exception as e:
+        return {"success": False, "message": f"Erreur lors de la connexion: {str(e)}"}
 
 @router.post("/api/login")
 async def login_user(login_data: dict, db: Session = Depends(get_db)):

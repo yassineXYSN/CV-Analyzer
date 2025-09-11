@@ -31,16 +31,16 @@ def check_hr_authentication():
         return RedirectResponse(url="/hr-login", status_code=302)
     return None
 
-def check_super_admin_permission(user_id: int) -> bool:
+def check_admin_permission(user_id: int) -> bool:
     """
-    Vérifie si l'utilisateur actuel est un super admin
+    Vérifie si l'utilisateur actuel est un admin
     """
     db = SessionLocal()
     try:
         user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
         if not user:
             return False
-        return user.role == "super_admin"
+        return user.role == "admin"
     except Exception as e:
         print(f"Erreur lors de la vérification des permissions: {e}")
         return False
@@ -450,7 +450,7 @@ async def get_current_user():
                 )
             
             # Vérifier les permissions
-            is_super_admin = check_super_admin_permission(user_id)
+            is_admin = check_admin_permission(user_id)
             
             # Return user data with permissions
             user_data = {
@@ -461,8 +461,8 @@ async def get_current_user():
                 "role": user.role,
                 "last_login": user.last_login.strftime("%d/%m/%Y %H:%M") if user.last_login else None,
                 "permissions": {
-                    "is_super_admin": is_super_admin,
-                    "can_create_users": is_super_admin
+                    "is_admin": is_admin,
+                    "can_create_users": is_admin
                 }
             }
             
