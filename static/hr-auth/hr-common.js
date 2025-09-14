@@ -7,7 +7,7 @@ function checkAuthentication() {
     const token = localStorage.getItem('hr_access_token');
     if (!token) {
         console.log("❌ HR COMMON: No authentication token found, redirecting to login");
-        window.location.replace("/hr-login");
+        window.location.replace("/enterprise-login");
         return false;
     }
     
@@ -18,13 +18,13 @@ function checkAuthentication() {
         if (payload.exp && payload.exp < now) {
             console.log("❌ HR COMMON: Token expired, redirecting to login");
             localStorage.clear();
-            window.location.replace("/hr-login");
+            window.location.replace("/enterprise-login");
             return false;
         }
     } catch (error) {
         console.log("❌ HR COMMON: Invalid token, redirecting to login");
         localStorage.clear();
-        window.location.replace("/hr-login");
+        window.location.replace("/enterprise-login");
         return false;
     }
     
@@ -47,7 +47,7 @@ window.addEventListener('popstate', function(event) {
     const token = localStorage.getItem('hr_access_token');
     if (!token) {
         console.log("🚫 HR COMMON: Back button blocked - no authentication");
-        window.location.replace("/hr-login");
+        window.location.replace("/enterprise-login");
     }
 });
 
@@ -64,7 +64,7 @@ function logout() {
     sessionStorage.clear();
     
     // Force reload to clear any cached data
-    window.location.replace("/hr-login");
+    window.location.replace("/enterprise-login");
 }
 
 // Initialize authentication check on page load

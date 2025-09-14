@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn('[SSE] Unable to initialize EventSource:', e)
   }
   // Apply saved theme if any
-  const savedTheme = localStorage.getItem('admin_theme') || 'dark'
+  const savedTheme = localStorage.getItem('admin_theme') || 'purple'
   applyTheme(savedTheme)
   highlightActiveTheme(savedTheme)
   console.log("[v0] Admin interface loaded successfully")
@@ -1290,6 +1290,14 @@ function closeModal(modalId) {
 async function createCompany(event) {
   event.preventDefault()
   const formData = new FormData(event.target)
+  const submitButton = event.target.querySelector('.btn-create')
+  
+  // Store original button content
+  const originalContent = submitButton.innerHTML
+  
+  // Show loading state
+  submitButton.disabled = true
+  submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création en cours...'
 
   const companyData = {
     company_name: formData.get("company_name"), // Changed from name to company_name
@@ -1328,6 +1336,10 @@ async function createCompany(event) {
   } catch (error) {
     console.error("Error creating company:", error)
     showNotification("Erreur de connexion", "error")
+  } finally {
+    // Restore original button state
+    submitButton.disabled = false
+    submitButton.innerHTML = originalContent
   }
 }
 
@@ -1431,6 +1443,14 @@ async function deleteCompany(companyId) {
 async function createUser(event) {
   event.preventDefault()
   const formData = new FormData(event.target)
+  const submitButton = event.target.querySelector('.btn-create')
+  
+  // Store original button content
+  const originalContent = submitButton.innerHTML
+  
+  // Show loading state
+  submitButton.disabled = true
+  submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création en cours...'
 
   const userData = {
     first_name: formData.get("first_name"),
@@ -1465,7 +1485,6 @@ async function createUser(event) {
         updateStatistics()
       } catch (updateError) {
         console.warn("[v0] Error updating UI after user creation:", updateError)
-        showNotification("Utilisateur créé avec succès", "success")
       }
     } else {
       const errorText = await response.text()
@@ -1484,10 +1503,22 @@ async function createUser(event) {
   } catch (error) {
     console.error("[v0] Error creating user:", error)
     showNotification("Erreur de connexion au serveur", "error")
+  } finally {
+    // Restore original button state
+    submitButton.disabled = false
+    submitButton.innerHTML = originalContent
   }
 }
 
 async function resendVerification(userId) {
+  // Find the button that was clicked
+  const button = event.target.closest('button')
+  const originalContent = button.innerHTML
+  
+  // Show loading state
+  button.disabled = true
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'
+  
   try {
     const response = await fetch(`/super-admin/api/users/${userId}/resend-verification`, {
       method: "POST",
@@ -1502,6 +1533,10 @@ async function resendVerification(userId) {
   } catch (error) {
     console.error("Error resending verification:", error)
     showNotification("Erreur de connexion", "error")
+  } finally {
+    // Restore original button state
+    button.disabled = false
+    button.innerHTML = originalContent
   }
 }
 

@@ -28,7 +28,7 @@ def check_hr_authentication():
     user_id = current_user_session.get('user_id')
     if not user_id:
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/hr-login", status_code=302)
+        return RedirectResponse(url="/enterprise-login", status_code=302)
     return None
 
 def check_admin_permission(user_id: int) -> bool:

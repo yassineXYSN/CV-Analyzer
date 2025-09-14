@@ -48,7 +48,7 @@ async function loadCurrentUser() {
     } else {
       console.error("Erreur chargement utilisateur:", result.message)
       if (result.message === "Utilisateur non connecté") {
-        window.location.href = "/hr-login"
+        window.location.href = "/enterprise-login"
       }
     }
   } catch (error) {

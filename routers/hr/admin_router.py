@@ -368,7 +368,7 @@ async def update_last_login(user_id: int, db: Session = Depends(get_db)):
     
 from fastapi.responses import RedirectResponse
 
-@router.get("/hr-login", response_class=HTMLResponse)
+@router.get("/enterprise-login", response_class=HTMLResponse)
 def hr_login_page(request: Request):
     return templates.TemplateResponse("HR-dep/auth/hr-login.html?message=email_verified", {"request": request})
 

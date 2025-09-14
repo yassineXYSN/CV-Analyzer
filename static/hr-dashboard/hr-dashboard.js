@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function checkAuthentication() {
   const token = localStorage.getItem('hr_access_token');
   if (!token) {
-    window.location.replace("/hr-login");
+    window.location.replace("/enterprise-login");
     return false;
   }
   
@@ -37,12 +37,12 @@ function checkAuthentication() {
     const now = Math.floor(Date.now() / 1000);
     if (payload.exp && payload.exp < now) {
       localStorage.clear();
-      window.location.replace("/hr-login");
+      window.location.replace("/enterprise-login");
       return false;
     }
   } catch (error) {
     localStorage.clear();
-    window.location.replace("/hr-login");
+    window.location.replace("/enterprise-login");
     return false;
   }
   
@@ -63,7 +63,7 @@ window.addEventListener('pageshow', function(event) {
 window.addEventListener('popstate', function(event) {
   const token = localStorage.getItem('hr_access_token');
   if (!token) {
-    window.location.replace("/hr-login");
+    window.location.replace("/enterprise-login");
   }
 });
 
@@ -1459,7 +1459,7 @@ async function loadCurrentUser() {
     } else {
       console.error("❌ FRONTEND: Erreur chargement utilisateur:", result.message)
       if (result.message === "Utilisateur non connecté") {
-        window.location.href = "/hr-login"
+        window.location.href = "/enterprise-login"
       }
     }
   } catch (error) {
@@ -1648,7 +1648,7 @@ function logout() {
   sessionStorage.clear();
   
   // Force reload to clear any cached data
-  window.location.replace("/hr-login");
+  window.location.replace("/enterprise-login");
 }
 
 // Gestion des modals - FONCTIONS AMÉLIORÉES POUR LE CSS

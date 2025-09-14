@@ -36,7 +36,7 @@ class LoginResponse(BaseModel):
 def login_page(request: Request):
     return templates.TemplateResponse("client-dep/auth/client-login.html", {"request": request})
 
-@router.get("/hr-login", response_class=HTMLResponse)
+@router.get("/enterprise-login", response_class=HTMLResponse)
 def hr_login_page(request: Request):
     return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
 

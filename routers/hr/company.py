@@ -75,7 +75,7 @@ def company_setup_page(request: Request):
     user_id = current_user_session.get('user_id')
     if not user_id:
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/hr-login", status_code=302)
+        return RedirectResponse(url="/enterprise-login", status_code=302)
     
     response = templates.TemplateResponse("HR-dep/company-setup.html", {"request": request})
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
