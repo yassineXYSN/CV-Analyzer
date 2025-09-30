@@ -22,7 +22,7 @@ templates_dir = os.path.join(BASE_DIR, "templates")
 templates = Jinja2Templates(directory=templates_dir)
 
 # n8n webhook URL (set N8N_WEBHOOK_URL in env to override)
-N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")
+N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")+"/cv-upload"
 
 # Optional polling endpoint if your n8n exposes one (leave empty if not used)
 N8N_RESULT_URL = os.getenv("N8N_RESULT_URL")

@@ -676,7 +676,7 @@ async def apply_to_job(job_id: int, application_data: ApplicationRequest, reques
         if existing_application:
             return {"success": False, "message": "Vous avez déjà postulé à cette offre"}
 
-        URL = os.getenv("N8N_COMP_WEBHOOK_URL")
+        URL = os.getenv("N8N_WEBHOOK_URL")+"/compatibility"
         print("Sending variable to n8n...")
 
         # Example variable (can be dict, list, etc.)

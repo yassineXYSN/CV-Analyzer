@@ -1660,10 +1660,10 @@ async def ai_analyze_quiz(application_id: int, db: Session = Depends(get_db)):
             "quiz_data": quiz_data
         }
         # Send data to N8N webhook for AI analysis
-        url = os.getenv("N8N_ANALYZE_QUIZ_WEBHOOK_URL")
+        url = os.getenv("N8N_WEBHOOK_URL")+"/analyze-quiz"
         if not url:
-            return {"success": False, "message": "N8N_ANALYZE_QUIZ_WEBHOOK_URL not configured"}
-        
+            return {"success": False, "message": "N8N_WEBHOOK_URL not configured"}
+
         response = req.post(url, json=analysis_data)
         if response.status_code != 200:
             return {"success": False, "message": f"Failed to send data to n8n. Status code: {response.status_code}"}
