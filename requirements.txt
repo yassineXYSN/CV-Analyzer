@@ -8,13 +8,10 @@ jinja2==3.1.2
 python-dotenv==1.0.0
 sqlalchemy==2.0.23
 cryptography==41.0.7
-sqlalchemy-utils==0.41.2
+sqlalchemy-utils
 pymysql==1.1.1
+httpx
 bcrypt==4.0.1
 passlib==1.7.4
-aiohttp==3.9.1
 PyJWT==2.10.1
 requests==2.31.0
-opencv-python
-httpx
-tensorflow==2.14.0
