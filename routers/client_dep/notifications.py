@@ -74,14 +74,24 @@ async def notifications_page(request: Request, db: Session = Depends(get_db)):
             "error": "Vous devez être connecté pour voir vos notifications"
         })
     
-    # Get notifications from the notifications table
-    notifications = db.query(Notification).filter(
-        Notification.user_id == current_user.id
-    ).order_by(Notification.created_at.desc()).all()
+    # Get notifications from the notifications table (safe)
+    try:
+        notifications = db.query(Notification).filter(
+            Notification.user_id == current_user.id
+        ).order_by(Notification.created_at.desc()).all()
+    except Exception as e:
+        print(f"Error loading notifications for user {current_user.id}: {e}")
+        notifications = []
     
     # Convert to the format expected by the template
     notification_list = []
     for notif in notifications:
+        safe_created_at_str = ""
+        try:
+            if getattr(notif, "created_at", None):
+                safe_created_at_str = notif.created_at.strftime('%d/%m/%Y à %H:%M')
+        except Exception:
+            safe_created_at_str = ""
         notification_data = {
             'id': notif.id,
             'type': notif.type,
@@ -91,6 +101,8 @@ async def notifications_page(request: Request, db: Session = Depends(get_db)):
             'job_title': notif.job_title,
             'company_name': notif.company_name,
             'timestamp': notif.created_at,
+            'created_at': notif.created_at,
+            'created_at_str': safe_created_at_str,
             'is_read': notif.is_read,
             'job_id': notif.job_id,
             'application_id': notif.application_id

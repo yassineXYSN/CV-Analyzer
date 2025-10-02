@@ -422,7 +422,7 @@ display: inline-block;
                 <div class="notification-item {% if not notification.is_read %}unread{% else %}read{% endif %}" data-id="{{ notification.id }}">
                     <div class="notification-header">
                         <h3 class="notification-title">{{ notification.title }}</h3>
-                        <span class="notification-time">{{ notification.created_at.strftime('%d/%m/%Y à %H:%M') }}</span>
+                        <span class="notification-time">{{ notification.created_at_str }}</span>
                     </div>
                     <div class="notification-message">
                         {{ notification.message }}
@@ -543,7 +543,7 @@ display: inline-block;
     }
 
     function markAsRead(notificationId) {
-        fetch(`/api/notifications/${notificationId}/read`, {
+        fetch(`/api/notifications/${notificationId}/mark-read`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -613,5 +613,6 @@ display: inline-block;
         }
     }
 </script>
+<script src="/static/client-dep/js/header.js" defer></script>
 </body>
 </html>
