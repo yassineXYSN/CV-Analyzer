@@ -945,8 +945,6 @@ function getFilterText(filter) {
     all: "",
     pending: "en attente",
     reviewed: "examinée",
-    interview_scheduled: "programmée pour entretien",
-    interview_completed: "entretien terminé",
     accepted: "acceptée",
     rejected: "rejetée",
   }
@@ -965,8 +963,6 @@ function getStatusText(status) {
   const statusTexts = {
     pending: "En attente",
     reviewed: "Examinée",
-    interview_scheduled: "Programmée pour entretien",
-    interview_completed: "Entretien terminé",
     accepted: "Acceptée",
     rejected: "Rejetée",
   }

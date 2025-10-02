@@ -352,9 +352,6 @@ function renderApplicationsWithCompatibility(filter = "all") {
     <button class="app-btn info" onclick="viewJobDetails(${app.job_id})">
       <i class="fas fa-info-circle"></i> Détails du poste
     </button>
-      <button class="app-btn schedule" onclick="openScheduler(${app.id}, ${app.candidate_id})">
-    <i class="fas fa-calendar-check"></i> Planifier Entretien
-  </button>
     ${renderApplicationActionButtons(app)}
   </div>
 </div>
@@ -372,173 +369,10 @@ availableSlots = {
 };
 
 // Chaque candidat aura son propre tableau de créneaux sélectionnés
-const selectedSlotsByCandidate = {};
-let currentDay = null,
-  currentAppId = null,
-  currentCandidateId = null;
 
-function openScheduler(appId, candidateId) {
-  currentAppId = appId;
-  currentCandidateId = candidateId;
 
-  if (!selectedSlotsByCandidate[candidateId]) {
-    selectedSlotsByCandidate[candidateId] = [];
-  }
 
-  document.getElementById("candidate-info").innerText = `Planification d’entretien pour le candidat #${candidateId}`;
 
-  const today = new Date().toISOString().split("T")[0];
-  const dayInput = document.getElementById("daySelect");
-  dayInput.setAttribute("min", today);
-  dayInput.value = today;
-
-  showTimeSlots();
-  document.getElementById("schedulerModal").style.display = "flex";
-}
-
-function closeScheduler() {
-  document.getElementById("schedulerModal").style.display = "none";
-}
-
-function showTimeSlots() {
-  currentDay = document.getElementById("daySelect").value;
-  const container = document.getElementById("timeSlotsContainer");
-  container.innerHTML = "";
-
-  Object.keys(availableSlots).forEach((time) => {
-    const div = document.createElement("div");
-    div.classList.add("time-slot");
-    div.innerText = availableSlots[time];
-
-    const slotKey = `${currentDay} ${time}`;
-    if (selectedSlotsByCandidate[currentCandidateId].includes(slotKey)) {
-      div.classList.add("selected");
-    }
-
-    div.onclick = () => toggleSlot(div, currentDay, time);
-    container.appendChild(div);
-  });
-
-  updateSelectedDisplay();
-}
-
-function toggleSlot(element, day, time) {
-  const slotKey = `${day} ${time}`;
-  let candidateSlots = selectedSlotsByCandidate[currentCandidateId];
-
-  if (candidateSlots.includes(slotKey)) {
-    candidateSlots = candidateSlots.filter((s) => s !== slotKey);
-    element.classList.remove("selected");
-  } else {
-    if (candidateSlots.filter((s) => s.startsWith(day)).length >= 3) return;
-    candidateSlots.push(slotKey);
-    element.classList.add("selected");
-  }
-  selectedSlotsByCandidate[currentCandidateId] = candidateSlots;
-  updateSelectedDisplay();
-}
-
-function updateSelectedDisplay() {
-  const container = document.getElementById("selected-slots");
-  const list = document.getElementById("selected-list");
-  const candidateSlots = selectedSlotsByCandidate[currentCandidateId] || [];
-  const daySlots = candidateSlots.filter((s) => s.startsWith(currentDay));
-  const allSlots = document.querySelectorAll(".time-slot");
-
-  if (daySlots.length > 0) {
-    container.style.display = "block";
-    list.innerHTML = daySlots
-      .map(
-        (slot) => `<span class="slot-tag" onclick="removeSlot('${slot}')">${slot} <i class="fas fa-times"></i></span>`
-      )
-      .join("");
-  } else {
-    container.style.display = "none";
-  }
-
-  allSlots.forEach((slot) => {
-    if (!slot.classList.contains("selected")) {
-      if (daySlots.length >= 3) slot.classList.add("disabled");
-      else slot.classList.remove("disabled");
-    }
-  });
-}
-
-function removeSlot(slot) {
-  let candidateSlots = selectedSlotsByCandidate[currentCandidateId];
-  candidateSlots = candidateSlots.filter((s) => s !== slot);
-  selectedSlotsByCandidate[currentCandidateId] = candidateSlots;
-  showTimeSlots();
-}
-
-// --- Nouvelle fonction pour appeler le backend ---
-function sendInterviewNotification(applicationId, candidateId, slots) {
-
-  // Validate slots format (e.g., "YYYY-MM-DD HH:MM")
-  const slotRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
-  if (!Array.isArray(slots) || slots.length === 0 || !slots.every(s => typeof s === 'string' && slotRegex.test(s))) {
-    console.error("Invalid slots format. Expected format: YYYY-MM-DD HH:MM");
-    showNotification("Erreur: Les créneaux doivent être au format YYYY-MM-DD HH:MM", "error");
-    return Promise.reject(new Error("Invalid slots format"));
-  }
-
-  // Validate currentUser
-  const recruiterId = currentUser ? currentUser.id : null;
-  if (!recruiterId) {
-    console.error("No current user or recruiter_id found");
-    showNotification("Erreur: Utilisateur non connecté", "error");
-    return Promise.reject(new Error("No current user"));
-  }
-
-  // Log the payload for debugging
-  const payload = {
-    application_id: applicationId,
-    candidate_id: candidateId,
-    slots: slots, // Changed from scheduled_slots to slots
-    recruiter_id: recruiterId
-  };
-  console.log("Request payload:", payload);
-
-  return fetch(`/api/schedule-interview/${applicationId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
-    .then((res) => {
-      if (!res.ok) {
-        return res.json().then((data) => {
-          throw new Error(data.message || data.detail || `HTTP error! status: ${res.status}`);
-        });
-      }
-      return res.json();
-    })
-    .then((data) => {
-      if (!data.success) {
-        console.error(`❌ FRONTEND: Failed to send notification: ${data.message || data.detail}`);
-        showNotification(`Erreur: ${data.message || data.detail || "Échec de l'envoi de la notification"}`, "error");
-        throw new Error(data.message || data.detail || "Failed to send notification");
-      }
-      showNotification("✅ Notification d'entretien envoyée avec succès", "success");
-      return data;
-    })
-    .catch((err) => {
-      console.error("❌ FRONTEND: Error during API call:", err);
-      showNotification(`Erreur serveur: ${err.message || "Veuillez réessayer plus tard"}`, "error");
-      throw err;
-    });
-}
-function confirmSchedule() {
-  const candidateSlots = selectedSlotsByCandidate[currentCandidateId] || [];
-  if (candidateSlots.length === 0) {
-    alert("Veuillez sélectionner au moins un créneau.");
-    return;
-  }
-
-  sendInterviewNotification(currentAppId, currentCandidateId, candidateSlots);
-
-  alert(`✅ Entretien planifié pour candidature ${currentAppId} - Créneaux: ${candidateSlots.join(", ")}`);
-  closeScheduler();
-}
 // FONCTION CORRIGÉE: Rendre les boutons d'action selon le rôle utilisateur
 function renderApplicationActionButtons(app) {
   if (!currentUser) return ""
@@ -570,18 +404,6 @@ function renderApplicationActionButtons(app) {
   if (currentUser.role === "recruiter") {
     return `
 
-${
-  app.status === "interview_scheduled"
-    ? `
-  <button class="app-btn complete" onclick="completeInterview(${app.id})">
-    <i class="fas fa-check"></i> Terminer Entretien
-  </button>
-  <button class="app-btn reschedule" onclick="rescheduleInterview(${app.id})">
-    <i class="fas fa-calendar-alt"></i> Reprogrammer
-  </button>
-  `
-    : ""
-}
 ${
   app.status === "interview_completed" || app.status === "reviewed"
     ? `
@@ -2573,7 +2395,6 @@ function getFilterText(filter) {
     all: "",
     pending: "en attente",
     reviewed: "examinées",
-    interview_scheduled: "avec entretien programmé",
     accepted: "acceptées",
     rejected: "rejetées",
     recommended: "recommandées",
@@ -2585,7 +2406,6 @@ function getStatusText(status) {
   const statusTexts = {
     pending: "En attente",
     reviewed: "Examinée",
-    interview_scheduled: "Entretien programmé",
     accepted: "Acceptée",
     rejected: "Rejetée",
   }

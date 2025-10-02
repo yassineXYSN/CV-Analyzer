@@ -866,9 +866,6 @@ html {
   border-left: 4px solid #9ca3af;
 }
 
-.application-card.interview_scheduled {
-  border-left: 4px solid #8b5cf6;
-}
 
 .application-card.accepted {
   border-left: 4px solid #10b981;
@@ -996,11 +993,6 @@ html {
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-.application-status.interview_scheduled {
-  background: rgba(139, 92, 246, 0.2);
-  color: #8b5cf6;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-}
 
 .application-status.accepted {
   background: rgba(16, 185, 129, 0.2);
@@ -1098,17 +1090,6 @@ html {
 
 .app-btn.review:hover {
   background: rgba(59, 130, 246, 0.2);
-  transform: translateY(-1px);
-}
-
-.app-btn.schedule {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-}
-
-.app-btn.schedule:hover {
-  background: rgba(139, 92, 246, 0.2);
   transform: translateY(-1px);
 }
 

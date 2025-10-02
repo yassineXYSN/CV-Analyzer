@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 import json
 from .email_service import EmailService, generate_verification_token, save_verification_token, verify_token
 from routers.hr.schemas import CompanyCreate, EmployeeCreate
-from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List
@@ -249,6 +249,7 @@ async def delete_company(company_id: int, db: Session = Depends(get_db)):
 @router.post("/api/users")
 async def create_user(user_data: dict, db: Session = Depends(get_db)):
     """Créer un nouveau utilisateur avec vérification d'email"""
+    print(f"🔍 CREATE USER: Données reçues: {user_data}")
     try:
         # Validation des données requises
         required_fields = ["first_name", "last_name", "email", "password"]
@@ -263,10 +264,14 @@ async def create_user(user_data: dict, db: Session = Depends(get_db)):
         
         password_hash = hash_password(user_data.get("password"))
         
-        valid_roles = ["super_admin", "recruiter", "department_head"]
-        role = user_data.get("role", "recruiter")
+        valid_roles = ["super_admin", "recruiter", "department_head", "admin"]
+        role = user_data.get("role", "admin")
+        print(f"🔍 CREATE USER: Rôle extrait: '{role}'")
         if role not in valid_roles:
+            print(f"⚠️ CREATE USER: Rôle invalide '{role}', utilisation de 'recruiter'")
             role = "recruiter"
+        
+        print(f"🔍 CREATE USER: Rôle final: '{role}'")
         
         # Créer l'utilisateur avec is_active=False par défaut
         db_admin = HRAdmin(
@@ -375,22 +380,33 @@ def hr_login_page(request: Request):
 @router.get("/verify-email")
 async def verify_email(token: str, db: Session = Depends(get_db)):
     """Vérifier l'email d'un utilisateur et rediriger vers la page de connexion"""
-    user = verify_token(db, token)
-    if user:
-        # Rediriger vers la page de connexion HR avec un message de confirmation
-        # Broadcast real-time verification event
-        try:
-            await publish_event({
-                "type": "user_verified",
-                "user_id": user.id,
-                "email": user.email,
-                "timestamp": datetime.now().isoformat()
-            })
-        except Exception:
-            pass
-        return RedirectResponse(url="/hr-login?message=email_verified")
-    else:
-        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+    print(f"🔍 VERIFICATION: Token reçu: {token}")
+    
+    try:
+        user = verify_token(db, token)
+        print(f"🔍 VERIFICATION: Utilisateur trouvé: {user}")
+        
+        if user:
+            print(f"🔍 VERIFICATION: Utilisateur vérifié avec succès: {user.email}")
+            # Rediriger vers la page de connexion HR avec un message de confirmation
+            # Broadcast real-time verification event
+            try:
+                await publish_event({
+                    "type": "user_verified",
+                    "user_id": user.id,
+                    "email": user.email,
+                    "timestamp": datetime.now().isoformat()
+                })
+            except Exception as e:
+                print(f"⚠️ VERIFICATION: Erreur lors du broadcast: {e}")
+                pass
+            return RedirectResponse(url="/enterprise-login?message=email_verified")
+        else:
+            print(f"❌ VERIFICATION: Token invalide ou expiré")
+            raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+    except Exception as e:
+        print(f"❌ VERIFICATION: Erreur lors de la vérification: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la vérification: {str(e)}")
 
 @router.post("/api/users/{user_id}/resend-verification")
 async def resend_verification(user_id: int, db: Session = Depends(get_db)):
@@ -426,8 +442,8 @@ async def create_user_secure(user_data: dict, db: Session = Depends(get_db)):
                 raise HTTPException(status_code=400, detail=f"Le champ {field} est requis")
         
         # Validation du rôle
-        valid_roles = ["super_admin", "recruiter", "department_head"]
-        role = user_data.get("role", "recruiter")
+        valid_roles = ["super_admin", "recruiter", "department_head", "admin"]
+        role = user_data.get("role", "admin")
         if role not in valid_roles:
             role = "recruiter"
         

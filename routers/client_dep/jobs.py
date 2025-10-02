@@ -480,8 +480,6 @@ async def my_applications_page(request: Request, db: Session = Depends(get_db)):
     status_counts = {
         'pending': 0,
         'reviewed': 0,
-        'interview_scheduled': 0,
-        'interview_completed': 0,
         'accepted': 0,
         'rejected': 0,
         'withdrawn': 0

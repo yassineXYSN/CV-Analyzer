@@ -195,9 +195,10 @@
                         <input type="text" id="user-search" placeholder="Rechercher un utilisateur..." class="search-input">
                         <select id="user-role-filter" class="filter-select">
                             <option value="">Tous les rôles</option>
-                            <option value="super_admin">Admin</option>
-                            <option value="hr_manager">HR Manager</option>
-                            <option value="hr_admin">HR Admin</option>
+                            <option value="admin">Admin</option>
+                            <option value="super_admin">Super Admin</option>
+                            <option value="recruiter">Recruiter</option>
+                            <option value="department_head">Department Head</option>
                         </select>
                     </div>
                 </div>
@@ -498,9 +499,10 @@
                 <div class="form-group">
                     <label><i class="fas fa-user-tag"></i> Rôle</label>
                     <select name="role" required>
+                        <option value="admin" selected>Admin</option>
                         <option value="recruiter">Recruiter</option>
-                        <option value="department_head">Department_Head</option>
-                        <option value="super_admin"> Admin</option>
+                        <option value="department_head">Department Head</option>
+                        <option value="super_admin">Super Admin</option>
                     </select>
                 </div>
                 <div class="form-group">

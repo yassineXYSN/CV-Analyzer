@@ -84,7 +84,7 @@ class HRAdmin(Base):
     password_hash = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    role = Column(Enum('super_admin', 'recruiter', 'department_head','admin'), default='recruiter')
+    role = Column(Enum('super_admin', 'recruiter', 'department_head','admin'), default='admin')
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)  # Nouveau champ
     last_login = Column(DateTime)

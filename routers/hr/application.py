@@ -658,7 +658,7 @@ async def update_application_status(application_id: int, status_data: dict):
                         other_applications = db.query(Application).filter(
                             Application.job_id == job.id,
                             Application.id != application.id,
-                            Application.status.in_(['pending', 'reviewed', 'interview_scheduled'])
+                            Application.status.in_(['pending', 'reviewed'])
                         ).all()
 
                         for other_app in other_applications:
@@ -990,7 +990,7 @@ async def create_demo_applications():
                 return {"success": False, "message": "Aucun profil candidat disponible"}
             
             demo_applications = []
-            statuses = ['pending', 'reviewed', 'interview_scheduled', 'pending', 'reviewed']
+            statuses = ['pending', 'reviewed', 'pending', 'reviewed']
             
             for i, job in enumerate(jobs):
                 for j in range(min(2, len(candidates))):
@@ -1336,8 +1336,6 @@ async def analyze_quiz_with_ai(application_id: int, db: Session = Depends(get_db
         print(f"   Status: {application.status}")
         print(f"   HR Rating: {application.hr_rating}")
         print(f"   HR Notes: {application.hr_notes}")
-        print(f"   Interview Date: {application.interview_date}")
-        print(f"   Interview Notes: {application.interview_notes}")
         print(f"   Is Recommended: {application.is_recommended}")
         print(f"   Recommendation Priority: {application.recommendation_priority}")
         print(f"   Skills Validated: {application.skills_validated}")
@@ -1611,8 +1609,6 @@ async def ai_analyze_quiz(application_id: int, db: Session = Depends(get_db)):
                 "status": application.status,
                 "hr_rating": float(application.hr_rating) if application.hr_rating else None,
                 "hr_notes": application.hr_notes,
-                "interview_date": application.interview_date.isoformat() if application.interview_date else None,
-                "interview_notes": application.interview_notes,
                 "compatibility_score": float(application.compatibility_score) if application.compatibility_score else None,
                 "compatibility_reason": application.compatibility_reason
             },

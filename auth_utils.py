@@ -66,7 +66,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Vérifie un mot de passe"""
     return password_manager.verify_password(plain_password, hashed_password)
 
-def create_admin_user(email: str, password: str, first_name: str, last_name: str, role: str = "super_admin"):
+def create_admin_user(email: str, password: str, first_name: str, last_name: str, role: str = "admin"):
     """Crée un nouvel utilisateur admin avec mot de passe haché"""
     db = SessionLocal()
     try:
@@ -76,9 +76,9 @@ def create_admin_user(email: str, password: str, first_name: str, last_name: str
             print(f"❌ L'utilisateur {email} existe déjà!")
             return None
         
-        valid_roles = ["super_admin", "recruiter", "department_head"]
+        valid_roles = ["super_admin", "recruiter", "department_head", "admin"]
         if role not in valid_roles:
-            role = "recruiter"  # Valeur par défaut sécurisée
+            role = "admin"  # Valeur par défaut sécurisée
         
         # Hacher le mot de passe
         hashed_password = hash_password(password)

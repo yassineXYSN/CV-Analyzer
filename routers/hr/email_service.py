@@ -25,7 +25,7 @@ class EmailService:
             msg['Subject'] = "Vérifiez votre compte - CV Analyzer Pro"
             
             # Corps du message HTML stylisé
-            verification_url = f"http://localhost:8000/admin/verify-email?token={token}"
+            verification_url = f"http://localhost:8000/super-admin/verify-email?token={token}"
             html_body = f"""
             <!DOCTYPE html>
             <html>
