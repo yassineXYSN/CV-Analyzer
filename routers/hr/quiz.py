@@ -127,7 +127,7 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
             ]
         }
 
-        n8nurl = os.getenv("N8N_WEBHOOK_URL")+"/quiz-creation"
+        n8nurl = os.getenv("N8N_WEBHOOK_URL")+"/quiz-ceation"
         if not n8nurl:
             print("WARNING: N8N webhook URL not configured, quiz will be created without AI questions")
             # Continue without N8N webhook - quiz will be created but without AI-generated questions
