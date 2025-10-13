@@ -2313,6 +2313,11 @@ function generateReport() {
   window.location.href = "/hr-reports"
 }
 
+// Open conversation analysis
+function openConversationAnalysis() {
+  window.location.href = "/conversation-analysis"
+}
+
 // ==================== FONCTION DE RECHERCHE CORRIGÉE ====================
 function filterDepartments() {
   console.log("🔍 FRONTEND: Filtrage départements")

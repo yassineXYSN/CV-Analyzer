@@ -647,6 +647,72 @@ async def quiz_preview_page(request: Request, application_id: int):
             content={"error": f"Erreur lors du chargement de l'aperçu du quiz: {str(e)}"}
         )
 
+@router.get("/test-conversation")
+def test_conversation_route():
+    """Test route to verify conversation analysis is working"""
+    return JSONResponse(
+        status_code=200,
+        content={"success": True, "message": "Conversation analysis route is working!"}
+    )
+
+@router.get("/conversation-analysis", response_class=HTMLResponse)
+def conversation_analysis_page(request: Request):
+    """Display conversation analysis visualization page"""
+    # Check authentication
+    auth_check = check_hr_authentication()
+    if auth_check:
+        return auth_check
+    
+    response = templates.TemplateResponse("HR-dep/conversation-analysis.html", {"request": request})
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+@router.get("/api/conversation-analysis-data")
+async def get_conversation_analysis_data():
+    """API endpoint to serve conversation analysis data"""
+    try:
+        import json
+        import os
+        
+        # Path to the conversation analysis JSON file
+        analysis_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'test', 'complete_conversation_analysis.json')
+        
+        if not os.path.exists(analysis_file_path):
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "message": f"Analysis data file not found at: {analysis_file_path}"}
+            )
+        
+        # Read and parse the JSON file
+        with open(analysis_file_path, 'r', encoding='utf-8') as file:
+            analysis_data = json.load(file)
+        
+        # Process the data for visualization
+        processed_data = {
+            "conversation_segments": analysis_data,
+            "summary": {
+                "total_segments": len(analysis_data),
+                "total_duration": max([segment.get("end", 0) for segment in analysis_data]) if analysis_data else 0,
+                "speakers": list(set([segment.get("speaker", "Unknown") for segment in analysis_data])),
+                "emotions_detected": list(set([segment.get("dominant_emotion", "unknown") for segment in analysis_data if segment.get("dominant_emotion") != "unknown"])),
+                "languages_detected": list(set([segment.get("detected_language", "unknown") for segment in analysis_data]))
+            }
+        }
+        
+        return JSONResponse(
+            status_code=200,
+            content={"success": True, "data": processed_data}
+        )
+        
+    except Exception as e:
+        print(f"Error loading conversation analysis data: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Error loading analysis data: {str(e)}"}
+        )
+
 @router.websocket("/ws/dashboard/{user_id}")
 async def dashboard_websocket(websocket: WebSocket, user_id: int):
     """WebSocket endpoint pour les mises à jour en temps réel du dashboard HR"""

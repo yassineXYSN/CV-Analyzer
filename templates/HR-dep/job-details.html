@@ -43,6 +43,9 @@
           <h1><i class="fas fa-briefcase"></i> Détails du Poste</h1>
           <div class="header-actions">
               <div id="google_translate_global" style="margin-right: 8px;"></div>
+              <button class="action-btn conversation-analysis" onclick="openConversationAnalysis()">
+                  <i class="fas fa-comments"></i> Analyse Conversation
+              </button>
               <button class="action-btn" onclick="editJob()">
                   <i class="fas fa-edit"></i> Modifier
               </button>
@@ -306,5 +309,21 @@
 
   <script src="/static/hr-auth/hr-common.js"></script>
   <script src="/static/job-details/job-details.js"></script>
+  
+  <!-- Inline script to ensure conversation analysis function is available -->
+  <script>
+    function openConversationAnalysis() {
+      console.log("🔍 Conversation Analysis button clicked!");
+      
+      // Test if we can navigate
+      try {
+        console.log("🔍 Attempting to navigate to conversation analysis...");
+        window.location.href = "/conversation-analysis";
+      } catch (error) {
+        console.error("❌ Error navigating to conversation analysis:", error);
+        alert("Error navigating to conversation analysis: " + error.message);
+      }
+    }
+  </script>
 </body>
 </html>

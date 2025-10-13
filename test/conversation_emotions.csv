@@ -1,16 +1,16 @@
 speaker,start_time,end_time,text,dominant_emotion,emotion_confidence,emotion_timestamp,in_video,language
-Mouhamed Yassine,0.0,10.0,Good morning. Thanks for joining us today. Could you start by telling me a little about yourself?,angry,81.55335998535156,,Yes,en
-Youssef Dammak,0.0,16.92,"Of course, my name is Yassin and I recently graduated with a degree in business management.",unknown,0.0,,No,en
-Youssef Dammak,16.92,23.0,"During my studies, I completed an internship in a project coordination where I learned",unknown,0.0,,No,en
-Youssef Dammak,23.0,30.0,"how to manage timelines, communicate with clients and handle unexpected challenges.",unknown,0.0,,No,en
-Youssef Dammak,30.0,45.08,"I'd say it's my organization and adaptability. I like keeping things on track, but I can also",unknown,0.0,,No,en
+Mouhamed Yassine,0.0,10.0,Good morning. Thanks for joining us today. Could you start by telling me a little about yourself?,angry,81.55335998535156,0.0,Yes,en
+Youssef Dammak,0.0,16.92,"Of course, my name is Yassin and I recently graduated with a degree in business management.",not_in_video,0.0,,No,en
+Youssef Dammak,16.92,23.0,"During my studies, I completed an internship in a project coordination where I learned",not_in_video,0.0,,No,en
+Youssef Dammak,23.0,30.0,"how to manage timelines, communicate with clients and handle unexpected challenges.",not_in_video,0.0,,No,en
+Youssef Dammak,30.0,45.08,"I'd say it's my organization and adaptability. I like keeping things on track, but I can also",not_in_video,0.0,,No,en
 Mouhamed Yassine,31.0,36.0,That sounds great. What would you say is your biggest strength?,disgust,96.65152740478516,31.2,Yes,en
-Youssef Dammak,45.08,57.08,stay calm and adjust quickly when priorities change.,unknown,0.0,,No,en
+Youssef Dammak,45.08,57.08,stay calm and adjust quickly when priorities change.,not_in_video,0.0,,No,en
 Mouhamed Yassine,51.0,55.0,Excellent. Why do you want to work with our company?,neutral,97.62696838378906,50.4,Yes,en
-Youssef Dammak,57.08,65.08,I followed your company for a while and I really admire your focus on innovation and teamwork.,unknown,0.0,,No,en
+Youssef Dammak,57.08,65.08,I followed your company for a while and I really admire your focus on innovation and teamwork.,not_in_video,0.0,,No,en
 Mouhamed Yassine,60.0,62.0,I'm sorry.,neutral,95.11506652832031,60.0,Yes,en
-Youssef Dammak,65.08,77.08,I think it's the perfect environment to grow professionally and contribute meaningfully.,unknown,0.0,,No,en
+Youssef Dammak,65.08,77.08,I think it's the perfect environment to grow professionally and contribute meaningfully.,not_in_video,0.0,,No,en
 Mouhamed Yassine,70.0,76.0,"Okay. Just for testing purposes, could you talk a little bit of French?",neutral,79.72298431396484,69.6,Yes,en
-Youssef Dammak,77.08,91.08,"Hello, I'm Joseph and I'm a high school student. I love chocolate and what else do you want?",unknown,0.0,,No,en
+Youssef Dammak,77.08,91.08,"Hello, I'm Joseph and I'm a high school student. I love chocolate and what else do you want?",not_in_video,0.0,,No,en
 Mouhamed Yassine,90.0,98.0,Merci. That was great. Wonderful. Thank you. You will be in touch soon.,happy,71.7441177368164,90.0,Yes,en
-Youssef Dammak,98.08,101.08,You're welcome. My name is Yassin.,unknown,0.0,,No,en
+Youssef Dammak,98.08,101.08,You're welcome. My name is Yassin.,not_in_video,0.0,,No,en

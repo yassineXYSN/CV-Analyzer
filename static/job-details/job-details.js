@@ -1633,6 +1633,19 @@ function goBackToDashboard() {
   window.location.href = "/dashboard"
 }
 
+function openConversationAnalysis() {
+  console.log("🔍 Conversation Analysis button clicked!");
+  
+  // Test if we can navigate
+  try {
+    console.log("🔍 Attempting to navigate to conversation analysis...");
+    window.location.href = "/conversation-analysis";
+  } catch (error) {
+    console.error("❌ Error navigating to conversation analysis:", error);
+    alert("Error navigating to conversation analysis: " + error.message);
+  }
+}
+
 function getStatusText(status) {
   const statusTexts = {
     pending: "En attente",

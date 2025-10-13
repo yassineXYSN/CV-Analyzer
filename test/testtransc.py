@@ -117,7 +117,7 @@ if __name__ == "__main__":
         exit(1)
     
     print("Loading Whisper model...")
-    model = whisper.load_model("small")
+    model = whisper.load_model("large")
     print("Model loaded successfully!")
 
     print("Analyzing audio files...")

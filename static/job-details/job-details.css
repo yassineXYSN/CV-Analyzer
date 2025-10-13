@@ -504,6 +504,25 @@ body {
   background: rgba(239, 68, 68, 0.2);
 }
 
+/* Conversation Analysis Button Specific Styling */
+.action-btn.conversation-analysis {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.action-btn.conversation-analysis:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(34, 197, 94, 0.2);
+}
+
+.action-btn.conversation-analysis i {
+  font-size: 1rem;
+  margin-right: 0.5rem;
+}
+
 /* Container principal */
 .job-container {
   position: relative;
@@ -2805,6 +2824,11 @@ body {
   }
 
   .action-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .action-btn.conversation-analysis {
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
   }

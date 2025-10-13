@@ -8,7 +8,7 @@
     "detected_language": "en",
     "dominant_emotion": "angry",
     "emotion_confidence": 81.55335998535156,
-    "emotion_timestamp": null,
+    "emotion_timestamp": 0.0,
     "emotion_frame": 0
   },
   {
@@ -18,7 +18,7 @@
     "speaker": "Youssef Dammak",
     "type": "speech",
     "detected_language": "en",
-    "dominant_emotion": "unknown",
+    "dominant_emotion": "not_in_video",
     "emotion_confidence": 0.0,
     "emotion_timestamp": null,
     "emotion_frame": null
@@ -30,7 +30,7 @@
     "speaker": "Youssef Dammak",
     "type": "speech",
     "detected_language": "en",
-    "dominant_emotion": "unknown",
+    "dominant_emotion": "not_in_video",
     "emotion_confidence": 0.0,
     "emotion_timestamp": null,
     "emotion_frame": null
@@ -42,7 +42,7 @@
     "speaker": "Youssef Dammak",
     "type": "speech",
     "detected_language": "en",
-    "dominant_emotion": "unknown",
+    "dominant_emotion": "not_in_video",
     "emotion_confidence": 0.0,
     "emotion_timestamp": null,
     "emotion_frame": null
@@ -54,7 +54,7 @@
     "speaker": "Youssef Dammak",
     "type": "speech",
     "detected_language": "en",
-    "dominant_emotion": "unknown",
+    "dominant_emotion": "not_in_video",
     "emotion_confidence": 0.0,
     "emotion_timestamp": null,
     "emotion_frame": null
@@ -78,7 +78,7 @@
     "speaker": "Youssef Dammak",
     "type": "speech",
     "detected_language": "en",
-    "dominant_emotion": "unknown",
+    "dominant_emotion": "not_in_video",
     "emotion_confidence": 0.0,
     "emotion_timestamp": null,
     "emotion_frame": null
@@ -102,7 +102,7 @@
     "speaker": "Youssef Dammak",
     "type": "speech",
     "detected_language": "en",
-    "dominant_emotion": "unknown",
+    "dominant_emotion": "not_in_video",
     "emotion_confidence": 0.0,
     "emotion_timestamp": null,
     "emotion_frame": null
@@ -126,7 +126,7 @@
     "speaker": "Youssef Dammak",
     "type": "speech",
     "detected_language": "en",
-    "dominant_emotion": "unknown",
+    "dominant_emotion": "not_in_video",
     "emotion_confidence": 0.0,
     "emotion_timestamp": null,
     "emotion_frame": null
@@ -150,7 +150,7 @@
     "speaker": "Youssef Dammak",
     "type": "speech",
     "detected_language": "en",
-    "dominant_emotion": "unknown",
+    "dominant_emotion": "not_in_video",
     "emotion_confidence": 0.0,
     "emotion_timestamp": null,
     "emotion_frame": null
@@ -174,7 +174,7 @@
     "speaker": "Youssef Dammak",
     "type": "speech",
     "detected_language": "en",
-    "dominant_emotion": "unknown",
+    "dominant_emotion": "not_in_video",
     "emotion_confidence": 0.0,
     "emotion_timestamp": null,
     "emotion_frame": null

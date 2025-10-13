@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation Analysis - HR Dashboard</title>
+    <link rel="stylesheet" href="/static/hr-dashboard/conversation-analysis.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>Conversation Analysis</h1>
+                    <p class="header-subtitle">Interview Analysis Dashboard</p>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <span id="user-name">Loading...</span>
+                        <button id="logout-btn" class="btn-secondary">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="dashboard-nav">
+            <a href="/dashboard" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                Dashboard
+            </a>
+            <a href="/hr-reports" class="nav-item">
+                <i class="fas fa-chart-bar"></i>
+                Reports
+            </a>
+            <a href="/conversation-analysis" class="nav-item active">
+                <i class="fas fa-comments"></i>
+                Conversation Analysis
+            </a>
+            <a href="/employee-profile" class="nav-item">
+                <i class="fas fa-users"></i>
+                Employees
+            </a>
+            <a href="/job-details" class="nav-item">
+                <i class="fas fa-briefcase"></i>
+                Jobs
+            </a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Loading State -->
+            <div id="loading-state" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Loading conversation analysis data...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="error-container" style="display: none;">
+                <div class="error-icon">⚠️</div>
+                <h3>Error Loading Data</h3>
+                <p id="error-message">Failed to load conversation analysis data.</p>
+                <button id="retry-btn" class="btn-primary">Retry</button>
+            </div>
+
+            <!-- Analysis Content -->
+            <div id="analysis-content" style="display: none;">
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="card-icon">🎯</div>
+                        <div class="card-content">
+                            <h3 id="total-segments">0</h3>
+                            <p>Total Segments</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon">⏱️</div>
+                        <div class="card-content">
+                            <h3 id="total-duration">0s</h3>
+                            <p>Total Duration</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon">👥</div>
+                        <div class="card-content">
+                            <h3 id="speakers-count">0</h3>
+                            <p>Speakers</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon">😊</div>
+                        <div class="card-content">
+                            <h3 id="emotions-count">0</h3>
+                            <p>Emotions Detected</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <div class="chart-container">
+                        <h3>Emotion Distribution</h3>
+                        <canvas id="emotion-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Speaking Time by Speaker</h3>
+                        <canvas id="speaker-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Timeline Section -->
+                <div class="timeline-section">
+                    <h3>Conversation Timeline</h3>
+                    <div class="timeline-controls">
+                        <button id="play-timeline" class="btn-primary">▶️ Play Timeline</button>
+                        <button id="pause-timeline" class="btn-secondary">⏸️ Pause</button>
+                        <button id="reset-timeline" class="btn-secondary">🔄 Reset</button>
+                    </div>
+                    <div class="timeline-container">
+                        <div id="timeline-track"></div>
+                        <div id="timeline-progress"></div>
+                    </div>
+                </div>
+
+                <!-- Conversation Segments -->
+                <div class="segments-section">
+                    <h3>Conversation Segments</h3>
+                    <div class="segments-controls">
+                        <div class="filter-controls">
+                            <select id="speaker-filter">
+                                <option value="">All Speakers</option>
+                            </select>
+                            <select id="emotion-filter">
+                                <option value="">All Emotions</option>
+                            </select>
+                            <input type="text" id="search-text" placeholder="Search in conversation...">
+                        </div>
+                        <div class="view-controls">
+                            <button id="toggle-view" class="btn-secondary">Switch to Detailed View</button>
+                        </div>
+                    </div>
+                    <div id="segments-list" class="segments-list"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="/static/hr-dashboard/conversation-analysis.js"></script>
+</body>
+</html>
