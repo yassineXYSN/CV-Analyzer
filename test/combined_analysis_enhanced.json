@@ -1,0 +1,829 @@
+[
+  {
+    "start": 0.0,
+    "end": 18.72,
+    "text": "Hello, sir, how are you?",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 88.66962432861328,
+    "emotion_samples_count": 16,
+    "emotion_timestamps": [
+      0.0,
+      1.2,
+      2.4,
+      3.6,
+      4.8,
+      6.0,
+      7.2,
+      8.4,
+      9.6,
+      10.8,
+      12.0,
+      13.2,
+      14.4,
+      15.6,
+      16.8,
+      18.0
+    ]
+  },
+  {
+    "start": 0.0,
+    "end": 17.06,
+    "text": "I'm fine, thanks. I came here today to talk about a very important subject. It is the inflation in the banana prices.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 88.537109375,
+    "emotion_samples_count": 15,
+    "emotion_timestamps": [
+      0.0,
+      1.2,
+      2.4,
+      3.6,
+      4.8,
+      6.0,
+      7.2,
+      8.4,
+      9.6,
+      10.8,
+      12.0,
+      13.2,
+      14.4,
+      15.6,
+      16.8
+    ]
+  },
+  {
+    "start": 17.06,
+    "end": 33.36,
+    "text": "Well, I don't think about it very much, but I think chocolate is very good, especially chocolate latte with banana.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 95.98184967041016,
+    "emotion_samples_count": 13,
+    "emotion_timestamps": [
+      18.0,
+      19.2,
+      20.4,
+      21.6,
+      22.8,
+      24.0,
+      25.2,
+      26.4,
+      27.6,
+      28.8,
+      30.0,
+      31.2,
+      32.4
+    ]
+  },
+  {
+    "start": 18.72,
+    "end": 19.72,
+    "text": "That's very interesting.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 87.78349304199219,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      19.2
+    ]
+  },
+  {
+    "start": 19.72,
+    "end": 21.44,
+    "text": "I want to ask for something.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 99.7398910522461,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      20.4
+    ]
+  },
+  {
+    "start": 21.44,
+    "end": 26.6,
+    "text": "What do you think about buying chairs nowadays?",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 99.60850524902344,
+    "emotion_samples_count": 5,
+    "emotion_timestamps": [
+      21.6,
+      22.8,
+      24.0,
+      25.2,
+      26.4
+    ]
+  },
+  {
+    "start": 30.0,
+    "end": 40.0,
+    "text": "That's very interesting, but do you think that the tables also are very important?",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 91.54012298583984,
+    "emotion_samples_count": 9,
+    "emotion_timestamps": [
+      30.0,
+      31.2,
+      32.4,
+      33.6,
+      34.8,
+      36.0,
+      37.2,
+      38.4,
+      39.6
+    ]
+  },
+  {
+    "start": 40.0,
+    "end": 42.0,
+    "text": "Yes, sir.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "sad",
+    "emotion_confidence": 85.31396484375,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      40.8,
+      42.0
+    ]
+  },
+  {
+    "start": 42.0,
+    "end": 50.0,
+    "text": "I think that the tables are very important.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 92.5530776977539,
+    "emotion_samples_count": 7,
+    "emotion_timestamps": [
+      42.0,
+      43.2,
+      44.4,
+      45.6,
+      46.8,
+      48.0,
+      49.2
+    ]
+  },
+  {
+    "start": 47.06,
+    "end": 49.64,
+    "text": "I want to study.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 92.73239135742188,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      48.0,
+      49.2
+    ]
+  },
+  {
+    "start": 50.0,
+    "end": 55.0,
+    "text": "Yes, sir.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "fear",
+    "emotion_confidence": 99.59638214111328,
+    "emotion_samples_count": 4,
+    "emotion_timestamps": [
+      50.4,
+      51.6,
+      52.8,
+      54.0
+    ]
+  },
+  {
+    "start": 55.0,
+    "end": 56.0,
+    "text": "Thank you.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 99.26065063476562,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      55.2
+    ]
+  },
+  {
+    "start": 56.0,
+    "end": 57.0,
+    "text": "Thank you.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "fear",
+    "emotion_confidence": 57.89458084106445,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      56.4
+    ]
+  },
+  {
+    "start": 57.0,
+    "end": 58.0,
+    "text": "Thank you.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 74.10633087158203,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      57.6
+    ]
+  },
+  {
+    "start": 58.0,
+    "end": 59.0,
+    "text": "Thank you.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 99.97952270507812,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      58.8
+    ]
+  },
+  {
+    "start": 59.0,
+    "end": 60.0,
+    "text": "Thank you.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 99.96021270751953,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      60.0
+    ]
+  },
+  {
+    "start": 60.0,
+    "end": 61.0,
+    "text": "Thank you.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 99.96021270751953,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      60.0
+    ]
+  },
+  {
+    "start": 61.0,
+    "end": 62.0,
+    "text": "Thank you.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 99.81494140625,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      61.2
+    ]
+  },
+  {
+    "start": 62.0,
+    "end": 63.0,
+    "text": "And the next question?",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "fear",
+    "emotion_confidence": 54.779876708984375,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      62.4
+    ]
+  },
+  {
+    "start": 63.0,
+    "end": 81.08,
+    "text": "So now we're going to talk to Mr.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 78.81761169433594,
+    "emotion_samples_count": 15,
+    "emotion_timestamps": [
+      63.6,
+      64.8,
+      66.0,
+      67.2,
+      68.4,
+      69.6,
+      70.8,
+      72.0,
+      73.2,
+      74.4,
+      75.6,
+      76.8,
+      78.0,
+      79.2,
+      80.4
+    ]
+  },
+  {
+    "start": 64.84,
+    "end": 73.76,
+    "text": "But Azure and AWS are cloud providers.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "sad",
+    "emotion_confidence": 84.51194763183594,
+    "emotion_samples_count": 7,
+    "emotion_timestamps": [
+      66.0,
+      67.2,
+      68.4,
+      69.6,
+      70.8,
+      72.0,
+      73.2
+    ]
+  },
+  {
+    "start": 73.76,
+    "end": 74.32000000000001,
+    "text": "Azure is a cloud provider.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  },
+  {
+    "start": 75.04,
+    "end": 77.04,
+    "text": "And the sky is the sky.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 95.88610076904297,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      75.6,
+      76.8
+    ]
+  },
+  {
+    "start": 77.06,
+    "end": 78.5,
+    "text": "And the sky is white.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 50.452911376953125,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      78.0
+    ]
+  },
+  {
+    "start": 79.38,
+    "end": 80.44,
+    "text": "And the sky is blue.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "fear",
+    "emotion_confidence": 98.05653381347656,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      80.4
+    ]
+  },
+  {
+    "start": 81.08,
+    "end": 86.03999999999999,
+    "text": "Bouygues, about it.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 88.8427505493164,
+    "emotion_samples_count": 4,
+    "emotion_timestamps": [
+      81.6,
+      82.8,
+      84.0,
+      85.2
+    ]
+  },
+  {
+    "start": 86.03999999999999,
+    "end": 87.18,
+    "text": "Good morning, 很近",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 59.7953987121582,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      86.4
+    ]
+  },
+  {
+    "start": 87.18,
+    "end": 88.3,
+    "text": "Good morning.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 99.99901580810547,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      87.6
+    ]
+  },
+  {
+    "start": 88.3,
+    "end": 89.9,
+    "text": "Good morning.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 98.21957397460938,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      88.8
+    ]
+  },
+  {
+    "start": 89.9,
+    "end": 90.0,
+    "text": "ס",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 99.99987030029297,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      90.0
+    ]
+  },
+  {
+    "start": 90.0,
+    "end": 91.5,
+    "text": "unexpected.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 99.99987030029297,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      90.0,
+      91.2
+    ]
+  },
+  {
+    "start": 94.48,
+    "end": 96.56,
+    "text": "Honestly, I don't think so.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "sad",
+    "emotion_confidence": 94.12088012695312,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      94.8,
+      96.0
+    ]
+  },
+  {
+    "start": 96.56,
+    "end": 102.4,
+    "text": "But I think the stock market is going to provide us with a lot of ups and downs.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "fear",
+    "emotion_confidence": 74.38607025146484,
+    "emotion_samples_count": 5,
+    "emotion_timestamps": [
+      97.2,
+      98.4,
+      99.6,
+      100.8,
+      102.0
+    ]
+  },
+  {
+    "start": 104.08,
+    "end": 105.92,
+    "text": "Okay, okay. That's very interesting.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "fear",
+    "emotion_confidence": 99.57281494140625,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      104.4,
+      105.6
+    ]
+  },
+  {
+    "start": 106.78,
+    "end": 108.38,
+    "text": "And when do you plan to",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 79.8633804321289,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      106.8,
+      108.0
+    ]
+  },
+  {
+    "start": 107.06,
+    "end": 113.18,
+    "text": "After two minutes, maybe.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 85.37997436523438,
+    "emotion_samples_count": 5,
+    "emotion_timestamps": [
+      108.0,
+      109.2,
+      110.4,
+      111.6,
+      112.8
+    ]
+  },
+  {
+    "start": 108.38,
+    "end": 108.98,
+    "text": "come back?",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  },
+  {
+    "start": 113.52,
+    "end": 118.48,
+    "text": "Also, I want to say I am very hungry and I want a sandwich.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 97.69464874267578,
+    "emotion_samples_count": 4,
+    "emotion_timestamps": [
+      114.0,
+      115.2,
+      116.4,
+      117.6
+    ]
+  },
+  {
+    "start": 116.28,
+    "end": 116.88,
+    "text": "Okay.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "sad",
+    "emotion_confidence": 90.0328369140625,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      116.4
+    ]
+  },
+  {
+    "start": 119.3,
+    "end": 119.9,
+    "text": "Indeed.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  },
+  {
+    "start": 120.0,
+    "end": 121.82,
+    "text": "Indeed. I think so.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 93.5531005859375,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      120.0,
+      121.2
+    ]
+  },
+  {
+    "start": 122.78,
+    "end": 124.3,
+    "text": "So, okay.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 95.81973266601562,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      123.6
+    ]
+  },
+  {
+    "start": 124.38,
+    "end": 125.2,
+    "text": "Thank you very much.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 99.83638763427734,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      124.8
+    ]
+  },
+  {
+    "start": 126.1,
+    "end": 126.78,
+    "text": "Thank you.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  },
+  {
+    "start": 126.86,
+    "end": 127.54,
+    "text": "Thank you very much.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 98.88729095458984,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      127.2
+    ]
+  },
+  {
+    "start": 127.66,
+    "end": 130.1,
+    "text": "I am waiting for your response.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "sad",
+    "emotion_confidence": 64.9127426147461,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      128.4,
+      129.6
+    ]
+  },
+  {
+    "start": 130.74,
+    "end": 132.26,
+    "text": "Okay. You will wait",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 99.12850189208984,
+    "emotion_samples_count": 2,
+    "emotion_timestamps": [
+      130.8,
+      132.0
+    ]
+  },
+  {
+    "start": 132.26,
+    "end": 133.54,
+    "text": "for so long.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "happy",
+    "emotion_confidence": 99.98736572265625,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      133.2
+    ]
+  },
+  {
+    "start": 134.88,
+    "end": 135.4,
+    "text": "Okay.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  },
+  {
+    "start": 135.52,
+    "end": 135.9,
+    "text": "Thank you.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 99.83385467529297,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      135.6
+    ]
+  },
+  {
+    "start": 135.98000000000002,
+    "end": 136.38,
+    "text": "Thank you.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  },
+  {
+    "start": 136.5,
+    "end": 137.42000000000002,
+    "text": "You're welcome.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 97.57835388183594,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      136.8
+    ]
+  },
+  {
+    "start": 137.06,
+    "end": 137.74,
+    "text": "Goodbye.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  },
+  {
+    "start": 137.96,
+    "end": 138.98,
+    "text": "See you. Goodbye.",
+    "speaker": "Speaker 1",
+    "detected_language": "en",
+    "assigned_emotion": "neutral",
+    "emotion_confidence": 82.77455139160156,
+    "emotion_samples_count": 1,
+    "emotion_timestamps": [
+      138.0
+    ]
+  },
+  {
+    "start": 139.34,
+    "end": 139.94,
+    "text": "Goodbye.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  },
+  {
+    "start": 140.02,
+    "end": 140.18,
+    "text": "Goodbye.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  },
+  {
+    "start": 140.18,
+    "end": 140.24,
+    "text": "Goodbye.",
+    "speaker": "Speaker 2",
+    "detected_language": "en",
+    "assigned_emotion": "unknown",
+    "emotion_confidence": 0,
+    "emotion_samples_count": 0,
+    "emotion_timestamps": []
+  }
+]

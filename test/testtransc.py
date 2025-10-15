@@ -101,8 +101,9 @@ if __name__ == "__main__":
     MULTI_LANGUAGE = True
     
     # File paths
-    file1 = r"C:\Users\yassine\Documents\Zoom\2025-10-12 18.10.27 Mouhamed Yassine Chtourou's Zoom Meeting\Audio Record\audioMouhamedYassineC11624140658.m4a"
-    file2 = r"C:\Users\yassine\Documents\Zoom\2025-10-12 18.10.27 Mouhamed Yassine Chtourou's Zoom Meeting\Audio Record\audioYoussefDammak21624140658.m4a"
+
+    file1 = r"C:\Users\ASUS\Downloads\audioYoussefDammak11313141200.m4a"
+    file2 = r"C:\Users\ASUS\Downloads\audioyassinechtourou21313141200.m4a"
     
     # Check if files exist
     if not os.path.exists(file1) or not os.path.exists(file2):

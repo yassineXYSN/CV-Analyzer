@@ -127,7 +127,7 @@ def print_summary(results):
 
 if __name__ == "__main__":
     # Example usage
-    video_file = r"C:\Users\yassine\Documents\Zoom\2025-10-12 18.10.27 Mouhamed Yassine Chtourou's Zoom Meeting\video1624140658.mp4"  # Change to your video path
+    video_file = r"C:\Users\ASUS\Downloads\635eb8d4-5f03-4590-8695-96e783a61e65.mp4"  # Change to your video path
     output_file = "emotion_results.csv"
     
     try:
