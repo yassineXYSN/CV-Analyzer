@@ -203,7 +203,6 @@ class Application(Base):
     hr_rating = Column(Numeric(3, 2))
     hr_notes = Column(Text)
     interview_date = Column(DateTime)
-    interview_notes = Column(Text)
     reviewed_by = Column(Integer, ForeignKey("hr_admins.id"))
     reviewed_at = Column(DateTime)
     decision_date = Column(DateTime)
@@ -600,3 +599,42 @@ class Interview(Base):
     # Relations
     candidate = relationship("User", backref="interviews")
     application = relationship("Application", backref="interviews")
+    
+from enum import Enum as PyEnum  # ensure PyEnum is available above; safe re-import if already present
+
+class SlotStatus(PyEnum):
+    FREE = "free"          # Libre
+    RESERVED = "reserved"  # Réservé (en attente)
+    CONFIRMED = "confirmed"# Confirmé
+
+class InterviewSlot(Base):
+    __tablename__ = "interview_slots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recruiter_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)  # filled when reserved/confirmed
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
+    status = Column(Enum(SlotStatus, name="interview_slot_status"), default=SlotStatus.FREE, nullable=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    recruiter = relationship("HRAdmin")
+    job = relationship("Job")
+    application = relationship("Application")
+
+class HRGoogleToken(Base):
+    __tablename__ = "hr_google_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hr_admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    access_token = Column(Text, nullable=False)
+    refresh_token = Column(Text, nullable=True)
+    token_type = Column(String(50), nullable=True)
+    scope = Column(Text, nullable=True)
+    expires_at = Column(DateTime, nullable=True)  # absolute UTC datetime
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    admin = relationship("HRAdmin")

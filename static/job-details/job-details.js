@@ -3,6 +3,48 @@ let currentJob = null
 let applications = []
 let currentUser = null
 
+// Fonction pour convertir une Date en format datetime-local
+function toLocalDatetimeValue(date) {
+  if (!date) return ''
+  // Use local date methods to avoid timezone issues
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+// Fonction pour convertir une Date en ISO string avec timezone local
+function toLocalISOString(date) {
+  if (!date) return ''
+  // Get timezone offset in minutes
+  const offset = date.getTimezoneOffset()
+  const offsetHours = Math.floor(Math.abs(offset) / 60)
+  const offsetMinutes = Math.abs(offset) % 60
+  const offsetSign = offset <= 0 ? '+' : '-'
+  const offsetStr = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`
+  
+  // Format as ISO string with local timezone
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetStr}`
+}
+
+// Helper: clef de date locale (AAAA-MM-JJ) sans décalage de fuseau
+function toLocalDateKey(date) {
+  if (!date) return ''
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 function formatDateSafe(input, locale = "fr-FR") {
   try {
     if (!input) return "--"
@@ -36,6 +78,9 @@ function formatDuration(seconds) {
 document.addEventListener("DOMContentLoaded", () => {
   loadCurrentUser()
   loadJobData()
+  // SUPPRIMÉ: loadBlockedSlots() - sera chargé dans initPermanentCalendar()
+  const btn = document.getElementById("openScheduleModalBtn")
+  if (btn) btn.addEventListener("click", openScheduleModal)
 })
 
 async function loadCurrentUser() {
@@ -82,79 +127,2398 @@ function loadJobData() {
   }
 }
 
+function clearInlineSlots() {
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`slot${i}_start`)
+    const e = document.getElementById(`slot${i}_end`)
+    if (s) s.value = ""
+    if (e) e.value = ""
+  }
+  
+  // Réinitialiser les sélections du calendrier
+  selectedDays.clear()
+  const allDays = document.querySelectorAll('.calendar-day')
+  allDays.forEach(day => {
+    day.classList.remove('selected', 'disabled')
+  })
+}
+
+async function saveInlineSlots() {
+  const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
+  const inputs = []
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`slot${i}_start`)
+    const e = document.getElementById(`slot${i}_end`)
+    if (s && e && s.value && e.value) {
+      const start = new Date(s.value)
+      const end = new Date(e.value)
+      if (end <= start) {
+        showNotification(`Créneau ${i}: fin doit être après début`, 'error')
+        return
+      }
+      inputs.push({ start, end })
+    }
+  }
+  if (!inputs.length) {
+    showNotification('Veuillez saisir au moins un créneau.', 'info')
+    return
+  }
+  // Vérification des conflits d'horaires (même jour OK, même heure NOK)
+  const hasTimeConflict = (a, b) => {
+    // Vérifier si c'est le même jour
+    const sameDay = a.start.toDateString() === b.start.toDateString()
+    if (!sameDay) return false
+    
+    // Si c'est le même jour, vérifier le chevauchement d'horaires
+    return a.start < b.end && a.end > b.start
+  }
+  
+  for (let i = 0; i < inputs.length; i++) {
+    for (let j = i + 1; j < inputs.length; j++) {
+      if (hasTimeConflict(inputs[i], inputs[j])) {
+        const dateA = inputs[i].start.toLocaleDateString('fr-FR')
+        const timeA = inputs[i].start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        const timeB = inputs[j].start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        showNotification(`Conflit d'horaires le ${dateA}: ${timeA} et ${timeB} se chevauchent.`, 'error')
+        return
+      }
+    }
+  }
+  try {
+    const payload = {
+      job_id: Number(jobId),
+      slots: inputs.map(s => ({ start_time: toLocalISOString(s.start), end_time: toLocalISOString(s.end) }))
+    }
+    const res = await fetch('/api/hr/interview-slots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const txt = await res.text()
+    if (!res.ok) throw new Error(txt || 'Erreur lors de la sauvegarde des créneaux')
+    showNotification('Créneaux enregistrés avec succès! Email d\'invitation envoyé automatiquement.', 'success')
+    clearInlineSlots()
+  } catch (e) {
+    showNotification(e.message || 'Erreur serveur', 'error')
+  }
+}
+
+// Variables globales pour les créneaux confirmés
+let confirmedSlots = [];
+let savedSlotIds = [];
+// Variable supprimée - la logique de verrouillage est maintenant gérée par candidat
+
+// Fonction pour vérifier l'état des créneaux d'un candidat spécifique
+async function checkCandidateSlotsStatus(candidateId) {
+  try {
+    const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
+    console.log(`[DEBUG] Vérification des créneaux pour le candidat ${candidateId} dans le job ${jobId}`)
+    
+    const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+    const slotsData = await slotsRes.json()
+    console.log(`[DEBUG] Tous les créneaux du job:`, slotsData)
+    
+    // Filtrer les créneaux confirmés pour ce candidat spécifique
+    const confirmedSlotsForCandidate = slotsData.filter(slot => 
+      slot.is_confirmed && slot.application_id == candidateId
+    )
+    console.log(`[DEBUG] Créneaux confirmés pour le candidat ${candidateId}:`, confirmedSlotsForCandidate)
+    
+    return {
+      hasConfirmedSlots: confirmedSlotsForCandidate.length > 0,
+      confirmedSlots: confirmedSlotsForCandidate
+    }
+  } catch (error) {
+    console.error('Erreur lors de la vérification des créneaux du candidat:', error)
+    return { hasConfirmedSlots: false, confirmedSlots: [] }
+  }
+}
+
+// Fonction pour mettre à jour le bouton d'un candidat spécifique
+async function updateCandidateButton(candidateId) {
+  console.log(`[DEBUG] Mise à jour du bouton pour le candidat ${candidateId}`)
+  
+  const button = document.getElementById(`schedule-btn-${candidateId}`)
+  const textSpan = document.getElementById(`schedule-text-${candidateId}`)
+  const icon = button?.querySelector('i')
+  
+  if (!button) {
+    console.log(`[DEBUG] Bouton non trouvé pour le candidat ${candidateId} (ID: schedule-btn-${candidateId})`)
+    return
+  }
+  
+  if (!textSpan) {
+    console.log(`[DEBUG] TextSpan non trouvé pour le candidat ${candidateId} (ID: schedule-text-${candidateId})`)
+    return
+  }
+  
+  if (!icon) {
+    console.log(`[DEBUG] Icône non trouvée pour le candidat ${candidateId}`)
+    return
+  }
+  
+  const status = await checkCandidateSlotsStatus(candidateId)
+  console.log(`[DEBUG] Statut pour le candidat ${candidateId}:`, status)
+  
+  // Vérifier le statut de l'application dans le tableau
+  const application = applications?.find(app => app.id == candidateId)
+  const isInterviewScheduled = application?.status === 'interview_scheduled'
+  
+  if (status.hasConfirmedSlots) {
+    // Le candidat a des créneaux confirmés
+    console.log(`[DEBUG] Candidat ${candidateId} a des créneaux confirmés - Mise à jour du bouton`)
+    icon.className = 'fas fa-calendar-check'
+    
+    if (isInterviewScheduled) {
+      // Si le statut de l'application est interview_scheduled, le candidat a confirmé
+      textSpan.textContent = 'Entretien confirmé'
+      console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Entretien confirmé`)
+    } else {
+      // Sinon, c'est juste des créneaux en attente de confirmation du candidat
+      textSpan.textContent = 'Créneaux en attente'
+      console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Créneaux en attente`)
+    }
+    
+    button.onclick = () => showConfirmedSlotsModal(status.confirmedSlots)
+  } else {
+    // Le candidat n'a pas de créneaux confirmés
+    console.log(`[DEBUG] Candidat ${candidateId} n'a pas de créneaux confirmés - Mise à jour du bouton`)
+    icon.className = 'fas fa-calendar-plus'
+    textSpan.textContent = 'Programmer un entretien'
+    button.onclick = () => openScheduleInterviewModal(candidateId, 'Candidat')
+    console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Programmer un entretien`)
+  }
+}
+
+// Ces fonctions ne sont plus nécessaires car la confirmation est automatique
+
+// Fonction supprimée - la logique de verrouillage est maintenant gérée par candidat individuellement
+
+// Fonction pour verrouiller le calendrier
+// Fonction supprimée - la logique de verrouillage est maintenant gérée par candidat individuellement
+
+// Fonction de test pour forcer la mise à jour de tous les boutons
+async function forceUpdateAllButtons() {
+  console.log(`[DEBUG] Force update de tous les boutons`)
+  
+  if (applications && applications.length > 0) {
+    console.log(`[DEBUG] Mise à jour forcée de ${applications.length} candidats`)
+    for (const app of applications) {
+      console.log(`[DEBUG] Mise à jour forcée du candidat ${app.id}`)
+      await updateCandidateButton(app.id)
+    }
+  } else {
+    console.log(`[DEBUG] Aucune application trouvée pour la mise à jour forcée`)
+  }
+}
+
+// Fonction pour marquer les créneaux de temps occupés dans le modal
+function markOccupiedTimeSlots(modal, dateString) {
+  console.log(`[DEBUG] markOccupiedTimeSlots appelée pour la date: ${dateString}`)
+  console.log(`[DEBUG] blockedSlots:`, blockedSlots)
+  console.log(`[DEBUG] confirmedSlots:`, confirmedSlots)
+  
+  const presetBtns = modal.querySelectorAll('.preset-btn')
+  console.log(`[DEBUG] Boutons prédéfinis trouvés: ${presetBtns.length}`)
+  
+  presetBtns.forEach(btn => {
+    const startTime = btn.dataset.start
+    const endTime = btn.dataset.end
+    console.log(`[DEBUG] Vérification du créneau: ${startTime} - ${endTime}`)
+    
+    // Créer les dates de début et fin pour ce créneau
+    const [year, month, day] = dateString.split('-').map(Number)
+    const [startHour, startMinute] = startTime.split(':').map(Number)
+    const [endHour, endMinute] = endTime.split(':').map(Number)
+    
+    const startDateTime = new Date(year, month - 1, day, startHour, startMinute, 0)
+    const endDateTime = new Date(year, month - 1, day, endHour, endMinute, 0)
+    
+    // Vérifier les conflits avec les créneaux bloqués (réservés par d'autres candidats) - seulement pour la date courante
+    const hasConflictWithBlocked = blockedSlots && blockedSlots.some(blockedSlot => {
+      const blockedStart = new Date(blockedSlot.start_time)
+      const blockedEnd = new Date(blockedSlot.end_time)
+      
+      // Vérifier que le créneau bloqué est sur la même date
+      const blockedDate = toLocalDateKey(blockedStart)
+      const currentDate = toLocalDateKey(startDateTime)
+      
+      if (blockedDate !== currentDate) {
+        return false // Ignorer les créneaux d'autres dates
+      }
+      
+      const conflict = startDateTime < blockedEnd && endDateTime > blockedStart
+      if (conflict) {
+        console.log(`[DEBUG] Conflit avec créneau bloqué:`, blockedSlot)
+      }
+      return conflict
+    })
+    
+    // Vérifier les conflits avec les créneaux réservés par le même agent HR (seulement pour la date courante)
+    const hasConflictWithReserved = confirmedSlots && confirmedSlots.some(reservedSlot => {
+      const reservedStart = new Date(reservedSlot.start_time)
+      const reservedEnd = new Date(reservedSlot.end_time)
+      
+      // Vérifier que le créneau réservé est sur la même date
+      const reservedDate = toLocalDateKey(reservedStart)
+      const currentDate = toLocalDateKey(startDateTime)
+      
+      if (reservedDate !== currentDate) {
+        return false // Ignorer les créneaux d'autres dates
+      }
+      
+      const conflict = startDateTime < reservedEnd && endDateTime > reservedStart
+      if (conflict) {
+        console.log(`[DEBUG] Conflit avec créneau réservé:`, reservedSlot)
+      }
+      return conflict
+    })
+    
+    // Vérifier les conflits avec les créneaux déjà sélectionnés par le même candidat (seulement pour la date courante)
+    const hasConflictWithCandidateSlots = currentCandidateId && selectedSlotsByCandidate[currentCandidateId] && selectedSlotsByCandidate[currentCandidateId].some(candidateSlot => {
+      const candidateStart = new Date(candidateSlot.start)
+      const candidateEnd = new Date(candidateSlot.end)
+      
+      // Vérifier que le créneau du candidat est sur la même date
+      const candidateDate = toLocalDateKey(candidateStart)
+      const currentDate = toLocalDateKey(startDateTime)
+      
+      if (candidateDate !== currentDate) {
+        return false // Ignorer les créneaux d'autres dates
+      }
+      
+      const conflict = startDateTime < candidateEnd && endDateTime > candidateStart
+      if (conflict) {
+        console.log(`[DEBUG] Conflit avec créneau du candidat:`, candidateSlot)
+      }
+      return conflict
+    })
+    
+    // Vérifier les conflits avec les créneaux actuellement sélectionnés dans le modal (pas encore sauvegardés)
+    const hasConflictWithModalSlots = (() => {
+      const selectedList = modal.querySelector('.selected-times-list')
+      if (!selectedList) {
+        console.log(`[DEBUG] selectedList non trouvé`)
+        return false
+      }
+      
+      const selectedItems = selectedList.querySelectorAll('.selected-time-chip')
+      console.log(`[DEBUG] selectedItems trouvés: ${selectedItems.length}`)
+      
+      return Array.from(selectedItems).some(item => {
+        const span = item.querySelector('span')
+        if (!span) return false
+        
+        const timeText = span.textContent
+        console.log(`[DEBUG] Vérification item: ${timeText}`)
+        
+        if (!timeText || !timeText.includes(' - ')) return false
+        
+        const [startTimeText, endTimeText] = timeText.split(' - ')
+        console.log(`[DEBUG] Parsed: ${startTimeText}-${endTimeText}`)
+        
+        if (!startTimeText || !endTimeText) return false
+        
+        // Convertir les heures du modal en dates
+        const [startHour, startMinute] = startTimeText.split(':').map(Number)
+        const [endHour, endMinute] = endTimeText.split(':').map(Number)
+        
+        const modalStartDateTime = new Date(year, month - 1, day, startHour, startMinute, 0)
+        const modalEndDateTime = new Date(year, month - 1, day, endHour, endMinute, 0)
+        
+        const conflict = startDateTime < modalEndDateTime && endDateTime > modalStartDateTime
+        if (conflict) {
+          console.log(`[DEBUG] Conflit avec créneau du modal: ${startTimeText}-${endTimeText}`)
+        }
+        return conflict
+      })
+    })()
+    
+    console.log(`[DEBUG] Créneau ${startTime}-${endTime}: blocked=${hasConflictWithBlocked}, reserved=${hasConflictWithReserved}, candidate=${hasConflictWithCandidateSlots}, modal=${hasConflictWithModalSlots}`)
+    
+    // Marquer le bouton selon le type de conflit
+    if (hasConflictWithBlocked) {
+      btn.classList.add('occupied')
+      btn.title = 'Ce créneau est réservé par un autre candidat'
+      btn.disabled = true
+      console.log(`[DEBUG] Bouton marqué comme occupé: ${startTime}-${endTime}`)
+    } else if (hasConflictWithReserved) {
+      btn.classList.add('reserved-by-me')
+      btn.title = 'Ce créneau est réservé par vous'
+      btn.disabled = true
+      console.log(`[DEBUG] Bouton marqué comme réservé par moi: ${startTime}-${endTime}`)
+    } else if (hasConflictWithCandidateSlots || hasConflictWithModalSlots) {
+      btn.classList.add('selected-by-candidate')
+      btn.title = 'Ce créneau est déjà sélectionné par ce candidat'
+      btn.disabled = true
+      console.log(`[DEBUG] Bouton marqué comme sélectionné par le candidat: ${startTime}-${endTime}`)
+    }
+  })
+}
+
+// Fonction pour afficher le modal des créneaux confirmés
+function showConfirmedSlotsModal(confirmedSlots) {
+  console.log("[DEBUG] showConfirmedSlotsModal appelée avec:", confirmedSlots)
+  
+  // Créer le modal s'il n'existe pas
+  let modal = document.getElementById('confirmedSlotsModal')
+  if (!modal) {
+    console.log("[DEBUG] Création du modal confirmedSlotsModal")
+    modal = createConfirmedSlotsModal()
+    document.body.appendChild(modal)
+  } else {
+    console.log("[DEBUG] Modal confirmedSlotsModal existe déjà")
+  }
+  
+  // Générer le calendrier professionnel
+  console.log("[DEBUG] Génération du calendrier avec les créneaux:", confirmedSlots)
+  generateConfirmedCalendar(confirmedSlots)
+  
+  // Remplir la liste des créneaux
+  const slotsList = modal.querySelector('#confirmedSlotsList')
+  if (slotsList && confirmedSlots) {
+    slotsList.innerHTML = confirmedSlots.map((slot, index) => {
+      const startDate = new Date(slot.start_time)
+      const endDate = new Date(slot.end_time)
+      
+      const dateStr = startDate.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+      
+      const timeStr = `${startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+      
+      const status = (slot.status || '').toString().toLowerCase()
+      const isReserved = status === 'reserved'
+      const statusIcon = isReserved ? 'fas fa-check-circle' : 'fas fa-user-clock'
+      const statusText = isReserved ? 'Statut: Choisi par le candidat' : 'En attente du candidat'
+      const statusClass = isReserved ? 'selected' : 'pending'
+
+      return `
+        <div class="confirmed-slot-item-modal ${statusClass}">
+          <div class="slot-number">${index + 1}</div>
+          <div class="slot-details">
+            <h4>${dateStr}</h4>
+            <p>${timeStr}</p>
+            <p><strong>Statut:</strong> ${isReserved ? 'Choisi par le candidat' : 'En attente du candidat'}</p>
+          </div>
+          <div class="slot-status-badge ${statusClass}">
+            <i class="${statusIcon}"></i>
+            <span>${statusText}</span>
+          </div>
+        </div>
+      `
+    }).join('')
+  }
+  
+  // Afficher le modal
+  console.log("[DEBUG] Affichage du modal confirmedSlotsModal")
+  modal.style.display = 'block'
+  modal.classList.add('show')
+  console.log("[DEBUG] Modal affiché avec style:", modal.style.display)
+}
+
+// Variables globales pour le calendrier confirmé
+let confirmedCalendarCurrentDate = new Date()
+let globalConfirmedSlots = []
+
+// Variables globales pour les créneaux bloqués
+let blockedSlots = []
+let busyDays = new Set()
+let partiallyOccupiedDays = new Set()
+
+// Fonction pour générer le calendrier professionnel des créneaux confirmés
+function generateConfirmedCalendar(confirmedSlots) {
+  console.log("[DEBUG] generateConfirmedCalendar appelée avec:", confirmedSlots)
+  
+  const calendarDays = document.getElementById('confirmedCalendarDays')
+  const calendarHeader = document.querySelector('.calendar-header-confirmed h3')
+  
+  console.log("[DEBUG] Éléments DOM trouvés:")
+  console.log("  - confirmedCalendarDays:", calendarDays)
+  console.log("  - calendar-header-confirmed h3:", calendarHeader)
+  
+  if (!calendarDays || !calendarHeader) {
+    console.log("[DEBUG] Éléments DOM manquants, arrêt de la génération du calendrier")
+    return
+  }
+  
+  // Stocker les créneaux confirmés globalement pour la navigation
+  if (confirmedSlots) {
+    globalConfirmedSlots = confirmedSlots
+  }
+  
+  // Utiliser la date courante du calendrier confirmé
+  const currentMonth = confirmedCalendarCurrentDate.getMonth()
+  const currentYear = confirmedCalendarCurrentDate.getFullYear()
+  
+  // Mettre à jour le titre avec le mois et l'année
+  const monthNames = [
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+  ]
+  calendarHeader.innerHTML = `<i class="fas fa-calendar-alt"></i> ${monthNames[currentMonth]} ${currentYear} - Créneaux confirmés`
+  
+  // Premier jour du mois
+  const firstDay = new Date(currentYear, currentMonth, 1)
+  const lastDay = new Date(currentYear, currentMonth + 1, 0)
+  
+  // Jours de la semaine (0 = dimanche, 1 = lundi, etc.)
+  const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1 // Convertir pour commencer par lundi
+  
+  // Créer des Sets des dates selon le statut
+  const confirmedDates = new Set()
+  const reservedDates = new Set()
+  const pendingDates = new Set()
+  const slotsToUse = confirmedSlots || globalConfirmedSlots
+  if (slotsToUse) {
+    slotsToUse.forEach(slot => {
+      const slotDate = new Date(slot.start_time)
+      const dateKey = toLocalDateKey(slotDate)
+      confirmedDates.add(dateKey)
+      const status = (slot.status || '').toString().toLowerCase()
+      if (status === 'reserved') reservedDates.add(dateKey)
+      else pendingDates.add(dateKey)
+    })
+  }
+  
+  // Vider le calendrier
+  calendarDays.innerHTML = ''
+  
+  // Ajouter les jours vides du début du mois
+  for (let i = 0; i < startDay; i++) {
+    const emptyDay = document.createElement('div')
+    emptyDay.className = 'calendar-day-confirmed empty'
+    calendarDays.appendChild(emptyDay)
+  }
+  
+  // Ajouter tous les jours du mois
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const dayElement = document.createElement('div')
+    dayElement.className = 'calendar-day-confirmed'
+    
+    const currentDate = new Date(currentYear, currentMonth, day)
+    const dateKey = toLocalDateKey(currentDate)
+    
+    // Numéro du jour
+    const dayNumber = document.createElement('div')
+    dayNumber.className = 'day-number'
+    dayNumber.textContent = day
+    dayElement.appendChild(dayNumber)
+    
+    // Vérifier si c'est aujourd'hui
+    const today = new Date()
+    if (currentDate.toDateString() === today.toDateString()) {
+      dayElement.classList.add('today')
+    }
+    
+    // Vérifier si ce jour a des créneaux confirmés et réserver l'aspect selon statut
+    if (confirmedDates.has(dateKey)) {
+      dayElement.classList.add('has-confirmed-slots')
+      if (reservedDates.has(dateKey)) {
+        dayElement.classList.add('has-reserved-slots')
+      } else if (pendingDates.has(dateKey)) {
+        dayElement.classList.add('has-pending-slots')
+      }
+      
+      // Ajouter les créneaux de ce jour
+      const daySlots = slotsToUse.filter(slot => {
+        const slotDateKey = toLocalDateKey(new Date(slot.start_time))
+        return slotDateKey === dateKey
+      })
+      
+      const slotsContainer = document.createElement('div')
+      slotsContainer.className = 'day-slots'
+      
+      daySlots.forEach(slot => {
+        const startTime = new Date(slot.start_time)
+        const endTime = new Date(slot.end_time)
+        const timeStr = `${startTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}-${endTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+        
+        const slotElement = document.createElement('div')
+        const status = (slot.status || '').toString().toLowerCase()
+        slotElement.className = `day-slot ${status === 'reserved' ? 'selected' : 'pending'}`
+        slotElement.textContent = timeStr
+        slotsContainer.appendChild(slotElement)
+      })
+      
+      dayElement.appendChild(slotsContainer)
+    }
+    
+    calendarDays.appendChild(dayElement)
+  }
+}
+
+// Fonctions de navigation pour le calendrier confirmé
+function previousMonthConfirmed() {
+  confirmedCalendarCurrentDate.setMonth(confirmedCalendarCurrentDate.getMonth() - 1)
+  generateConfirmedCalendar(globalConfirmedSlots)
+}
+
+function nextMonthConfirmed() {
+  confirmedCalendarCurrentDate.setMonth(confirmedCalendarCurrentDate.getMonth() + 1)
+  generateConfirmedCalendar(globalConfirmedSlots)
+}
+
+// Fonction pour créer le modal des créneaux confirmés
+function createConfirmedSlotsModal() {
+  const modal = document.createElement('div')
+  modal.id = 'confirmedSlotsModal'
+  modal.className = 'modal modern-modal-overlay'
+  modal.style.display = 'none'
+  
+  modal.innerHTML = `
+    <div class="modal-content confirmed-slots-modal">
+      <div class="modal-header modern-header">
+        <div class="header-content">
+          <div class="header-icon">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div class="header-text">
+            <h2>Créneaux d'entretien confirmés</h2>
+            <p class="header-subtitle">Confirmés par l'agent RH - En attente de la réponse du candidat</p>
+          </div>
+        </div>
+        <button class="close-btn modern-close" onclick="closeConfirmedSlotsModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body confirmed-slots-body">
+        <div class="confirmed-calendar-container">
+          <div class="calendar-header-confirmed">
+            <div class="calendar-nav-confirmed">
+              <button class="nav-btn-confirmed" onclick="previousMonthConfirmed()">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <h3><i class="fas fa-calendar-alt"></i> Calendrier des créneaux confirmés</h3>
+              <button class="nav-btn-confirmed" onclick="nextMonthConfirmed()">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+            <div class="calendar-legend-confirmed">
+              <div class="legend-item">
+                <div class="legend-color confirmed"></div>
+                <span>Confirmés par l'agent RH</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color pending"></div>
+                <span>En attente de réponse du candidat</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="confirmed-calendar-grid">
+            <div class="calendar-header-days">
+              <div class="day-header">Lun</div>
+              <div class="day-header">Mar</div>
+              <div class="day-header">Mer</div>
+              <div class="day-header">Jeu</div>
+              <div class="day-header">Ven</div>
+              <div class="day-header">Sam</div>
+              <div class="day-header">Dim</div>
+            </div>
+            <div id="confirmedCalendarDays" class="calendar-days-confirmed">
+              <!-- Les jours seront générés dynamiquement -->
+            </div>
+          </div>
+        </div>
+        
+        <div class="confirmed-slots-list-container">
+          <h3><i class="fas fa-list"></i> Créneaux en attente de réponse</h3>
+          <div id="confirmedSlotsList" class="confirmed-slots-list-modal">
+            <!-- Les créneaux seront affichés ici -->
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="closeConfirmedSlotsModal()">
+            <i class="fas fa-times"></i>
+            <span>Fermer</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `
+  
+  return modal
+}
+
+// Fonction pour fermer le modal des créneaux confirmés
+function closeConfirmedSlotsModal() {
+  const modal = document.getElementById('confirmedSlotsModal')
+  if (modal) {
+    modal.style.display = 'none'
+    modal.classList.remove('show')
+  }
+}
+
+// Fonction pour charger les créneaux confirmés (simplifiée)
+async function loadConfirmedSlots() {
+  const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
+  
+  try {
+    const res = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+    const slots = await res.json()
+    
+    const confirmed = slots.filter(slot => slot.is_confirmed)
+    
+    // Stocker les créneaux confirmés dans la variable globale
+    confirmedSlots = confirmed
+    
+    // Mettre à jour l'affichage du calendrier
+    updateCalendarDayStates()
+    // Afficher les heures déjà sélectionnées
+    showSelectedHours()
+    setTimeout(() => showSelectedHours(), 200)
+    setTimeout(() => showSelectedHours(), 500)
+    
+  } catch (e) {
+    console.error('Erreur lors du chargement des créneaux confirmés:', e)
+  }
+}
+
+// Fonction pour charger tous les créneaux bloqués (réservés par d'autres candidats)
+// VERSION MODIFIÉE - Seuls les jours avec TOUS les créneaux occupés sont marqués comme busy
+async function loadBlockedSlots() {
+  const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
+  
+  try {
+    const res = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+    const slots = await res.json()
+    
+    // Filtrer les créneaux qui sont réservés par des candidats (pas libres)
+    const reserved = slots.filter(slot => slot.status === 'RESERVED' || slot.status === 'CONFIRMED')
+    
+    // Stocker les créneaux bloqués
+    blockedSlots = reserved
+    
+    // Analyser les jours pour déterminer leur niveau d'occupation
+    busyDays.clear()
+    partiallyOccupiedDays.clear()
+    const daySlotCounts = new Map()
+    
+    // Compter TOUS les créneaux (réservés + confirmés) par jour
+    // Utiliser seulement les données de l'API pour éviter les incohérences
+    const allOccupiedSlots = slots.filter(slot => slot.status === 'RESERVED' || slot.status === 'CONFIRMED' || slot.is_confirmed)
+    
+    allOccupiedSlots.forEach(slot => {
+      const slotDate = new Date(slot.start_time)
+      const dateKey = toLocalDateKey(slotDate)
+      daySlotCounts.set(dateKey, (daySlotCounts.get(dateKey) || 0) + 1)
+    })
+    
+    // Marquer les jours selon leur niveau d'occupation
+    daySlotCounts.forEach((count, dateKey) => {
+      if (count >= 4) {
+        // Jour complètement occupé (rouge) - 4 créneaux maximum atteints
+        busyDays.add(dateKey)
+      } else if (count > 0) {
+        // Jour partiellement occupé (jaune) - au moins un créneau est pris
+        partiallyOccupiedDays.add(dateKey)
+      }
+    })
+    
+    // Mettre à jour l'affichage du calendrier immédiatement
+    updateCalendarDayStates()
+    // Afficher les heures déjà sélectionnées
+    showSelectedHours()
+    setTimeout(() => showSelectedHours(), 200)
+    setTimeout(() => showSelectedHours(), 500)
+    
+  } catch (e) {
+    console.error('Erreur lors du chargement des créneaux bloqués:', e)
+  }
+}
+
+// Cette fonction n'est plus nécessaire
+
+// Modifier la fonction saveInlineSlots pour créer ET confirmer automatiquement
+async function saveInlineSlotsWithIds() {
+  const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
+  console.log(`[DEBUG] saveInlineSlotsWithIds - currentCandidateId: ${currentCandidateId}, jobId: ${jobId}`)
+  console.log(`[DEBUG] currentAppId: ${currentAppId}`)
+  const inputs = []
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`slot${i}_start`)
+    const e = document.getElementById(`slot${i}_end`)
+    if (s && e && s.value && e.value) {
+      const start = new Date(s.value)
+      const end = new Date(e.value)
+      if (end <= start) {
+        showNotification(`Créneau ${i}: fin doit être après début`, 'error')
+        return
+      }
+      inputs.push({ start, end })
+    }
+  }
+  if (!inputs.length) {
+    showNotification('Veuillez saisir au moins un créneau.', 'info')
+    return
+  }
+  
+  // Vérifier la limite de 4 créneaux par candidat
+  if (currentCandidateId) {
+    const existingSlots = selectedSlotsByCandidate[currentCandidateId] || []
+    const totalSlots = existingSlots.length + inputs.length
+    if (totalSlots > 4) {
+      showNotification(`Ce candidat ne peut pas avoir plus de 4 créneaux. Actuellement: ${existingSlots.length}, ajoutés: ${inputs.length}.`, 'error')
+      return
+    }
+  }
+  
+  // Vérification des conflits d'horaires (même jour OK, même heure NOK)
+  const hasTimeConflict = (a, b) => {
+    // Vérifier si c'est le même jour
+    const sameDay = a.start.toDateString() === b.start.toDateString()
+    if (!sameDay) return false
+    
+    // Si c'est le même jour, vérifier le chevauchement d'horaires
+    return a.start < b.end && a.end > b.start
+  }
+  
+  for (let i = 0; i < inputs.length; i++) {
+    for (let j = i + 1; j < inputs.length; j++) {
+      if (hasTimeConflict(inputs[i], inputs[j])) {
+        showNotification(`Conflit d'horaires entre les créneaux ${i + 1} et ${j + 1}`, 'error')
+        return
+      }
+    }
+  }
+  
+  try {
+    // 1. Créer les créneaux
+    const payload = {
+      job_id: Number(jobId),
+      application_id: currentCandidateId ? Number(currentCandidateId) : null,
+      slots: inputs.map(s => ({ start_time: toLocalISOString(s.start), end_time: toLocalISOString(s.end) }))
+    }
+    console.log(`[DEBUG] Payload de création des créneaux:`, payload)
+    const res = await fetch('/api/hr/interview-slots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const result = await res.json()
+    console.log(`[DEBUG] Réponse de création des créneaux:`, result)
+    if (!res.ok) throw new Error(result.detail || 'Erreur lors de la sauvegarde des créneaux')
+    
+    // 2. Confirmer automatiquement les créneaux créés
+    if (result.created && result.created.length > 0) {
+      const confirmPayload = {
+        job_id: Number(jobId),
+        application_id: currentCandidateId ? Number(currentCandidateId) : null,
+        slot_ids: result.created
+      }
+      console.log(`[DEBUG] Payload de confirmation des créneaux:`, confirmPayload)
+      
+      const confirmRes = await fetch('/api/hr/interview-slots/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(confirmPayload)
+      })
+      
+      if (confirmRes.ok) {
+        showNotification('Créneaux créés et confirmés avec succès ! En attente de la réponse du candidat.', 'success')
+        
+        // 3. Mettre à jour l'interface immédiatement
+        const confirmResult = await confirmRes.json()
+        console.log(`[DEBUG] Réponse de confirmation des créneaux:`, confirmResult)
+        if (confirmResult.confirmed_slots) {
+          // Les créneaux sont maintenant confirmés
+          
+          // Stocker les créneaux pour ce candidat
+          if (currentCandidateId) {
+            selectedSlotsByCandidate[currentCandidateId] = inputs.map((slot, index) => ({
+              start: slot.start,
+              end: slot.end,
+              id: result.created[index]
+            }))
+            console.log(`[DEBUG] Créneaux stockés pour le candidat ${currentCandidateId}:`, selectedSlotsByCandidate[currentCandidateId])
+          }
+          
+          // Mettre à jour le bouton du candidat
+          console.log(`[DEBUG] currentCandidateId lors de la sauvegarde: ${currentCandidateId}`)
+          if (currentCandidateId) {
+            console.log(`[DEBUG] Mise à jour du bouton pour le candidat ${currentCandidateId} après sauvegarde`)
+            await updateCandidateButton(currentCandidateId)
+          } else {
+            console.log(`[DEBUG] currentCandidateId n'est pas défini, mise à jour de tous les boutons`)
+            // Fallback: mettre à jour tous les boutons des candidats
+            const allButtons = document.querySelectorAll('[id^="schedule-btn-"]')
+            console.log(`[DEBUG] Boutons trouvés: ${allButtons.length}`)
+            
+            for (const button of allButtons) {
+              const candidateId = button.id.replace('schedule-btn-', '')
+              console.log(`[DEBUG] Mise à jour du bouton pour le candidat: ${candidateId}`)
+              if (candidateId) {
+                await updateCandidateButton(candidateId)
+              }
+            }
+            
+            // Aussi mettre à jour tous les candidats de la liste actuelle
+            if (applications && applications.length > 0) {
+              console.log(`[DEBUG] Mise à jour de tous les candidats de la liste: ${applications.length}`)
+              for (const app of applications) {
+                await updateCandidateButton(app.id)
+              }
+            }
+          }
+          
+          // Récupérer les créneaux confirmés pour les afficher
+          const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+          const slotsData = await slotsRes.json()
+          const confirmedSlotsData = slotsData.filter(slot => slot.is_confirmed)
+          
+          // Mettre à jour les créneaux confirmés
+          confirmedSlots = confirmedSlotsData
+          
+          // Recharger les créneaux bloqués pour mettre à jour la coloration AVANT updateCalendarDayStates
+          await loadBlockedSlots()
+          
+          // Attendre un petit délai pour s'assurer que les données sont bien mises à jour
+          setTimeout(() => {
+            updateCalendarDayStates()
+          }, 100)
+          
+          // Force update de tous les boutons après un délai pour s'assurer que tout est bien mis à jour
+          setTimeout(async () => {
+            console.log(`[DEBUG] Force update après sauvegarde`)
+            await forceUpdateAllButtons()
+          }, 1000)
+          
+          // Recharger les applications pour mettre à jour les boutons
+          setTimeout(() => {
+            loadApplications()
+          }, 1000)
+          
+          // Informer l'utilisateur que l'email a été envoyé automatiquement
+          if (currentCandidateId) {
+            showNotification('Créneaux confirmés et email d\'invitation envoyé automatiquement au candidat !', 'success')
+          }
+        }
+      } else {
+        showNotification('Créneaux créés mais erreur lors de la confirmation', 'warning')
+      }
+    }
+    
+    clearInlineSlots()
+    closeScheduleModal()
+    
+  } catch (e) {
+    showNotification(e.message || 'Erreur serveur', 'error')
+  }
+}
+
+function openScheduleModal() {
+  // Ne plus bloquer l'accès - permettre la sélection pour tous les candidats
+  // Réinitialiser currentCandidateId pour le modal global
+  currentCandidateId = null
+  currentAppId = null
+  
+  const modal = document.getElementById('scheduleInterviewModal')
+  if (!modal) return
+  modal.style.display = 'block'
+  modal.classList.add('show')
+  initGoogleSection()
+  bindSlotInputsForGoogle()
+}
+
+function closeScheduleModal() {
+  const modal = document.getElementById('scheduleInterviewModal')
+  if (!modal) return
+  modal.style.display = 'none'
+  modal.classList.remove('show')
+}
+
+function clearModalSlots() { clearInlineSlots() }
+async function saveModalSlots() { 
+  await saveInlineSlotsWithIds(); 
+  closeScheduleModal(); 
+}
+
+// Variables globales pour le calendrier Google
+let googleCalendarEmbedded = false;
+let currentCalendarView = 'month';
+let selectedCalendarId = null;
+
+// Variables globales pour le calendrier permanent
+let currentDate = new Date();
+// selectedDays n'est plus utilisé pour contraindre la sélection; on dérive l'état depuis les inputs de créneaux
+let selectedDays = new Set();
+let calendarInitialized = false;
+
+// Helper global: compter les créneaux remplis (start & end) pour le candidat courant
+function getFilledSlotsCount() {
+  // Si on est dans le contexte d'un candidat spécifique, compter ses créneaux
+  if (currentCandidateId && selectedSlotsByCandidate[currentCandidateId]) {
+    return selectedSlotsByCandidate[currentCandidateId].length
+  }
+  
+  // Sinon, compter les créneaux globaux (pour compatibilité)
+  let filled = 0
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`slot${i}_start`)
+    const e = document.getElementById(`slot${i}_end`)
+    if (s && e && s.value && e.value) filled++
+  }
+  return filled
+}
+
+// Helper: vérifier s'il existe un créneau pour une date donnée (AAAA-MM-JJ)
+function hasSlotOnDate(dateString) {
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`slot${i}_start`)
+    if (s && s.value) {
+      const d = new Date(s.value)
+      const k = d.toISOString().split('T')[0]
+      if (k === dateString) return true
+    }
+  }
+  return false
+}
+
+async function initGoogleSection() {
+  const statusBadge = document.getElementById('googleStatusBadge')
+  const btn = document.getElementById('btnConnectGoogle')
+  const sel = document.getElementById('googleCalendarSelect')
+  const info = document.getElementById('googleConflictInfo')
+  const calendarContainer = document.getElementById('googleCalendarContainer')
+  
+  if (!statusBadge || !btn || !sel || !info || !calendarContainer) return
+  
+  // Vérifier les paramètres URL pour les erreurs ou succès
+  const urlParams = new URLSearchParams(window.location.search)
+  const connected = urlParams.get('connected')
+  const error = urlParams.get('error')
+  
+  // Afficher les messages d'erreur ou de succès
+  if (error) {
+    let errorMessage = ''
+    switch (error) {
+      case 'session_expired':
+        errorMessage = 'Session expirée. Veuillez vous reconnecter.'
+        break
+      case 'not_authenticated':
+        errorMessage = 'Vous devez être connecté pour utiliser Google Calendar.'
+        break
+      case 'google_auth_failed':
+        errorMessage = 'Échec de l\'authentification Google. Veuillez réessayer.'
+        break
+      case 'google_callback_error':
+        errorMessage = 'Erreur lors de la connexion à Google Calendar.'
+        break
+      default:
+        errorMessage = 'Erreur lors de la connexion Google Calendar.'
+    }
+    
+    // Afficher l'erreur dans le badge
+    statusBadge.textContent = 'Erreur'
+    statusBadge.className = 'error'
+    statusBadge.title = errorMessage
+    
+    console.error('Google Calendar Error:', errorMessage)
+    
+    // Nettoyer l'URL
+    const newUrl = window.location.pathname
+    window.history.replaceState({}, document.title, newUrl)
+  }
+  
+  try {
+    // Récupérer le token JWT depuis localStorage
+    const accessToken = localStorage.getItem('hr_access_token')
+    if (!accessToken) {
+      console.error('No HR access token found')
+      statusBadge.textContent = 'Non connecté'
+      statusBadge.className = 'disconnected'
+      statusBadge.title = 'Vous devez être connecté pour utiliser Google Calendar'
+      btn.style.display = 'inline-block'
+      sel.style.display = 'none'
+      calendarContainer.style.display = 'none'
+      info.textContent = ''
+      return
+    }
+    
+    const response = await fetch('/api/hr/google/status', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+    
+    const s = await response.json()
+    if (s.connected) {
+      statusBadge.textContent = 'Connecté'
+      statusBadge.className = 'connected'
+      statusBadge.title = 'Google Calendar connecté avec succès'
+      btn.style.display = 'none'
+      sel.style.display = 'inline-block'
+      calendarContainer.style.display = 'block'
+      
+      try {
+        const listResponse = await fetch('/api/hr/google/calendar-list', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        })
+        
+        if (!listResponse.ok) {
+          throw new Error(`HTTP ${listResponse.status}: ${listResponse.statusText}`)
+        }
+        
+        const list = await listResponse.json()
+      if (list.success) {
+        sel.innerHTML = list.calendars.map(c=>`<option value="${c.id}">${c.summary}</option>`).join('')
+          selectedCalendarId = list.calendars[0]?.id
+          loadGoogleCalendarEmbed()
+        } else {
+          console.error('Failed to load calendar list:', list)
+        }
+      } catch (listError) {
+        console.error('Error loading calendar list:', listError)
+        info.textContent = 'Erreur lors du chargement des calendriers'
+        info.style.color = '#c0392b'
+      }
+      
+      await checkGoogleConflicts()
+    } else {
+      statusBadge.textContent = 'Déconnecté'
+      statusBadge.className = 'disconnected'
+      statusBadge.title = 'Cliquez pour connecter Google Calendar'
+      btn.style.display = 'inline-block'
+      sel.style.display = 'none'
+      calendarContainer.style.display = 'none'
+      info.textContent = ''
+    }
+    
+    // Toujours initialiser le calendrier permanent
+    initPermanentCalendar()
+  } catch (e) {
+    console.error('Error initializing Google section:', e)
+    statusBadge.textContent = 'Erreur'
+    statusBadge.className = 'error'
+    statusBadge.title = 'Erreur de connexion au serveur'
+    btn.style.display = 'inline-block'
+    sel.style.display = 'none'
+    calendarContainer.style.display = 'none'
+    info.textContent = 'Erreur de connexion au serveur'
+    info.style.color = '#c0392b'
+  }
+}
+
+function loadGoogleCalendarEmbed() {
+  const calendarEmbed = document.getElementById('googleCalendarEmbed')
+  if (!calendarEmbed || !selectedCalendarId) return
+  
+  // Afficher l'état de chargement
+  calendarEmbed.innerHTML = `
+    <div class="calendar-loading">
+      <i class="fas fa-spinner"></i>
+      Chargement du calendrier Google...
+    </div>
+  `
+  
+  // Créer l'URL d'embed du calendrier Google
+  const calendarUrl = `https://calendar.google.com/calendar/embed?src=${selectedCalendarId}&ctz=Europe%2FParis&mode=${currentCalendarView}&showTitle=0&showNav=1&showDate=1&showTabs=1&showCalendars=0&showTz=0`
+  
+  // Créer l'iframe
+  const iframe = document.createElement('iframe')
+  iframe.src = calendarUrl
+  iframe.style.width = '100%'
+  iframe.style.height = '400px'
+  iframe.style.border = 'none'
+  iframe.style.borderRadius = '8px'
+  
+  // Remplacer le contenu de chargement par l'iframe
+  setTimeout(() => {
+    calendarEmbed.innerHTML = ''
+    calendarEmbed.appendChild(iframe)
+    googleCalendarEmbedded = true
+  }, 1000)
+}
+
+function refreshGoogleCalendar() {
+  if (googleCalendarEmbedded) {
+    loadGoogleCalendarEmbed()
+  }
+}
+
+function toggleCalendarView() {
+  const viewText = document.getElementById('calendarViewText')
+  if (currentCalendarView === 'month') {
+    currentCalendarView = 'week'
+    viewText.textContent = 'Vue hebdomadaire'
+  } else {
+    currentCalendarView = 'month'
+    viewText.textContent = 'Vue mensuelle'
+  }
+  loadGoogleCalendarEmbed()
+}
+
+// Gestionnaire pour le changement de calendrier
+document.addEventListener('DOMContentLoaded', function() {
+  const calendarSelect = document.getElementById('googleCalendarSelect')
+  if (calendarSelect) {
+    calendarSelect.addEventListener('change', function() {
+      selectedCalendarId = this.value
+      loadGoogleCalendarEmbed()
+    })
+  }
+  
+  // Initialiser le calendrier permanent immédiatement
+  setTimeout(() => {
+    initPermanentCalendar()
+  }, 100)
+  
+  // Afficher les heures déjà sélectionnées après un délai plus long
+  setTimeout(() => {
+    showSelectedHours()
+  }, 1000)
+})
+
+// Fonctions pour le calendrier permanent
+async function initPermanentCalendar() {
+  if (calendarInitialized) return
+  
+  // Rendre le calendrier d'abord
+  renderCalendar()
+  
+  // Charger les données
+  await Promise.all([
+    loadBlockedSlots(),
+    loadConfirmedSlots()
+  ])
+  
+  // Re-rendre le calendrier APRÈS avoir chargé les données
+  renderCalendar()
+  updateCalendarDayStates()
+  
+  // Afficher les heures déjà sélectionnées
+  showSelectedHours()
+  setTimeout(() => showSelectedHours(), 200)
+  setTimeout(() => showSelectedHours(), 500)
+  setTimeout(() => showSelectedHours(), 1000)
+  
+  calendarInitialized = true
+}
+
+function renderCalendar() {
+  const calendarDays = document.getElementById('calendarDays')
+  const currentMonthYear = document.getElementById('currentMonthYear')
+  
+  if (!calendarDays || !currentMonthYear) return
+  
+  // Mettre à jour le titre
+  const monthNames = [
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+  ]
+  currentMonthYear.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+  
+  // Calculer le premier jour du mois et le nombre de jours
+  const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+  const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+  const startDate = new Date(firstDay)
+  startDate.setDate(startDate.getDate() - (firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1))
+  
+  // Générer les jours
+  calendarDays.innerHTML = ''
+  
+  for (let i = 0; i < 42; i++) {
+    const dayDate = new Date(startDate)
+    dayDate.setDate(startDate.getDate() + i)
+    
+    const dayElement = document.createElement('div')
+    dayElement.className = 'calendar-day'
+    dayElement.dataset.date = toLocalDateKey(dayDate)
+    
+    // Numéro du jour
+    const dayNumber = document.createElement('div')
+    dayNumber.className = 'calendar-day-number'
+    dayNumber.textContent = dayDate.getDate()
+    dayElement.appendChild(dayNumber)
+    
+    // Vérifier si c'est aujourd'hui
+    const todayCheck = new Date()
+    if (dayDate.toDateString() === todayCheck.toDateString()) {
+      dayElement.classList.add('today')
+    }
+    
+    // Vérifier si c'est un autre mois
+    if (dayDate.getMonth() !== currentDate.getMonth()) {
+      dayElement.classList.add('other-month')
+    }
+    
+    // Marquer sélection selon les créneaux actuels
+    const dateString = toLocalDateKey(dayDate)
+    // L'état 'selected' sera recalculé par updateCalendarDayStates
+    
+    // Vérifier le niveau d'occupation du jour IMMÉDIATEMENT lors du rendu
+    if (busyDays.has(dateString)) {
+      // Jour complètement occupé (rouge)
+      dayElement.classList.add('busy')
+      
+      // Ajouter un indicateur visuel pour les jours complètement occupés
+      if (!dayElement.querySelector('.blocked-indicator')) {
+        const blockedIndicator = document.createElement('div')
+        blockedIndicator.className = 'blocked-indicator'
+        blockedIndicator.innerHTML = '<i class="fas fa-ban"></i>'
+        blockedIndicator.title = 'Tous les créneaux de cette date sont occupés'
+        dayElement.appendChild(blockedIndicator)
+      }
+    } else if (partiallyOccupiedDays.has(dateString)) {
+      // Jour partiellement occupé (jaune)
+      dayElement.classList.add('partially-occupied')
+      
+      // Ajouter un indicateur visuel pour les jours partiellement occupés
+      if (!dayElement.querySelector('.partial-indicator')) {
+        const partialIndicator = document.createElement('div')
+        partialIndicator.className = 'partial-indicator'
+        partialIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i>'
+        partialIndicator.title = 'Certains créneaux de cette date sont occupés'
+        dayElement.appendChild(partialIndicator)
+      }
+    }
+    
+    // SUPPRIMÉ: La logique reserved-by-me qui causait la confusion des couleurs
+    // Les jours avec des créneaux confirmés utiliseront maintenant les couleurs d'occupation
+    
+    // Ajouter les événements si connecté à Google
+    if (googleCalendarEmbedded && selectedCalendarId) {
+      // Ici on pourrait ajouter des événements Google Calendar
+    }
+    
+    // Vérifier si c'est une date passée
+    const todayForPast = new Date()
+    todayForPast.setHours(0, 0, 0, 0) // Reset to start of day
+    if (dayDate < todayForPast) {
+      dayElement.classList.add('past-date')
+    }
+    
+    // Gestionnaire de clic: ouvrir le sélecteur
+    dayElement.addEventListener('click', async function() {
+      // Seuls les jours passés et désactivés sont bloqués
+      if (this.classList.contains('disabled') || this.classList.contains('past-date')) {
+        // Afficher un message explicatif selon le type de blocage
+        if (this.classList.contains('past-date')) {
+          showNotification('Vous ne pouvez pas programmer d\'entretien dans le passé.', 'warning')
+        }
+        return
+      }
+      
+      const dateString = this.dataset.date
+      // Pré-remplir le modal avec les créneaux existants sur cette date (si présents)
+      await showTimeSelector(dateString, this)
+    })
+    
+    calendarDays.appendChild(dayElement)
+  }
+  
+  // Afficher les heures déjà sélectionnées
+  showSelectedHours()
+  setTimeout(() => showSelectedHours(), 200)
+  setTimeout(() => showSelectedHours(), 500)
+}
+
+function previousMonth() {
+  currentDate.setMonth(currentDate.getMonth() - 1)
+  renderCalendar()
+  // Mettre à jour les états des jours après le re-rendu
+  updateCalendarDayStates()
+  showSelectedHours()
+  setTimeout(() => showSelectedHours(), 200)
+  setTimeout(() => showSelectedHours(), 500)
+}
+
+function nextMonth() {
+  currentDate.setMonth(currentDate.getMonth() + 1)
+  renderCalendar()
+  // Mettre à jour les états des jours après le re-rendu
+  updateCalendarDayStates()
+  showSelectedHours()
+  setTimeout(() => showSelectedHours(), 200)
+  setTimeout(() => showSelectedHours(), 500)
+}
+
+function goToToday() {
+  currentDate = new Date()
+  renderCalendar()
+  // Mettre à jour les états des jours après le re-rendu
+  updateCalendarDayStates()
+  showSelectedHours()
+  setTimeout(() => showSelectedHours(), 200)
+  setTimeout(() => showSelectedHours(), 500)
+}
+
+function updateSlotsFromSelectedDays() {
+  if (selectedDays.size === 0) return
+  
+  // Convertir les jours sélectionnés en créneaux
+  const selectedDates = Array.from(selectedDays).sort()
+  
+  // Effacer les créneaux existants
+  for (let i = 1; i <= 4; i++) {
+    const startInput = document.getElementById(`slot${i}_start`)
+    const endInput = document.getElementById(`slot${i}_end`)
+    if (startInput) startInput.value = ''
+    if (endInput) endInput.value = ''
+  }
+  
+  // Remplir les créneaux avec les jours sélectionnés
+  // Permettre plusieurs créneaux le même jour avec des horaires différents
+  selectedDates.forEach((dateString, index) => {
+    if (index >= 4) return // Max 4 créneaux
+    
+    // Fix date offset: parse date components to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number)
+    const startTime = new Date(year, month - 1, day)
+    const endTime = new Date(year, month - 1, day)
+    
+    // Horaires par défaut différents pour éviter les conflits
+    const defaultHours = [
+      { start: 9, end: 10 },   // 9h-10h
+      { start: 11, end: 12 },  // 11h-12h
+      { start: 14, end: 15 },  // 14h-15h
+      { start: 16, end: 17 }   // 16h-17h
+    ]
+    
+    const hourIndex = index % defaultHours.length
+    startTime.setHours(defaultHours[hourIndex].start, 0, 0, 0)
+    endTime.setHours(defaultHours[hourIndex].end, 0, 0, 0)
+    
+    const startInput = document.getElementById(`slot${index + 1}_start`)
+    const endInput = document.getElementById(`slot${index + 1}_end`)
+    
+    if (startInput && endInput) {
+      // Use local datetime string for datetime-local inputs (avoid TZ shift)
+      startInput.value = toLocalDatetimeValue(startTime)
+      endInput.value = toLocalDatetimeValue(endTime)
+    }
+  })
+  
+  // Vérifier les conflits Google et les conflits d'horaires
+  checkGoogleConflicts()
+  validateSlotTimes()
+}
+
+// Fonction pour forcer l'application des styles
+function forceApplyCalendarStyles() {
+  const allDays = document.querySelectorAll('.calendar-day')
+  
+  allDays.forEach(day => {
+    const dateString = day.dataset.date
+    
+    // Forcer l'application des styles selon les données
+    if (busyDays.has(dateString)) {
+      day.classList.add('busy')
+      day.classList.remove('partially-occupied')
+      
+      // Forcer l'application des styles CSS avec !important
+      day.style.setProperty('background', '#fef2f2', 'important')
+      day.style.setProperty('color', '#dc2626', 'important')
+      day.style.setProperty('border-color', '#dc2626', 'important')
+      day.style.setProperty('border-width', '2px', 'important')
+      day.style.setProperty('font-weight', '600', 'important')
+      
+      // Ajouter l'indicateur si manquant
+      if (!day.querySelector('.blocked-indicator')) {
+        const indicator = document.createElement('div')
+        indicator.className = 'blocked-indicator'
+        indicator.innerHTML = '<i class="fas fa-ban"></i>'
+        indicator.title = 'Tous les créneaux de cette date sont occupés'
+        day.appendChild(indicator)
+      }
+    } else if (partiallyOccupiedDays.has(dateString)) {
+      day.classList.add('partially-occupied')
+      day.classList.remove('busy')
+      
+      // Forcer l'application des styles CSS avec !important
+      day.style.setProperty('background', '#fef3c7', 'important')
+      day.style.setProperty('color', '#d97706', 'important')
+      day.style.setProperty('border-color', '#f59e0b', 'important')
+      day.style.setProperty('border-width', '2px', 'important')
+      day.style.setProperty('font-weight', '600', 'important')
+      
+      // Ajouter l'indicateur si manquant
+      if (!day.querySelector('.partial-indicator')) {
+        const indicator = document.createElement('div')
+        indicator.className = 'partial-indicator'
+        indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i>'
+        indicator.title = 'Certains créneaux de cette date sont occupés'
+        day.appendChild(indicator)
+      }
+    }
+  })
+}
+
+// Fonction pour afficher les heures déjà sélectionnées en jaune
+function showSelectedHours() {
+  // Attendre que le DOM soit prêt
+  setTimeout(() => {
+    const allDays = document.querySelectorAll('.calendar-day')
+    
+    allDays.forEach(day => {
+      const dateString = day.dataset.date
+      
+      // Vérifier si ce jour a des créneaux confirmés
+      const hasConfirmedSlots = confirmedSlots && confirmedSlots.some(slot => {
+        const slotDate = new Date(slot.start_time)
+        const slotDateKey = toLocalDateKey(slotDate)
+        return slotDateKey === dateString
+      })
+      
+      if (hasConfirmedSlots) {
+        // Afficher les heures confirmées en jaune
+        day.style.background = '#fef3c7'
+        day.style.color = '#d97706'
+        day.style.borderColor = '#f59e0b'
+        day.style.borderWidth = '2px'
+        day.style.fontWeight = '600'
+        
+        // Ajouter un indicateur pour montrer qu'il y a des heures sélectionnées
+        if (!day.querySelector('.selected-hours-indicator')) {
+          const indicator = document.createElement('div')
+          indicator.className = 'selected-hours-indicator'
+          indicator.innerHTML = '<i class="fas fa-clock"></i>'
+          indicator.title = 'Heures déjà sélectionnées sur cette date'
+          day.appendChild(indicator)
+        }
+      } else {
+        // Réinitialiser les styles si pas de créneaux confirmés
+        day.style.background = ''
+        day.style.color = ''
+        day.style.borderColor = ''
+        day.style.borderWidth = ''
+        day.style.fontWeight = ''
+        
+        // Supprimer l'indicateur
+        const existingIndicator = day.querySelector('.selected-hours-indicator')
+        if (existingIndicator) {
+          existingIndicator.remove()
+        }
+      }
+    })
+  }, 100)
+}
+
+// Fonction pour forcer l'application des styles avec retry
+function forceApplyCalendarStylesWithRetry() {
+  forceApplyCalendarStyles()
+  
+  // Retry après 200ms si les données ne sont pas encore chargées
+  setTimeout(() => {
+    if (busyDays.size > 0 || partiallyOccupiedDays.size > 0) {
+      forceApplyCalendarStyles()
+    }
+  }, 200)
+  
+  // Retry après 500ms pour s'assurer que tout est appliqué
+  setTimeout(() => {
+    forceApplyCalendarStyles()
+  }, 500)
+  
+  // Retry après 1000ms pour les cas les plus lents
+  setTimeout(() => {
+    forceApplyCalendarStyles()
+  }, 1000)
+  
+  // Retry après 2000ms pour les cas très lents
+  setTimeout(() => {
+    forceApplyCalendarStyles()
+  }, 2000)
+}
+
+// Système de surveillance pour détecter les changements de données
+let lastBusyDaysSize = 0
+let lastPartiallyOccupiedDaysSize = 0
+
+function watchForDataChanges() {
+  const currentBusySize = busyDays.size
+  const currentPartiallySize = partiallyOccupiedDays.size
+  
+  if (currentBusySize !== lastBusyDaysSize || currentPartiallySize !== lastPartiallyOccupiedDaysSize) {
+    // Les données ont changé, forcer l'application des styles
+    forceApplyCalendarStyles()
+    lastBusyDaysSize = currentBusySize
+    lastPartiallyOccupiedDaysSize = currentPartiallySize
+  }
+}
+
+// Démarrer la surveillance
+setInterval(watchForDataChanges, 100)
+
+function updateCalendarDayStates() {
+  const allDays = document.querySelectorAll('.calendar-day')
+  // Recalcule les jours marqués comme sélectionnés à partir des 4 inputs de créneaux
+  const selectedBySlots = new Set()
+  const confirmedBySlots = new Set()
+  
+  // Collecter les créneaux actuels (non confirmés)
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`slot${i}_start`)
+    if (s && s.value) {
+      const d = new Date(s.value)
+      const k = toLocalDateKey(d)
+      selectedBySlots.add(k)
+    }
+  }
+  
+  // Collecter les créneaux confirmés depuis la base de données
+  if (confirmedSlots && confirmedSlots.length > 0) {
+    confirmedSlots.forEach(slot => {
+      if (slot.start_time) {
+        const d = new Date(slot.start_time)
+        const k = toLocalDateKey(d)
+        confirmedBySlots.add(k)
+      }
+    })
+  }
+  
+  allDays.forEach(day => {
+    const dateString = day.dataset.date
+    
+    // Supprimer seulement les classes de statut de sélection, pas les classes busy/reserved-by-me
+    day.classList.remove('selected', 'confirmed', 'disabled')
+    
+    // Vérifier le niveau d'occupation du jour
+    const shouldBeBusy = busyDays.has(dateString)
+    const shouldBePartiallyOccupied = partiallyOccupiedDays.has(dateString)
+    
+    if (confirmedBySlots.has(dateString)) {
+      // Jour avec créneaux confirmés - utiliser les couleurs d'occupation au lieu de 'confirmed'
+      day.classList.remove('confirmed', 'reserved-by-me')
+      day.style.cursor = 'pointer'
+      day.style.opacity = '1'
+      
+      // Appliquer les couleurs d'occupation selon le niveau
+      if (shouldBeBusy) {
+        day.classList.add('busy')
+        day.classList.remove('partially-occupied')
+      } else if (shouldBePartiallyOccupied) {
+        day.classList.add('partially-occupied')
+        day.classList.remove('busy')
+      }
+      
+      // GARDER le gestionnaire de clic
+    } else if (selectedBySlots.has(dateString)) {
+      // Jour avec créneaux non confirmés
+      day.classList.add('selected')
+      day.style.cursor = 'pointer'
+      day.style.opacity = '1'
+    } else {
+      // Jour normal - restaurer l'état d'occupation si nécessaire
+      day.style.cursor = 'pointer'
+      day.style.opacity = '1'
+      
+      if (shouldBeBusy) {
+        // Jour complètement occupé (rouge)
+        day.classList.add('busy')
+        day.classList.remove('partially-occupied')
+        // S'assurer que l'indicateur bloqué est présent
+        if (!day.querySelector('.blocked-indicator')) {
+          const blockedIndicator = document.createElement('div')
+          blockedIndicator.className = 'blocked-indicator'
+          blockedIndicator.innerHTML = '<i class="fas fa-ban"></i>'
+          blockedIndicator.title = 'Tous les créneaux de cette date sont occupés'
+          day.appendChild(blockedIndicator)
+        }
+        // Supprimer l'indicateur partiel s'il existe
+        const existingPartialIndicator = day.querySelector('.partial-indicator')
+        if (existingPartialIndicator) {
+          existingPartialIndicator.remove()
+        }
+      } else if (shouldBePartiallyOccupied) {
+        // Jour partiellement occupé (jaune)
+        day.classList.add('partially-occupied')
+        day.classList.remove('busy')
+        // S'assurer que l'indicateur partiel est présent
+        if (!day.querySelector('.partial-indicator')) {
+          const partialIndicator = document.createElement('div')
+          partialIndicator.className = 'partial-indicator'
+          partialIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i>'
+          partialIndicator.title = 'Certains créneaux de cette date sont occupés'
+          day.appendChild(partialIndicator)
+        }
+        // Supprimer l'indicateur bloqué s'il existe
+        const existingBlockedIndicator = day.querySelector('.blocked-indicator')
+        if (existingBlockedIndicator) {
+          existingBlockedIndicator.remove()
+        }
+      } else {
+        // Jour libre - supprimer tous les indicateurs
+        day.classList.remove('busy', 'partially-occupied')
+        const existingBlockedIndicator = day.querySelector('.blocked-indicator')
+        const existingPartialIndicator = day.querySelector('.partial-indicator')
+        if (existingBlockedIndicator) existingBlockedIndicator.remove()
+        if (existingPartialIndicator) existingPartialIndicator.remove()
+      }
+    }
+  })
+  
+  // Afficher les heures déjà sélectionnées
+  showSelectedHours()
+  setTimeout(() => showSelectedHours(), 200)
+  setTimeout(() => showSelectedHours(), 500)
+}
+
+function validateSlotTimes() {
+  const inputs = []
+  
+  // Collecter tous les créneaux saisis
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`slot${i}_start`)
+    const e = document.getElementById(`slot${i}_end`)
+    if (s && e && s.value && e.value) {
+      const start = new Date(s.value)
+      const end = new Date(e.value)
+      if (end > start) {
+        inputs.push({ start, end, slotNumber: i })
+      }
+    }
+  }
+  
+  // SUPPRIMÉ: Vérification des conflits d'horaires pour permettre 4 créneaux le même jour
+  // Permettre plusieurs créneaux le même jour sans conflit
+  
+  // Réinitialiser tous les statuts
+  for (let i = 1; i <= 4; i++) {
+    updateSlotStatus(i, 'free')
+  }
+  
+  // Marquer tous les créneaux comme valides (pas de conflits)
+  for (let i = 0; i < inputs.length; i++) {
+    updateSlotStatus(inputs[i].slotNumber, 'free')
+  }
+}
+
+async function showTimeSelector(dateString, dayElement) {
+  const [y, m, d] = dateString.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const formattedDate = date.toLocaleDateString('fr-FR', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  })
+  
+  // Créer le modal de sélection d'heure
+  const modal = document.createElement('div')
+  modal.className = 'time-selector-modal'
+  modal.innerHTML = `
+    <div class="time-selector-overlay">
+      <div class="time-selector-content">
+        <div class="time-selector-header">
+          <h3>Choisir jusqu'à 4 créneaux pour le ${formattedDate}</h3>
+          <button class="time-selector-close" aria-label="Fermer">&times;</button>
+        </div>
+        <div class="time-selector-body">
+          <div class="time-info">Sélectionnez des heures (max 4). Les choix seront mis en évidence et remplis dans les créneaux.</div>
+          ${dayElement && dayElement.classList.contains('busy') ? '<div class="busy-day-warning">⚠️ Cette date a atteint sa limite de 4 créneaux. Vous ne pouvez pas ajouter de nouveaux créneaux.</div>' : ''}
+          <div class="time-inputs">
+            <div class="time-input-group">
+              <label>Heure de début :</label>
+              <input type="time" id="timeStart" value="09:00" class="time-input">
+            </div>
+            <div class="time-input-group">
+              <label>Heure de fin :</label>
+              <input type="time" id="timeEnd" value="10:00" class="time-input">
+            </div>
+            <button class="btn-add-time" type="button">Ajouter</button>
+          </div>
+          <div class="time-presets">
+            <h4>Créneaux prédéfinis :</h4>
+            <div class="preset-buttons">
+              <button class="preset-btn" data-start="09:00" data-end="10:00">9h - 10h</button>
+              <button class="preset-btn" data-start="10:00" data-end="11:00">10h - 11h</button>
+              <button class="preset-btn" data-start="11:00" data-end="12:00">11h - 12h</button>
+              <button class="preset-btn" data-start="14:00" data-end="15:00">14h - 15h</button>
+              <button class="preset-btn" data-start="15:00" data-end="16:00">15h - 16h</button>
+              <button class="preset-btn" data-start="16:00" data-end="17:00">16h - 17h</button>
+            </div>
+          </div>
+          <div class="selected-times">
+            <h4>Créneaux sélectionnés (<span class="selected-count">0</span>/4) :</h4>
+            <div class="selected-times-list"></div>
+          </div>
+        </div>
+        <div class="time-selector-actions">
+          <button class="btn-cancel-time">Annuler</button>
+          <button class="btn-confirm-time">Confirmer</button>
+        </div>
+      </div>
+    </div>
+  `
+  
+  document.body.appendChild(modal)
+  
+  // Marquer les créneaux occupés dans le modal
+  // S'assurer que les données sont chargées
+  if (!blockedSlots || blockedSlots.length === 0) {
+    await loadBlockedSlots()
+  }
+  if (!confirmedSlots || confirmedSlots.length === 0) {
+    await loadConfirmedSlots()
+  }
+  
+  markOccupiedTimeSlots(modal, dateString)
+  
+  // Gestionnaires d'événements
+  const closeBtn = modal.querySelector('.time-selector-close')
+  const cancelBtn = modal.querySelector('.btn-cancel-time')
+  const confirmBtn = modal.querySelector('.btn-confirm-time')
+  const presetBtns = modal.querySelectorAll('.preset-btn')
+  const startInput = modal.querySelector('#timeStart')
+  const endInput = modal.querySelector('#timeEnd')
+  const addBtn = modal.querySelector('.btn-add-time')
+  const selectedList = modal.querySelector('.selected-times-list')
+  const selectedCountEl = modal.querySelector('.selected-count')
+  
+  // Détecter si l'utilisateur a réellement ajouté/modifié un créneau
+  let userMadeSelection = false
+  
+  // Compter les créneaux déjà remplis globalement (utilise helper global si dispo)
+  const getExistingFilledCount = () => getFilledSlotsCount ? getFilledSlotsCount() : (() => {
+    let c = 0
+    for (let i = 1; i <= 4; i++) {
+      const s = document.getElementById(`slot${i}_start`)
+      const e = document.getElementById(`slot${i}_end`)
+      if (s && e && s.value && e.value) c++
+    }
+    return c
+  })()
+
+  // État local des créneaux sélectionnés (nouveaux) dans ce modal
+  const selectedRanges = []
+  
+  const getRemainingSlotCapacity = () => {
+    let free = 0
+    for (let i = 1; i <= 4; i++) {
+      const s = document.getElementById(`slot${i}_start`)
+      const e = document.getElementById(`slot${i}_end`)
+      if (s && e && (!s.value || !e.value)) free++
+    }
+    return free
+  }
+  
+  const updateSelectedUI = async () => {
+    // Compter TOUS les créneaux existants pour ce candidat (toutes dates confondues)
+    let existingSlotsForCandidate = 0
+    if (currentCandidateId) {
+      for (let i = 1; i <= 4; i++) {
+        const s = document.getElementById(`slot${i}_start`)
+        const e = document.getElementById(`slot${i}_end`)
+        if (s && e && s.value && e.value) {
+          existingSlotsForCandidate++
+        }
+      }
+    }
+    
+    const total = Math.min(4, existingSlotsForCandidate + selectedRanges.length)
+    selectedCountEl.textContent = String(total)
+    selectedList.innerHTML = ''
+    // Show existing slots for this date as chips
+    for (let i = 1; i <= 4; i++) {
+      const s = document.getElementById(`slot${i}_start`)
+      const e = document.getElementById(`slot${i}_end`)
+      if (s && e && s.value && e.value) {
+        const sd = new Date(s.value)
+        const ed = new Date(e.value)
+        const k = sd.toISOString().split('T')[0]
+        if (k === dateString) {
+          const chip = document.createElement('div')
+          chip.className = 'selected-time-chip existing'
+          const timeStr = sd.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' - ' + ed.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+          chip.innerHTML = `<span>${timeStr}</span><button class="remove-chip" data-existing="true" data-slot="${i}" aria-label="Supprimer">&times;</button>`
+          selectedList.appendChild(chip)
+        }
+      }
+    }
+    selectedRanges.forEach((r, idx) => {
+      const chip = document.createElement('div')
+      chip.className = 'selected-time-chip'
+      const timeStr = r.start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' - ' + r.end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      chip.innerHTML = `<span>${timeStr}</span><button class="remove-chip" data-index="${idx}" aria-label="Supprimer">&times;</button>`
+      selectedList.appendChild(chip)
+    })
+    
+    // Vérifier la limite de 4 créneaux par candidat (utiliser le comptage déjà fait)
+    let isCandidateLimitReached = false
+    if (currentCandidateId) {
+      // Vérifier si on peut encore ajouter des créneaux (limite stricte à 4)
+      isCandidateLimitReached = existingSlotsForCandidate >= 4
+    }
+    
+    // Vérifier si le compteur total atteint 4 (créneaux existants + sélectionnés)
+    let isTotalLimitReached = false
+    if (currentCandidateId) {
+      const totalSlots = existingSlotsForCandidate + selectedRanges.length
+      isTotalLimitReached = totalSlots >= 4
+    }
+    
+    // Vérifier la limite de 4 créneaux par date
+    let isDateLimitReached = false
+    try {
+      const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
+      const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+      const slotsData = await slotsRes.json()
+      
+      const existingSlotsOnDate = slotsData.filter(slot => {
+        const slotDate = new Date(slot.start_time)
+        const slotDateString = toLocalDateKey(slotDate)
+        return slotDateString === dateString
+      }).length
+      
+      isDateLimitReached = existingSlotsOnDate >= 4
+    } catch (error) {
+      console.error('Erreur lors de la vérification des créneaux sur la date:', error)
+    }
+    
+    // toggle preset highlight according to selection
+    presetBtns.forEach(btn => {
+      const s = btn.dataset.start
+      const e = btn.dataset.end
+      const exists = selectedRanges.some(r => r.meta === `${s}-${e}`)
+      btn.classList.toggle('selected', !!exists)
+      // Désactiver les boutons si la limite de candidat, de date ou totale est atteinte
+      btn.disabled = isCandidateLimitReached || isDateLimitReached || isTotalLimitReached
+    })
+    
+    // Mettre à jour l'état des boutons après chaque modification
+    markOccupiedTimeSlots(modal, dateString)
+  }
+  
+  const tryAddRange = async (startTimeStr, endTimeStr, metaKey = null) => {
+    if (!startTimeStr || !endTimeStr || endTimeStr <= startTimeStr) return
+    
+    // Vérifier la limite de 4 créneaux par candidat (utiliser les créneaux globaux)
+    if (currentCandidateId) {
+      let existingSlotsForCandidate = 0
+      for (let i = 1; i <= 4; i++) {
+        const s = document.getElementById(`slot${i}_start`)
+        const e = document.getElementById(`slot${i}_end`)
+        if (s && e && s.value && e.value) {
+          existingSlotsForCandidate++
+        }
+      }
+      // Vérifier si on peut encore ajouter des créneaux (limite stricte à 4)
+      if (existingSlotsForCandidate >= 4) {
+        showNotification('Ce candidat a déjà 4 créneaux. Supprimez un créneau pour en ajouter un nouveau.', 'warning')
+        return
+      }
+    }
+    
+    // Vérifier si le compteur total atteint 4 (créneaux existants + sélectionnés)
+    let totalSlots = 0
+    if (currentCandidateId) {
+      let existingSlotsForCandidate = 0
+      for (let i = 1; i <= 4; i++) {
+        const s = document.getElementById(`slot${i}_start`)
+        const e = document.getElementById(`slot${i}_end`)
+        if (s && e && s.value && e.value) {
+          existingSlotsForCandidate++
+        }
+      }
+      totalSlots = existingSlotsForCandidate + selectedRanges.length
+    }
+    
+    if (totalSlots >= 4) {
+      showNotification('Limite de 4 créneaux atteinte. Supprimez un créneau pour en ajouter un nouveau.', 'warning')
+      return
+    }
+    
+    // Vérifier la limite de 4 créneaux par date (tous candidats confondus)
+    try {
+      const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
+      const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+      const slotsData = await slotsRes.json()
+      
+      // Compter les créneaux existants sur cette date
+      const existingSlotsOnDate = slotsData.filter(slot => {
+        const slotDate = new Date(slot.start_time)
+        const slotDateString = toLocalDateKey(slotDate)
+        return slotDateString === dateString
+      }).length
+      
+      // Vérifier si on peut encore ajouter des créneaux
+      if (existingSlotsOnDate >= 4) {
+        showNotification('Cette date a atteint sa limite de 4 créneaux. Choisissez une autre date.', 'warning')
+        return
+      }
+      
+      // Vérifier si l'ajout de ce créneau dépasserait la limite
+      if (existingSlotsOnDate + selectedRanges.length >= 4) {
+        showNotification('Cette date a atteint sa limite de 4 créneaux. Choisissez une autre date.', 'warning')
+        return
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification des créneaux sur la date:', error)
+      // Continuer même en cas d'erreur pour ne pas bloquer la sélection
+    }
+    
+    // Fix date offset bug: create dates in local timezone to avoid UTC conversion
+    const [year, month, day] = dateString.split('-').map(Number)
+    const [startHour, startMinute] = startTimeStr.split(':').map(Number)
+    const [endHour, endMinute] = endTimeStr.split(':').map(Number)
+    
+    const startDateTime = new Date(year, month - 1, day, startHour, startMinute, 0)
+    const endDateTime = new Date(year, month - 1, day, endHour, endMinute, 0)
+    
+    // Vérifier les conflits avec les créneaux bloqués
+    const hasConflictWithBlocked = blockedSlots.some(blockedSlot => {
+      const blockedStart = new Date(blockedSlot.start_time)
+      const blockedEnd = new Date(blockedSlot.end_time)
+      
+      // Vérifier si les créneaux se chevauchent
+      return startDateTime < blockedEnd && endDateTime > blockedStart
+    })
+    
+    if (hasConflictWithBlocked) {
+      showNotification('Ce créneau est déjà réservé par un autre candidat', 'error')
+      return
+    }
+    
+    // SUPPRIMÉ: Vérification des conflits avec les créneaux déjà réservés par le même agent HR
+    // Permettre d'ajouter plusieurs créneaux le même jour
+    // éviter doublons exacts
+    if (selectedRanges.some(r => r.start.getTime() === startDateTime.getTime() && r.end.getTime() === endDateTime.getTime())) return
+    // SUPPRIMÉ: empêcher chevauchement le même jour pour permettre 4 créneaux le même jour
+    selectedRanges.push({ start: startDateTime, end: endDateTime, meta: metaKey || `${startTimeStr}-${endTimeStr}` })
+    await updateSelectedUI()
+  }
+  
+  const removeByIndex = async (idx) => {
+    if (idx < 0 || idx >= selectedRanges.length) return
+    selectedRanges.splice(idx, 1)
+    await updateSelectedUI()
+  }
+  
+  // Fermer le modal
+  const closeModal = () => {
+    document.body.removeChild(modal)
+  }
+  
+  closeBtn.addEventListener('click', closeModal)
+  cancelBtn.addEventListener('click', closeModal)
+  modal.querySelector('.time-selector-overlay').addEventListener('click', (e) => {
+    if (e.target === modal.querySelector('.time-selector-overlay')) {
+      closeModal()
+    }
+  })
+  
+  // Gestion des créneaux prédéfinis (toggle + highlight)
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      // Empêcher la sélection si le bouton est occupé ou réservé
+      if (btn.classList.contains('occupied') || btn.classList.contains('reserved-by-me')) {
+        const message = btn.classList.contains('occupied') 
+          ? 'Ce créneau est réservé par un autre candidat' 
+          : 'Ce créneau est réservé par vous'
+        showNotification(message, 'warning')
+        return
+      }
+      
+      const s = btn.dataset.start
+      const e = btn.dataset.end
+      const key = `${s}-${e}`
+      const idx = selectedRanges.findIndex(r => r.meta === key)
+      if (idx >= 0) {
+        selectedRanges.splice(idx, 1)
+        await updateSelectedUI()
+      } else {
+        await tryAddRange(s, e, key)
+      }
+      userMadeSelection = true
+    })
+  })
+  
+  // Ajouter à partir des inputs manuels
+  addBtn.addEventListener('click', async () => {
+    await tryAddRange(startInput.value, endInput.value)
+    userMadeSelection = true
+  })
+  ;['change','input'].forEach(evt => {
+    startInput.addEventListener(evt, () => { userMadeSelection = true })
+    endInput.addEventListener(evt, () => { userMadeSelection = true })
+  })
+  
+  // Suppression d'un créneau dans la liste sélectionnée
+  selectedList.addEventListener('click', async (e) => {
+    const target = e.target
+    if (target && target.classList.contains('remove-chip')) {
+      const isExisting = target.getAttribute('data-existing') === 'true'
+      if (isExisting) {
+        const slotIdx = Number(target.getAttribute('data-slot'))
+        if (!Number.isNaN(slotIdx)) {
+          const s = document.getElementById(`slot${slotIdx}_start`)
+          const e = document.getElementById(`slot${slotIdx}_end`)
+          if (s) s.value = ''
+          if (e) e.value = ''
+          updateSlotStatus(slotIdx, '')
+          updateSlotStatuses()
+          await updateSelectedUI()
+        }
+      } else {
+        const idx = Number(target.getAttribute('data-index'))
+        await removeByIndex(idx)
+      }
+    }
+  })
+  
+  // Confirmer la sélection
+  confirmBtn.addEventListener('click', async () => {
+    // Vérifier la limite de 4 créneaux par candidat (utiliser les créneaux globaux)
+    if (currentCandidateId) {
+      let existingSlotsForCandidate = 0
+      for (let i = 1; i <= 4; i++) {
+        const s = document.getElementById(`slot${i}_start`)
+        const e = document.getElementById(`slot${i}_end`)
+        if (s && e && s.value && e.value) {
+          existingSlotsForCandidate++
+        }
+      }
+      // Vérifier si on peut encore ajouter des créneaux (limite stricte à 4)
+      if (existingSlotsForCandidate >= 4) {
+        showNotification('Ce candidat a déjà 4 créneaux. Supprimez un créneau pour en ajouter un nouveau.', 'warning')
+        return
+      }
+    }
+    
+    if (getFilledSlotsCount() >= 4) {
+      showNotification('Tous les 4 créneaux sont déjà remplis. Supprimez un créneau pour ajouter un nouveau.', 'warning')
+      return
+    }
+    // N'ajoute rien automatiquement si l'utilisateur n'a rien sélectionné/modifié
+    if (!userMadeSelection && selectedRanges.length === 0) return
+    // Si l'utilisateur a saisi manuellement mais n'a pas cliqué "Ajouter", tenter une seule fois
+    if (userMadeSelection && selectedRanges.length === 0 && startInput.value && endInput.value) {
+      await tryAddRange(startInput.value, endInput.value)
+    }
+    if (selectedRanges.length === 0) return
+    
+    // Remplir uniquement les slots vides sans effacer les existants
+    const toApply = selectedRanges.slice(0, 4)
+    toApply.forEach(r => addTimeSlotToCalendar(dateString, r.start, r.end))
+    // Rafraîchir l'état visuel du calendrier d'après les nouveaux slots
+    await loadBlockedSlots()
+    updateCalendarDayStates()
+    closeModal()
+  })
+
+  // Ne pas dupliquer les créneaux existants dans le panier des "nouveaux".
+  // On affiche seulement ce qui est ajouté pendant cette session; les existants restent visibles via le compteur global et le calendrier.
+  await updateSelectedUI()
+}
+
+function addTimeSlotToCalendar(dateString, startDateTime, endDateTime) {
+  // Trouver le premier slot vide
+  let emptySlotIndex = -1
+  for (let i = 1; i <= 4; i++) {
+    const startInput = document.getElementById(`slot${i}_start`)
+    const endInput = document.getElementById(`slot${i}_end`)
+    if (startInput && endInput && (!startInput.value || !endInput.value)) {
+      emptySlotIndex = i
+      break
+    }
+  }
+  
+  if (emptySlotIndex === -1) {
+    // Tous les slots sont remplis: ne pas remplacer; informer l'utilisateur
+    showNotification('Maximum 4 créneaux atteints. Supprimez un créneau pour en ajouter un nouveau.', 'warning')
+    return
+  }
+  
+  // Remplir le slot
+  const startInput = document.getElementById(`slot${emptySlotIndex}_start`)
+  const endInput = document.getElementById(`slot${emptySlotIndex}_end`)
+  
+  if (startInput && endInput) {
+    startInput.value = toLocalDatetimeValue(startDateTime)
+    endInput.value = toLocalDatetimeValue(endDateTime)
+    
+    // Vérifier les conflits
+    validateSlotTimes()
+    checkGoogleConflicts()
+    
+    // Afficher un message de confirmation
+    const timeStr = startDateTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + 
+                   ' - ' + endDateTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    showNotification(`Créneau ajouté : ${timeStr}`, 'success')
+    // Mettre à jour l'état du calendrier et le compteur global
+    updateCalendarDayStates()
+  }
+}
+
+// Ajouter des boutons pour effacer les créneaux (si non présents)
+document.addEventListener('DOMContentLoaded', () => {
+  for (let i = 1; i <= 4; i++) {
+    const card = document.querySelector(`.slot-card[data-slot="${i}"]`)
+    if (!card) continue
+    let clearBtn = card.querySelector('.slot-clear-btn')
+    if (!clearBtn) {
+      clearBtn = document.createElement('button')
+      clearBtn.type = 'button'
+      clearBtn.className = 'slot-clear-btn'
+      clearBtn.textContent = 'Effacer'
+      clearBtn.style.marginTop = '10px'
+      clearBtn.addEventListener('click', () => {
+        const s = document.getElementById(`slot${i}_start`)
+        const e = document.getElementById(`slot${i}_end`)
+        const st = document.getElementById(`slot${i}_status`)
+        if (s) s.value = ''
+        if (e) e.value = ''
+        // Laisser updateSlotStatuses remettre le statut par défaut
+        updateSlotStatuses()
+        updateCalendarDayStates()
+        checkGoogleConflicts()
+        
+        // Si le modal de sélection est ouvert, rafraîchir le compteur et l'état des presets
+        const modal = document.querySelector('.time-selector-modal')
+        if (modal) {
+          const countEl = modal.querySelector('.selected-count')
+          const chips = modal.querySelectorAll('.selected-times-list .selected-time-chip').length
+          const filled = getFilledSlotsCount()
+          if (countEl) {
+            countEl.textContent = String(Math.min(4, filled + chips))
+          }
+          const presetBtns = modal.querySelectorAll('.preset-btn')
+          const remaining = Math.max(0, 4 - filled)
+          presetBtns.forEach(btn => {
+            const isSelected = btn.classList.contains('selected')
+            btn.disabled = chips >= remaining && !isSelected
+          })
+        }
+      })
+      card.appendChild(clearBtn)
+    }
+  }
+})
+
+function connectGoogle() {
+  // Vérifier que l'utilisateur est connecté
+  const accessToken = localStorage.getItem('hr_access_token')
+  if (!accessToken) {
+    console.error('No HR access token found for Google connection')
+    alert('Vous devez être connecté pour utiliser Google Calendar. Veuillez vous reconnecter.')
+    window.location.href = '/enterprise-login'
+    return
+  }
+  
+  // Redirection simple vers l'endpoint OAuth
+  window.location.href = '/api/hr/google/oauth/start'
+}
+
+function bindSlotInputsForGoogle() {
+  const ids = ['slot1_start','slot1_end','slot2_start','slot2_end','slot3_start','slot3_end','slot4_start','slot4_end','googleCalendarSelect']
+  ids.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) {
+      el.addEventListener('change', debounce(checkGoogleConflicts, 400))
+      // Ajouter la validation des conflits d'horaires
+      if (id.includes('slot') && (id.includes('_start') || id.includes('_end'))) {
+        el.addEventListener('change', debounce(() => { validateSlotTimes(); updateCalendarDayStates() }, 300))
+      }
+    }
+  })
+}
+
+async function checkGoogleConflicts() {
+  const sel = document.getElementById('googleCalendarSelect')
+  const info = document.getElementById('googleConflictInfo')
+  if (!sel || sel.style.display === 'none') { 
+    if (info) info.textContent = ''; 
+    updateSlotStatuses()
+    return 
+  }
+  
+  const calId = sel.value
+  if (!calId) { 
+    if (info) info.textContent = ''; 
+    updateSlotStatuses()
+    return 
+  }
+  
+  const ranges = []
+  for (let i=1;i<=4;i++){
+    const s = document.getElementById(`slot${i}_start`)
+    const e = document.getElementById(`slot${i}_end`)
+    if (s && e && s.value && e.value) {
+      ranges.push({start:s.value, end:e.value, slot:i})
+    }
+  }
+  
+  if (!ranges.length) { 
+    if (info) info.textContent=''; 
+    updateSlotStatuses()
+    return 
+  }
+  
+  const min = new Date(Math.min(...ranges.map(r=>new Date(r.start).getTime()))).toISOString()
+  const max = new Date(Math.max(...ranges.map(r=>new Date(r.end).getTime()))).toISOString()
+  
+  try {
+    // Récupérer le token JWT depuis localStorage
+    const accessToken = localStorage.getItem('hr_access_token')
+    if (!accessToken) {
+      if (info) {
+        info.textContent = 'Token d\'authentification manquant'
+        info.style.color = '#c0392b'
+      }
+      updateSlotStatuses()
+      return
+    }
+    
+    const busyResp = await fetch(`/api/hr/google/busy?calendarId=${encodeURIComponent(calId)}&timeMin=${encodeURIComponent(min)}&timeMax=${encodeURIComponent(max)}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+    
+    if (!busyResp.ok) {
+      if (info) {
+        info.textContent = 'Erreur lors de la vérification des conflits'
+        info.style.color = '#c0392b'
+      }
+      updateSlotStatuses()
+      return
+    }
+    
+    const busyData = await busyResp.json()
+    const busy = busyData.busy || []
+    
+    // Vérifier les conflits pour chaque créneau
+    let hasConflict = false
+    ranges.forEach(range => {
+      const slotConflict = busy.some(b => new Date(range.start) < new Date(b.end) && new Date(range.end) > new Date(b.start))
+      if (slotConflict) {
+        hasConflict = true
+        updateSlotStatus(range.slot, 'conflict')
+      } else {
+        updateSlotStatus(range.slot, 'free')
+      }
+    })
+    
+    if (info) {
+      if (hasConflict) {
+        info.textContent = 'Conflit détecté avec Google Calendar pour au moins un créneau.'
+        info.style.color = '#c0392b'
+      } else {
+        info.textContent = 'Aucun conflit détecté sur Google Calendar.'
+        info.style.color = '#2e7d32'
+      }
+    }
+  } catch (e) {
+    console.error('Error checking Google conflicts:', e)
+    if (info) {
+      info.textContent = 'Erreur lors de la vérification des conflits'
+      info.style.color = '#c0392b'
+    }
+    updateSlotStatuses()
+  }
+}
+
+function updateSlotStatus(slotNumber, status) {
+  const statusElement = document.getElementById(`slot${slotNumber}_status`)
+  if (!statusElement) return
+  
+  // Supprimer toutes les classes de statut
+  statusElement.classList.remove('free', 'busy', 'conflict')
+  
+  // Ajouter la nouvelle classe de statut seulement si elle n'est pas vide
+  if (status && status.trim() !== '') {
+    statusElement.classList.add(status)
+  }
+  
+  // Mettre à jour l'icône et le texte
+  if (status && status.trim() !== '') {
+    switch (status) {
+      case 'free':
+        statusElement.innerHTML = `<i class="fas fa-check-circle"></i> Créneau ${slotNumber} - Libre`
+        break
+      case 'busy':
+        statusElement.innerHTML = `<i class="fas fa-times-circle"></i> Créneau ${slotNumber} - Occupé`
+        break
+      case 'conflict':
+        statusElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Créneau ${slotNumber} - Conflit`
+        break
+      default:
+        statusElement.innerHTML = `<i class="fas fa-circle"></i> Créneau ${slotNumber}`
+    }
+  } else {
+    // Statut vide ou null - remettre l'état par défaut
+    statusElement.innerHTML = `<i class="fas fa-circle"></i> Créneau ${slotNumber}`
+  }
+}
+
+function updateSlotStatuses() {
+  // D'abord recalculer les conflits/validités en fonction des valeurs actuelles
+  validateSlotTimes()
+  for (let i = 1; i <= 4; i++) {
+    const startInput = document.getElementById(`slot${i}_start`)
+    const endInput = document.getElementById(`slot${i}_end`)
+    
+    if (startInput && endInput && startInput.value && endInput.value) {
+      // Vérifier si le créneau est valide
+      const start = new Date(startInput.value)
+      const end = new Date(endInput.value)
+      
+      if (end <= start) {
+        updateSlotStatus(i, 'busy') // Créneau invalide
+      } else {
+        updateSlotStatus(i, 'free') // Créneau valide
+      }
+    } else {
+      // Pas de créneau défini
+      updateSlotStatus(i, '')
+    }
+  }
+  // Après toute mise à jour, rafraîchir le calendrier
+  updateCalendarDayStates()
+
+  // Si un modal temps est ouvert, rafraîchir compteur et état pour refléter slots actuels
+  const modal = document.querySelector('.time-selector-modal')
+  if (modal) {
+    const countEl = modal.querySelector('.selected-count')
+    const chipsCount = modal.querySelectorAll('.selected-times-list .selected-time-chip').length
+    const filled = getFilledSlotsCount()
+    if (countEl) countEl.textContent = String(Math.min(4, filled + chipsCount))
+    const presetBtns = modal.querySelectorAll('.preset-btn')
+    const remaining = Math.max(0, 4 - filled)
+    presetBtns.forEach(btn => {
+      const isSelected = btn.classList.contains('selected')
+      btn.disabled = chipsCount >= remaining && !isSelected
+    })
+  }
+}
+
+function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms) } }
+
 async function loadInterviewDataForApplications() {
-  console.log("[v0] Starting to load interview data for applications:", applications.length)
+  console.log("[v0] Using interview data directly from applications table:", applications.length)
 
   for (let i = 0; i < applications.length; i++) {
     const app = applications[i]
-    console.log("[v0] Processing application ID:", app.id, "for candidate:", app.candidate_profile?.name)
-
-    try {
-      // Fetch interview data for this application
-      const response = await fetch(`/api/interview/${app.id}`)
-      console.log("[v0] API response status for app", app.id, ":", response.status)
-
-      if (response.ok) {
-        const result = await response.json()
-        console.log("[v0] API result for app", app.id, ":", result)
-
-        if (result.success && result.interview) {
-          console.log("[v0] Found interview data for app", app.id, ":", result.interview)
-
-          // Merge interview data with application
-          applications[i].interview_date = result.interview.interview_date
-          applications[i].start_session = result.interview.start_session
-          applications[i].end_session = result.interview.end_session
-          applications[i].candidate_name = result.interview.candidate_name || app.candidate_profile?.name
-          applications[i].interviewer_name = result.interview.interviewer_name
-
-          // Fetch interview results if completed
-          if (result.interview.end_session) {
-            console.log("[v0] Interview completed, fetching results for app", app.id)
-
-            const resultsResponse = await fetch(`/api/interview-result/${app.id}`)
-            console.log("[v0] Results API response status:", resultsResponse.status)
-
-            if (resultsResponse.ok) {
-              const resultsData = await resultsResponse.json()
-              console.log("[v0] Results data for app", app.id, ":", resultsData)
-
-              if (resultsData.success && resultsData.result) {
-                applications[i].interview_result = {
-                  success_rate: resultsData.result.success_rate || 0,
-                  dominant_emotion: resultsData.result.dominant_emotion || "Neutre",
-                  duration: resultsData.result.duration || "N/A",
-                  total_detections: resultsData.result.total_detections || 0,
-                  avg_confidence: resultsData.result.avg_confidence || 0,
-                }
-                console.log("[v0] Merged interview result for app", app.id, ":", applications[i].interview_result)
-              }
-            } else {
-              console.log("[v0] Failed to fetch results for app", app.id, "- status:", resultsResponse.status)
-            }
-          }
-        } else {
-          console.log("[v0] No interview data found for app", app.id, "- result:", result)
-        }
-      } else {
-        console.log("[v0] Failed to fetch interview data for app", app.id, "- status:", response.status)
-      }
-    } catch (error) {
-      console.error(`[v0] Erreur lors du chargement des données d'entretien pour l'application ${app.id}:`, error)
+    console.log("[v0] Application", app.id, "interview data:", {
+      interview_date: app.interview_date,
+      interview_time: app.interview_time,
+      interview_type: app.interview_type,
+      start_session: app.start_session,
+      end_session: app.end_session
+    })
+    
+    // Log détaillé pour l'application 46
+    if (app.id === 46) {
+      console.log("[DEBUG] Application 46 - Toutes les propriétés:", app)
+      console.log("[DEBUG] Application 46 - interview_date:", app.interview_date)
+      console.log("[DEBUG] Application 46 - interview_time:", app.interview_time)
+      console.log("[DEBUG] Application 46 - interview_type:", app.interview_type)
     }
   }
 
-  console.log("[v0] Finished loading interview data. Applications with interview data:")
-  applications.forEach((app) => {
-    if (app.interview_date || app.start_session || app.end_session) {
-      console.log("[v0] App", app.id, "has interview data:", {
-        interview_date: app.interview_date,
-        start_session: app.start_session,
-        end_session: app.end_session,
-        interview_result: app.interview_result,
-      })
-    }
-  })
+  console.log("[v0] Interview data loaded from applications table.")
 }
 
 async function loadJobFromAPI(jobId) {
@@ -164,16 +2528,35 @@ async function loadJobFromAPI(jobId) {
     const response = await fetch(`/api/job-basic/${jobId}`)
     if (response.ok) {
       const result = await response.json()
+      console.log("[DEBUG] Réponse complète de l'API:", result) // <-- AJOUTEZ CE LOG
+      
       if (result.success) {
         currentJob = result.job
         applications = result.job.applications || []
+        console.log("[DEBUG] Applications chargées:", applications) // <-- ET CELUI-CI
 
         if (!applications || applications.length === 0) {
           try {
             const appsResponse = await fetch(`/api/applications?job_id=${jobId}`)
             const appsResult = await appsResponse.json()
+            console.log("[DEBUG] API /api/applications response:", appsResult)
             if (appsResult.success && appsResult.applications) {
               applications = appsResult.applications
+              console.log("[DEBUG] Applications loaded from API:", applications.length)
+              // Log the first application to see its structure
+              if (applications.length > 0) {
+                console.log("[DEBUG] First application data:", applications[0])
+                // Chercher l'application 46 spécifiquement
+                const app46 = applications.find(app => app.id === 46)
+                if (app46) {
+                  console.log("[DEBUG] Application 46 from API:", app46)
+                  console.log("[DEBUG] Application 46 interview fields:", {
+                    interview_date: app46.interview_date,
+                    interview_time: app46.interview_time,
+                    interview_type: app46.interview_type
+                  })
+                }
+              }
             }
           } catch (error) {
             console.error("Erreur récupération candidatures:", error)
@@ -191,6 +2574,8 @@ async function loadJobFromAPI(jobId) {
         renderApplicationsWithCompatibility()
         updateCompatibilityStats()
         updateFilterCounts()
+        
+        // La logique de verrouillage est maintenant gérée par candidat individuellement
 
         setTimeout(() => {
           initializeSkillsValidationState()
@@ -749,6 +3134,13 @@ function renderApplicationsWithCompatibility(filter = "all") {
     .join("")
 
   updateFilterCounts()
+  
+  // Mettre à jour les boutons de chaque candidat après le rendu
+  setTimeout(async () => {
+    for (const app of filteredApplications) {
+      await updateCandidateButton(app.id)
+    }
+  }, 100)
 }
 
 function toggleCandidateCard(appId) {
@@ -3703,320 +6095,74 @@ let currentDay = null;
 let currentAppId = null;
 let currentCandidateId = null;
 
-function openScheduleInterviewModal(applicationId, candidateName) {
-  currentAppId = applicationId;
-  currentCandidateId = applicationId; // Using applicationId as candidateId for simplicity
-
-  if (!selectedSlotsByCandidate[currentCandidateId]) {
-    selectedSlotsByCandidate[currentCandidateId] = [];
-  }
-  const modal = document.createElement("div")
-  modal.className = "modal-overlay interview-modal-overlay"
-  modal.id = "schedulerModal"
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  `
-
-  modal.innerHTML = `
-    <div class="scheduler-container" style="
-      background: var(--card);
-      border-radius: 16px;
-      padding: 2rem;
-      width: 90%;
-      max-width: 600px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-      max-height: 80vh;
-      overflow-y: auto;
-    ">
-      <div class="header" style="
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--border-color);
-      ">
-        <h1 style="
-          color: var(--text-primary);
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin: 0 0 0.5rem 0;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        ">
-          <i class="fas fa-calendar-alt"></i> Programmer un entretien
-        </h1>
-        <p id="candidate-info" style="
-          color: var(--text-secondary);
-          margin: 0;
-          font-size: 0.95rem;
-        ">Planification d'entretien pour ${candidateName}</p>
-      </div>
-      
-      <div class="content">
-        <div class="day-picker" style="margin-bottom: 1rem;">
-          <label for="daySelect" style="
-            display: block;
-            color: var(--text-primary);
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-          ">
-            <i class="fas fa-calendar-alt"></i> Choisir un jour :
-          </label>
-          <input type="date" id="daySelect" style="
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            font-size: 0.95rem;
-          ">
-        </div>
-        
-        <p class="selection-limit" style="
-          color: var(--text-secondary);
-          font-size: 0.9rem;
-          margin-bottom: 1rem;
-          font-style: italic;
-        ">Vous ne pouvez sélectionner que 3 créneaux par jour.</p>
-        
-        <div id="timeSlotsContainer" class="time-slots-grid" style="
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 10px;
-          margin-bottom: 1rem;
-        "></div>
-        
-        <div id="selected-slots" class="selected-slots" style="
-          background: rgba(59, 130, 246, 0.1);
-          border: 1px solid rgba(59, 130, 246, 0.2);
-          border-radius: 8px;
-          padding: 1rem;
-          margin-bottom: 1rem;
-        ">
-          <h3 style="
-            color: var(--text-primary);
-            font-size: 1rem;
-            font-weight: 600;
-            margin: 0 0 0.5rem 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          ">
-            <i class="fas fa-check-circle"></i> Créneaux sélectionnés
-          </h3>
-          <div id="selected-list" style="
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-          ">Aucun créneau sélectionné</div>
-        </div>
-        
-        <div class="actions" style="
-          display: flex;
-          gap: 1rem;
-          justify-content: flex-end;
-          padding-top: 1rem;
-          border-top: 1px solid var(--border-color);
-        ">
-          <button class="btn btn-secondary" onclick="closeScheduler()" style="
-            padding: 0.75rem 1.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          ">
-            <i class="fas fa-arrow-left"></i> Retour
-          </button>
-          <button class="btn btn-primary" onclick="confirmSchedule()" style="
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
-            color: white;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          ">
-            <i class="fas fa-paper-plane"></i> Envoyer
-          </button>
-        </div>
-      </div>
-    </div>
-  `
-
-  document.body.appendChild(modal)
-
-  // Initialize the scheduler
-  const today = new Date().toISOString().split("T")[0];
-  const dayInput = document.getElementById("daySelect");
-  dayInput.setAttribute("min", today);
-  dayInput.value = today;
-  dayInput.addEventListener("change", showTimeSlots);
-
-  showTimeSlots();
-}
-
-function closeScheduler() {
-  const modal = document.getElementById("schedulerModal");
-  if (modal) {
-    modal.remove();
+// Fonction pour charger les créneaux d'un candidat spécifique
+async function loadCandidateSlots(candidateId) {
+  try {
+    const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
+    console.log(`[DEBUG] Chargement des créneaux pour le candidat ${candidateId} dans le job ${jobId}`)
+    
+    const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+    const slotsData = await slotsRes.json()
+    
+    // Filtrer les créneaux pour ce candidat spécifique
+    const candidateSlots = slotsData.filter(slot => 
+      slot.application_id == candidateId
+    )
+    
+    // Stocker les créneaux pour ce candidat
+    selectedSlotsByCandidate[candidateId] = candidateSlots.map(slot => ({
+      start: new Date(slot.start_time),
+      end: new Date(slot.end_time),
+      id: slot.id,
+      status: slot.status
+    }))
+    
+    console.log(`[DEBUG] Créneaux chargés pour le candidat ${candidateId}:`, selectedSlotsByCandidate[candidateId])
+    
+    return selectedSlotsByCandidate[candidateId]
+  } catch (error) {
+    console.error('Erreur lors du chargement des créneaux du candidat:', error)
+    selectedSlotsByCandidate[candidateId] = []
+    return []
   }
 }
 
-function showTimeSlots() {
-  currentDay = document.getElementById("daySelect").value;
-  const container = document.getElementById("timeSlotsContainer");
-  container.innerHTML = "";
-
-  Object.keys(availableSlots).forEach((time) => {
-    const div = document.createElement("div");
-    div.classList.add("time-slot");
-    div.style.cssText = `
-      padding: 0.75rem;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 0.9rem;
-    `;
-    div.textContent = availableSlots[time];
-    div.onclick = () => toggleTimeSlot(time, div);
-    container.appendChild(div);
-  });
-}
-
-function toggleTimeSlot(time, element) {
-  const candidateSlots = selectedSlotsByCandidate[currentCandidateId] || [];
-  const slotKey = `${currentDay} ${time}`;
-  
-  if (candidateSlots.includes(slotKey)) {
-    // Remove slot
-    const index = candidateSlots.indexOf(slotKey);
-    candidateSlots.splice(index, 1);
-    element.style.background = "var(--bg-secondary)";
-    element.style.borderColor = "var(--border-color)";
-    element.style.color = "var(--text-primary)";
-  } else {
-    // Add slot (max 3)
-    if (candidateSlots.length >= 3) {
-      showNotification("Vous ne pouvez sélectionner que 3 créneaux maximum", "warning");
-      return;
+async function openScheduleInterviewModal(applicationId, candidateName) {
+  try {
+    currentAppId = applicationId
+    currentCandidateId = applicationId
+    
+    // Charger les créneaux existants pour ce candidat
+    await loadCandidateSlots(applicationId)
+    
+    // Vérifier si ce candidat a déjà 4 créneaux (utiliser les créneaux globaux)
+    let existingSlotsForCandidate = 0
+    for (let i = 1; i <= 4; i++) {
+      const s = document.getElementById(`slot${i}_start`)
+      const e = document.getElementById(`slot${i}_end`)
+      if (s && e && s.value && e.value) {
+        existingSlotsForCandidate++
+      }
     }
-    candidateSlots.push(slotKey);
-    element.style.background = "linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark))";
-    element.style.borderColor = "var(--primary-blue)";
-    element.style.color = "white";
-  }
-  
-  updateSelectedSlotsDisplay();
-}
-
-function updateSelectedSlotsDisplay() {
-  const candidateSlots = selectedSlotsByCandidate[currentCandidateId] || [];
-  const selectedList = document.getElementById("selected-list");
-  
-  if (candidateSlots.length === 0) {
-    selectedList.textContent = "Aucun créneau sélectionné";
-    selectedList.style.color = "var(--text-secondary)";
-  } else {
-    selectedList.innerHTML = candidateSlots.map(slot => {
-      const [date, time] = slot.split(" ");
-      const formattedDate = new Date(date).toLocaleDateString("fr-FR");
-      return `<div style="margin-bottom: 0.25rem;">${formattedDate} - ${availableSlots[time]}</div>`;
-    }).join("");
-    selectedList.style.color = "var(--text-primary)";
+    
+    // Vérifier si on peut encore ajouter des créneaux (limite stricte à 4)
+    if (existingSlotsForCandidate >= 4) {
+      showNotification('Ce candidat a déjà 4 créneaux. Supprimez un créneau pour en ajouter un nouveau.', 'warning')
+      return
+    }
+    
+    // Ouvrir le modal de création de créneaux
+    clearModalSlots()
+    
+    const modal = document.getElementById('scheduleInterviewModal')
+    if (modal) {
+      modal.style.display = 'block'
+      modal.classList.add('show')
+    }
+  } catch (_) {
+    // no-op
   }
 }
-
-function confirmSchedule() {
-  const candidateSlots = selectedSlotsByCandidate[currentCandidateId] || [];
-  if (candidateSlots.length === 0) {
-    showNotification("Veuillez sélectionner au moins un créneau.", "warning");
-    return;
-  }
-
-  sendInterviewNotification(currentAppId, currentCandidateId, candidateSlots);
-  closeScheduler();
-}
-
-function sendInterviewNotification(applicationId, candidateId, slots) {
-  // Validate slots format (e.g., "YYYY-MM-DD HH:MM")
-  const slotRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
-  if (!Array.isArray(slots) || slots.length === 0 || !slots.every(s => typeof s === 'string' && slotRegex.test(s))) {
-    console.error("Invalid slots format. Expected format: YYYY-MM-DD HH:MM");
-    showNotification("Erreur: Les créneaux doivent être au format YYYY-MM-DD HH:MM", "error");
-    return Promise.reject(new Error("Invalid slots format"));
-  }
-
-  // Validate currentUser
-  const recruiterId = currentUser ? currentUser.id : null;
-  if (!recruiterId) {
-    console.error("No current user or recruiter_id found");
-    showNotification("Erreur: Utilisateur non connecté", "error");
-    return Promise.reject(new Error("No current user"));
-  }
-
-  // Log the payload for debugging
-  const payload = {
-    application_id: applicationId,
-    candidate_id: candidateId,
-    slots: slots,
-    recruiter_id: recruiterId
-  };
-  console.log("Request payload:", payload);
-
-  return fetch(`/api/schedule-interview/${applicationId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
-    .then((res) => {
-      if (!res.ok) {
-        return res.json().then((data) => {
-          throw new Error(data.message || data.detail || `HTTP error! status: ${res.status}`);
-        });
-      }
-      return res.json();
-    })
-    .then((data) => {
-      if (!data.success) {
-        console.error(`❌ FRONTEND: Failed to send notification: ${data.message || data.detail}`);
-        showNotification(`Erreur: ${data.message || data.detail || "Échec de l'envoi de la notification"}`, "error");
-        throw new Error(data.message || data.detail || "Failed to send notification");
-      }
-      showNotification("✅ Notification d'entretien envoyée avec succès", "success");
-      return data;
-    })
-    .catch((err) => {
-      console.error("❌ FRONTEND: Error during API call:", err);
-      showNotification(`Erreur serveur: ${err.message || "Veuillez réessayer plus tard"}`, "error");
-      throw err;
-    });
-}
-
-
 function viewInterviewDetails(applicationId) {
   showNotification("Fonctionnalité en cours de développement", "info")
 }
@@ -4024,6 +6170,7 @@ function viewInterviewDetails(applicationId) {
 function rescheduleInterview(applicationId) {
   showNotification("Fonctionnalité en cours de développement", "info")
 }
+
 
 function getInterviewStatusBadge(app) {
   const now = new Date()
@@ -4054,322 +6201,20 @@ function getInterviewStatusBadge(app) {
 }
 
 function getInterviewContent(app) {
-  console.log("[v0] Generating interview content for app", app.id, "with data:", {
+  console.log(`[DEBUG] Interview data for app ${app.id}:`, {
     interview_date: app.interview_date,
-    start_session: app.start_session,
-    end_session: app.end_session,
-    interview_result: app.interview_result,
+    interview_time: app.interview_time, 
+    interview_type: app.interview_type,
+    has_interview_data: !!(app.interview_date || app.interview_time || app.interview_type)
   })
+
+  // Toujours afficher les champs d'entretien avec les valeurs par défaut ou les vraies données
 
   const now = new Date()
   const candidateName = app.candidate_profile?.name || app.candidate_name || "N/A"
   const isDeptHead = currentUser?.role === "department_head"
 
-  // Check if interview data exists - show basic info grid like old file
-  if (!app.interview_date && !app.start_session && !app.end_session) {
-    console.log("[v0] No interview data found for app", app.id, "- showing no data message")
-    return `
-      <div class="interview-overview">
-        <div class="interview-info-grid">
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-calendar-check"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Date prévue</div>
-              <div class="info-value">Non programmé</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Heure</div>
-              <div class="info-value">Non définie</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Type</div>
-              <div class="info-value">À définir</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      ${isDeptHead ? '' : `
-      <div class="interview-actions">
-        <div class="interview-actions-row">
-          <button class="btn-schedule-interview" onclick="openScheduleInterviewModal(${app.id}, '${candidateName}')">
-            <i class="fas fa-calendar-plus"></i> Programmer un entretien
-          </button>
-
-          <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})" disabled>
-            <i class="fas fa-calendar-times"></i> Reprogrammer
-          </button>
-        </div>
-      </div>
-      `}`
-  }
-
-  const interviewDate = app.interview_date ? new Date(app.interview_date) : null
-  const timeDiff = interviewDate ? interviewDate - now : 0
-
-  // Completed interview - show results with exact old file structure
-  if (app.end_session && app.interview_result) {
-    console.log("[v0] Showing completed interview results for app", app.id)
-    return `
-      <div class="interview-overview">
-        <div class="interview-info-grid">
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-calendar-check"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Date prévue</div>
-              <div class="info-value">${formatDateSafe(app.interview_date)}</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Heure</div>
-              <div class="info-value">${app.interview_time || 'Terminé'}</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Type</div>
-              <div class="info-value">${app.interview_type || 'Terminé'}</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-percentage"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Résultat</div>
-              <div class="info-value ${app.interview_result.success_rate >= 60 ? "success" : "failure"}">${app.interview_result.success_rate}%</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="interview-actions">
-        <div class="interview-actions-row">
-          <button class="btn-view-interview" onclick="viewInterviewResults(${app.id})">
-            <i class="fas fa-chart-line"></i> Voir les résultats détaillés
-          </button>
-        </div>
-      </div>
-      
-      ${app.interview_notes ? `
-      <div class="interview-notes">
-        <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
-        <p>${app.interview_notes}</p>
-      </div>
-      ` : ''}`
-  }
-
-  // Started interview
-  else if (app.start_session) {
-    console.log("[v0] Showing started interview for app", app.id)
-    return `
-      <div class="interview-overview">
-        <div class="interview-info-grid">
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-calendar-check"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Date prévue</div>
-              <div class="info-value">${formatDateSafe(app.interview_date)}</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Heure</div>
-              <div class="info-value">${app.interview_time || 'En cours'}</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Type</div>
-              <div class="info-value">${app.interview_type || 'En cours'}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="interview-actions">
-        <div class="interview-actions-row">
-          <a href="/interview/${app.id}" class="btn-join-interview">
-            <i class="fas fa-video"></i> Rejoindre l'entretien
-          </a>
-        </div>
-      </div>
-      
-      ${app.interview_notes ? `
-      <div class="interview-notes">
-        <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
-        <p>${app.interview_notes}</p>
-      </div>
-      ` : ''}`
-  }
-
-  // Upcoming interview
-  else if (app.interview_date && timeDiff > 0) {
-    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-    const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24)
-    const minutes = Math.floor((timeDiff / (1000 * 60)) % 60)
-
-    return `
-      <div class="interview-overview">
-        <div class="interview-info-grid">
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-calendar-check"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Date prévue</div>
-              <div class="info-value">${formatDateSafe(app.interview_date)}</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Heure</div>
-              <div class="info-value">${app.interview_time || 'Non définie'}</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Type</div>
-              <div class="info-value">${app.interview_type || 'À définir'}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="interview-actions">
-        <div class="interview-actions-row">
-          ${
-            timeDiff <= 3600000
-              ? `
-            <a href="/interview/${app.id}" class="btn-start-session">
-              <i class="fas fa-play"></i> Démarrer l'entretien
-            </a>
-          `
-              : `
-            <button class="btn-waiting" disabled>
-              <i class="fas fa-hourglass-half"></i> En attente (${days}j ${hours}h ${minutes}m)
-            </button>
-          `
-          }
-          ${isDeptHead ? '' : `
-          <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})">
-            <i class="fas fa-calendar-times"></i> Reprogrammer
-          </button>
-          `}
-        </div>
-      </div>
-      
-      ${app.interview_notes ? `
-      <div class="interview-notes">
-        <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
-        <p>${app.interview_notes}</p>
-      </div>
-      ` : ''}`
-  }
-
-  // Overdue interview
-  else if (app.interview_date && timeDiff <= 0) {
-    return `
-      <div class="interview-overview">
-        <div class="interview-info-grid">
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-calendar-check"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Date prévue</div>
-              <div class="info-value">${formatDateSafe(app.interview_date)}</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Heure</div>
-              <div class="info-value">${app.interview_time || 'En retard'}</div>
-            </div>
-          </div>
-          
-          <div class="interview-info-item">
-            <div class="info-icon">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="info-content">
-              <div class="info-label">Type</div>
-              <div class="info-value">${app.interview_type || 'En retard'}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="interview-actions">
-        <div class="interview-actions-row">
-          <a href="/interview/${app.id}" class="btn-start-overdue">
-            <i class="fas fa-play"></i> Démarrer maintenant
-          </a>
-          ${isDeptHead ? '' : `
-          <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})">
-            <i class="fas fa-calendar-times"></i> Reprogrammer
-          </button>
-          `}
-        </div>
-      </div>
-      
-      ${app.interview_notes ? `
-      <div class="interview-notes">
-        <h5><i class="fas fa-sticky-note"></i> Notes d'entretien</h5>
-        <p>${app.interview_notes}</p>
-      </div>
-      ` : ''}`
-  }
-
-  // Fallback - no interview scheduled
+  // Afficher les données d'interview disponibles
   return `
     <div class="interview-overview">
       <div class="interview-info-grid">
@@ -4379,7 +6224,7 @@ function getInterviewContent(app) {
           </div>
           <div class="info-content">
             <div class="info-label">Date prévue</div>
-            <div class="info-value">Non programmé</div>
+            <div class="info-value">${app.interview_date ? formatDateSafe(app.interview_date) : 'Non programmé'}</div>
           </div>
         </div>
         
@@ -4389,7 +6234,7 @@ function getInterviewContent(app) {
           </div>
           <div class="info-content">
             <div class="info-label">Heure</div>
-            <div class="info-value">Non définie</div>
+            <div class="info-value">${app.interview_time || 'Non définie'}</div>
           </div>
         </div>
         
@@ -4398,8 +6243,8 @@ function getInterviewContent(app) {
             <i class="fas fa-users"></i>
           </div>
           <div class="info-content">
-            <div class="info-label">Type</div>
-            <div class="info-value">À définir</div>
+            <div class="info-label">Status</div>
+            <div class="info-value">${app.interview_type || 'À définir'}</div>
           </div>
         </div>
       </div>
@@ -4408,8 +6253,8 @@ function getInterviewContent(app) {
     ${isDeptHead ? '' : `
     <div class="interview-actions">
       <div class="interview-actions-row">
-        <button class="btn-schedule-interview" onclick="openScheduleInterviewModal(${app.id}, '${candidateName}')">
-          <i class="fas fa-calendar-plus"></i> Programmer un entretien
+        <button class="btn-schedule-interview" onclick="openScheduleInterviewModal(${app.id}, '${candidateName}')" id="schedule-btn-${app.id}">
+          <i class="fas fa-calendar-plus"></i> <span id="schedule-text-${app.id}">Programmer un entretien</span>
         </button>
 
         <button class="btn-reschedule-interview" onclick="rescheduleInterview(${app.id})" disabled>
@@ -4418,7 +6263,8 @@ function getInterviewContent(app) {
       </div>
     </div>
     `}`
-}
+  }
+
 function viewDetailedInterviewResults(applicationId) {
   // Open interview results in new window
   window.open(`/interview-results?application_id=${applicationId}`, "_blank")

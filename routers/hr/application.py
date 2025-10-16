@@ -11,6 +11,7 @@ from datetime import datetime, date
 import json
 from typing import Optional
 from pydantic import BaseModel
+from databaseclient.models import Interview
 
 
 router = APIRouter()
@@ -21,6 +22,58 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@router.get("/api/interview/{application_id}")
+async def get_interview_by_application(application_id: int, db: Session = Depends(get_db)):
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        interview = db.query(Interview).filter(Interview.application_id == application_id).order_by(Interview.created_at.desc()).first()
+        if not interview:
+            return {"success": True, "interview": None}
+
+        return {
+            "success": True,
+            "interview": {
+                "id": interview.id,
+                "application_id": interview.application_id,
+                "candidate_id": interview.candidate_id,
+                "status": interview.status.value if hasattr(interview.status, 'value') else interview.status,
+                "scheduled_at": interview.scheduled_at.isoformat() if interview.scheduled_at else None,
+                "start_session": interview.start_session,
+                "end_session": interview.end_session,
+                "interview_date": interview.scheduled_at.isoformat() if interview.scheduled_at else None,
+                "created_at": interview.created_at.isoformat() if interview.created_at else None
+            }
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+
+@router.get("/api/interview-result/{application_id}")
+async def get_interview_result_by_application(application_id: int, db: Session = Depends(get_db)):
+    try:
+        user_id = current_user_session.get('user_id')
+        if not user_id:
+            return {"success": False, "message": "Utilisateur non connecté"}
+
+        interview = db.query(Interview).filter(Interview.application_id == application_id).order_by(Interview.created_at.desc()).first()
+        if not interview or not interview.end_session:
+            return {"success": True, "result": None}
+
+        return {
+            "success": True,
+            "result": {
+                "success_rate": float(interview.success_rate) if interview.success_rate is not None else None,
+                "dominant_emotion": interview.dominant_emotion,
+                "duration": interview.session_duration,
+                "total_detections": interview.total_detections,
+                "avg_confidence": float(interview.avg_confidence) if interview.avg_confidence is not None else None,
+            }
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Erreur: {str(e)}"}
 
 def calculate_skill_compatibility(candidate_skills, job_skills):
     """Calculate compatibility percentage between candidate and job skills"""
@@ -288,13 +341,23 @@ async def get_applications(
                         "quiz_id": quiz.id
                     }
 
+            # Ensure candidate name is always present (fallback to first_name + last_name)
+            resolved_candidate_name = None
+            if candidate:
+                resolved_candidate_name = candidate.name if getattr(candidate, 'name', None) else None
+                if not resolved_candidate_name:
+                    first = getattr(candidate, 'first_name', '') or ''
+                    last = getattr(candidate, 'last_name', '') or ''
+                    combined = (first + ' ' + last).strip()
+                    resolved_candidate_name = combined if combined else None
+
             app_data = {
                 "id": app.id,
                 "job_id": job.id,
                 "job_title": job.title,
                 "department_name": department.name if department else "N/A",
                 "candidate_id": candidate.id if candidate else None,
-                "candidate_name": candidate.name if candidate else "N/A",
+                "candidate_name": resolved_candidate_name if resolved_candidate_name else "N/A",
                 "candidate_title": candidate.title if candidate else "N/A",
                 "candidate_email": contact.email if contact else "N/A",
                 "status": app.status,
@@ -315,6 +378,10 @@ async def get_applications(
                 "total_job_skills": total_job_skills,
                 "compatibility_source": compatibility_source,
                 "compatibility_reason": compatibility_reason,
+                # Données d'interview
+                "interview_date": app.interview_date.isoformat() if app.interview_date else None,
+                "interview_time": app.interview_time,
+                "interview_type": app.interview_type,
                 # Données de quiz
                 "quiz_score": quiz_data["quiz_score"] if quiz_data else 0,
                 "quiz_duration": quiz_data["quiz_duration"] if quiz_data else None,
@@ -853,9 +920,19 @@ async def get_job_with_applications(job_id: int, db: Session = Depends(get_db)):
 
             days_since_application = (datetime.now() - app.application_date).days if app.application_date else 0
 
+            # Ensure candidate name is always present (fallback to first_name + last_name)
+            resolved_candidate_name = None
+            if candidate:
+                resolved_candidate_name = candidate.name if getattr(candidate, 'name', None) else None
+                if not resolved_candidate_name:
+                    first = getattr(candidate, 'first_name', '') or ''
+                    last = getattr(candidate, 'last_name', '') or ''
+                    combined = (first + ' ' + last).strip()
+                    resolved_candidate_name = combined if combined else None
+
             app_data = {
                 "id": app.id,
-                "name": candidate.name if candidate else "N/A",
+                "name": resolved_candidate_name if resolved_candidate_name else (candidate.name if candidate else "N/A"),
                 "email": contact.email if contact else "N/A",
                 "status": app.status,
                 "application_date": app.application_date.isoformat() if app.application_date else None,
@@ -874,6 +951,10 @@ async def get_job_with_applications(job_id: int, db: Session = Depends(get_db)):
                 "total_job_skills": total_job_skills,
                 "compatibility_source": compatibility_source,
                 "compatibility_reason": compatibility_reason,
+                # Données d'interview
+                "interview_date": app.interview_date.isoformat() if app.interview_date else None,
+                "interview_time": app.interview_time,
+                "interview_type": app.interview_type,
 
             }
             

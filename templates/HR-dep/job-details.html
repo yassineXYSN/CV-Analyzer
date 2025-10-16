@@ -189,6 +189,7 @@
                   </div>
               </div>
           </div>
+          <!-- The existing interview section already has its action button; no duplicate here. -->
       </div>
           <!-- Job Skills Section -->
           <section class="job-section job-skills-section">
@@ -304,7 +305,256 @@
       </div>
   </div>
 
+  <!-- Schedule Interview Modal (simple) -->
+  <div id="scheduleInterviewModal" class="modal modern-modal-overlay" style="display:none;">
+      <div class="modal-content modern-modal">
+          <div class="modal-header modern-header">
+              <div class="header-content">
+                  <div class="header-icon">
+                      <i class="fas fa-calendar-alt"></i>
+                  </div>
+                  <div class="header-text">
+                      <h2>Programmer des créneaux</h2>
+                      <p class="header-subtitle">Planifiez vos entretiens avec précision</p>
+                  </div>
+              </div>
+              <button class="close-btn modern-close" onclick="closeScheduleModal()">
+                  <i class="fas fa-times"></i>
+              </button>
+          </div>
+          <div class="modal-body modern-body">
+              <!-- Section Google Calendar -->
+              <div id="googleCalendarSection" class="google-section">
+                  <div class="google-header">
+                      <div class="google-title">
+                          <div class="google-icon">
+                              <i class="fab fa-google"></i>
+                          </div>
+                          <div class="google-text">
+                              <h3>Google Calendar</h3>
+                              <p class="google-description">Synchronisez avec votre calendrier Google</p>
+                          </div>
+                          <div class="google-status">
+                              <span id="googleStatusBadge" class="status-badge disconnected">Déconnecté</span>
+                          </div>
+                      </div>
+                      <div class="google-actions">
+                          <button class="btn-google-connect" id="btnConnectGoogle" onclick="connectGoogle()">
+                              <i class="fab fa-google"></i>
+                              <span>Connecter Google</span>
+                          </button>
+                          <select id="googleCalendarSelect" class="google-select" style="display:none;">
+                              <option>Sélectionner un calendrier</option>
+                          </select>
+                      </div>
+                  </div>
+                  
+                  <!-- Calendrier permanent -->
+                  <div id="permanentCalendarContainer" style="margin-top:15px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                          <h4 style="margin:0; color: var(--text-primary);">
+                              <i class="fas fa-calendar-alt"></i> Calendrier des créneaux
+                          </h4>
+                          <div style="display:flex; gap:8px; align-items:center;">
+                              <button class="btn-secondary" onclick="previousMonth()" style="padding:6px 12px;">
+                                  <i class="fas fa-chevron-left"></i>
+                              </button>
+                              <span id="currentMonthYear" style="font-weight:600; min-width:150px; text-align:center;">Janvier 2024</span>
+                              <button class="btn-secondary" onclick="nextMonth()" style="padding:6px 12px;">
+                                  <i class="fas fa-chevron-right"></i>
+                              </button>
+                              <button class="btn-secondary" onclick="goToToday()" style="padding:6px 12px;">
+                                  <i class="fas fa-home"></i> Aujourd'hui
+                              </button>
+                          </div>
+                      </div>
+                      
+                      <!-- Calendrier avec cases cliquables -->
+                      <div id="calendarGrid" class="calendar-grid">
+                          <!-- Les jours de la semaine -->
+                          <div class="calendar-header">
+                              <div class="day-header">Lun</div>
+                              <div class="day-header">Mar</div>
+                              <div class="day-header">Mer</div>
+                              <div class="day-header">Jeu</div>
+                              <div class="day-header">Ven</div>
+                              <div class="day-header">Sam</div>
+                              <div class="day-header">Dim</div>
+                          </div>
+                          
+                          <!-- Les jours du mois -->
+                          <div id="calendarDays" class="calendar-days">
+                              <!-- Les jours seront générés dynamiquement -->
+                          </div>
+                      </div>
+                      
+                      <!-- Légende -->
+                      <div class="calendar-legend" style="margin-top:15px; display:flex; gap:20px; justify-content:center; flex-wrap:wrap;">
+                          <div class="legend-item">
+                              <div class="legend-color free"></div>
+                              <span>Disponible</span>
+                          </div>
+                          <div class="legend-item">
+                              <div class="legend-color partially-occupied"></div>
+                              <span>Partiellement occupé</span>
+                          </div>
+                          <div class="legend-item">
+                              <div class="legend-color selected"></div>
+                              <span>Sélectionné</span>
+                          </div>
+                          <div class="legend-item">
+                              <div class="legend-color busy"></div>
+                              <span>Complètement occupé</span>
+                          </div>
+                          <div class="legend-item">
+                              <div class="legend-color today"></div>
+                              <span>Aujourd'hui</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <!-- Calendrier Google intégré (si connecté) -->
+                  <div id="googleCalendarContainer" style="display:none; margin-top:15px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                          <h4 style="margin:0; color: var(--text-primary);">Calendrier Google</h4>
+                          <div style="display:flex; gap:8px;">
+                              <button class="btn-secondary" onclick="refreshGoogleCalendar()" style="padding:6px 12px;">
+                                  <i class="fas fa-sync-alt"></i> Actualiser
+                              </button>
+                              <button class="btn-secondary" onclick="toggleCalendarView()" style="padding:6px 12px;">
+                                  <i class="fas fa-eye"></i> <span id="calendarViewText">Vue mensuelle</span>
+                              </button>
+                          </div>
+                      </div>
+                      <div id="googleCalendarEmbed" style="width:100%; height:400px; border:1px solid #ddd; border-radius:8px; background:#fff;">
+                          <!-- Le calendrier Google sera chargé ici -->
+                      </div>
+                  </div>
+                  
+                  <div id="googleConflictInfo" style="margin-top:8px; font-size: 13px; color: var(--text-secondary);"></div>
+              </div>
+
+              <!-- Section création de créneaux -->
+              <div class="slots-section">
+                  <div class="slots-header">
+                      <div class="slots-icon">
+                          <i class="fas fa-clock"></i>
+                      </div>
+                      <div class="slots-text">
+                          <h3>Créneaux d'entretien</h3>
+                          <p class="slots-description">Définissez les horaires disponibles</p>
+                      </div>
+                  </div>
+                  
+                  <div class="slots-grid">
+                      <div class="slot-card" data-slot="1">
+                          <div class="slot-header">
+                              <div class="slot-number">1</div>
+                              <div class="slot-title">Premier créneau</div>
+                          </div>
+                          <div class="slot-inputs">
+                              <div class="input-group">
+                                  <label>Début</label>
+                                  <input type="datetime-local" id="slot1_start" class="slot-input">
+                              </div>
+                              <div class="input-group">
+                                  <label>Fin</label>
+                                  <input type="datetime-local" id="slot1_end" class="slot-input">
+                              </div>
+                          </div>
+                          <div class="slot-status" id="slot1_status">
+                              <i class="fas fa-circle"></i>
+                              <span>Disponible</span>
+                          </div>
+                      </div>
+                      
+                      <div class="slot-card" data-slot="2">
+                          <div class="slot-header">
+                              <div class="slot-number">2</div>
+                              <div class="slot-title">Deuxième créneau</div>
+                          </div>
+                          <div class="slot-inputs">
+                              <div class="input-group">
+                                  <label>Début</label>
+                                  <input type="datetime-local" id="slot2_start" class="slot-input">
+                              </div>
+                              <div class="input-group">
+                                  <label>Fin</label>
+                                  <input type="datetime-local" id="slot2_end" class="slot-input">
+                              </div>
+                          </div>
+                          <div class="slot-status" id="slot2_status">
+                              <i class="fas fa-circle"></i>
+                              <span>Disponible</span>
+                          </div>
+                      </div>
+                      
+                      <div class="slot-card" data-slot="3">
+                          <div class="slot-header">
+                              <div class="slot-number">3</div>
+                              <div class="slot-title">Troisième créneau</div>
+                          </div>
+                          <div class="slot-inputs">
+                              <div class="input-group">
+                                  <label>Début</label>
+                                  <input type="datetime-local" id="slot3_start" class="slot-input">
+                              </div>
+                              <div class="input-group">
+                                  <label>Fin</label>
+                                  <input type="datetime-local" id="slot3_end" class="slot-input">
+                              </div>
+                          </div>
+                          <div class="slot-status" id="slot3_status">
+                              <i class="fas fa-circle"></i>
+                              <span>Disponible</span>
+                          </div>
+                      </div>
+                      
+                      <div class="slot-card" data-slot="4">
+                          <div class="slot-header">
+                              <div class="slot-number">4</div>
+                              <div class="slot-title">Quatrième créneau</div>
+                          </div>
+                          <div class="slot-inputs">
+                              <div class="input-group">
+                                  <label>Début</label>
+                                  <input type="datetime-local" id="slot4_start" class="slot-input">
+                              </div>
+                              <div class="input-group">
+                                  <label>Fin</label>
+                                  <input type="datetime-local" id="slot4_end" class="slot-input">
+                              </div>
+                          </div>
+                          <div class="slot-status" id="slot4_status">
+                              <i class="fas fa-circle"></i>
+                              <span>Disponible</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              
+              <div class="modal-actions">
+                  <button class="btn-reset" onclick="clearModalSlots()">
+                      <i class="fas fa-eraser"></i>
+                      <span>Réinitialiser</span>
+                  </button>
+                  <button class="btn-save" onclick="saveModalSlots()">
+                      <i class="fas fa-check-circle"></i>
+                      <span>Enregistrer et confirmer les créneaux</span>
+                  </button>
+              </div>
+              
+              <div class="modal-info">
+                  <i class="fas fa-info-circle"></i>
+                  <span>Max 4 créneaux par jour. Les créneaux seront automatiquement confirmés après enregistrement.</span>
+              </div>
+          </div>
+      </div>
+  </div>
+
   <script src="/static/hr-auth/hr-common.js"></script>
   <script src="/static/job-details/job-details.js"></script>
 </body>
 </html>
+
+

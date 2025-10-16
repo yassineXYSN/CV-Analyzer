@@ -439,9 +439,10 @@ async def get_job_details(job_id: int):
                             }
 
                     # Ajoutez ce champ dans la réponse des candidatures
+                    # Always provide a candidate name (fallback to first_name + last_name when needed)
                     applications_list.append({
                         "id": app.id,
-                        "name": candidate.name,
+                        "name": (candidate.name if getattr(candidate, 'name', None) else (f"{getattr(candidate, 'first_name', '')} {getattr(candidate, 'last_name', '')}".strip() or "N/A")),
                         "title": candidate.title,
                         "status": app.status,
                         "application_date": app.application_date.isoformat() if app.application_date else None,
@@ -466,6 +467,10 @@ async def get_job_details(job_id: int):
                         "quiz_validated_by": app.quiz_validated_by,
                         "quiz_validated_at": app.quiz_validated_at.isoformat() if app.quiz_validated_at else None,
                         "quiz_validated_notes": app.quiz_validated_notes,
+                        # Données d'interview
+                        "interview_date": app.interview_date.isoformat() if app.interview_date else None,
+                        "interview_time": app.interview_time,
+                        "interview_type": app.interview_type,
                         # Données de quiz
                         "quiz_score": quiz_data["quiz_score"] if quiz_data else 0,
                         "quiz_duration": quiz_data["quiz_duration"] if quiz_data else None,

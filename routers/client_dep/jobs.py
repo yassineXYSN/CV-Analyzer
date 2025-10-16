@@ -724,6 +724,51 @@ async def apply_to_job(job_id: int, application_data: ApplicationRequest, reques
         print(f"Error applying to job: {str(e)}")
         return {"success": False, "message": "Erreur lors de l'envoi de la candidature"}
 
+@router.get("/api/applications/user/{user_id}")
+async def get_user_applications(user_id: int, request: Request, db: Session = Depends(get_db)):
+    """Get all applications for a specific user"""
+    try:
+        # Get user's candidate profile
+        candidate_profile = db.query(ProfileCandidat).filter(
+            ProfileCandidat.user_id == user_id
+        ).first()
+        
+        if not candidate_profile:
+            return {"applications": []}
+        
+        # Get all applications for this user with job details
+        applications_query = db.query(Application).filter(
+            Application.candidate_profile_id == candidate_profile.id
+        ).order_by(Application.application_date.desc())
+        
+        applications = applications_query.all()
+        
+        # Format applications for JSON response
+        applications_data = []
+        for app in applications:
+            job = db.query(Job).options(
+                joinedload(Job.company),
+                joinedload(Job.department)
+            ).filter(Job.id == app.job_id).first()
+            
+            if job:
+                applications_data.append({
+                    "id": app.id,
+                    "job_id": app.job_id,
+                    "status": app.status,
+                    "application_date": app.application_date.isoformat() if app.application_date else None,
+                    "interview_date": app.interview_date.isoformat() if app.interview_date else None,
+                    "job_title": job.title,
+                    "company_name": job.company.company_name if job.company else None,
+                    "compatibility_score": app.compatibility_score
+                })
+        
+        return {"applications": applications_data}
+        
+    except Exception as e:
+        print(f"Error getting user applications: {str(e)}")
+        return {"applications": []}
+
 @router.get("/api/jobs/{job_id}/application-status")
 async def check_application_status(job_id: int, request: Request, db: Session = Depends(get_db)):
     """Check if user has already applied to this job"""

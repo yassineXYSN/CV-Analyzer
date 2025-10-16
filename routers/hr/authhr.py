@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, Request, HTTPException, Depends, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -41,7 +41,7 @@ def hr_login_page(request: Request):
     return templates.TemplateResponse("HR-dep/auth/hr-login.html", {"request": request})
 
 @router.post("/api/hr-login")
-async def hr_login(login_data: LoginRequest):
+async def hr_login(login_data: LoginRequest, response: Response = None):
     try:
         print(f"🔐 LOGIN API: Tentative de connexion pour {login_data.email}")
         user = authenticate_user(login_data.email, login_data.password)
@@ -82,6 +82,27 @@ async def hr_login(login_data: LoginRequest):
         
         access_token = JWTManager.create_access_token(data=token_data)
         refresh_token = JWTManager.create_refresh_token(data=token_data)
+        
+        # Définir les cookies côté serveur
+        if response:
+            response.set_cookie(
+                key="hr_access_token",
+                value=access_token,
+                max_age=30 * 24 * 60 * 60,  # 30 days
+                httponly=True,
+                secure=False,  # Mettre à True en production avec HTTPS
+                samesite="lax"
+            )
+            response.set_cookie(
+                key="hr_refresh_token",
+                value=refresh_token,
+                max_age=30 * 24 * 60 * 60,  # 30 days
+                httponly=True,
+                secure=False,  # Mettre à True en production avec HTTPS
+                samesite="lax"
+            )
+            print(f"🍪 LOGIN API: Cookies définis")
+        
         if not company:
             redirect_url = "/company-setup"
             message = "Configuration de l'entreprise requise"

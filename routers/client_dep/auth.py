@@ -522,10 +522,11 @@ async def google_auth_redirect():
     """Redirect to Google OAuth"""
     try:
         # Google OAuth configuration
-        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+        google_client_id = os.getenv("GOOGLE_CLIENT_ID", "603669455866-ke5hutefk7fp474dt65vfo0mp39sh3i3.apps.googleusercontent.com")
         google_redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
         
         if not google_client_id:
+            print("❌ Google OAuth: GOOGLE_CLIENT_ID manquant")
             return {"success": False, "message": "Google OAuth non configuré"}
         
         # Google OAuth URL
@@ -543,6 +544,7 @@ async def google_auth_redirect():
         from urllib.parse import urlencode
         auth_url = f"{google_auth_url}?{urlencode(params)}"
         
+        print(f"🔄 Google OAuth: Redirection vers {auth_url}")
         return RedirectResponse(url=auth_url)
         
     except Exception as e:
@@ -551,19 +553,30 @@ async def google_auth_redirect():
 
 @router.get("/auth/google/callback")
 async def google_auth_callback(request: Request, db: Session = Depends(get_db)):
-    """Handle Google OAuth callback"""
+    """Handle Google OAuth callback - both client and HR"""
     try:
-        # Get authorization code from query parameters
+        # Get authorization code and state from query parameters
         code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        
         if not code:
             return {"success": False, "message": "Code d'autorisation manquant"}
         
+        # Vérifier si c'est un callback HR (state contient un ID utilisateur numérique)
+        if state and state.isdigit():
+            print(f"🔄 Google OAuth Callback: Détection callback HR pour state: {state}")
+            # Rediriger vers le callback HR
+            return RedirectResponse(f"/api/hr/google/callback?code={code}&state={state}")
+        
+        print(f"🔄 Google OAuth Callback: Traitement callback client normal")
+        
         # Exchange code for access token
-        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-        google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        google_client_id = os.getenv("GOOGLE_CLIENT_ID", "603669455866-ke5hutefk7fp474dt65vfo0mp39sh3i3.apps.googleusercontent.com")
+        google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "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")
         google_redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
         
         if not google_client_id or not google_client_secret:
+            print(f"❌ Google OAuth Callback: GOOGLE_CLIENT_ID={bool(google_client_id)}, GOOGLE_CLIENT_SECRET={bool(google_client_secret)}")
             return {"success": False, "message": "Google OAuth non configuré"}
         
         # Exchange code for tokens
@@ -576,10 +589,13 @@ async def google_auth_callback(request: Request, db: Session = Depends(get_db)):
             "redirect_uri": google_redirect_uri
         }
         
+        print(f"🔄 Google OAuth Callback: Échange du code contre token...")
         async with httpx.AsyncClient() as client:
             token_response = await client.post(token_url, data=token_data)
             
+            print(f"🔄 Google OAuth Callback: Status {token_response.status_code}")
             if token_response.status_code != 200:
+                print(f"❌ Google OAuth Callback: Erreur échange - {token_response.text}")
                 return {"success": False, "message": "Erreur lors de l'échange du code"}
             
             token_info = token_response.json()

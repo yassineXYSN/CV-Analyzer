@@ -11,7 +11,7 @@ import databasehr.models as models
 from routers.hr import (
     authhr, company, department, 
     employee, job, application, candidate, 
-    dashboard, admin_router, quiz
+    dashboard, admin_router, quiz, interview_slots, google_calendar
 )
 from database import engine
 import databaseclient.models as models
@@ -56,6 +56,8 @@ app.include_router(candidate.router)
 app.include_router(dashboard.router)
 app.include_router(admin_router.router)
 app.include_router(quiz.router)
+app.include_router(interview_slots.router)
+app.include_router(google_calendar.router)
 
 
 # 404 Error Handler

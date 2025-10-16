@@ -136,3 +136,82 @@ def get_job_details(job_id: int, db: Session = Depends(get_db)):
             "error": str(e)
         }, status_code=500)
 
+
+@router.post("/api/candidate/choose-interview-slot")
+async def candidate_choose_interview_slot(request: dict, db: Session = Depends(get_db)):
+    """
+    Endpoint pour que le candidat confirme son choix de créneau d'entretien
+    """
+    try:
+        slot_id = request.get('slot_id')
+        application_id = request.get('application_id')
+        
+        if not slot_id or not application_id:
+            return JSONResponse(content={
+                "success": False,
+                "message": "slot_id et application_id sont requis"
+            }, status_code=400)
+        
+        print(f"🎯 CANDIDATE CHOICE CLIENT: Candidat {application_id} choisit le créneau {slot_id}")
+        
+        # Utiliser la base de données HR pour chercher le slot
+        from databasehr.database import SessionLocal as HRSessionLocal
+        from databasehr.models import InterviewSlot, SlotStatus, Application as HRApplication
+        
+        hr_db = HRSessionLocal()
+        try:
+            # Vérifier que le créneau existe et est confirmé par le HR
+            slot = hr_db.query(InterviewSlot).filter(
+                InterviewSlot.id == slot_id,
+                InterviewSlot.application_id == application_id,
+                InterviewSlot.is_confirmed == True
+            ).first()
+            
+            if not slot:
+                return JSONResponse(content={
+                    "success": False,
+                    "message": "Créneau non trouvé ou non confirmé"
+                }, status_code=400)
+            
+            # Mettre le statut du créneau à "reserved" (choisi par le candidat)
+            slot.status = SlotStatus.RESERVED
+            
+            # Récupérer l'application côté HR
+            hr_application = hr_db.query(HRApplication).filter(HRApplication.id == application_id).first()
+            if hr_application:
+                # Maintenant remplir les champs d'entretien
+                print(f"🔍 DEBUG CLIENT: Avant mise à jour - interview_date: {hr_application.interview_date}, interview_time: {hr_application.interview_time}, interview_type: {hr_application.interview_type}")
+                
+                hr_application.interview_date = slot.start_time
+                hr_application.interview_time = slot.start_time.strftime('%H:%M')
+                hr_application.interview_type = "Entretien confirmé"
+                hr_application.status = 'interview_scheduled'
+                
+                print(f"🔍 DEBUG CLIENT: Après mise à jour - interview_date: {hr_application.interview_date}, interview_time: {hr_application.interview_time}, interview_type: {hr_application.interview_type}")
+                print(f"✅ CANDIDATE CHOICE CLIENT: Données d'entretien mises à jour pour l'application {hr_application.id}")
+            else:
+                print(f"❌ CANDIDATE CHOICE CLIENT: Application HR {application_id} non trouvée")
+            
+            hr_db.commit()
+            print(f"🔍 DEBUG CLIENT: Commit HR effectué")
+            
+            return JSONResponse(content={
+                "success": True,
+                "message": "Choix de créneau confirmé avec succès",
+                "slot": {
+                    "id": slot.id,
+                    "start_time": slot.start_time.isoformat(),
+                    "end_time": slot.end_time.isoformat(),
+                    "status": slot.status.value
+                }
+            })
+            
+        finally:
+            hr_db.close()
+        
+    except Exception as e:
+        print(f"❌ CANDIDATE CHOICE CLIENT ERROR: {str(e)}")
+        return JSONResponse(content={
+            "success": False,
+            "message": f"Erreur lors de la confirmation: {str(e)}"
+        }, status_code=500)

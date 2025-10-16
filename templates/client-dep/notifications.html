@@ -444,6 +444,10 @@ display: inline-block;
                         <a href="/quizzes" class="notification-btn">
                             ❓ Mes Quiz
                         </a>
+                        {% elif notification.type == 'interview_scheduled' %}
+                        <a href="/interview-slots/{{ notification.application_id }}" class="notification-btn primary">
+                            📅 Choisir un Créneau
+                        </a>
     {% endif %}
                     </div>
                 </div>

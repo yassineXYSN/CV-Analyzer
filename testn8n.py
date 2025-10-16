@@ -1,110 +1,118 @@
-import os
+#!/usr/bin/env python3
+"""
+Test script for N8N workflow integration
+"""
+
 import requests
-from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCandidat
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import List, Optional
-from databasehr.session_manager import current_user_session
-from databasehr.database import SessionLocal
-from databasehr.models import HRAdmin, Quiz, QuizSkill, QuizQuestion, ProfileCandidat, Notification
+import json
 from datetime import datetime
-from sqlalchemy.orm import Session
 
-
-# The webhook URL from n8n
-url = "https://aboudachtourou.app.n8n.cloud/webhook/analyze-quiz"
-print("Sending file to n8n...")
-quiz_data = {
-    "quiz_id": 1,
-    "questions": [
-        {"question_id": 1, "answer": "A"},
-        {"question_id": 2, "answer": "B"},
-    ]
-}
-response = requests.post(url, json=quiz_data)
-
-print("Status Code:", response.status_code)
-print("Response:", response.text)
-
-
-def get_current_hr_user():
-    """Simple dependency to get current HR user from session"""
-    user_id = current_user_session.get('user_id')
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    db = SessionLocal()
-    try:
-        user = db.query(HRAdmin).filter(HRAdmin.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return {"id": user.id, "email": user.email, "first_name": user.first_name, "last_name": user.last_name}
-    finally:
-        db.close()
-
-
-def get_db():
-    """Database dependency"""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-db = SessionLocal()   # create a real SQLAlchemy session
-'''try:
-    candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == 31).first()
-    if candidat:
-        if candidat.user:  # Check if user exists
-            print(candidat.user_id)  # Access user ID through relationship
-        else:
-            print("No user associated with this profile")
-    else:
-        print("Profile not found")
-except Exception as e:
-    print(f"Error: {e}")
-finally:
-    db.close()'''
-
-'''def send_test_notification_via_api(
-    base_url: str,
-    user_id: int = 33,
-    type: str = "application_status_change",
-    title: str = "Test from script",
-    message: str = "This is a real-time test",
-    application_id: int | None = 22,
-    job_id: int | None = 34,
-    status: str | None = "pending",
-    company_name: str | None = "Tech Corp",
-    job_title: str | None = "Software Engineer",
-    admin_name: str | None = "John Doe",
-):
-    url = f"{base_url.rstrip('/')}/api/notifications/test-create"
-    payload = {
-        "user_id": user_id,
-        "type": type,
-        "title": title,
-        "message": message,
-        "application_id": application_id,
-        "job_id": job_id,
-        "status": status,
-        "company_name": company_name,
-        "job_title": job_title,
-        "admin_name": admin_name,
+# Configuration
+N8N_WEBHOOK_URL = "https://your-n8n-instance.com/webhook"
+TEST_DATA = {
+    "application_info": {
+        "application_id": 1,
+        "application_date": datetime.now().isoformat(),
+        "status": "pending",
+        "hr_rating": None,
+        "hr_notes": None,
+        "compatibility_score": None,
+        "compatibility_reason": None
+    },
+    "job_info": {
+        "id": 1,
+        "title": "Software Developer",
+        "description": "Full-stack developer position",
+        "requirements": "Python, JavaScript, React",
+        "employment_type": "full-time",
+        "salary_min": 50000,
+        "salary_max": 70000
+    },
+    "candidate_profile": {
+        "id": 1,
+        "name": "Test Candidate",
+        "title": "Software Engineer",
+        "profile": "Experienced developer",
+        "education": "Computer Science Degree",
+        "skills": ["Python", "JavaScript", "React", "Node.js"]
+    },
+    "quiz_data": {
+        "quiz_info": {
+            "id": 1,
+            "title": "Technical Assessment",
+            "total_questions": 10,
+            "time_limit": 30
+        },
+        "attempt_info": {
+            "score": 85.0,
+            "total_correct": 8,
+            "total_questions": 10,
+            "duration_seconds": 1200,
+            "status": "completed"
+        },
+        "questions": [
+            {
+                "id": 1,
+                "skill_name": "Python",
+                "question_text": "What is the output of print(2**3)?",
+                "correct_answer": "8",
+                "user_answer": {"selected_option": "8", "is_correct": True}
+            }
+        ]
     }
-    resp = requests.post(url, json=payload, timeout=10)
-    print("Status:", resp.status_code)
-    try:
-        print("Response:", resp.json())
-    except Exception:
-        print("Response text:", resp.text)
+}
 
+def test_n8n_webhook():
+    """Test N8N webhook connection"""
+    try:
+        print("Testing N8N webhook connection...")
+        
+        # Test quiz analysis webhook
+        quiz_url = f"{N8N_WEBHOOK_URL}/analyze-quiz"
+        response = requests.post(quiz_url, json=TEST_DATA, timeout=10)
+        
+        if response.status_code == 200:
+            print("✅ N8N webhook test successful!")
+            print(f"Response: {response.json()}")
+        else:
+            print(f"❌ N8N webhook test failed: {response.status_code}")
+            print(f"Response: {response.text}")
+            
+    except requests.exceptions.RequestException as e:
+        print(f"❌ N8N webhook test error: {str(e)}")
+    except Exception as e:
+        print(f"❌ Unexpected error: {str(e)}")
+
+def test_quiz_analysis():
+    """Test quiz analysis workflow"""
+    try:
+        print("Testing quiz analysis workflow...")
+        
+        quiz_data = TEST_DATA.copy()
+        quiz_data["workflow_type"] = "quiz_analysis"
+        
+        response = requests.post(f"{N8N_WEBHOOK_URL}/analyze-quiz", json=quiz_data, timeout=30)
+        
+        if response.status_code == 200:
+            result = response.json()
+            print("✅ Quiz analysis successful!")
+            print(f"Analysis result: {result.get('ReviewParagraph', 'No analysis returned')}")
+        else:
+            print(f"❌ Quiz analysis failed: {response.status_code}")
+            
+    except Exception as e:
+        print(f"❌ Quiz analysis error: {str(e)}")
 
 if __name__ == "__main__":
-    base_url = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
-    send_test_notification_via_api(base_url)'''
+    print("N8N Integration Test")
+    print("=" * 50)
     
-
-'''
-candidat = db.query(ProfileCandidat).filter(ProfileCandidat.id == 35).first()
-print(candidat.user_id)
-'''
+    # Test webhook connection
+    test_n8n_webhook()
+    
+    print("\n" + "=" * 50)
+    
+    # Test quiz analysis
+    test_quiz_analysis()
+    
+    print("\nTest completed!")

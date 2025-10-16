@@ -19,7 +19,7 @@ SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{DATABASE_USER}:{DATABASE_PASSWORD}@
 
 # Affichage sécurisé de la configuration (sans mot de passe)
 safe_url = SQLALCHEMY_DATABASE_URL.replace(f":{DATABASE_PASSWORD}@", ":****@") if DATABASE_PASSWORD else SQLALCHEMY_DATABASE_URL
-print(f"🗄️  Connexion DB: {safe_url}")
+print(f"Connexion DB: {safe_url}")
 
 # Création du moteur SQLAlchemy
 engine = create_engine(

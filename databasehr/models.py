@@ -244,7 +244,8 @@ class Application(Base):
     hr_rating = Column(DECIMAL(3,2))
     hr_notes = Column(Text)
     interview_date = Column(DateTime)
-    interview_notes = Column(Text)
+    interview_time = Column(String(50), comment="Interview time in HH:MM format")
+    interview_type = Column(String(100), comment="Type of interview (e.g., 'Entretien technique', 'Entretien RH')")
     
     # Suivi
     reviewed_by = Column(Integer, ForeignKey("hr_admins.id"))
@@ -495,4 +496,39 @@ class QuizAnswer(Base):
     # Relationships
     attempt = relationship("QuizAttempt", backref="answers")
     question = relationship("QuizQuestion")
+
+
+# Enum pour les statuts des créneaux d'entretien
+class SlotStatus(PyEnum):
+    FREE = "free"
+    RESERVED = "reserved"
+    CONFIRMED = "confirmed"
+
+
+# Modèle pour les créneaux d'entretien
+class InterviewSlot(Base):
+    __tablename__ = "interview_slots"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    recruiter_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
+    
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
+    status = Column(Enum(SlotStatus), default=SlotStatus.FREE)
+    
+    # Nouveau champ pour marquer la confirmation des créneaux par l'agent RH
+    is_confirmed = Column(Boolean, default=False)
+    confirmed_at = Column(DateTime, nullable=True)
+    confirmed_by = Column(Integer, ForeignKey("hr_admins.id"), nullable=True)
+    
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relations
+    recruiter = relationship("HRAdmin", foreign_keys=[recruiter_id], backref="interview_slots")
+    job = relationship("Job", backref="interview_slots")
+    application = relationship("Application", backref="interview_slots")
+    confirmed_by_admin = relationship("HRAdmin", foreign_keys=[confirmed_by])
 

@@ -229,22 +229,43 @@ async updatePlannedInterviewMenu() {
             return
         }
 
+        // Vérifier si la réponse est du JSON
+        const contentType = resp.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+            console.warn('Endpoint /api/applications/user/ retourne du HTML au lieu de JSON')
+            slotContainer.textContent = ""
+            return
+        }
+
         const data = await resp.json()
         const appWithInterview = data.applications?.find(app => app.interview_date)
 
         if (appWithInterview) {
-            const notifResp = await fetch(`/api/notification/${appWithInterview.id}`)
-            if (!notifResp.ok) {
-                slotContainer.textContent = ""
-                return
-            }
-            const notifData = await notifResp.json()
+            try {
+                const notifResp = await fetch(`/api/notification/${appWithInterview.id}`)
+                if (!notifResp.ok) {
+                    slotContainer.textContent = ""
+                    return
+                }
+                
+                // Vérifier si la réponse est du JSON
+                const contentType = notifResp.headers.get('content-type')
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.warn('Endpoint /api/notification/ retourne du HTML au lieu de JSON')
+                    slotContainer.textContent = ""
+                    return
+                }
+                const notifData = await notifResp.json()
             const notification = notifData.notification
 
             if (notification && notification.interview_date) {
                 const date = new Date(notification.interview_date)
                 slotContainer.textContent = `le ${date.toLocaleString()}`
             } else {
+                slotContainer.textContent = ""
+            }
+            } catch (innerError) {
+                console.error("Erreur lors de la récupération de la notification:", innerError)
                 slotContainer.textContent = ""
             }
         } else {
@@ -688,7 +709,7 @@ async updatePlannedInterviewMenu() {
         </div>
         <div class="notification-mini-message">${notification.message}</div>
         <span class="notification-mini-status ${statusClass}">
-          ${notification.status.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+          ${notification.status ? notification.status.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()) : 'N/A'}
         </span>
       </div>
     `
