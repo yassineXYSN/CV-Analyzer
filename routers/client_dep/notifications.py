@@ -513,7 +513,6 @@ async def select_interview_slot(
         selected_slot = db.query(InterviewSlot).filter(
             InterviewSlot.id == slot_data.slot_id,
             InterviewSlot.application_id == slot_data.application_id,
-            InterviewSlot.is_confirmed == True,
             InterviewSlot.status == SlotStatus.FREE
         ).first()
         
@@ -523,12 +522,11 @@ async def select_interview_slot(
         # Récupérer tous les autres créneaux pour cette candidature
         other_slots = db.query(InterviewSlot).filter(
             InterviewSlot.application_id == slot_data.application_id,
-            InterviewSlot.id != slot_data.slot_id,
-            InterviewSlot.is_confirmed == True
+            InterviewSlot.id != slot_data.slot_id
         ).all()
         
-        # Marquer le créneau sélectionné comme réservé
-        selected_slot.status = SlotStatus.RESERVED
+        # Marquer le créneau sélectionné comme confirmé
+        selected_slot.status = SlotStatus.CONFIRMED
         
         # Supprimer les autres créneaux
         for slot in other_slots:
@@ -554,6 +552,44 @@ async def select_interview_slot(
                     hr_application.interview_type = "Entretien confirmé"
                     hr_application.status = 'interview_scheduled'
                     print(f"✅ HR UPDATE: Données d'entretien mises à jour pour l'application HR {hr_application.id}")
+                    
+                    # Créer un événement Google Calendar pour le HR agent
+                    try:
+                        from routers.hr.google_calendar import create_calendar_event
+                        
+                        # Récupérer les informations du candidat
+                        candidate_name = f"{application.candidate_profile.user.first_name} {application.candidate_profile.user.last_name}"
+                        candidate_email = application.candidate_profile.user.email
+                        job_title = application.job.title
+                        company_name = application.job.company.company_name
+                        
+                        # Récupérer l'ID du HR admin responsable (depuis le slot)
+                        hr_admin_id = selected_slot.recruiter_id
+                        
+                        print(f"📅 Google Calendar: Création d'événement pour HR {hr_admin_id}")
+                        calendar_result = create_calendar_event(
+                            db=hr_db,
+                            hr_admin_id=hr_admin_id,
+                            candidate_name=candidate_name,
+                            candidate_email=candidate_email,
+                            job_title=job_title,
+                            company_name=company_name,
+                            interview_date=selected_slot.start_time,
+                            interview_duration_minutes=60
+                        )
+                        
+                        if calendar_result["success"]:
+                            print(f"✅ Google Calendar: Événement créé avec succès - {calendar_result.get('event_id')}")
+                            # Optionnel: sauvegarder l'ID de l'événement dans la base de données
+                            hr_application.google_calendar_event_id = calendar_result.get('event_id')
+                            hr_application.google_meet_link = calendar_result.get('meet_link')
+                        else:
+                            print(f"⚠️ Google Calendar: Échec création événement - {calendar_result.get('message')}")
+                            
+                    except Exception as calendar_error:
+                        print(f"❌ Google Calendar: Erreur lors de la création d'événement: {str(calendar_error)}")
+                        # Ne pas faire échouer le processus principal si Google Calendar échoue
+                    
                 hr_db.commit()
             finally:
                 hr_db.close()
@@ -561,22 +597,25 @@ async def select_interview_slot(
             print(f"❌ HR UPDATE ERROR: {str(e)}")
         
         # Créer une notification de confirmation
+        chosen_slot_str = selected_slot.start_time.strftime('%d/%m/%Y à %H:%M')
         notification = Notification(
             user_id=current_user.id,
             type='interview_scheduled',
             title='Créneau d\'entretien confirmé',
-            message=f'Votre entretien pour le poste "{application.job.title}" chez {application.job.company.company_name} est confirmé pour le {selected_slot.start_time.strftime("%d/%m/%Y à %H:%M")}.',
+            message=f'Votre entretien pour le poste "{application.job.title}" chez {application.job.company.company_name} est confirmé pour le {chosen_slot_str}.',
             application_id=application.id,
             job_id=application.job_id,
             status='interview_scheduled',
             job_title=application.job.title,
             company_name=application.job.company.company_name,
-            chosen_slot=selected_slot.start_time.strftime('%d/%m/%Y à %H:%M'),
+            chosen_slot=chosen_slot_str,
             is_read=False
         )
         
+        print(f"🔔 Creating notification with chosen_slot: {chosen_slot_str}")
         db.add(notification)
         db.commit()
+        print(f"✅ Notification created successfully with ID: {notification.id}")
         
         # Envoyer une notification WebSocket
         try:

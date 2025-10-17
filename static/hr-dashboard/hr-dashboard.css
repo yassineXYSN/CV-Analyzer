@@ -4137,5 +4137,62 @@ select.goog-te-combo option { color: #0f172a; }
 .goog-te-gadget-simple a { color: #e5e7eb !important; text-decoration: none !important; }
 .goog-te-gadget-simple .goog-te-menu-value { color: #e5e7eb !important; }
 .goog-te-gadget-simple .goog-te-menu-value span { color: #e5e7eb !important; }
+
+/* Style spécial pour le bouton Google Calendar connecté */
+#googleCalendarAction.connected {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: 1px solid rgba(102, 126, 234, 0.3) !important;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15) !important;
+  transform: translateY(-2px) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#googleCalendarAction.connected:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%) !important;
+  box-shadow: 0 12px 35px rgba(102, 126, 234, 0.25) !important;
+  transform: translateY(-4px) !important;
+}
+
+#googleCalendarAction.connected .action-icon i {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+}
+
+#googleCalendarAction.connected .action-info h3 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+#googleCalendarAction.connected .action-info p {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.85rem !important;
+}
+
+/* Animation de pulsation subtile pour le bouton connecté */
+#googleCalendarAction.connected::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulse-connected 2s infinite;
+}
+
+@keyframes pulse-connected {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    width: 100px;
+    height: 100px;
+    opacity: 0;
+  }
+}
 .goog-te-gadget-simple img { filter: invert(90%) hue-rotate(180deg); opacity: 0.9; }
 .goog-te-gadget-simple:hover { background: rgba(31, 41, 55, 0.95) !important; border-color: #475569 !important; }

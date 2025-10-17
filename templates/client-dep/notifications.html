@@ -220,6 +220,22 @@ display: flex;
     color: white;
 }
 
+/* Chosen slot info */
+.notification-info {
+    margin-top: 10px;
+}
+
+.chosen-slot {
+    background: #e8f5e8;
+    color: #2d5a2d;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: inline-block;
+    border: 1px solid #c3e6c3;
+}
+
 /* Status badges */
 .status-badge {
     display: inline-block;
@@ -444,10 +460,14 @@ display: inline-block;
                         <a href="/quizzes" class="notification-btn">
                             ❓ Mes Quiz
                         </a>
-                        {% elif notification.type == 'interview_scheduled' %}
+                        {% elif notification.type == 'interview_scheduled' and not notification.chosen_slot and 'confirmé pour le' not in notification.message %}
                         <a href="/interview-slots/{{ notification.application_id }}" class="notification-btn primary">
                             📅 Choisir un Créneau
                         </a>
+                        {% elif notification.type == 'interview_scheduled' and (notification.chosen_slot or 'confirmé pour le' in notification.message) %}
+                        <div class="notification-info">
+                            <span class="chosen-slot">✅ Créneau confirmé</span>
+                        </div>
     {% endif %}
                     </div>
                 </div>

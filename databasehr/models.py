@@ -299,6 +299,10 @@ class Application(Base):
     # AI Quiz Review
     quiz_review = Column(Text, comment="AI analysis review of quiz performance and candidate assessment")
     quiz_review_date = Column(DateTime, comment="Date when the quiz review was generated")
+    
+    # Google Calendar Integration
+    google_calendar_event_id = Column(String(200), comment="Google Calendar event ID for the interview")
+    google_meet_link = Column(Text, comment="Google Meet link for the interview")
 
 # NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
 class ActivityLog(Base):

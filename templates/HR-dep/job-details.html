@@ -332,20 +332,20 @@
                           </div>
                           <div class="google-text">
                               <h3>Google Calendar</h3>
-                              <p class="google-description">Synchronisez avec votre calendrier Google</p>
+                              <p class="google-description">Synchronisation automatique des événements</p>
                           </div>
                           <div class="google-status">
-                              <span id="googleStatusBadge" class="status-badge disconnected">Déconnecté</span>
+                              <span id="googleStatusBadge" class="status-badge disconnected">
+                                  <i class="fas fa-circle"></i>
+                                  <span class="status-text">Déconnecté</span>
+                              </span>
                           </div>
                       </div>
-                      <div class="google-actions">
-                          <button class="btn-google-connect" id="btnConnectGoogle" onclick="connectGoogle()">
-                              <i class="fab fa-google"></i>
-                              <span>Connecter Google</span>
-                          </button>
-                          <select id="googleCalendarSelect" class="google-select" style="display:none;">
-                              <option>Sélectionner un calendrier</option>
-                          </select>
+                      <div class="google-info">
+                          <p class="google-help-text">
+                              <i class="fas fa-info-circle"></i>
+                              Connectez-vous depuis le dashboard principal pour activer la synchronisation automatique
+                          </p>
                       </div>
                   </div>
                   

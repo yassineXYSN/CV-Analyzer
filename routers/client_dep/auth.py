@@ -1,19 +1,20 @@
 from fastapi import APIRouter, Request, Response, Form, Depends, UploadFile, File, Header, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from database import SessionLocal
-from databaseclient.models import User
+from databaseclient.models import User, HRGoogleToken
 from databaseclient.auth import authenticate_user, create_user_session, delete_user_session, create_user
 from routers.client_dep.dependencies import get_db, get_current_user
 from sqlalchemy.orm import Session
 import os
 import json
 import httpx
+import requests
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from databaseclient.insert_to_db import insert_candidate_data
 from fastapi.templating import Jinja2Templates
 from utils1.email_service import send_verification_email, generate_verification_token, get_verification_token_expiry
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from jwt_utils import JWTManager
 
 
@@ -551,6 +552,22 @@ async def google_auth_redirect():
         print(f"Google auth error: {str(e)}")
         return {"success": False, "message": "Erreur lors de l'authentification Google"}
 
+@router.get("/callback")
+async def google_auth_callback_redirect_simple(request: Request, db: Session = Depends(get_db)):
+    """Redirect callback vers le callback Google principal"""
+    # Rediriger vers le callback Google principal avec tous les paramètres
+    query_params = str(request.query_params)
+    return RedirectResponse(f"/auth/google/callback?{query_params}")
+
+
+@router.get("/auth/callback")
+async def google_auth_callback_redirect(request: Request, db: Session = Depends(get_db)):
+    """Redirect callback vers le callback Google principal"""
+    # Rediriger vers le callback Google principal avec tous les paramètres
+    query_params = str(request.query_params)
+    return RedirectResponse(f"/auth/google/callback?{query_params}")
+
+
 @router.get("/auth/google/callback")
 async def google_auth_callback(request: Request, db: Session = Depends(get_db)):
     """Handle Google OAuth callback - both client and HR"""
@@ -565,8 +582,8 @@ async def google_auth_callback(request: Request, db: Session = Depends(get_db)):
         # Vérifier si c'est un callback HR (state contient un ID utilisateur numérique)
         if state and state.isdigit():
             print(f"🔄 Google OAuth Callback: Détection callback HR pour state: {state}")
-            # Rediriger vers le callback HR
-            return RedirectResponse(f"/api/hr/google/callback?code={code}&state={state}")
+            # Traiter directement le callback HR
+            return await handle_hr_google_callback(code, state, db)
         
         print(f"🔄 Google OAuth Callback: Traitement callback client normal")
         
@@ -804,3 +821,91 @@ async def microsoft_auth_callback(request: Request, db: Session = Depends(get_db
     except Exception as e:
         print(f"Microsoft callback error: {str(e)}")
         return {"success": False, "message": "Erreur lors de l'authentification Microsoft"}
+
+
+async def handle_hr_google_callback(code: str, state: str, db: Session):
+    """
+    Traite le callback Google OAuth pour les HR agents
+    """
+    try:
+        print(f"🔄 HR Google OAuth Callback: Code reçu, State: {state}")
+        
+        # Vérifier si c'est un callback HR (state contient un ID utilisateur numérique)
+        user_id = None
+        if state and state.isdigit():
+            user_id = int(state)
+            print(f"✅ HR Google OAuth Callback: User ID extrait du state: {user_id}")
+        else:
+            print(f"❌ HR Google OAuth Callback: State invalide ou manquant: {state}")
+            return RedirectResponse("/HR-dep/hr-dashboard.html?error=invalid_state")
+        
+        # Configuration Google OAuth - utiliser les variables d'environnement (même que le callback existant)
+        GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "603669455866-m2sqvd5s7qdmlcua4o6fvrsb42iqr1bb.apps.googleusercontent.com")
+        GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "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")
+        GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+        GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+        
+        # Échanger le code contre un token d'accès
+        data = {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+            "grant_type": "authorization_code",
+        }
+        
+        print(f"🔄 HR Google OAuth Callback: Échange du code contre token...")
+        r = requests.post(GOOGLE_TOKEN_URL, data=data, timeout=15)
+        
+        if r.status_code != 200:
+            print(f"❌ HR Google OAuth Callback: Échec échange code - Status: {r.status_code}")
+            print(f"❌ HR Google OAuth Callback: Response: {r.text}")
+            return RedirectResponse("/HR-dep/hr-dashboard.html?error=google_auth_failed&message=Erreur de configuration Google OAuth. Veuillez vérifier que l'URL de redirection http://localhost:8000/auth/google/callback est configurée dans Google Cloud Console pour le client ID 603669455866-ke5hutefk7fp474dt65vfo0mp39sh3i3.apps.googleusercontent.com")
+        
+        token_data = r.json()
+        print(f"✅ HR Google OAuth Callback: Token reçu: {list(token_data.keys())}")
+        
+        # Sauvegarder les tokens
+        save_hr_tokens(db, user_id, token_data)
+        print(f"✅ HR Google OAuth Callback: Tokens sauvegardés pour user_id: {user_id}")
+        
+        return RedirectResponse("/HR-dep/hr-dashboard.html?connected=google&message=Google Calendar connecté avec succès !")
+        
+    except Exception as e:
+        print(f"❌ HR Google OAuth Callback Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return RedirectResponse("/HR-dep/hr-dashboard.html?error=google_auth_failed&message=Erreur lors de la connexion Google Calendar")
+
+
+def save_hr_tokens(db: Session, hr_admin_id: int, token_data: dict):
+    """
+    Sauvegarde les tokens Google OAuth pour un HR admin
+    """
+    access_token = token_data.get("access_token")
+    refresh_token = token_data.get("refresh_token")
+    token_type = token_data.get("token_type")
+    scope = token_data.get("scope")
+    expires_in = token_data.get("expires_in")
+
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in or 0)
+
+    record = db.query(HRGoogleToken).filter(HRGoogleToken.hr_admin_id == hr_admin_id).first()
+    if not record:
+        record = HRGoogleToken(
+            hr_admin_id=hr_admin_id,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type=token_type,
+            scope=scope,
+            expires_at=expires_at,
+        )
+        db.add(record)
+    else:
+        record.access_token = access_token
+        if refresh_token:
+            record.refresh_token = refresh_token
+        record.token_type = token_type
+        record.scope = scope
+        record.expires_at = expires_at
+    db.commit()

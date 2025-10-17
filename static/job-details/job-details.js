@@ -1080,13 +1080,24 @@ function hasSlotOnDate(dateString) {
 }
 
 async function initGoogleSection() {
+  console.log('🔍 Modal Google Calendar: initGoogleSection() appelée')
+  
   const statusBadge = document.getElementById('googleStatusBadge')
-  const btn = document.getElementById('btnConnectGoogle')
   const sel = document.getElementById('googleCalendarSelect')
   const info = document.getElementById('googleConflictInfo')
   const calendarContainer = document.getElementById('googleCalendarContainer')
   
-  if (!statusBadge || !btn || !sel || !info || !calendarContainer) return
+  console.log('🔍 Modal Google Calendar: Éléments DOM trouvés:', {
+    statusBadge: !!statusBadge,
+    sel: !!sel,
+    info: !!info,
+    calendarContainer: !!calendarContainer
+  })
+  
+  if (!statusBadge || !sel || !info || !calendarContainer) {
+    console.error('❌ Modal Google Calendar: Éléments DOM manquants')
+    return
+  }
   
   // Vérifier les paramètres URL pour les erreurs ou succès
   const urlParams = new URLSearchParams(window.location.search)
@@ -1114,8 +1125,8 @@ async function initGoogleSection() {
     }
     
     // Afficher l'erreur dans le badge
-    statusBadge.textContent = 'Erreur'
-    statusBadge.className = 'error'
+    statusBadge.innerHTML = '<i class="fas fa-circle"></i><span class="status-text">Erreur</span>'
+    statusBadge.className = 'status-badge error'
     statusBadge.title = errorMessage
     
     console.error('Google Calendar Error:', errorMessage)
@@ -1130,32 +1141,66 @@ async function initGoogleSection() {
     const accessToken = localStorage.getItem('hr_access_token')
     if (!accessToken) {
       console.error('No HR access token found')
-      statusBadge.textContent = 'Non connecté'
-      statusBadge.className = 'disconnected'
+      statusBadge.innerHTML = '<i class="fas fa-circle"></i><span class="status-text">Non connecté</span>'
+      statusBadge.className = 'status-badge disconnected'
       statusBadge.title = 'Vous devez être connecté pour utiliser Google Calendar'
-      btn.style.display = 'inline-block'
       sel.style.display = 'none'
       calendarContainer.style.display = 'none'
       info.textContent = ''
       return
     }
     
-    const response = await fetch('/api/hr/google/status', {
+    // Extraire l'user_id du token JWT
+    let userId = null
+    try {
+      const payload = JSON.parse(atob(accessToken.split('.')[1]))
+      userId = payload.sub
+      console.log('Modal Google Calendar: User ID extrait:', userId)
+      console.log('Modal Google Calendar: Token payload:', payload)
+      
+      // Vérifier que l'user_id est valide
+      if (!userId || userId === 'undefined' || userId === 'null') {
+        console.warn('Modal Google Calendar: User ID invalide:', userId)
+        userId = null
+      }
+    } catch (error) {
+      console.error('Modal Google Calendar: Erreur décodage token:', error)
+      console.error('Modal Google Calendar: Token:', accessToken.substring(0, 50) + '...')
+      userId = null
+    }
+    
+    // Utiliser l'user_id comme paramètre si disponible, sinon essayer avec 88 (fallback)
+    let statusUrl = '/api/hr/google/status'
+    if (userId) {
+      statusUrl = `/api/hr/google/status?user_id=${userId}`
+    } else {
+      // Fallback: essayer avec user_id=88 si le décodage échoue
+      console.log('Modal Google Calendar: Utilisation du fallback user_id=88')
+      statusUrl = '/api/hr/google/status?user_id=88'
+    }
+    
+    console.log('Modal Google Calendar: URL de statut:', statusUrl)
+    
+    const response = await fetch(statusUrl, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
     })
+    
+    console.log('Modal Google Calendar: Response status:', response.status)
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
     
     const s = await response.json()
+    console.log('Modal Google Calendar: Response data:', s)
+    
     if (s.connected) {
-      statusBadge.textContent = 'Connecté'
-      statusBadge.className = 'connected'
+      // Le compte est vraiment connecté
+      statusBadge.innerHTML = '<i class="fas fa-circle"></i>'
+      statusBadge.className = 'status-badge connected'
       statusBadge.title = 'Google Calendar connecté avec succès'
-      btn.style.display = 'none'
       sel.style.display = 'inline-block'
       calendarContainer.style.display = 'block'
       
@@ -1186,10 +1231,10 @@ async function initGoogleSection() {
       
       await checkGoogleConflicts()
     } else {
-      statusBadge.textContent = 'Déconnecté'
-      statusBadge.className = 'disconnected'
-      statusBadge.title = 'Cliquez pour connecter Google Calendar'
-      btn.style.display = 'inline-block'
+      // Le compte n'est pas connecté
+      statusBadge.innerHTML = '<i class="fas fa-circle"></i>'
+      statusBadge.className = 'status-badge disconnected'
+      statusBadge.title = 'Connectez-vous depuis le dashboard principal pour activer la synchronisation'
       sel.style.display = 'none'
       calendarContainer.style.display = 'none'
       info.textContent = ''
@@ -1199,10 +1244,10 @@ async function initGoogleSection() {
     initPermanentCalendar()
   } catch (e) {
     console.error('Error initializing Google section:', e)
-    statusBadge.textContent = 'Erreur'
-    statusBadge.className = 'error'
+    // En cas d'erreur, afficher déconnecté
+    statusBadge.innerHTML = '<i class="fas fa-circle"></i>'
+    statusBadge.className = 'status-badge error'
     statusBadge.title = 'Erreur de connexion au serveur'
-    btn.style.display = 'inline-block'
     sel.style.display = 'none'
     calendarContainer.style.display = 'none'
     info.textContent = 'Erreur de connexion au serveur'
@@ -2296,20 +2341,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 })
-
-function connectGoogle() {
-  // Vérifier que l'utilisateur est connecté
-  const accessToken = localStorage.getItem('hr_access_token')
-  if (!accessToken) {
-    console.error('No HR access token found for Google connection')
-    alert('Vous devez être connecté pour utiliser Google Calendar. Veuillez vous reconnecter.')
-    window.location.href = '/enterprise-login'
-    return
-  }
-  
-  // Redirection simple vers l'endpoint OAuth
-  window.location.href = '/api/hr/google/oauth/start'
-}
 
 function bindSlotInputsForGoogle() {
   const ids = ['slot1_start','slot1_end','slot2_start','slot2_end','slot3_start','slot3_end','slot4_start','slot4_end','googleCalendarSelect']

@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -10,7 +11,7 @@ from database import SessionLocal
 from databaseclient.models import HRGoogleToken
 from databasehr.session_manager import current_user_session
 
-router = APIRouter()
+router = APIRouter(prefix="/api/hr", tags=["hr-google"])
 
 
 def get_db():
@@ -48,9 +49,9 @@ def get_user_id_from_request(request: Request) -> Optional[int]:
     return user_id
 
 
-GOOGLE_CLIENT_ID = "603669455866-ke5hutefk7fp474dt65vfo0mp39sh3i3.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = "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"
-GOOGLE_REDIRECT_URI = "http://localhost:8000/auth/google/callback"  # Retour à l'ancienne URL
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "603669455866-m2sqvd5s7qdmlcua4o6fvrsb42iqr1bb.apps.googleusercontent.com")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "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")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 SCOPES = [
@@ -93,7 +94,13 @@ def get_valid_access_token(db, hr_admin_id: int) -> Optional[str]:
     rec = db.query(HRGoogleToken).filter(HRGoogleToken.hr_admin_id == hr_admin_id).first()
     if not rec:
         return None
-    if not rec.expires_at or rec.expires_at <= datetime.now(timezone.utc) + timedelta(seconds=60):
+    
+    # Convertir expires_at en timezone-aware si nécessaire
+    expires_at = rec.expires_at
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if not expires_at or expires_at <= datetime.now(timezone.utc) + timedelta(seconds=60):
         if not rec.refresh_token:
             return None
         data = {
@@ -111,13 +118,118 @@ def get_valid_access_token(db, hr_admin_id: int) -> Optional[str]:
     return rec.access_token
 
 
-@router.get("/api/hr/google/status")
-def google_status(request: Request, db=Depends(get_db)):
+def create_calendar_event(db, hr_admin_id: int, candidate_name: str, candidate_email: str, 
+                         job_title: str, company_name: str, interview_date: datetime, 
+                         interview_duration_minutes: int = 60) -> dict:
+    """
+    Crée un événement dans le calendrier Google du HR agent
+    """
+    try:
+        # Obtenir un token d'accès valide
+        access_token = get_valid_access_token(db, hr_admin_id)
+        if not access_token:
+            return {"success": False, "message": "Aucun token Google Calendar valide trouvé"}
+        
+        # Calculer les heures de début et fin
+        start_time = interview_date
+        end_time = start_time + timedelta(minutes=interview_duration_minutes)
+        
+        # S'assurer que les dates sont en timezone Europe/Paris
+        # Utiliser UTC+1 (heure d'hiver) ou UTC+2 (heure d'été) pour Paris
+        # Pour simplifier, utilisons UTC+1 (heure d'hiver française)
+        paris_offset = timedelta(hours=1)
+        
+        # Si la date n'a pas de timezone, l'assumer comme Europe/Paris (UTC+1)
+        if start_time.tzinfo is None:
+            start_time = start_time.replace(tzinfo=timezone(paris_offset))
+        else:
+            start_time = start_time.astimezone(timezone(paris_offset))
+            
+        if end_time.tzinfo is None:
+            end_time = end_time.replace(tzinfo=timezone(paris_offset))
+        else:
+            end_time = end_time.astimezone(timezone(paris_offset))
+        
+        # Formater les dates pour l'API Google Calendar (RFC3339 avec timezone)
+        start_time_rfc3339 = start_time.strftime('%Y-%m-%dT%H:%M:%S%z')
+        end_time_rfc3339 = end_time.strftime('%Y-%m-%dT%H:%M:%S%z')
+        
+        # Ajouter les deux points dans le timezone offset (RFC3339 standard)
+        if len(start_time_rfc3339) == 25:  # Format: +0200
+            start_time_rfc3339 = start_time_rfc3339[:-2] + ':' + start_time_rfc3339[-2:]
+        if len(end_time_rfc3339) == 25:  # Format: +0200
+            end_time_rfc3339 = end_time_rfc3339[:-2] + ':' + end_time_rfc3339[-2:]
+        
+        # Créer l'événement
+        event_data = {
+            "summary": f"Entretien - {candidate_name}",
+            "description": f"Entretien avec {candidate_name} pour le poste de {job_title} chez {company_name}.\n\nCandidat: {candidate_name}\nEmail: {candidate_email}\nPoste: {job_title}\nEntreprise: {company_name}",
+            "start": {
+                "dateTime": start_time_rfc3339
+            },
+            "end": {
+                "dateTime": end_time_rfc3339
+            },
+            "attendees": [
+                {
+                    "email": candidate_email,
+                    "displayName": candidate_name
+                }
+            ],
+            "reminders": {
+                "useDefault": False,
+                "overrides": [
+                    {"method": "email", "minutes": 24 * 60},  # 1 jour avant
+                    {"method": "popup", "minutes": 30}        # 30 minutes avant
+                ]
+            },
+            "conferenceData": {
+                "createRequest": {
+                    "requestId": f"interview-{hr_admin_id}-{int(start_time.timestamp())}",
+                    "conferenceSolutionKey": {
+                        "type": "hangoutsMeet"
+                    }
+                }
+            }
+        }
+        
+        # Envoyer la requête à l'API Google Calendar
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        
+        url = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+        response = requests.post(url, json=event_data, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            event_result = response.json()
+            print(f"✅ Google Calendar: Événement créé avec succès - ID: {event_result.get('id')}")
+            return {
+                "success": True, 
+                "message": "Événement créé dans Google Calendar",
+                "event_id": event_result.get('id'),
+                "meet_link": event_result.get('conferenceData', {}).get('entryPoints', [{}])[0].get('uri')
+            }
+        else:
+            print(f"❌ Google Calendar: Erreur création événement - Status: {response.status_code}")
+            print(f"❌ Google Calendar: Response: {response.text}")
+            return {"success": False, "message": f"Erreur Google Calendar: {response.status_code}"}
+            
+    except Exception as e:
+        print(f"❌ Google Calendar: Exception lors de la création d'événement: {str(e)}")
+        return {"success": False, "message": f"Erreur lors de la création de l'événement: {str(e)}"}
+
+
+@router.get("/google/status")
+def google_status(request: Request, user_id: Optional[int] = None, db=Depends(get_db)):
     """
     Vérifie le statut de connexion Google Calendar pour l'utilisateur HR connecté.
     """
     try:
-        user_id = get_user_id_from_request(request)
+        # Essayer d'abord le paramètre user_id, puis la session
+        if not user_id:
+            user_id = get_user_id_from_request(request)
         
         if not user_id:
             return {"connected": False}
@@ -130,14 +242,16 @@ def google_status(request: Request, db=Depends(get_db)):
         return {"connected": False}
 
 
-@router.get("/api/hr/google/oauth/start")
-def google_oauth_start(request: Request):
+@router.get("/google/oauth/start")
+def google_oauth_start(request: Request, user_id: Optional[int] = None):
     """
     Démarre le processus OAuth Google pour HR.
-    Récupère l'utilisateur connecté depuis les cookies JWT ou headers d'autorisation.
+    Récupère l'utilisateur connecté depuis les cookies JWT, headers d'autorisation, ou paramètre.
     """
     try:
-        user_id = get_user_id_from_request(request)
+        # Essayer d'abord le paramètre user_id
+        if not user_id:
+            user_id = get_user_id_from_request(request)
         
         if not user_id:
             print("❌ Google OAuth Start: Aucun utilisateur connecté")
@@ -166,7 +280,7 @@ def google_oauth_start(request: Request):
         return RedirectResponse("/enterprise-login?error=oauth_start_failed")
 
 
-@router.get("/api/hr/google/callback")
+@router.get("/google/callback")
 def google_oauth_callback_hr(code: str, state: str = None, db=Depends(get_db)):
     """
     Callback Google OAuth pour HR.
@@ -199,7 +313,7 @@ def google_oauth_callback_hr(code: str, state: str = None, db=Depends(get_db)):
         if r.status_code != 200:
             print(f"❌ Google OAuth Callback HR: Échec échange code - Status: {r.status_code}")
             print(f"❌ Google OAuth Callback HR: Response: {r.text}")
-            return RedirectResponse("/HR-dep/job-details.html?error=google_auth_failed")
+            return RedirectResponse("/HR-dep/hr-dashboard.html?error=google_auth_failed&message=Erreur lors de l'authentification Google. Veuillez réessayer.")
         
         token_data = r.json()
         print(f"✅ Google OAuth Callback HR: Token reçu: {list(token_data.keys())}")
@@ -208,7 +322,7 @@ def google_oauth_callback_hr(code: str, state: str = None, db=Depends(get_db)):
         save_tokens(db, user_id, token_data)
         print(f"✅ Google OAuth Callback HR: Tokens sauvegardés pour user_id: {user_id}")
         
-        return RedirectResponse("/HR-dep/job-details.html?connected=google")
+        return RedirectResponse("/HR-dep/hr-dashboard.html?connected=google&message=Google Calendar connecté avec succès !")
         
     except Exception as e:
         print(f"❌ Google OAuth Callback HR Error: {str(e)}")

@@ -21,6 +21,28 @@ document.addEventListener("DOMContentLoaded", () => {
   
   initializeDashboard()
   initializeSkillsSystem()
+  
+  // Vérifier le statut Google Calendar
+  setTimeout(() => {
+    checkGoogleCalendarStatus()
+    
+    // Vérifier les paramètres URL pour les messages Google Calendar
+    const urlParams = new URLSearchParams(window.location.search)
+    const connected = urlParams.get('connected')
+    const error = urlParams.get('error')
+    const message = urlParams.get('message')
+    
+    if (connected === 'google') {
+      showNotification(message || 'Google Calendar connecté avec succès !', 'success')
+      updateGoogleCalendarButton(true)
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (error === 'google_auth_failed') {
+      showNotification(message || 'Erreur lors de la connexion Google Calendar', 'error')
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, 1000)
 })
 
 // Check if user is authenticated
@@ -2311,6 +2333,92 @@ function exportData() {
 // Generate report
 function generateReport() {
   window.location.href = "/hr-reports"
+}
+
+// Google Calendar connection
+function connectGoogleCalendar() {
+  console.log("🔄 Google Calendar: Démarrage de la connexion...")
+  
+  // Vérifier d'abord le statut de connexion
+  fetch('/api/hr/google/status')
+    .then(response => response.json())
+    .then(data => {
+      if (data.connected) {
+        // Déjà connecté, afficher un message
+        showNotification('Google Calendar déjà connecté !', 'success')
+        updateGoogleCalendarButton(true)
+      } else {
+        // Pas encore connecté, démarrer le processus OAuth
+        console.log("🔄 Google Calendar: Redirection vers OAuth...")
+        
+        // Récupérer l'ID utilisateur depuis le token
+        const token = localStorage.getItem('hr_access_token')
+        if (token) {
+          try {
+            // Décoder le token JWT pour obtenir l'ID utilisateur
+            const payload = JSON.parse(atob(token.split('.')[1]))
+            const userId = payload.sub
+            console.log("🔄 Google Calendar: User ID trouvé:", userId)
+            
+            // Rediriger vers OAuth avec l'ID utilisateur
+            window.location.href = `/api/hr/google/oauth/start?user_id=${userId}`
+          } catch (error) {
+            console.error("❌ Google Calendar: Erreur décodage token:", error)
+            window.location.href = '/api/hr/google/oauth/start'
+          }
+        } else {
+          console.log("❌ Google Calendar: Aucun token trouvé")
+          window.location.href = '/api/hr/google/oauth/start'
+        }
+      }
+    })
+    .catch(error => {
+      console.error("❌ Google Calendar: Erreur vérification statut:", error)
+      showNotification('Erreur lors de la vérification de la connexion Google Calendar', 'error')
+    })
+}
+
+// Mettre à jour l'apparence du bouton Google Calendar
+function updateGoogleCalendarButton(connected) {
+  const button = document.getElementById('googleCalendarAction')
+  if (button) {
+    if (connected) {
+      button.innerHTML = `
+        <div class="action-icon"><i class="fas fa-calendar-check"></i></div>
+        <div class="action-info">
+          <h3>Google Calendar</h3>
+          <p>Calendrier synchronisé</p>
+        </div>
+        <span class="qa-ripple" aria-hidden="true"></span>
+      `
+      // Ajouter la classe CSS pour le style connecté
+      button.classList.add('connected')
+      
+    } else {
+      button.innerHTML = `
+        <div class="action-icon"><i class="fab fa-google"></i></div>
+        <div class="action-info">
+          <h3>Google Calendar</h3>
+          <p>Connecter votre calendrier</p>
+        </div>
+        <span class="qa-ripple" aria-hidden="true"></span>
+      `
+      // Supprimer la classe CSS connecté
+      button.classList.remove('connected')
+    }
+  }
+}
+
+// Vérifier le statut Google Calendar au chargement de la page
+function checkGoogleCalendarStatus() {
+  fetch('/api/hr/google/status')
+    .then(response => response.json())
+    .then(data => {
+      updateGoogleCalendarButton(data.connected)
+    })
+    .catch(error => {
+      console.error("❌ Google Calendar: Erreur vérification statut:", error)
+    })
 }
 
 // ==================== FONCTION DE RECHERCHE CORRIGÉE ====================
