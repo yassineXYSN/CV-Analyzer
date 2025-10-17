@@ -20,3 +20,6 @@ opencv-python
 deepface
 tensorflow
 opencv-python
+tf-keras
+openai-whisper
+pydub

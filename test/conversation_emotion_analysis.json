@@ -1,0 +1,146 @@
+[
+  {
+    "speaker": "Speaker A",
+    "text": "Good morning, thanks for joining us today. Could you start by telling me a little about yourself?",
+    "start": 0.0,
+    "end": 9.0,
+    "duration": 9.0,
+    "emotion": "neutral",
+    "emotion_samples": 1
+  },
+  {
+    "speaker": "Speaker B",
+    "text": "Of course, my name is Yassine and I recently graduated with a degree in business management. During my studies, I completed an internship in project coordination where I learned how to manage timelines, communicate with clients and handle unexpected challenges.",
+    "start": 0.0,
+    "end": 30.28,
+    "duration": 30.28,
+    "emotion": "neutral",
+    "emotion_samples": 3
+  },
+  {
+    "speaker": "Speaker A",
+    "text": "That sounds great. What would you say is your biggest strength?",
+    "start": 30.0,
+    "end": 50.0,
+    "duration": 20.0,
+    "emotion": "neutral",
+    "emotion_samples": 1
+  },
+  {
+    "speaker": "Speaker B",
+    "text": "What is your organization and adaptability? I'd say it's my organization and adaptability. I like keeping things on track, but I can also stay calm and adjust quickly when priorities change. What is your personal life?",
+    "start": 30.28,
+    "end": 52.72,
+    "duration": 22.439999999999998,
+    "emotion": "neutral",
+    "emotion_samples": 5
+  },
+  {
+    "speaker": "Speaker A",
+    "text": "Excellent. Why do you want to work with our company?",
+    "start": 50.0,
+    "end": 59.0,
+    "duration": 9.0,
+    "emotion": "neutral",
+    "emotion_samples": 1
+  },
+  {
+    "speaker": "Speaker B",
+    "text": "I followed your company for a while and I really admire your focus on innovation and",
+    "start": 52.72,
+    "end": 63.22,
+    "duration": 10.5,
+    "emotion": "neutral",
+    "emotion_samples": 1
+  },
+  {
+    "speaker": "Speaker A",
+    "text": "I want to work with our company because I want to be a part of the company.",
+    "start": 60.0,
+    "end": 70.0,
+    "duration": 10.0,
+    "emotion": "neutral",
+    "emotion_samples": 1
+  },
+  {
+    "speaker": "Speaker B",
+    "text": "teamwork. I think it's the perfect environment to grow professionally and contribute meaningfully.",
+    "start": 63.22,
+    "end": 70.72,
+    "duration": 7.5,
+    "emotion": "neutral",
+    "emotion_samples": 2
+  },
+  {
+    "speaker": "Speaker A",
+    "text": "Okay, just for testing purposes, could you talk a little bit of French?",
+    "start": 70.0,
+    "end": 87.0,
+    "duration": 17.0,
+    "emotion": "neutral",
+    "emotion_samples": 1
+  },
+  {
+    "speaker": "Speaker B",
+    "text": "What is your name? Hello, of course, sir. My name is Youssef. And I'm a business manager. I'm a high school student, so I really like chocolate. What else do you want to do? You're welcome, my name is Yassine Otrou. What is your name?",
+    "start": 70.72,
+    "end": 87.82,
+    "duration": 17.099999999999994,
+    "emotion": "happy",
+    "emotion_samples": 8
+  },
+  {
+    "speaker": "Speaker A",
+    "text": "Yes, please.",
+    "start": 87.0,
+    "end": 89.0,
+    "duration": 2.0,
+    "emotion": "neutral",
+    "emotion_samples": 1
+  },
+  {
+    "speaker": "Speaker B",
+    "text": "My name is Yassine Otrou, I'm a business manager and I really admire your focus on innovation and collaboration.",
+    "start": 87.82,
+    "end": 90.82,
+    "duration": 3.0,
+    "emotion": "neutral",
+    "emotion_samples": 2
+  },
+  {
+    "speaker": "Speaker A",
+    "text": "Thank you, that was great. Wonderful. Thank you, Yousef. We'll be in touch soon.",
+    "start": 90.0,
+    "end": 100.0,
+    "duration": 10.0,
+    "emotion": "neutral",
+    "emotion_samples": 1
+  },
+  {
+    "speaker": "Speaker B",
+    "text": "What is your personal life? I think it's the perfect environment for me to stay calm and adjust quickly when priorities change and I really enjoy working with you.",
+    "start": 90.82,
+    "end": 102.22,
+    "duration": 11.400000000000006,
+    "emotion": "happy",
+    "emotion_samples": 3
+  },
+  {
+    "speaker": "Speaker A",
+    "text": "Okay, thanks.",
+    "start": 100.0,
+    "end": 102.0,
+    "duration": 2.0,
+    "emotion": "happy",
+    "emotion_samples": 1
+  },
+  {
+    "speaker": "Speaker B",
+    "text": "What is your name? My name is Yassine Otrou. And I'm a business manager. And I'm a business manager. You're welcome, my name is Youssef.",
+    "start": 102.22,
+    "end": 111.72,
+    "duration": 9.5,
+    "emotion": "unknown",
+    "emotion_samples": 5
+  }
+]

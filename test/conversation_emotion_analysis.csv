@@ -1,0 +1,17 @@
+turn_number,speaker,start_time,end_time,duration,text,emotion,emotion_samples
+1,Speaker A,0.0,9.0,9.0,"Good morning, thanks for joining us today. Could you start by telling me a little about yourself?",neutral,1
+2,Speaker B,0.0,30.28,30.28,"Of course, my name is Yassine and I recently graduated with a degree in business management. During my studies, I completed an internship in project coordination where I learned how to manage timelines, communicate with clients and handle unexpected challenges.",neutral,3
+3,Speaker A,30.0,50.0,20.0,That sounds great. What would you say is your biggest strength?,neutral,1
+4,Speaker B,30.28,52.72,22.439999999999998,"What is your organization and adaptability? I'd say it's my organization and adaptability. I like keeping things on track, but I can also stay calm and adjust quickly when priorities change. What is your personal life?",neutral,5
+5,Speaker A,50.0,59.0,9.0,Excellent. Why do you want to work with our company?,neutral,1
+6,Speaker B,52.72,63.22,10.5,I followed your company for a while and I really admire your focus on innovation and,neutral,1
+7,Speaker A,60.0,70.0,10.0,I want to work with our company because I want to be a part of the company.,neutral,1
+8,Speaker B,63.22,70.72,7.5,teamwork. I think it's the perfect environment to grow professionally and contribute meaningfully.,neutral,2
+9,Speaker A,70.0,87.0,17.0,"Okay, just for testing purposes, could you talk a little bit of French?",neutral,1
+10,Speaker B,70.72,87.82,17.099999999999994,"What is your name? Hello, of course, sir. My name is Youssef. And I'm a business manager. I'm a high school student, so I really like chocolate. What else do you want to do? You're welcome, my name is Yassine Otrou. What is your name?",happy,8
+11,Speaker A,87.0,89.0,2.0,"Yes, please.",neutral,1
+12,Speaker B,87.82,90.82,3.0,"My name is Yassine Otrou, I'm a business manager and I really admire your focus on innovation and collaboration.",neutral,2
+13,Speaker A,90.0,100.0,10.0,"Thank you, that was great. Wonderful. Thank you, Yousef. We'll be in touch soon.",neutral,1
+14,Speaker B,90.82,102.22,11.400000000000006,What is your personal life? I think it's the perfect environment for me to stay calm and adjust quickly when priorities change and I really enjoy working with you.,happy,3
+15,Speaker A,100.0,102.0,2.0,"Okay, thanks.",happy,1
+16,Speaker B,102.22,111.72,9.5,"What is your name? My name is Yassine Otrou. And I'm a business manager. And I'm a business manager. You're welcome, my name is Youssef.",unknown,5
