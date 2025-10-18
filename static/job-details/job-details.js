@@ -946,85 +946,42 @@ function showConfirmedSlotsModal(confirmedSlots) {
 
   console.log("[DEBUG] Génération du calendrier avec les créneaux:", confirmedSlots)
 
-  generateConfirmedCalendar(confirmedSlots)
+  // Classifier les créneaux
+  const status = (slot) => (slot.status || '').toString().toLowerCase()
+  const isConfirmed = (slot) => status(slot) === 'reserved' || status(slot) === 'confirmed'
+  const isPending = (slot) => status(slot) === 'free'
 
-  
+  const pendingSlots = (confirmedSlots || []).filter(isPending)
+  const confirmedSlotsArr = (confirmedSlots || []).filter(isConfirmed)
 
-  // Remplir la liste des créneaux
+  // Mettre à jour les statistiques
+  const totalCount = modal.querySelector('#totalSlotsCount')
+  const pendingCount = modal.querySelector('#pendingSlotsCount')
+  const confirmedCount = modal.querySelector('#confirmedSlotsCount')
+  const pendingTabBadge = modal.querySelector('#pendingTabBadge')
+  const confirmedTabBadge = modal.querySelector('#confirmedTabBadge')
 
-  const slotsList = modal.querySelector('#confirmedSlotsList')
+  if (totalCount) totalCount.textContent = confirmedSlots.length
+  if (pendingCount) pendingCount.textContent = pendingSlots.length
+  if (confirmedCount) confirmedCount.textContent = confirmedSlotsArr.length
+  if (pendingTabBadge) pendingTabBadge.textContent = pendingSlots.length
+  if (confirmedTabBadge) confirmedTabBadge.textContent = confirmedSlotsArr.length
 
-  if (slotsList && confirmedSlots) {
+  // Remplir les grilles
+  const pendingGrid = modal.querySelector('#pendingSlotsGrid')
+  const confirmedGrid = modal.querySelector('#confirmedSlotsGrid')
 
-    slotsList.innerHTML = confirmedSlots.map((slot, index) => {
-
-      const startDate = new Date(slot.start_time)
-
-      const endDate = new Date(slot.end_time)
-
-      
-
-      const dateStr = startDate.toLocaleDateString('fr-FR', {
-
-        weekday: 'long',
-
-        year: 'numeric',
-
-        month: 'long',
-
-        day: 'numeric'
-
-      })
-
-      
-
-      const timeStr = `${startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
-
-      
-
-      const status = (slot.status || '').toString().toLowerCase()
-
-      const isReserved = status === 'reserved'
-
-      const statusIcon = isReserved ? 'fas fa-check-circle' : 'fas fa-user-clock'
-
-      const statusText = isReserved ? 'Statut: Choisi par le candidat' : 'En attente du candidat'
-
-      const statusClass = isReserved ? 'selected' : 'pending'
-
-
-
-      return `
-
-        <div class="confirmed-slot-item-modal ${statusClass}">
-
-          <div class="slot-number">${index + 1}</div>
-
-          <div class="slot-details">
-
-            <h4>${dateStr}</h4>
-
-            <p>${timeStr}</p>
-
-            <p><strong>Statut:</strong> ${isReserved ? 'Choisi par le candidat' : 'En attente du candidat'}</p>
-
-          </div>
-
-          <div class="slot-status-badge ${statusClass}">
-
-            <i class="${statusIcon}"></i>
-
-            <span>${statusText}</span>
-
-          </div>
-
-        </div>
-
-      `
-
-    }).join('')
-
+  if (pendingGrid) {
+    pendingGrid.innerHTML = pendingSlots.map(slot => createSlotCard(slot, 'pending')).join('')
   }
+
+  if (confirmedGrid) {
+    confirmedGrid.innerHTML = confirmedSlotsArr.map(slot => createSlotCard(slot, 'confirmed')).join('')
+  }
+
+  // Afficher l'onglet par défaut
+  const defaultTab = pendingSlots.length > 0 ? 'pending' : 'confirmed'
+  switchSlotsTab(defaultTab)
 
   
 
@@ -1356,9 +1313,9 @@ function createConfirmedSlotsModal() {
 
           <div class="header-text">
 
-            <h2>Créneaux d'entretien confirmés</h2>
+            <h2>Gestion des créneaux d'entretien</h2>
 
-            <p class="header-subtitle">Confirmés par l'agent RH - En attente de la réponse du candidat</p>
+            <p class="header-subtitle">Vue d'ensemble des créneaux réservés et confirmés</p>
 
           </div>
 
@@ -1374,108 +1331,79 @@ function createConfirmedSlotsModal() {
 
       <div class="modal-body confirmed-slots-body">
 
-        <div class="confirmed-calendar-container">
-
-          <div class="calendar-header-confirmed">
-
-            <div class="calendar-nav-confirmed">
-
-              <button class="nav-btn-confirmed" onclick="previousMonthConfirmed()">
-
-                <i class="fas fa-chevron-left"></i>
-
-              </button>
-
-              <h3><i class="fas fa-calendar-alt"></i> Calendrier des créneaux confirmés</h3>
-
-              <button class="nav-btn-confirmed" onclick="nextMonthConfirmed()">
-
-                <i class="fas fa-chevron-right"></i>
-
-              </button>
-
+        <!-- Statistiques résumées -->
+        <div class="slots-summary-cards">
+          <div class="summary-card total">
+            <div class="summary-icon">
+              <i class="fas fa-layer-group"></i>
             </div>
-
-            <div class="calendar-legend-confirmed">
-
-              <div class="legend-item">
-
-                <div class="legend-color confirmed"></div>
-
-                <span>Confirmés par l'agent RH</span>
-
-              </div>
-
-              <div class="legend-item">
-
-                <div class="legend-color pending"></div>
-
-                <span>En attente de réponse du candidat</span>
-
-              </div>
-
+            <div class="summary-content">
+              <div class="summary-number" id="totalSlotsCount">0</div>
+              <div class="summary-label">Total créneaux</div>
             </div>
-
           </div>
-
-          
-
-          <div class="confirmed-calendar-grid">
-
-            <div class="calendar-header-days">
-
-              <div class="day-header">Lun</div>
-
-              <div class="day-header">Mar</div>
-
-              <div class="day-header">Mer</div>
-
-              <div class="day-header">Jeu</div>
-
-              <div class="day-header">Ven</div>
-
-              <div class="day-header">Sam</div>
-
-              <div class="day-header">Dim</div>
-
+          <div class="summary-card pending">
+            <div class="summary-icon">
+              <i class="fas fa-clock"></i>
             </div>
-
-            <div id="confirmedCalendarDays" class="calendar-days-confirmed">
-
-              <!-- Les jours seront générés dynamiquement -->
-
+            <div class="summary-content">
+              <div class="summary-number" id="pendingSlotsCount">0</div>
+              <div class="summary-label">En attente</div>
             </div>
-
           </div>
-
+          <div class="summary-card confirmed">
+            <div class="summary-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-number" id="confirmedSlotsCount">0</div>
+              <div class="summary-label">Confirmés</div>
+            </div>
+          </div>
         </div>
 
-        
-
-        <div class="confirmed-slots-list-container">
-
-          <h3><i class="fas fa-list"></i> Créneaux en attente de réponse</h3>
-
-          <div id="confirmedSlotsList" class="confirmed-slots-list-modal">
-
-            <!-- Les créneaux seront affichés ici -->
-
-          </div>
-
-        </div>
-
-        
-
-        <div class="modal-actions">
-
-          <button class="btn-secondary" onclick="closeConfirmedSlotsModal()">
-
-            <i class="fas fa-times"></i>
-
-            <span>Fermer</span>
-
+        <!-- Navigation par onglets -->
+        <div class="slots-tabs">
+          <button class="tab-button active" data-tab="pending" onclick="switchSlotsTab('pending')">
+            <i class="fas fa-user-clock"></i>
+            <span>Créneaux en attente</span>
+            <div class="tab-badge" id="pendingTabBadge">0</div>
           </button>
+          <button class="tab-button" data-tab="confirmed" onclick="switchSlotsTab('confirmed')">
+            <i class="fas fa-check-circle"></i>
+            <span>Entretiens confirmés</span>
+            <div class="tab-badge" id="confirmedTabBadge">0</div>
+          </button>
+        </div>
 
+        <!-- Contenu des onglets -->
+        <div class="slots-content">
+          <div class="tab-panel active" id="pendingPanel">
+            <div class="panel-header">
+              <h3><i class="fas fa-user-clock"></i> Créneaux en attente</h3>
+              <p>Créneaux réservés par l'agent RH, en attente de confirmation du candidat</p>
+            </div>
+            <div class="slots-grid" id="pendingSlotsGrid">
+              <!-- Les créneaux en attente seront insérés ici -->
+            </div>
+          </div>
+          <div class="tab-panel" id="confirmedPanel">
+            <div class="panel-header">
+              <h3><i class="fas fa-check-circle"></i> Entretiens confirmés</h3>
+              <p>Créneaux acceptés par les candidats</p>
+            </div>
+            <div class="slots-grid" id="confirmedSlotsGrid">
+              <!-- Les créneaux confirmés seront insérés ici -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions du modal -->
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="closeConfirmedSlotsModal()">
+            <i class="fas fa-times"></i>
+            <span>Fermer</span>
+          </button>
         </div>
 
       </div>
@@ -1490,7 +1418,159 @@ function createConfirmedSlotsModal() {
 
 }
 
+// Fonction pour basculer entre les onglets
+function switchSlotsTab(tabName) {
+  // Désactiver tous les onglets
+  document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'))
+  document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'))
+  
+  // Activer l'onglet sélectionné
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active')
+  document.getElementById(`${tabName}Panel`).classList.add('active')
+}
 
+// Fonction pour créer une carte de créneau (pour le modal des créneaux confirmés)
+function createSlotCard(slot, type) {
+  const startDate = new Date(slot.start_time)
+  const endDate = new Date(slot.end_time)
+  
+  const dateStr = startDate.toLocaleDateString('fr-FR', { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long' 
+  })
+  const timeStr = `${startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+  
+  const statusClass = type === 'confirmed' ? 'confirmed' : 'pending'
+  const statusIcon = type === 'confirmed' ? 'fas fa-check-circle' : 'fas fa-clock'
+  const statusText = type === 'confirmed' ? 'Confirmé' : 'En attente'
+  
+  return `
+    <div class="slot-card ${statusClass}">
+      <div class="slot-date">
+        <div class="date-day">${startDate.getDate()}</div>
+        <div class="date-month">${startDate.toLocaleDateString('fr-FR', { month: 'short' })}</div>
+      </div>
+      <div class="slot-info">
+        <div class="slot-time">${timeStr}</div>
+        <div class="slot-weekday">${startDate.toLocaleDateString('fr-FR', { weekday: 'long' })}</div>
+        <div class="slot-status">
+          <i class="${statusIcon}"></i>
+          <span>${statusText}</span>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+// Fonction pour créer une carte de créneau d'entretien (avec bouton de suppression)
+function createInterviewSlotCard(slot, index) {
+  const startDate = new Date(slot.start_time)
+  const endDate = new Date(slot.end_time)
+  
+  const timeStr = `${startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+  
+  return `
+    <div class="slot-card">
+      <button class="slot-delete-btn" onclick="deleteInterviewSlot(${slot.id || index})" title="Supprimer ce créneau">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="slot-header">
+        <div class="slot-number">${index + 1}</div>
+        <div class="slot-title">Créneau ${index + 1}</div>
+      </div>
+      <div class="slot-inputs">
+        <div class="input-group">
+          <label>Heure de début</label>
+          <input type="time" class="slot-input" value="${startDate.toTimeString().slice(0, 5)}" onchange="updateSlotTime(${slot.id || index}, 'start', this.value)">
+        </div>
+        <div class="input-group">
+          <label>Heure de fin</label>
+          <input type="time" class="slot-input" value="${endDate.toTimeString().slice(0, 5)}" onchange="updateSlotTime(${slot.id || index}, 'end', this.value)">
+        </div>
+      </div>
+      <div class="slot-status free">
+        <i class="fas fa-check-circle"></i>
+        <span>Disponible</span>
+      </div>
+    </div>
+  `
+}
+
+// Fonction pour vider un créneau d'entretien
+function clearInterviewSlot(slotId) {
+  if (!slotId || slotId === 'null') {
+    console.warn('ID de créneau invalide:', slotId)
+    return
+  }
+
+  if (confirm('Êtes-vous sûr de vouloir vider ce créneau d\'entretien ?')) {
+    console.log('Vidage du créneau d\'entretien:', slotId)
+    
+    // Vider les inputs du créneau
+    const startInput = document.getElementById(`slot${slotId}_start`)
+    const endInput = document.getElementById(`slot${slotId}_end`)
+    const statusElement = document.getElementById(`slot${slotId}_status`)
+    
+    if (startInput) startInput.value = ''
+    if (endInput) endInput.value = ''
+    
+    // Remettre le statut à "Disponible"
+    if (statusElement) {
+      statusElement.innerHTML = '<i class="fas fa-circle"></i><span>Disponible</span>'
+      statusElement.className = 'slot-status'
+    }
+    
+    // Animation de feedback
+    const slotCard = document.querySelector(`[onclick="clearInterviewSlot(${slotId})"]`)?.closest('.slot-card')
+    if (slotCard) {
+      slotCard.style.transition = 'all 0.3s ease'
+      slotCard.style.transform = 'scale(0.95)'
+      slotCard.style.backgroundColor = '#fef2f2'
+      
+      setTimeout(() => {
+        slotCard.style.transform = 'scale(1)'
+        slotCard.style.backgroundColor = ''
+      }, 300)
+    }
+  }
+}
+
+// Fonction pour mettre à jour les numéros des créneaux d'entretien
+function updateInterviewSlotNumbers() {
+  const slotCards = document.querySelectorAll('.slots-grid .slot-card')
+  slotCards.forEach((card, index) => {
+    const numberElement = card.querySelector('.slot-number')
+    const titleElement = card.querySelector('.slot-title')
+    if (numberElement) numberElement.textContent = index + 1
+    if (titleElement) titleElement.textContent = `Créneau ${index + 1}`
+  })
+}
+
+// Fonction pour mettre à jour l'heure d'un créneau
+function updateSlotTime(slotId, type, time) {
+  console.log(`Mise à jour ${type} du créneau ${slotId}:`, time)
+  // Ici vous pouvez ajouter la logique pour mettre à jour l'heure
+}
+
+// Fonction pour mettre à jour les compteurs de créneaux
+function updateSlotCounters() {
+  const pendingSlots = document.querySelectorAll('#pendingSlotsGrid .slot-card').length
+  const confirmedSlots = document.querySelectorAll('#confirmedSlotsGrid .slot-card').length
+  const totalSlots = pendingSlots + confirmedSlots
+
+  const pendingCount = document.querySelector('#pendingSlotsCount')
+  const confirmedCount = document.querySelector('#confirmedSlotsCount')
+  const totalCount = document.querySelector('#totalSlotsCount')
+  const pendingTabBadge = document.querySelector('#pendingTabBadge')
+  const confirmedTabBadge = document.querySelector('#confirmedTabBadge')
+
+  if (pendingCount) pendingCount.textContent = pendingSlots
+  if (confirmedCount) confirmedCount.textContent = confirmedSlots
+  if (totalCount) totalCount.textContent = totalSlots
+  if (pendingTabBadge) pendingTabBadge.textContent = pendingSlots
+  if (confirmedTabBadge) confirmedTabBadge.textContent = confirmedSlots
+}
 
 // Fonction pour fermer le modal des créneaux confirmés
 
@@ -4530,7 +4610,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       clearBtn.className = 'slot-clear-btn'
 
-      clearBtn.textContent = 'Effacer'
+      clearBtn.innerHTML = '<i class="fas fa-times"></i>'
 
       clearBtn.style.marginTop = '10px'
 
