@@ -142,7 +142,7 @@ class EmailService:
             print(f"❌ Erreur lors de l'envoi de l'email à {email}: {e}")
             return False
     
-    def send_interview_invitation_email(self, candidate_email: str, candidate_name: str, job_title: str, company_name: str, interview_slots: list):
+    def send_interview_invitation_email(self, candidate_email: str, candidate_name: str, job_title: str, company_name: str, interview_slots: list, application_id: int):
         """Envoyer un email d'invitation pour choisir un créneau d'entretien"""
         try:
             # Vérifier la configuration SMTP
@@ -158,6 +158,9 @@ class EmailService:
             msg['From'] = self.smtp_username
             msg['To'] = candidate_email
             msg['Subject'] = f"Invitation à un entretien - {job_title} chez {company_name}"
+            
+            # Construire le lien vers la page de sélection des créneaux avec redirection après login
+            selection_url = f"http://localhost:8000/interview-slots/{application_id}?redirect_after_login=true"
             
             # Formater les créneaux disponibles
             slots_html = ""
@@ -217,7 +220,7 @@ class EmailService:
                                 Cliquez sur le bouton ci-dessous pour accéder à la page de sélection des créneaux
                             </p>
                             <div style="margin-top: 1rem;">
-                                <a href="#" 
+                                <a href="{selection_url}" 
                                    style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
                                           color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 8px; 
                                           font-weight: 600; font-size: 1rem; transition: all 0.3s ease;">
@@ -279,7 +282,7 @@ class EmailService:
             text_body += f"""
             
             Pour choisir votre créneau, cliquez sur le lien suivant :
-            [Lien vers la page de sélection]
+            {selection_url}
             
             Instructions :
             - Sélectionnez le créneau qui vous convient le mieux
