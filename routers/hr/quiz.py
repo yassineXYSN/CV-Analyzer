@@ -144,7 +144,7 @@ async def create_quiz(background_tasks: BackgroundTasks, quiz_data: QuizCreateRe
         if n8nurl:
             try:
                 print(f"DEBUG: Calling N8N webhook at {n8nurl}")
-                response = requests.post(n8nurl, json=quiz_request, timeout=10*len(quiz_request["skills"]))
+                response = requests.post(n8nurl, json=quiz_request, timeout=60*len(quiz_request["skills"]))
                 print(f"DEBUG: N8N webhook response status: {response.status_code}")
                 
                 if response.status_code == 200:

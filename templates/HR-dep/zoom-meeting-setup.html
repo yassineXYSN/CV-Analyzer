@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Zoom - CV Analyzer Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .interview-info {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .interview-info h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .instructions {
+            margin-bottom: 2rem;
+        }
+
+        .instructions h2 {
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .step {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .step-number {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #3b82f6;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .step h3 {
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .step p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .step ul {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .step li {
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .highlight {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .highlight p {
+            color: #92400e;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .candidate-advice {
+            background: #ecfdf5;
+            border: 1px solid #10b981;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .candidate-advice h3 {
+            color: #065f46;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .candidate-advice ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .candidate-advice li {
+            color: #047857;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .candidate-advice li::before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+            margin-top: 0.1rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .step-navigation {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            background: #f8fafc;
+            padding: 1.5rem;
+            text-align: center;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 1.5rem;
+            }
+            
+            .content {
+                padding: 1.5rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-video"></i> Configuration Zoom</h1>
+            <p>Instructions pour créer une réunion d'entretien</p>
+        </div>
+
+        <div class="content">
+            <!-- Interview Information -->
+            <div class="interview-info">
+                <h3><i class="fas fa-calendar-alt"></i> Informations de l'entretien</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Candidat</span>
+                        <span class="info-value">{{ candidate_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Poste</span>
+                        <span class="info-value">{{ job_title }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Entreprise</span>
+                        <span class="info-value">{{ company_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Date</span>
+                        <span class="info-value">{{ interview_date }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="instructions">
+                <h2><i class="fas fa-list-check"></i> Instructions importantes</h2>
+                <p style="color: #64748b; margin-bottom: 2rem;">Veuillez lire attentivement toutes les instructions avant de créer la réunion Zoom.</p>
+                
+                <!-- Step 1 -->
+                <div class="step" id="step-1">
+                    <div class="step-number">1</div>
+                    <h3>Configuration Zoom - Enregistrement</h3>
+                    <p>Avant de créer la réunion, configurez Zoom pour un enregistrement optimal :</p>
+                    <ul>
+                        <li>Ouvrez Zoom et allez dans <strong>Paramètres</strong></li>
+                        <li>Cliquez sur l'onglet <strong>Enregistrement</strong></li>
+                        <li>Allez dans <strong>Avancé</strong></li>
+                        <li>Activez <strong>"Enregistrer des fichiers audio de partition séparés"</strong></li>
+                    </ul>
+                    <div class="highlight">
+                        <p><i class="fas fa-exclamation-triangle"></i> Cette option permet d'enregistrer l'audio du candidat et du recruteur séparément pour une meilleure analyse.</p>
+                    </div>
+                    <div class="step-navigation">
+                        <button class="btn btn-primary" onclick="nextStep(1)">Suivant</button>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step" id="step-2" style="display: none;">
+                    <div class="step-number">2</div>
+                    <h3>Démarrage de l'enregistrement</h3>
+                    <p>N'oubliez pas de démarrer l'enregistrement au début de la réunion :</p>
+                    <ul>
+                        <li>Cliquez sur le bouton <strong>"Enregistrer"</strong> dès le début de l'entretien</li>
+                        <li>Vérifiez que l'enregistrement est actif (icône rouge visible)</li>
+                        <li>Arrêtez l'enregistrement à la fin de l'entretien</li>
+                    </ul>
+                    <div class="step-navigation">
+                        <button class="btn btn-secondary" onclick="previousStep(2)">Précédent</button>
+                        <button class="btn btn-primary" onclick="nextStep(2)">Suivant</button>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step" id="step-3" style="display: none;">
+                    <div class="step-number">3</div>
+                    <h3>Conseils pour le candidat</h3>
+                    <p>Informez le candidat de ces points importants :</p>
+                    <div class="candidate-advice">
+                        <ul>
+                            <li>Garder son visage bien centré dans le cadre de la caméra</li>
+                            <li>Activer sa caméra et s'assurer d'une bonne luminosité</li>
+                            <li>Parler clairement et à un volume approprié</li>
+                            <li>Éviter les bruits de fond et s'installer dans un endroit calme</li>
+                            <li>Vérifier sa connexion internet avant l'entretien</li>
+                            <li>Préparer ses questions et documents à l'avance</li>
+                        </ul>
+                    </div>
+                    <div class="step-navigation">
+                        <button class="btn btn-secondary" onclick="previousStep(3)">Précédent</button>
+                        <button class="btn btn-primary" onclick="nextStep(3)">Suivant</button>
+                    </div>
+                </div>
+
+                <!-- Final Step -->
+                <div class="step" id="step-final" style="display: none;">
+                    <div class="step-number">✓</div>
+                    <h3>Prêt à créer la réunion !</h3>
+                    <p>Vous avez lu toutes les instructions importantes. Vous pouvez maintenant créer la réunion Zoom en toute confiance.</p>
+                    <div class="highlight">
+                        <p><i class="fas fa-check-circle"></i> N'oubliez pas de configurer Zoom et d'informer le candidat des conseils avant l'entretien.</p>
+                    </div>
+                    <div class="step-navigation">
+                        <button class="btn btn-secondary" onclick="previousStep('final')">Précédent</button>
+                        <button class="btn btn-success" onclick="createZoomMeeting()">
+                            <i class="fas fa-video"></i>
+                            Créer la réunion Zoom
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons" id="action-buttons" style="display: none;">
+                <a href="/hr/dashboard" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour au tableau de bord
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><i class="fas fa-info-circle"></i> CV Analyzer Pro - Système de gestion des entretiens</p>
+        </div>
+    </div>
+
+    <script>
+        // Get data from the backend template
+        const applicationId = {{ application_id }};
+        const adminId = {{ admin_id }};
+        const candidateName = "{{ candidate_name }}";
+        const jobTitle = "{{ job_title }}";
+        const companyName = "{{ company_name }}";
+        const interviewDate = "{{ interview_date }}";
+
+        let currentStep = 1;
+        const totalSteps = 4;
+
+        function nextStep(step) {
+            // Hide current step
+            document.getElementById(`step-${step}`).style.display = 'none';
+            
+            // Show next step
+            currentStep = step + 1;
+            if (currentStep <= totalSteps) {
+                const nextStepId = currentStep === totalSteps ? 'step-final' : `step-${currentStep}`;
+                document.getElementById(nextStepId).style.display = 'block';
+            }
+            
+            // Show action buttons on final step
+            if (currentStep === totalSteps) {
+                document.getElementById('action-buttons').style.display = 'flex';
+            }
+        }
+
+        function previousStep(step) {
+            // Hide current step
+            if (step === 'final') {
+                document.getElementById('step-final').style.display = 'none';
+                currentStep = 3;
+            } else {
+                document.getElementById(`step-${step}`).style.display = 'none';
+                currentStep = step - 1;
+            }
+            
+            // Show previous step
+            if (currentStep >= 1) {
+                const prevStepId = currentStep === totalSteps ? 'step-final' : `step-${currentStep}`;
+                document.getElementById(prevStepId).style.display = 'block';
+            }
+            
+            // Hide action buttons if not on final step
+            if (currentStep < totalSteps) {
+                document.getElementById('action-buttons').style.display = 'none';
+            }
+        }
+
+        async function createZoomMeeting() {
+            // Show loading state
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création en cours...';
+            button.disabled = true;
+            
+            try {
+                // Prepare the request data
+                const requestData = {
+                    application_id: applicationId,
+                    admin_id: adminId,
+                    candidate_name: candidateName,
+                    job_title: jobTitle,
+                    company_name: companyName,
+                    interview_date: interviewDate
+                };
+                
+                // Send request to n8n webhook
+                const response = await fetch('/api/hr/interview-slots/create-meet', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const responseData = await response.json();
+                
+                if (response.ok && responseData.n8n_response) {
+                    const n8nData = responseData.n8n_response;
+                    
+                    if (n8nData.start && n8nData.join) {
+                        // Store meeting details and redirect admin
+                        const confirmed = confirm(
+                            `Réunion Zoom créée avec succès!\n\n` +
+                            `Vous allez être redirigé vers la réunion en tant qu'hôte.\n` +
+                            `Le lien de participation sera envoyé au candidat par email.\n\n` +
+                            `Continuer ?`
+                        );
+                        
+                        if (confirmed) {
+                            // Redirect admin to start URL (host link)
+                            window.location.href = n8nData.start;
+                        }
+                    } else {
+                        alert('Réponse n8n invalide: liens de réunion manquants');
+                        console.error('Invalid n8n response:', n8nData);
+                    }
+                } else {
+                    alert('Erreur lors de la création de la réunion: ' + (responseData.message || 'Erreur inconnue'));
+                    console.error('N8N Error Response:', responseData);
+                }
+                
+            } catch (error) {
+                console.error('Error creating Zoom meeting:', error);
+                alert('Erreur lors de la création de la réunion: ' + error.message);
+            } finally {
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // Log the data for debugging
+        console.log('Interview Data:', {
+            applicationId,
+            adminId,
+            candidateName,
+            jobTitle,
+            companyName,
+            interviewDate
+        });
+    </script>
+</body>
+</html>

@@ -1,91 +1,84 @@
+#!/usr/bin/env python3
+"""
+Combined Audio Transcription and Video Emotion Analysis Script
+Analyzes two audio files for conversation and one video for emotions of the speaking person
+"""
+
 import cv2
-from deepface import DeepFace
-import pandas as pd
-from datetime import datetime
-import whisper
-import json
 import os
-from pydub import AudioSegment
-import logging
-import numpy as np
+import json
+import argparse
+import pandas as pd
+from datetime import datetime, timedelta
+from typing import List, Dict, Tuple
+import whisper
+from deepface import DeepFace
+from types import SimpleNamespace
 
-# Set up logging to see Whisper warnings
-logging.basicConfig(level=logging.WARNING)
-
-class ConversationAnalyzer:
-    def __init__(self):
-        self.whisper_model = None
-        self.emotion_results = []
-        self.transcription_results = []
-        self.combined_results = []
-    
-    def load_models(self):
-        """Load both Whisper and DeepFace models"""
-        print("Loading Whisper model...")
-        self.whisper_model = whisper.load_model("small")
-        print("Whisper model loaded successfully!")
-        # DeepFace doesn't need explicit loading
-    
-    def get_audio_duration(self, path):
-        """Return duration in seconds using pydub."""
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Audio file not found: {path}")
-        audio = AudioSegment.from_file(path)
-        return len(audio) / 1000.0  # milliseconds → seconds
-    
-    def transcribe_with_timestamps(self, audio_path, speaker_name, language=None, multi_language=False):
+class ConversationEmotionAnalyzer:
+    def __init__(self, whisper_model_size: str = "large"):
         """
-        Transcribe audio with timestamps
+        Initialize the analyzer with both Whisper and DeepFace models
+        
+        Args:
+            whisper_model_size: Whisper model size ("tiny", "base", "small", "medium", "large")
+        """
+        print("Initializing models...")
+        
+        # Load Whisper model for audio transcription
+        print(f"Loading Whisper {whisper_model_size} model...")
+        self.whisper_model = whisper.load_model(whisper_model_size)
+        print("Whisper model loaded successfully!")
+        
+        # DeepFace doesn't require explicit model loading
+        print("DeepFace emotion analysis ready!")
+    
+    def transcribe_audio(self, audio_path: str, speaker_name: str = "Speaker") -> List[Dict]:
+        """
+        Transcribe a single audio file and return segments with timestamps
+        Forces transcription to English using Whisper's translation feature
         
         Args:
             audio_path: Path to audio file
-            speaker_name: Name of speaker for labeling
-            language: Specific language code (e.g., "en", "fr")
-            multi_language: Whether to enable multi-language detection
+            speaker_name: Name to identify the speaker
+            
+        Returns:
+            List of segments with text, start, end timestamps and speaker
         """
+        print(f"Transcribing {speaker_name}'s audio to English...")
         
-        if multi_language:
-            # Enable multi-language detection
-            result = self.whisper_model.transcribe(audio_path, language=None, task="transcribe")
-        elif language:
-            # Use specified language
-            result = self.whisper_model.transcribe(audio_path, language=language)
-        else:
-            # Auto-detect language (single language)
-            result = self.whisper_model.transcribe(audio_path)
+        # Transcribe with translation to English
+        result = self.whisper_model.transcribe(
+            audio_path,
+            word_timestamps=False,
+            task="translate"  # Forces translation to English
+        )
         
         segments = []
-        for seg in result["segments"]:
-            segment_data = {
-                "start": float(seg["start"]),  # Convert to regular float
-                "end": float(seg["end"]),      # Convert to regular float
-                "text": seg["text"].strip(),
+        for segment in result["segments"]:
+            segments.append({
                 "speaker": speaker_name,
-                "type": "speech"
-            }
-            
-            # Add detected language if multi-language mode is enabled
-            if multi_language and "language" in seg:
-                segment_data["detected_language"] = seg["language"]
-            elif multi_language:
-                # If language info isn't in segments, get it from the main result
-                segment_data["detected_language"] = result.get("language", "unknown")
-            
-            segments.append(segment_data)
+                "text": segment["text"].strip(),
+                "start": segment["start"],
+                "end": segment["end"],
+                "language": "english"
+            })
         
-        return segments, result.get("language", "unknown") if multi_language else language
+        print(f"Transcribed {len(segments)} segments for {speaker_name}")
+        return segments
     
-    def analyze_video_emotions(self, video_path, frame_interval=30):
+    def analyze_video_emotions(self, video_path: str, frame_interval: int = 10) -> List[Dict]:
         """
         Analyze emotions in a video and return results with timestamps
         
         Args:
             video_path (str): Path to input video file
             frame_interval (int): Analyze every nth frame (higher = faster processing)
-        
+            
         Returns:
             list: List of dictionaries containing emotions and timestamps
         """
+        print("Starting video emotion analysis...")
         
         # Open video file
         cap = cv2.VideoCapture(video_path)
@@ -98,7 +91,6 @@ class ConversationAnalyzer:
         
         print(f"Video FPS: {fps}")
         print(f"Total frames: {total_frames}")
-        print("Starting emotion analysis...")
         
         results = []
         frame_count = 0
@@ -119,26 +111,22 @@ class ConversationAnalyzer:
                     analysis = DeepFace.analyze(rgb_frame, actions=['emotion'], enforce_detection=False)
                     
                     # Calculate timestamp
-                    timestamp = float(frame_count / fps)  # Convert to regular float
+                    timestamp = frame_count / fps
                     
                     # Format timestamp
                     time_str = str(datetime.utcfromtimestamp(timestamp).strftime('%H:%M:%S.%f')[:-3])
                     
-                    # Get dominant emotion
+                    # Get dominant emotion and all emotions
                     emotions = analysis[0]['emotion']
                     dominant_emotion = max(emotions.items(), key=lambda x: x[1])
                     
-                    # Convert all emotion values to regular floats
-                    emotions_clean = {k: float(v) for k, v in emotions.items()}
-                    
                     result = {
-                        "frame": frame_count,
-                        "timestamp": timestamp,
-                        "timestamp_formatted": time_str,
-                        "dominant_emotion": dominant_emotion[0],
-                        "emotion_confidence": float(dominant_emotion[1]),  # Convert to regular float
-                        "all_emotions": emotions_clean,
-                        "type": "emotion"
+                        'frame': frame_count,
+                        'timestamp': timestamp,
+                        'timestamp_formatted': time_str,
+                        'dominant_emotion': dominant_emotion[0],
+                        'emotion_confidence': dominant_emotion[1],
+                        'all_emotions': emotions
                     }
                     
                     results.append(result)
@@ -148,297 +136,318 @@ class ConversationAnalyzer:
                 except Exception as e:
                     print(f"Error processing frame {frame_count}: {str(e)}")
                     # Add entry even if analysis fails
-                    timestamp = float(frame_count / fps)  # Convert to regular float
+                    timestamp = frame_count / fps
                     time_str = str(datetime.utcfromtimestamp(timestamp).strftime('%H:%M:%S.%f')[:-3])
                     
                     results.append({
-                        "frame": frame_count,
-                        "timestamp": timestamp,
-                        "timestamp_formatted": time_str,
-                        "dominant_emotion": "unknown",
-                        "emotion_confidence": 0.0,
-                        "all_emotions": {},
-                        "type": "emotion"
+                        'frame': frame_count,
+                        'timestamp': timestamp,
+                        'timestamp_formatted': time_str,
+                        'dominant_emotion': 'unknown',
+                        'emotion_confidence': 0,
+                        'all_emotions': {}
                     })
             
             frame_count += 1
         
         cap.release()
-        
-        print(f"Emotion analysis complete! Processed {len(results)} frames")
+        print(f"Video emotion analysis complete! Processed {len(results)} frames")
         return results
     
-    def merge_conversations(self, segments):
-        """Merge and sort segments by start time"""
-        merged = sorted(segments, key=lambda x: x["start"])
-        return merged
-    
-    def find_emotion_at_time(self, timestamp, tolerance=2.0):
+    def merge_conversation(self, segments1: List[Dict], segments2: List[Dict]) -> List[Dict]:
         """
-        Find the closest emotion analysis to a given timestamp
+        Merge segments from two speakers by timestamp to create conversation flow
+        """
+        # Combine all segments
+        all_segments = segments1 + segments2
+        
+        # Sort by start time
+        all_segments.sort(key=lambda x: x["start"])
+        
+        return all_segments
+    
+    def assign_emotions_to_conversation(self, conversation: List[Dict], emotion_data: List[Dict]) -> List[Dict]:
+        """
+        Assign emotion data to conversation segments based on timestamps
         
         Args:
-            timestamp: Time to find emotion for
-            tolerance: Maximum time difference in seconds to accept
-        
+            conversation: Merged conversation segments
+            emotion_data: Video emotion analysis results
+            
         Returns:
-            dict: Emotion data or None if not found within tolerance
+            Conversation with assigned emotions
         """
-        closest_emotion = None
-        min_diff = float('inf')
+        print("Assigning emotions to conversation segments...")
         
-        for emotion in self.emotion_results:
-            diff = abs(emotion['timestamp'] - timestamp)
-            if diff < min_diff and diff <= tolerance:
-                min_diff = diff
-                closest_emotion = emotion
-        
-        return closest_emotion
-    
-    def combine_analysis(self, transcription_segments, video_speaker):
-        """
-        Combine transcription and emotion analysis
-        
-        Args:
-            transcription_segments: List of transcription segments
-            video_speaker: Name of the speaker in the video (for emotion assignment)
-        """
-        combined = []
-        
-        for segment in transcription_segments:
-            # Find emotion at the start time of the speech segment
-            emotion_data = self.find_emotion_at_time(segment['start'])
+        for segment in conversation:
+            segment_start = segment["start"]
+            segment_end = segment["end"]
             
-            combined_segment = segment.copy()
+            # Find emotions that occur during this conversation segment
+            segment_emotions = []
+            for emotion in emotion_data:
+                if segment_start <= emotion["timestamp"] <= segment_end:
+                    segment_emotions.append(emotion)
             
-            if emotion_data and segment['speaker'] == video_speaker:
-                combined_segment['dominant_emotion'] = emotion_data['dominant_emotion']
-                combined_segment['emotion_confidence'] = float(emotion_data['emotion_confidence'])  # Convert to float
-                combined_segment['emotion_timestamp'] = float(emotion_data['timestamp']) if emotion_data['timestamp'] else None
-                combined_segment['emotion_frame'] = emotion_data['frame']
+            # Calculate dominant emotion for this segment
+            if segment_emotions:
+                # Count emotion occurrences
+                emotion_counts = {}
+                emotion_confidences = {}
+                
+                for emo in segment_emotions:
+                    emotion = emo["dominant_emotion"]
+                    if emotion != "unknown":
+                        emotion_counts[emotion] = emotion_counts.get(emotion, 0) + 1
+                        emotion_confidences[emotion] = emotion_confidences.get(emotion, 0) + emo["emotion_confidence"]
+                
+                if emotion_counts:
+                    # Find most frequent emotion
+                    dominant_emotion = max(emotion_counts.items(), key=lambda x: x[1])
+                    avg_confidence = emotion_confidences[dominant_emotion[0]] / emotion_counts[dominant_emotion[0]]
+                    
+                    segment["emotion"] = dominant_emotion[0]
+                    segment["emotion_confidence"] = avg_confidence
+                    segment["emotion_samples"] = len(segment_emotions)
+                else:
+                    segment["emotion"] = "unknown"
+                    segment["emotion_confidence"] = 0
+                    segment["emotion_samples"] = 0
             else:
-                combined_segment['dominant_emotion'] = 'unknown'
-                combined_segment['emotion_confidence'] = 0.0
-                combined_segment['emotion_timestamp'] = None
-                combined_segment['emotion_frame'] = None
+                segment["emotion"] = "unknown"
+                segment["emotion_confidence"] = 0
+                segment["emotion_samples"] = 0
+        
+        return conversation
+    
+    def format_conversation(self, merged_segments: List[Dict], min_gap: float = 2.0) -> List[Dict]:
+        """
+        Format the conversation with proper grouping and timing
+        """
+        if not merged_segments:
+            return []
+        
+        formatted = []
+        current_speaker = merged_segments[0]["speaker"]
+        current_text = merged_segments[0]["text"]
+        current_start = merged_segments[0]["start"]
+        current_end = merged_segments[0]["end"]
+        current_emotions = [merged_segments[0].get("emotion", "unknown")]
+        
+        for i in range(1, len(merged_segments)):
+            segment = merged_segments[i]
             
-            combined.append(combined_segment)
+            # If same speaker and gap is small, merge the segments
+            if (segment["speaker"] == current_speaker and 
+                segment["start"] - current_end < min_gap):
+                current_text += " " + segment["text"]
+                current_end = segment["end"]
+                current_emotions.append(segment.get("emotion", "unknown"))
+            else:
+                # Calculate dominant emotion for this merged segment
+                if current_emotions:
+                    emotion_counts = {}
+                    for emotion in current_emotions:
+                        if emotion != "unknown":
+                            emotion_counts[emotion] = emotion_counts.get(emotion, 0) + 1
+                    
+                    dominant_emotion = max(emotion_counts.items(), key=lambda x: x[1])[0] if emotion_counts else "unknown"
+                else:
+                    dominant_emotion = "unknown"
+                
+                # Add the current segment to formatted list
+                formatted.append({
+                    "speaker": current_speaker,
+                    "text": current_text,
+                    "start": current_start,
+                    "end": current_end,
+                    "duration": current_end - current_start,
+                    "emotion": dominant_emotion,
+                    "emotion_samples": len(current_emotions)
+                })
+                
+                # Start new segment
+                current_speaker = segment["speaker"]
+                current_text = segment["text"]
+                current_start = segment["start"]
+                current_end = segment["end"]
+                current_emotions = [segment.get("emotion", "unknown")]
         
-        return combined
-    
-    def format_output_segment(self, seg, show_language=False, show_emotion=True):
-        """Format a single segment for output"""
-        if show_language and "detected_language" in seg:
-            lang_info = f" [{seg['detected_language'].upper()}]"
-        else:
-            lang_info = ""
-        
-        emotion_info = ""
-        if show_emotion and seg.get('dominant_emotion') and seg['dominant_emotion'] != 'unknown':
-            emotion_info = f" | Emotion: {seg['dominant_emotion']} ({seg['emotion_confidence']:.1f}%)"
-        
-        return f"[{seg['start']:.2f}s -> {seg['end']:.2f}s] {seg['speaker']}{lang_info}: {seg['text']}{emotion_info}"
-    
-    def print_summary(self):
-        """Print a summary of the analysis results"""
-        if not self.combined_results:
-            print("No results to summarize")
-            return
-        
-        print("\n=== ANALYSIS SUMMARY ===")
-        print(f"Total speech segments: {len(self.combined_results)}")
-        print(f"Total emotion frames analyzed: {len(self.emotion_results)}")
-        
-        # Count emotions for the video speaker
-        emotion_count = {}
-        speech_count = {}
-        
-        for result in self.combined_results:
-            speaker = result['speaker']
-            speech_count[speaker] = speech_count.get(speaker, 0) + 1
+        # Add the last segment
+        if current_emotions:
+            emotion_counts = {}
+            for emotion in current_emotions:
+                if emotion != "unknown":
+                    emotion_counts[emotion] = emotion_counts.get(emotion, 0) + 1
             
-            if result.get('dominant_emotion') and result['dominant_emotion'] != 'unknown':
-                emotion = result['dominant_emotion']
-                emotion_count[emotion] = emotion_count.get(emotion, 0) + 1
+            dominant_emotion = max(emotion_counts.items(), key=lambda x: x[1])[0] if emotion_counts else "unknown"
+        else:
+            dominant_emotion = "unknown"
         
-        print("\nSpeech distribution by speaker:")
-        for speaker, count in speech_count.items():
-            percentage = (count / len(self.combined_results)) * 100
-            print(f"  {speaker}: {count} segments ({percentage:.1f}%)")
+        formatted.append({
+            "speaker": current_speaker,
+            "text": current_text,
+            "start": current_start,
+            "end": current_end,
+            "duration": current_end - current_start,
+            "emotion": dominant_emotion,
+            "emotion_samples": len(current_emotions)
+        })
         
-        print("\nDetected emotions distribution:")
-        total_emotions = sum(emotion_count.values())
-        if total_emotions > 0:
-            for emotion, count in emotion_count.items():
-                percentage = (count / total_emotions) * 100
-                print(f"  {emotion}: {count} segments ({percentage:.1f}%)")
+        return formatted
+    
+    def save_complete_analysis(self, conversation: List[Dict], output_format: str = "both"):
+        """
+        Save complete conversation analysis with emotions
+        """
+        base_name = "conversation_emotion_analysis"
+        
+        if output_format in ["text", "both"]:
+            txt_filename = f"{base_name}.txt"
+            with open(txt_filename, "w", encoding="utf-8") as f:
+                f.write("COMPLETE CONVERSATION ANALYSIS WITH EMOTIONS\n")
+                f.write("=" * 70 + "\n\n")
+                
+                for i, turn in enumerate(conversation, 1):
+                    start_time = str(timedelta(seconds=int(turn["start"])))
+                    emotion_info = f" [{turn['emotion']}]" if turn.get('emotion') and turn['emotion'] != 'unknown' else " [No emotion data]"
+                    
+                    f.write(f"Turn {i} [{start_time}]{emotion_info}:\n")
+                    f.write(f"{turn['speaker']}: {turn['text']}\n\n")
             
-            # Find most common emotion
-            if emotion_count:
-                most_common = max(emotion_count.items(), key=lambda x: x[1])
-                print(f"\nMost common emotion: {most_common[0]} ({most_common[1]} segments)")
-        else:
-            print("  No emotions detected in speech segments")
-
-    def convert_to_serializable(self, obj):
-        """Convert numpy types to Python native types for JSON serialization"""
-        if isinstance(obj, (np.float32, np.float64)):
-            return float(obj)
-        elif isinstance(obj, (np.int32, np.int64)):
-            return int(obj)
-        elif isinstance(obj, dict):
-            return {key: self.convert_to_serializable(value) for key, value in obj.items()}
-        elif isinstance(obj, list):
-            return [self.convert_to_serializable(item) for item in obj]
-        else:
-            return obj
-
-def main():
-    # ===== CONFIGURATION =====
-    # Audio and video file paths
-    audio_file1 = r"C:\Users\yassine\Documents\Zoom\2025-10-12 18.10.27 Mouhamed Yassine Chtourou's Zoom Meeting\Audio Record\audioMouhamedYassineC11624140658.m4a"
-    audio_file2 = r"C:\Users\yassine\Documents\Zoom\2025-10-12 18.10.27 Mouhamed Yassine Chtourou's Zoom Meeting\Audio Record\audioYoussefDammak21624140658.m4a"
-    video_file = r"C:\Users\yassine\Documents\Zoom\2025-10-12 18.10.27 Mouhamed Yassine Chtourou's Zoom Meeting\video1624140658.mp4"
-    
-    # Speaker configuration
-    speaker1_name = "Mouhamed Yassine"
-    speaker2_name = "Youssef Dammak"
-    video_speaker = speaker1_name  # Which speaker is in the video
-    
-    # Transcription settings
-    LANGUAGE = None  # Set to specific language code or None for auto-detection
-    MULTI_LANGUAGE = True  # Enable multi-language detection
-    
-    # Emotion analysis settings
-    FRAME_INTERVAL = 30  # Process every 30th frame for emotion analysis
-    
-    # Output files
-    output_json = "complete_conversation_analysis.json"
-    output_text = "complete_conversation_readable.txt"
-    output_csv = "conversation_emotions.csv"
-    
-    # Initialize analyzer
-    analyzer = ConversationAnalyzer()
-    
-    try:
-        # Load models
-        analyzer.load_models()
+            print(f"Text analysis saved to: {txt_filename}")
         
-        # Check if files exist
-        if not all(os.path.exists(f) for f in [audio_file1, audio_file2, video_file]):
-            print("One or more files not found!")
-            print(f"Audio 1: {audio_file1} - {'Exists' if os.path.exists(audio_file1) else 'Missing'}")
-            print(f"Audio 2: {audio_file2} - {'Exists' if os.path.exists(audio_file2) else 'Missing'}")
-            print(f"Video: {video_file} - {'Exists' if os.path.exists(video_file) else 'Missing'}")
-            return
-        
-        # Get audio durations
-        dur1 = analyzer.get_audio_duration(audio_file1)
-        dur2 = analyzer.get_audio_duration(audio_file2)
-        
-        print(f"File 1: {os.path.basename(audio_file1)} ({dur1:.2f}s)")
-        print(f"File 2: {os.path.basename(audio_file2)} ({dur2:.2f}s)")
-        
-        # Determine main speaker based on duration
-        if dur1 >= dur2:
-            main_file, second_file = audio_file1, audio_file2
-            main_speaker, second_speaker = speaker1_name, speaker2_name
-        else:
-            main_file, second_file = audio_file2, audio_file1
-            main_speaker, second_speaker = speaker2_name, speaker1_name
-        
-        print(f"\n{main_speaker} has the longer audio ({max(dur1, dur2):.2f}s)")
-        print(f"Video is assigned to: {video_speaker}")
-        
-        # Step 1: Transcribe audio files
-        print("\n" + "="*50)
-        print("STEP 1: Transcribing audio files...")
-        
-        if MULTI_LANGUAGE:
-            print("Transcribing with multi-language detection...")
-            main_segments, main_lang = analyzer.transcribe_with_timestamps(main_file, main_speaker, 
-                                                                          language=LANGUAGE, multi_language=True)
-            second_segments, second_lang = analyzer.transcribe_with_timestamps(second_file, second_speaker, 
-                                                                              language=LANGUAGE, multi_language=True)
+        if output_format in ["json", "both"]:
+            json_filename = f"{base_name}.json"
+            with open(json_filename, "w", encoding="utf-8") as f:
+                json.dump(conversation, f, indent=2, ensure_ascii=False)
             
-            print(f"Detected languages - {main_speaker}: {main_lang}, {second_speaker}: {second_lang}")
-        else:
-            lang_display = LANGUAGE.upper() if LANGUAGE else "AUTO-DETECTED"
-            print(f"Transcribing in {lang_display}...")
-            main_segments, _ = analyzer.transcribe_with_timestamps(main_file, main_speaker, 
-                                                                  language=LANGUAGE, multi_language=False)
-            second_segments, _ = analyzer.transcribe_with_timestamps(second_file, second_speaker, 
-                                                                    language=LANGUAGE, multi_language=False)
+            print(f"JSON analysis saved to: {json_filename}")
         
-        # Merge transcriptions
-        analyzer.transcription_results = analyzer.merge_conversations(main_segments + second_segments)
-        print(f"Transcription complete! Found {len(analyzer.transcription_results)} speech segments.")
-        
-        # Step 2: Analyze video emotions
-        print("\n" + "="*50)
-        print("STEP 2: Analyzing video emotions...")
-        analyzer.emotion_results = analyzer.analyze_video_emotions(video_file, frame_interval=FRAME_INTERVAL)
-        
-        # Step 3: Combine analysis
-        print("\n" + "="*50)
-        print("STEP 3: Combining transcription and emotion analysis...")
-        analyzer.combined_results = analyzer.combine_analysis(analyzer.transcription_results, video_speaker)
-        
-        # Step 4: Output results
-        print("\n" + "="*50)
-        print("FINAL COMBINED CONVERSATION WITH EMOTIONS:")
-        print("="*50)
-        
-        for seg in analyzer.combined_results:
-            print(analyzer.format_output_segment(seg, show_language=MULTI_LANGUAGE, show_emotion=True))
-        
-        # Save results - Convert to serializable format first
-        print("\nSaving results...")
-        serializable_results = analyzer.convert_to_serializable(analyzer.combined_results)
-        
-        with open(output_json, "w", encoding="utf-8") as f:
-            json.dump(serializable_results, f, ensure_ascii=False, indent=2)
-        
-        with open(output_text, "w", encoding="utf-8") as f:
-            f.write("Complete Conversation Analysis with Emotions\n")
-            f.write("=" * 60 + "\n")
-            for seg in analyzer.combined_results:
-                f.write(analyzer.format_output_segment(seg, show_language=MULTI_LANGUAGE, show_emotion=True) + "\n")
-        
-        # Save CSV with emotions
-        if analyzer.combined_results:
+        if output_format in ["csv", "both"]:
+            csv_filename = f"{base_name}.csv"
+            # Create a simplified DataFrame for CSV
             csv_data = []
-            for seg in analyzer.combined_results:
-                row = {
-                    'speaker': seg['speaker'],
-                    'start_time': seg['start'],
-                    'end_time': seg['end'],
-                    'text': seg['text'],
-                    'dominant_emotion': seg.get('dominant_emotion', 'unknown'),
-                    'emotion_confidence': seg.get('emotion_confidence', 0),
-                    'emotion_timestamp': seg.get('emotion_timestamp', ''),
-                    'in_video': 'Yes' if seg['speaker'] == video_speaker else 'No'
-                }
-                if MULTI_LANGUAGE and 'detected_language' in seg:
-                    row['language'] = seg['detected_language']
-                csv_data.append(row)
+            for turn in conversation:
+                csv_data.append({
+                    'turn_number': conversation.index(turn) + 1,
+                    'speaker': turn['speaker'],
+                    'start_time': turn['start'],
+                    'end_time': turn['end'],
+                    'duration': turn['duration'],
+                    'text': turn['text'],
+                    'emotion': turn.get('emotion', 'unknown'),
+                    'emotion_samples': turn.get('emotion_samples', 0)
+                })
             
             df = pd.DataFrame(csv_data)
-            df.to_csv(output_csv, index=False)
-            print(f"CSV data saved to: {output_csv}")
+            df.to_csv(csv_filename, index=False)
+            print(f"CSV analysis saved to: {csv_filename}")
+    
+    def print_complete_analysis(self, conversation: List[Dict]):
+        """
+        Print the complete conversation analysis with emotions
+        """
+        print("\n" + "=" * 70)
+        print("COMPLETE CONVERSATION ANALYSIS WITH EMOTIONS")
+        print("=" * 70)
         
-        print(f"JSON results saved to: {output_json}")
-        print(f"Readable transcript saved to: {output_text}")
+        for i, turn in enumerate(conversation, 1):
+            start_time = str(timedelta(seconds=int(turn["start"])))
+            emotion_info = f" [{turn['emotion']}]" if turn.get('emotion') and turn['emotion'] != 'unknown' else " [No emotion data]"
+            
+            print(f"\nTurn {i} [{start_time}]{emotion_info}:")
+            print(f"{turn['speaker']}: {turn['text']}")
+    
+    def analyze_complete_conversation(self, audio_file1: str, audio_file2: str, video_file: str, 
+                                   speaker1: str = "Interviewer", speaker2: str = "Interviewee",
+                                   whisper_model: str = "large", output_format: str = "both",
+                                   merge_gap: float = 2.0, frame_interval: int = 10):
+        """
+        Complete analysis pipeline for conversation with emotions
+        """
+        # Validate input files
+        for file_path in [audio_file1, audio_file2, video_file]:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"File not found: {file_path}")
         
-        # Print summary
-        analyzer.print_summary()
+        # Step 1: Transcribe both audio files
+        print("=== STEP 1: Audio Transcription ===")
+        segments1 = self.transcribe_audio(audio_file1, speaker1)
+        segments2 = self.transcribe_audio(audio_file2, speaker2)
         
-        print("\nAnalysis completed successfully!")
+        # Step 2: Analyze video emotions
+        print("\n=== STEP 2: Video Emotion Analysis ===")
+        emotion_data = self.analyze_video_emotions(video_file, frame_interval)
+        
+        # Step 3: Merge conversation
+        print("\n=== STEP 3: Merging Conversation ===")
+        merged_conversation = self.merge_conversation(segments1, segments2)
+        
+        # Step 4: Assign emotions to conversation
+        print("\n=== STEP 4: Assigning Emotions to Conversation ===")
+        conversation_with_emotions = self.assign_emotions_to_conversation(merged_conversation, emotion_data)
+        
+        # Step 5: Format final conversation
+        print("\n=== STEP 5: Formatting Final Conversation ===")
+        final_conversation = self.format_conversation(conversation_with_emotions, merge_gap)
+        
+        return final_conversation
+
+def main():
+    print("=== Complete Conversation & Emotion Analysis ===")
+    print("This script analyzes two audio files and one video to create a complete conversation transcript with emotions.\n")
+    
+    # Get user input
+    audio_file1 = input("Enter path to first audio file (Interviewer): ").strip().strip('"')
+    audio_file2 = input("Enter path to second audio file (Interviewee): ").strip().strip('"')
+    video_file = input("Enter path to video file (for emotion analysis): ").strip().strip('"')
+
+    speaker1 = input("Enter name for first speaker [default: Interviewer]: ").strip() or "Interviewer"
+    speaker2 = input("Enter name for second speaker [default: Interviewee]: ").strip() or "Interviewee"
+
+    whisper_model = input("Enter Whisper model size (tiny/base/small/medium/large) [default: large]: ").strip() or "large"
+    output_format = input("Choose output format (text/json/csv/both) [default: both]: ").strip() or "both"
+    
+    try:
+        merge_gap = float(input("Enter minimum gap in seconds to merge segments [default: 2.0]: ").strip() or 2.0)
+    except ValueError:
+        merge_gap = 2.0
+    
+    try:
+        frame_interval = int(input("Enter frame interval for emotion analysis (higher = faster) [default: 10]: ").strip() or 10)
+    except ValueError:
+        frame_interval = 10
+    
+    try:
+        # Initialize analyzer
+        analyzer = ConversationEmotionAnalyzer(whisper_model_size=whisper_model)
+        
+        # Run complete analysis
+        final_conversation = analyzer.analyze_complete_conversation(
+            audio_file1=audio_file1,
+            audio_file2=audio_file2,
+            video_file=video_file,
+            speaker1=speaker1,
+            speaker2=speaker2,
+            whisper_model=whisper_model,
+            output_format=output_format,
+            merge_gap=merge_gap,
+            frame_interval=frame_interval
+        )
+        
+        # Display and save results
+        analyzer.print_complete_analysis(final_conversation)
+        analyzer.save_complete_analysis(final_conversation, output_format)
+        
+        print(f"\n✅ Analysis complete! Processed {len(final_conversation)} conversation turns.")
+        print("Note: Emotion analysis is assigned to the speaker who appears in the video.")
         
     except Exception as e:
-        print(f"Error during processing: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Error during analysis: {str(e)}")
+        return 1
+    
+    return 0
 
 if __name__ == "__main__":
-    main()
+    exit(main())

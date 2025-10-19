@@ -1,13 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, validator
 from typing import List, Optional
 from datetime import datetime, timedelta
+import sys
+import os
+import requests
+import json
+from sqlalchemy.orm import Session
 
 from databasehr.database import SessionLocal
 from databasehr.models import InterviewSlot, SlotStatus, Job, Application, HRAdmin, Company
 from .email_service import EmailService
 
-router = APIRouter()
+# Add the parent directory to the path to import utils1
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from utils1.interview_notifications import InterviewNotificationService, InterviewNotificationScheduler
+
+router = APIRouter(prefix="/api/hr", tags=["interview-slots"])
+templates = Jinja2Templates(directory="templates")
 
 
 def get_db():
@@ -44,8 +56,16 @@ class CandidateSlotChoiceRequest(BaseModel):
     slot_id: int
     application_id: int
 
+class CreateMeetRequest(BaseModel):
+    application_id: int
+    admin_id: int
+    candidate_name: str
+    job_title: str
+    company_name: str
+    interview_date: str
 
-@router.get("/api/hr/interview-slots", response_model=List[dict])
+
+@router.get("/interview-slots", response_model=List[dict])
 def list_interview_slots(
     job_id: Optional[int] = Query(None),
     recruiter_id: Optional[int] = Query(None),
@@ -74,7 +94,7 @@ def list_interview_slots(
     ]
 
 
-@router.post("/api/hr/interview-slots")
+@router.post("/interview-slots")
 def create_interview_slots(payload: SlotCreateRequest, db=Depends(get_db)):
     # Récupérer le premier admin HR disponible
     hr_admin = db.query(HRAdmin).first()
@@ -164,7 +184,7 @@ def update_slot_status(slot_id: int, payload: SlotUpdateStatusRequest, db=Depend
     return {"success": True}
 
 
-@router.delete("/api/hr/interview-slots/{slot_id}")
+@router.delete("/interview-slots/{slot_id}")
 def delete_slot(slot_id: int, db=Depends(get_db)):
     # Récupérer le premier admin HR disponible
     hr_admin = db.query(HRAdmin).first()
@@ -186,7 +206,7 @@ def delete_slot(slot_id: int, db=Depends(get_db)):
     return {"success": True}
 
 
-@router.get("/api/hr/interview-slots/conflicts")
+@router.get("/interview-slots/conflicts")
 def check_conflicts(start_time: str, end_time: str, db=Depends(get_db)):
     # Récupérer le premier admin HR disponible
     hr_admin = db.query(HRAdmin).first()
@@ -209,7 +229,7 @@ class ConfirmSlotsRequest(BaseModel):
     slot_ids: List[int]
 
 
-@router.post("/api/hr/interview-slots/confirm")
+@router.post("/interview-slots/confirm")
 async def confirm_interview_slots(payload: ConfirmSlotsRequest, db=Depends(get_db)):
     print("🚨 ENDPOINT CONFIRM APPELÉ ! 🚨")
     print(f"🔍 DEBUG: confirm_interview_slots appelé avec payload: {payload}")
@@ -360,7 +380,7 @@ async def confirm_interview_slots(payload: ConfirmSlotsRequest, db=Depends(get_d
     return {"success": True, "confirmed_slots": [s.id for s in slots], "confirmed_at": now.isoformat()}
 
 
-@router.get("/api/hr/interview-slots/job-confirmed/{job_id}")
+@router.get("/interview-slots/job-confirmed/{job_id}")
 def check_job_slots_confirmed(job_id: int, db=Depends(get_db)):
     """
     Vérifie si un job a des créneaux confirmés (calendrier verrouillé)
@@ -457,8 +477,8 @@ async def send_interview_invitation(
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 
-@router.post("/api/hr/interview-slots/candidate-choice")
-async def candidate_chooses_slot(payload: CandidateSlotChoiceRequest, db=Depends(get_db)):
+@router.post("/interview-slots/candidate-choice")
+async def candidate_chooses_slot(payload: CandidateSlotChoiceRequest, background_tasks: BackgroundTasks, db=Depends(get_db)):
     """
     Endpoint pour que le candidat confirme son choix de créneau
     """
@@ -490,11 +510,28 @@ async def candidate_chooses_slot(payload: CandidateSlotChoiceRequest, db=Depends
         
         print(f"🔍 DEBUG: Après mise à jour - interview_date: {application.interview_date}, interview_time: {application.interview_time}, interview_type: {application.interview_type}")
         print(f"✅ CANDIDATE CHOICE: Données d'entretien mises à jour pour l'application {application.id}")
+        
+        # Send immediate notification to HR about candidate's choice
+        notification_service = InterviewNotificationService()
+        background_tasks.add_task(
+            notification_service.send_candidate_choice_notification_to_hr,
+            application.id
+        )
+        
+        # Schedule all future notifications
+        scheduler = InterviewNotificationScheduler()
+        background_tasks.add_task(
+            scheduler.schedule_interview_notifications,
+            application.id
+        )
+        
     else:
         print(f"❌ CANDIDATE CHOICE: Application {payload.application_id} non trouvée")
     
     db.commit()
     print(f"🔍 DEBUG: Commit effectué")
+
+    
     
     return {
         "success": True, 
@@ -506,5 +543,200 @@ async def candidate_chooses_slot(payload: CandidateSlotChoiceRequest, db=Depends
             "status": slot.status.value
         }
     }
+
+
+@router.get("/interview-slots/zoom-meeting-setup", response_class=HTMLResponse)
+async def zoom_meeting_setup(
+    request: Request,
+    application_id: int = Query(..., description="ID de la candidature"),
+    admin_id: int = Query(..., description="ID de l'administrateur HR"),
+    db: Session = Depends(get_db)
+):
+    """Page de configuration Zoom pour créer une réunion d'entretien"""
+    try:
+        # Récupérer les informations de la candidature
+        application = db.query(Application).filter(Application.id == application_id).first()
+        if not application:
+            raise HTTPException(status_code=404, detail="Candidature non trouvée")
+        
+        # Récupérer les informations du job
+        job = db.query(Job).filter(Job.id == application.job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Offre d'emploi non trouvée")
+        
+        # Récupérer les informations de l'entreprise
+        company = db.query(Company).filter(Company.id == job.company_id).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        
+        # Récupérer les informations du candidat
+        candidate_profile = application.candidate_profile
+        if not candidate_profile:
+            raise HTTPException(status_code=404, detail="Profil candidat non trouvé")
+        
+        # Récupérer les informations de l'admin HR
+        hr_admin = db.query(HRAdmin).filter(HRAdmin.id == admin_id).first()
+        if not hr_admin:
+            raise HTTPException(status_code=404, detail="Administrateur HR non trouvé")
+        
+        # Préparer les données pour le template
+        context = {
+            "request": request,
+            "application_id": application_id,
+            "admin_id": admin_id,
+            "candidate_name": candidate_profile.name or "Candidat",
+            "job_title": job.title,
+            "company_name": company.company_name,
+            "interview_date": application.interview_date.strftime("%d/%m/%Y à %H:%M") if application.interview_date else "Non défini",
+            "interview_time": application.interview_time or "Non défini",
+            "hr_admin_name": f"{hr_admin.first_name} {hr_admin.last_name}",
+            "hr_admin_email": hr_admin.email
+        }
+        
+        return templates.TemplateResponse("HR-dep/zoom-meeting-setup.html", context)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors du chargement de la page: {str(e)}")
+
+
+@router.post("/interview-slots/create-meet")
+async def create_meet(request: CreateMeetRequest):
+    """Create a Zoom meeting via n8n webhook"""
+    try:
+        # Get n8n URL from environment variables
+        n8n_base_url = os.getenv("N8N_WEBHOOK_URL")
+        if not n8n_base_url:
+            raise HTTPException(status_code=500, detail="N8N_WEBHOOK_URL environment variable not set")
+        
+        # Construct the full URL
+        n8n_url = f"{n8n_base_url}/create-meet"
+        
+        # Prepare the payload for n8n
+        payload = {
+            "application_id": request.application_id,
+            "admin_id": request.admin_id,
+            "candidate_name": request.candidate_name,
+            "job_title": request.job_title,
+            "company_name": request.company_name,
+            "interview_date": request.interview_date,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        print(f"🚀 Sending request to n8n: {n8n_url}")
+        print(f"📦 Payload: {json.dumps(payload, indent=2)}")
+        
+        # Send request to n8n
+        response = requests.post(
+            n8n_url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
+        
+        print(f"📡 N8N Response Status: {response.status_code}")
+        print(f"📄 N8N Response Headers: {dict(response.headers)}")
+        
+        if response.status_code == 200:
+            try:
+                response_data = response.json()
+                print(f"✅ N8N Response Data: {json.dumps(response_data, indent=2)}")
+                
+                # If n8n returned meeting URLs, store them and send to candidate
+                if "start" in response_data and "join" in response_data:
+                    await store_meeting_and_notify_candidate(
+                        request.application_id,
+                        request.candidate_name,
+                        request.job_title,
+                        request.company_name,
+                        response_data["start"],
+                        response_data["join"]
+                    )
+                    
+            except json.JSONDecodeError:
+                response_text = response.text
+                print(f"📝 N8N Response Text: {response_text}")
+                response_data = {"message": response_text, "status": "success"}
+        else:
+            error_text = response.text
+            print(f"❌ N8N Error Response: {error_text}")
+            response_data = {"error": error_text, "status": "error"}
+        
+        # Return the response to the frontend
+        return JSONResponse(
+            status_code=200 if response.status_code == 200 else 500,
+            content={
+                "success": response.status_code == 200,
+                "n8n_response": response_data,
+                "n8n_status_code": response.status_code,
+                "message": "Meeting creation request sent to n8n successfully" if response.status_code == 200 else "Error from n8n webhook"
+            }
+        )
+        
+    except requests.exceptions.Timeout:
+        error_msg = "Timeout while calling n8n webhook"
+        print(f"⏰ {error_msg}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": error_msg}
+        )
+    except requests.exceptions.ConnectionError:
+        error_msg = "Could not connect to n8n webhook"
+        print(f"🔌 {error_msg}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": error_msg}
+        )
+    except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        print(f"💥 {error_msg}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": error_msg}
+        )
+
+
+async def store_meeting_and_notify_candidate(
+    application_id: int,
+    candidate_name: str,
+    job_title: str,
+    company_name: str,
+    start_url: str,
+    join_url: str
+):
+    """Store meeting details in database and send join link to candidate"""
+    try:
+        db = SessionLocal()
+        
+        # Get application details
+        application = db.query(Application).filter(Application.id == application_id).first()
+        if not application:
+            print(f"❌ Application {application_id} not found")
+            return
+        
+        # Update application with meeting details
+        application.google_meet_link = join_url  # Using existing field for join URL
+        application.google_calendar_event_id = start_url  # Using existing field for start URL
+        db.commit()
+        
+        print(f"✅ Meeting details stored for application {application_id}")
+        print(f"📧 Start URL: {start_url}")
+        print(f"👥 Join URL: {join_url}")
+        
+        # Send email to candidate with join link
+        from utils1.interview_notifications import InterviewNotificationService
+        notification_service = InterviewNotificationService()
+        
+        # Send meeting link to candidate
+        result = notification_service.send_meeting_time_candidate_link(application_id)
+        
+        if result:
+            print(f"✅ Meeting link sent to candidate: {candidate_name}")
+        else:
+            print(f"❌ Failed to send meeting link to candidate: {candidate_name}")
+        
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error storing meeting and notifying candidate: {e}")
 
 

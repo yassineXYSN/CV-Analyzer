@@ -215,6 +215,7 @@ class Job(Base):
     
     # Relationships
     department = relationship("Department")
+    company = relationship("Company")
 
 class JobSkill(Base):
     __tablename__ = "job_skills"
@@ -235,6 +236,7 @@ class Application(Base):
     id = Column(Integer, primary_key=True, index=True)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
     candidate_profile_id = Column(Integer, ForeignKey("profile_candidat.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     # Informations de candidature
     application_date = Column(DateTime, default=func.now())

@@ -1,0 +1,51 @@
+COMPLETE CONVERSATION ANALYSIS WITH EMOTIONS
+======================================================================
+
+Turn 1 [0:00:00] [neutral]:
+Speaker A: Good morning, thanks for joining us today. Could you start by telling me a little about yourself?
+
+Turn 2 [0:00:00] [neutral]:
+Speaker B: Of course, my name is Yassine and I recently graduated with a degree in business management. During my studies, I completed an internship in project coordination where I learned how to manage timelines, communicate with clients and handle unexpected challenges.
+
+Turn 3 [0:00:30] [neutral]:
+Speaker A: That sounds great. What would you say is your biggest strength?
+
+Turn 4 [0:00:30] [neutral]:
+Speaker B: What is your organization and adaptability? I'd say it's my organization and adaptability. I like keeping things on track, but I can also stay calm and adjust quickly when priorities change. What is your personal life?
+
+Turn 5 [0:00:50] [neutral]:
+Speaker A: Excellent. Why do you want to work with our company?
+
+Turn 6 [0:00:52] [neutral]:
+Speaker B: I followed your company for a while and I really admire your focus on innovation and
+
+Turn 7 [0:01:00] [neutral]:
+Speaker A: I want to work with our company because I want to be a part of the company.
+
+Turn 8 [0:01:03] [neutral]:
+Speaker B: teamwork. I think it's the perfect environment to grow professionally and contribute meaningfully.
+
+Turn 9 [0:01:10] [neutral]:
+Speaker A: Okay, just for testing purposes, could you talk a little bit of French?
+
+Turn 10 [0:01:10] [happy]:
+Speaker B: What is your name? Hello, of course, sir. My name is Youssef. And I'm a business manager. I'm a high school student, so I really like chocolate. What else do you want to do? You're welcome, my name is Yassine Otrou. What is your name?
+
+Turn 11 [0:01:27] [neutral]:
+Speaker A: Yes, please.
+
+Turn 12 [0:01:27] [neutral]:
+Speaker B: My name is Yassine Otrou, I'm a business manager and I really admire your focus on innovation and collaboration.
+
+Turn 13 [0:01:30] [neutral]:
+Speaker A: Thank you, that was great. Wonderful. Thank you, Yousef. We'll be in touch soon.
+
+Turn 14 [0:01:30] [happy]:
+Speaker B: What is your personal life? I think it's the perfect environment for me to stay calm and adjust quickly when priorities change and I really enjoy working with you.
+
+Turn 15 [0:01:40] [happy]:
+Speaker A: Okay, thanks.
+
+Turn 16 [0:01:42] [No emotion data]:
+Speaker B: What is your name? My name is Yassine Otrou. And I'm a business manager. And I'm a business manager. You're welcome, my name is Youssef.
+

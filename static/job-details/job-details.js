@@ -2942,7 +2942,7 @@ function renderApplicationsWithCompatibility(filter = "all") {
               <i class="fas fa-check-circle"></i>
             </div>
             <div class="score-details">
-              <span class="score-value">${app.quiz_score || 0}%</span>
+              <span class="score-value">${!app.quiz_id ? "en attente" : (app.quiz_score || 0) + "%"}</span>
               <span class="score-label">Quiz</span>
             </div>
           </div>

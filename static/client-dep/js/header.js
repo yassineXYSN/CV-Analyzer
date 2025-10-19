@@ -177,7 +177,6 @@ class HeaderComponent {
     const notificationBellContainer = document.getElementById("notificationBellContainer")
     const quizzesContainer = document.getElementById("quizzesContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
-    const plannedInterviewContainer = document.getElementById("plannedInterviewContainer")
 
     if (userMenuContainer) {
       userMenuContainer.style.display = "block"
@@ -187,13 +186,9 @@ class HeaderComponent {
       notificationBellContainer.style.display = "block"
     }
 
-    // Only show Quiz and Entretien planifié if user has completed profile setup
+    // Only show Quiz if user has completed profile setup
     if (quizzesContainer) {
       quizzesContainer.style.display = user.profile !== null ? "block" : "none"
-    }
-
-    if (plannedInterviewContainer) {
-      plannedInterviewContainer.style.display = user.profile !== null ? "block" : "none"
     }
 
     guestMenuContainers.forEach((container) => {
@@ -286,7 +281,6 @@ async updatePlannedInterviewMenu() {
     const notificationBellContainer = document.getElementById("notificationBellContainer")
     const quizzesContainer = document.getElementById("quizzesContainer")
     const guestMenuContainers = document.querySelectorAll(".guest-menu-container")
-    const plannedInterviewContainer = document.getElementById("plannedInterviewContainer")
 
     if (userMenuContainer) {
       userMenuContainer.style.display = "none"
@@ -298,10 +292,6 @@ async updatePlannedInterviewMenu() {
 
     if (quizzesContainer) {
       quizzesContainer.style.display = "none"
-    }
-
-    if (plannedInterviewContainer) {
-      plannedInterviewContainer.style.display = "none"
     }
 
     guestMenuContainers.forEach((container) => {

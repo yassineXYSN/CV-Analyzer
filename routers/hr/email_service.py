@@ -217,7 +217,7 @@ class EmailService:
                                 Cliquez sur le bouton ci-dessous pour accéder à la page de sélection des créneaux
                             </p>
                             <div style="margin-top: 1rem;">
-                                <a href="#" 
+                                <a href="http://127.0.0.1:8000/notifications" 
                                    style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
                                           color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 8px; 
                                           font-weight: 600; font-size: 1rem; transition: all 0.3s ease;">
@@ -279,7 +279,7 @@ class EmailService:
             text_body += f"""
             
             Pour choisir votre créneau, cliquez sur le lien suivant :
-            [Lien vers la page de sélection]
+            http://127.0.0.1:8000/notifications
             
             Instructions :
             - Sélectionnez le créneau qui vous convient le mieux

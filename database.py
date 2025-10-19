@@ -40,6 +40,6 @@ Base = declarative_base()
 # Optional: test connection
 try:
     conn = engine.connect()
-    print("✅ Connexion réussie à MySQL")
+    print("SUCCESS: Connected to MySQL")
 except Exception as e:
-    print("❌ Impossible de se connecter à MySQL:", e)
+    print("ERROR: Could not connect to MySQL:", e)
