@@ -304,7 +304,8 @@ async def confirm_interview_slots(payload: ConfirmSlotsRequest, db=Depends(get_d
                         candidate_name=candidate_name,
                         job_title=job.title,
                         company_name=company_name,
-                        interview_slots=interview_slots
+                        interview_slots=interview_slots,
+                        application_id=payload.application_id
                     )
                     print(f"📧 Résultat de l'envoi d'email: {email_sent}")
                     
@@ -459,7 +460,8 @@ async def send_interview_invitation(
             candidate_name=application.candidate_name,
             job_title=job.title,
             company_name=job.company_name,
-            interview_slots=interview_slots
+            interview_slots=interview_slots,
+            application_id=request.application_id
         )
         
         if success:

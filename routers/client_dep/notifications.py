@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from database import SessionLocal
 from databaseclient.models import User, Application, Job, Company, ProfileCandidat, Notification
 from databasehr.models import InterviewSlot, SlotStatus
@@ -432,10 +432,14 @@ async def interview_slots_page(request: Request, application_id: int, db: Sessio
     current_user = get_current_user(request, db)
     
     if not current_user:
-        return templates.TemplateResponse("client-dep/auth/login.html", {
-            "request": request,
-            "error": "Vous devez être connecté pour accéder à cette page"
-        })
+        # Construire l'URL de redirection après login
+        redirect_after_login = request.query_params.get("redirect_after_login")
+        if redirect_after_login:
+            login_url = f"/login?redirect_to={request.url}"
+        else:
+            login_url = "/login"
+        
+        return RedirectResponse(url=login_url)
     
     # Vérifier que l'application appartient au candidat
     application = db.query(Application).options(

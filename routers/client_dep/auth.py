@@ -126,7 +126,13 @@ def login_page(request: Request, db: Session = Depends(get_db)):
     current_user = get_current_user(request, db)
     if current_user:
         return RedirectResponse(url="/", status_code=302)
-    return templates.TemplateResponse("client-dep/auth/login.html", {"request": request})
+    
+    # Récupérer l'URL de redirection après login
+    redirect_to = request.query_params.get("redirect_to", "/analyze")
+    return templates.TemplateResponse("client-dep/auth/login.html", {
+        "request": request,
+        "redirect_to": redirect_to
+    })
 
 @router.post("/login")
 async def login(
@@ -135,6 +141,7 @@ async def login(
     email: str = Form(...),
     password: str = Form(...),
     remember_me: bool = Form(False),
+    redirect_to: str = Form("/analyze"),
     db: Session = Depends(get_db)
 ):
     try:
@@ -167,6 +174,7 @@ async def login(
         return {
             "success": True,
             "message": "Connexion réussie",
+            "redirect_to": redirect_to,
             "user": {
                 "id": user.id,
                 "email": user.email,

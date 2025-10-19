@@ -223,6 +223,9 @@
                 </a>
             </div>
 
+            <!-- Hidden redirect field -->
+            <input type="hidden" id="redirect_to" name="redirect_to" value="{{ redirect_to or '/analyze' }}">
+
             <!-- Submit Button -->
             <button type="submit" class="submit-btn" id="submitBtn">
                 <span class="btn-content" id="btnContent">
@@ -388,7 +391,7 @@
 
                     showFormSuccess(result.message)
                     setTimeout(() => {
-                        window.location.href = '/analyze';
+                        window.location.href = result.redirect_to || '/analyze';
                     }, 800);
                 } else {
                     showFormError(result.message)
