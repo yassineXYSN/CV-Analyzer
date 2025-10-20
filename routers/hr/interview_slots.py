@@ -16,7 +16,7 @@ from .email_service import EmailService
 
 # Add the parent directory to the path to import utils1
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-from utils1.interview_notifications import InterviewNotificationService, InterviewNotificationScheduler
+from utils1.interview_notifications import InterviewNotificationService
 
 router = APIRouter(prefix="/api/hr", tags=["interview-slots"])
 templates = Jinja2Templates(directory="templates")
@@ -268,12 +268,26 @@ async def confirm_interview_slots(payload: ConfirmSlotsRequest, db=Depends(get_d
     db.commit()
     
     # Envoyer automatiquement l'email d'invitation si une candidature est associée
-    print(f"🔍 DEBUG: application_id = {payload.application_id}")
-    if payload.application_id:
+    # Si application_id n'est pas fourni, essayer de l'inférer depuis les créneaux confirmés
+    inferred_application_id = payload.application_id
+    if not inferred_application_id:
+        for s in slots:
+            if s.application_id:
+                inferred_application_id = s.application_id
+                break
+        # Si on a pu inférer l'application, l'affecter aux créneaux qui ne l'ont pas
+        if inferred_application_id:
+            for s in slots:
+                if not s.application_id:
+                    s.application_id = inferred_application_id
+            db.commit()
+
+    print(f"🔍 DEBUG: application_id (provided or inferred) = {inferred_application_id}")
+    if inferred_application_id:
         print(f"📧 Tentative d'envoi d'email pour application_id: {payload.application_id}")
         try:
             # Récupérer les informations de la candidature
-            application = db.query(Application).filter(Application.id == payload.application_id).first()
+            application = db.query(Application).filter(Application.id == inferred_application_id).first()
             print(f"🔍 DEBUG: Application trouvée: {application is not None}")
             if application:
                 # Accéder aux données du candidat via les relations
@@ -305,7 +319,7 @@ async def confirm_interview_slots(payload: ConfirmSlotsRequest, db=Depends(get_d
                         job_title=job.title,
                         company_name=company_name,
                         interview_slots=interview_slots,
-                        application_id=payload.application_id
+                        application_id=inferred_application_id
                     )
                     print(f"📧 Résultat de l'envoi d'email: {email_sent}")
                     
@@ -515,36 +529,34 @@ async def candidate_chooses_slot(payload: CandidateSlotChoiceRequest, background
         
         # Send immediate notification to HR about candidate's choice
         notification_service = InterviewNotificationService()
-        background_tasks.add_task(
-            notification_service.send_candidate_choice_notification_to_hr,
-            application.id
-        )
-        
+
+        notification_service.send_candidate_choice_notification_to_hr(application.id, db)
+
         # Schedule all future notifications
-        scheduler = InterviewNotificationScheduler()
-        background_tasks.add_task(
-            scheduler.schedule_interview_notifications,
-            application.id
-        )
+        test1 = notification_service.send_24h_reminder(application.id, db)
+        test2 = notification_service.send_20min_hr_reminder(application.id, db)
+        test3 = notification_service.send_15min_candidate_reminder(application.id, db)
+        test4 = notification_service.send_5min_hr_meeting_link(application.id, db)
+        test5 =notification_service.send_meeting_time_candidate_link(application.id, db)
         
+        if test1 and test2 and test3 and test4 and test5:
+            db.commit()
+            print(f"🔍 DEBUG: Commit effectué")
+            return {
+                "success": True, 
+                "message": "Choix de créneau confirmé avec succès",
+                "slot": {
+                    "id": slot.id,
+                    "start_time": slot.start_time.isoformat(),
+                    "end_time": slot.end_time.isoformat(),
+                    "status": slot.status.value
+                }
+            }
+
     else:
         print(f"❌ CANDIDATE CHOICE: Application {payload.application_id} non trouvée")
     
-    db.commit()
-    print(f"🔍 DEBUG: Commit effectué")
-
     
-    
-    return {
-        "success": True, 
-        "message": "Choix de créneau confirmé avec succès",
-        "slot": {
-            "id": slot.id,
-            "start_time": slot.start_time.isoformat(),
-            "end_time": slot.end_time.isoformat(),
-            "status": slot.status.value
-        }
-    }
 
 
 @router.get("/interview-slots/zoom-meeting-setup", response_class=HTMLResponse)

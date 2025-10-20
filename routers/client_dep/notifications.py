@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Request, Depends, WebSocket, WebSocketDisconnect, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from database import SessionLocal
 from databaseclient.models import User, Application, Job, Company, ProfileCandidat, Notification
@@ -11,6 +11,7 @@ import json
 import os
 from datetime import datetime
 from pydantic import BaseModel
+from utils1.interview_notifications import InterviewNotificationService
 
 router = APIRouter()
 
@@ -493,6 +494,7 @@ async def interview_slots_page(request: Request, application_id: int, db: Sessio
 async def select_interview_slot(
     request: Request,
     slot_data: SlotSelectionRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """Sélectionner un créneau d'entretien et supprimer les autres"""
@@ -599,7 +601,24 @@ async def select_interview_slot(
                 hr_db.close()
         except Exception as e:
             print(f"❌ HR UPDATE ERROR: {str(e)}")
-        
+        notification_service = InterviewNotificationService()
+
+        try:
+            notification_service.send_candidate_choice_notification_to_hr(application.id, db)
+
+            # Schedule all future notifications
+            notification_service.send_24h_reminder(application.id, db)
+            notification_service.send_20min_hr_reminder(application.id, db)
+            notification_service.send_15min_candidate_reminder(application.id, db)
+            notification_service.send_5min_hr_meeting_link(application.id, db)
+            notification_service.send_meeting_time_candidate_link(application.id, db)
+
+        except Exception as e:
+            print(f"❌ Notification Error: {str(e)}")
+            # Rollback any DB changes if needed
+            db.rollback()
+            # Stop execution
+            return {"success": False, "message": f"Erreur lors de l'envoi des notifications: {str(e)}"}
         # Créer une notification de confirmation
         chosen_slot_str = selected_slot.start_time.strftime('%d/%m/%Y à %H:%M')
         notification = Notification(
@@ -640,6 +659,8 @@ async def select_interview_slot(
             await manager.send_personal_message(websocket_notification, current_user.id)
         except Exception as e:
             print(f"Erreur lors de l'envoi WebSocket: {e}")
+        
+        
         
         return {
             "success": True,

@@ -3,6 +3,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 import os
+import requests
 from typing import Optional
 import asyncio
 from sqlalchemy.orm import Session
@@ -49,11 +50,34 @@ class InterviewNotificationService:
         except Exception as e:
             print(f"ERROR: Failed to send email to {to_email}: {e}")
             return False
+    
+    def send_email_with_n8n(self, to_email: str, subject: str, html_content: str, text_content: str, wait):
+        # If wait is negative, skip sending
+        print(f"Scheduling email to {to_email} with wait time: {wait}s")
+        if wait < 0:
+            print(f"⏭️ Skipping email to {to_email}: wait time ({wait}s) is negative.")
+            return
 
-    def send_candidate_choice_notification_to_hr(self, application_id: int):
+        payload = {
+            "to": to_email,
+            "subject": subject,
+            "html": html_content,
+            "text": text_content,
+            "wait": wait
+        }
+        url = os.getenv("N8N_WEBHOOK_URL") + "/send-emails"
+
+        try:
+            response = requests.post(url, json=payload, timeout=2)
+            print("Request sent successfully:", response.status_code)
+        except requests.exceptions.Timeout:
+            print("✅ Request timed out (expected) — continuing without waiting.")
+        except requests.exceptions.RequestException as e:
+            print("⚠️ Request failed:", e)
+
+    def send_candidate_choice_notification_to_hr(self, application_id: int, db: Session):
         """Send notification to HR when candidate chooses interview time"""
         try:
-            db = SessionLocal()
             # Get application details
             application = db.query(Application).filter(Application.id == application_id).first()
             if not application:
@@ -92,7 +116,7 @@ class InterviewNotificationService:
                     <!-- Header -->
                     <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 2rem; text-align: center;">
                         <h1 style="color: white; margin: 0; font-size: 1.5rem;">
- CV Analyzer Pro
+    CV Analyzer Pro
                         </h1>
                         <p style="color: #d1fae5; margin: 0.5rem 0 0 0;">Notification d'entretien</p>
                     </div>
@@ -159,10 +183,17 @@ class InterviewNotificationService:
             db.close()
             return False
 
-    def send_24h_reminder(self, application_id: int):
+    def seconds_until_date_minus(self,target_date_str, minutes_minus=0) -> float:   
+
+        target_minus_minutes = target_date_str - timedelta(minutes=minutes_minus)
+        now = datetime.now()
+        wait_seconds = (target_minus_minutes - now).total_seconds()
+        return wait_seconds
+
+
+    def send_24h_reminder(self, application_id: int, db: Session):
         """Send 24-hour reminder to both HR and candidate"""
         try:
-            db = SessionLocal()
             application = db.query(Application).filter(Application.id == application_id).first()
             if not application or not application.interview_date:
                 db.close()
@@ -179,22 +210,24 @@ class InterviewNotificationService:
             hr_admin = db.query(HRAdmin).first()
             hr_email = hr_admin.email if hr_admin else None
             
-            interview_date = application.interview_date.strftime("%d/%m/%Y")
-            interview_time = application.interview_time if application.interview_time else "Heure non définie"
+            interview_date = application.interview_date
+            interview_time = application.interview_time
+            wait_seconds = self.seconds_until_date_minus(interview_date, 24*60)
             
             # Send to HR
             if hr_email:
                 hr_subject = f" Rappel entretien dans 24h - {candidate_name}"
                 hr_html = self._create_24h_reminder_html(candidate_name, job_title, company_name, interview_date, interview_time, "HR")
                 hr_text = self._create_24h_reminder_text(candidate_name, job_title, company_name, interview_date, interview_time, "HR")
-                self.send_email(hr_email, hr_subject, hr_html, hr_text)
-            
+                
+                self.send_email_with_n8n(hr_email, hr_subject, hr_html, hr_text, wait_seconds)
+
             # Send to candidate
             if candidate_email:
                 candidate_subject = f" Rappel entretien dans 24h - {job_title}"
                 candidate_html = self._create_24h_reminder_html(candidate_name, job_title, company_name, interview_date, interview_time, "candidate")
                 candidate_text = self._create_24h_reminder_text(candidate_name, job_title, company_name, interview_date, interview_time, "candidate")
-                self.send_email(candidate_email, candidate_subject, candidate_html, candidate_text)
+                self.send_email_with_n8n(candidate_email, candidate_subject, candidate_html, candidate_text, wait_seconds)
             
             db.close()
             return True
@@ -204,13 +237,11 @@ class InterviewNotificationService:
             db.close()
             return False
 
-    def send_20min_hr_reminder(self, application_id: int):
+    def send_20min_hr_reminder(self, application_id: int, db:Session):
         """Send 20-minute reminder to HR"""
         try:
-            db = SessionLocal()
             application = db.query(Application).filter(Application.id == application_id).first()
             if not application:
-                db.close()
                 return False
             
             candidate_name = application.candidate_profile.name if application.candidate_profile else "Candidat"
@@ -223,6 +254,7 @@ class InterviewNotificationService:
                 return False
             
             subject = f" Entretien dans 20 minutes - {candidate_name}"
+            interview_date_str = application.interview_date
             
             html_content = f"""
             <!DOCTYPE html>
@@ -237,7 +269,7 @@ class InterviewNotificationService:
                     <!-- Header -->
                     <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 2rem; text-align: center;">
                         <h1 style="color: white; margin: 0; font-size: 1.5rem;">
- CV Analyzer Pro
+    CV Analyzer Pro
                         </h1>
                         <p style="color: #fef3c7; margin: 0.5rem 0 0 0;">Rappel entretien</p>
                     </div>
@@ -286,20 +318,20 @@ class InterviewNotificationService:
             Cordialement,
             L'équipe CV Analyzer Pro
             """
-            
-            result = self.send_email(hr_email, subject, html_content, text_content)
+            print(f"DEBUG: interview_date_str = {interview_date_str}")
+            wait_seconds = self.seconds_until_date_minus(interview_date_str, 20)
+            self.send_email_with_n8n(hr_email, subject, html_content, text_content, wait_seconds)
             db.close()
-            return result
-            
+            return True
+
         except Exception as e:
             print(f"ERROR: Error sending 20min HR reminder: {e}")
             db.close()
             return False
 
-    def send_15min_candidate_reminder(self, application_id: int):
+    def send_15min_candidate_reminder(self, application_id: int, db:Session):
         """Send 15-minute reminder to candidate to get ready"""
         try:
-            db = SessionLocal()
             application = db.query(Application).filter(Application.id == application_id).first()
             if not application:
                 db.close()
@@ -313,6 +345,8 @@ class InterviewNotificationService:
             
             job_title = application.job.title if application.job else "Poste"
             company_name = application.job.company.company_name if application.job and application.job.company else "Entreprise"
+            
+            interview_date_str = application.interview_date 
             
             subject = f" Entretien dans 15 minutes - Préparez-vous !"
             
@@ -329,7 +363,7 @@ class InterviewNotificationService:
                     <!-- Header -->
                     <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 2rem; text-align: center;">
                         <h1 style="color: white; margin: 0; font-size: 1.5rem;">
- CV Analyzer Pro
+    CV Analyzer Pro
                         </h1>
                         <p style="color: #e0e7ff; margin: 0.5rem 0 0 0;">Préparez-vous !</p>
                     </div>
@@ -392,23 +426,22 @@ class InterviewNotificationService:
             Bonne chance !
             L'équipe CV Analyzer Pro
             """
-            
-            result = self.send_email(candidate_email, subject, html_content, text_content)
+
+            wait_seconds = self.seconds_until_date_minus(interview_date_str, 15)
+            self.send_email_with_n8n(candidate_email, subject, html_content, text_content, wait_seconds)
             db.close()
-            return result
+            return True
             
         except Exception as e:
             print(f"ERROR: Error sending 15min candidate reminder: {e}")
             db.close()
             return False
 
-    def send_5min_hr_meeting_link(self, application_id: int):
+    def send_5min_hr_meeting_link(self, application_id: int, db:Session):
         """Send meeting link to HR 5 minutes before meeting"""
         try:
-            db = SessionLocal()
             application = db.query(Application).filter(Application.id == application_id).first()
             if not application:
-                db.close()
                 return False
             
             candidate_name = application.candidate_profile.name if application.candidate_profile else "Candidat"
@@ -420,11 +453,11 @@ class InterviewNotificationService:
             if not hr_email:
                 db.close()
                 return False
-            
-            # Create absolute URL for the Zoom meeting setup page
-            base_url = os.getenv("BASE_URL", "http://localhost:8000")
-            meeting_link = f"{base_url}/api/hr/interview-slots/zoom-meeting-setup?application_id={application_id}&admin_id={hr_admin.id}"
-            
+
+            endpoint = f"/api/hr/interview-slots/zoom-meeting-setup?application_id={application.id}&admin_id={hr_admin.id}"
+            base_url = os.getenv("BASE_URL")
+            meeting_link = f"{base_url}{endpoint}"
+
             subject = f" Lien de réunion - Entretien avec {candidate_name}"
             
             html_content = f"""
@@ -440,7 +473,7 @@ class InterviewNotificationService:
                     <!-- Header -->
                     <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 2rem; text-align: center;">
                         <h1 style="color: white; margin: 0; font-size: 1.5rem;">
- CV Analyzer Pro
+    CV Analyzer Pro
                         </h1>
                         <p style="color: #d1fae5; margin: 0.5rem 0 0 0;">Lien de réunion</p>
                     </div>
@@ -457,10 +490,10 @@ class InterviewNotificationService:
                         
                         <div style="text-align: center; margin: 2rem 0;">
                             <a href="{meeting_link}" 
-                               style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); 
-                                      color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 8px; 
-                                      font-weight: 600; font-size: 1rem;">
- Rejoindre la réunion Zoom
+                                style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); 
+                                        color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 8px; 
+                                        font-weight: 600; font-size: 1rem;">
+    Rejoindre la réunion Zoom
                             </a>
                         </div>
                         
@@ -495,23 +528,22 @@ class InterviewNotificationService:
             Cordialement,
             L'équipe CV Analyzer Pro
             """
-            
-            result = self.send_email(hr_email, subject, html_content, text_content)
+            interview_date_str = application.interview_date
+            wait_seconds = self.seconds_until_date_minus(interview_date_str, 5)
+            self.send_email_with_n8n(hr_email, subject, html_content, text_content, wait_seconds)
             db.close()
-            return result
+            return True
             
         except Exception as e:
             print(f"ERROR: Error sending 5min HR meeting link: {e}")
             db.close()
             return False
 
-    def send_meeting_time_candidate_link(self, application_id: int):
+    def send_meeting_time_candidate_link(self, application_id: int, db:Session):
         """Send meeting link to candidate at meeting time"""
         try:
-            db = SessionLocal()
             application = db.query(Application).filter(Application.id == application_id).first()
             if not application:
-                db.close()
                 return False
             
             candidate_name = application.candidate_profile.name if application.candidate_profile else "Candidat"
@@ -522,9 +554,11 @@ class InterviewNotificationService:
             
             job_title = application.job.title if application.job else "Poste"
             company_name = application.job.company.company_name if application.job and application.job.company else "Entreprise"
+            interview_date_str = application.interview_date 
+
             
-            # Get the actual meeting link from the database
-            meeting_link = application.google_meet_link or "https://zoom.com"
+            # For now, using zoom.com as requested
+            meeting_link = application.google_calendar_event_id
             
             subject = f" Votre entretien commence maintenant - {company_name}"
             
@@ -541,7 +575,7 @@ class InterviewNotificationService:
                     <!-- Header -->
                     <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 2rem; text-align: center;">
                         <h1 style="color: white; margin: 0; font-size: 1.5rem;">
- CV Analyzer Pro
+    CV Analyzer Pro
                         </h1>
                         <p style="color: #e0e7ff; margin: 0.5rem 0 0 0;">C'est parti !</p>
                     </div>
@@ -558,9 +592,9 @@ class InterviewNotificationService:
                         
                         <div style="text-align: center; margin: 2rem 0;">
                             <a href="{meeting_link}" 
-                               style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-                                      color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 8px; 
-                                      font-weight: 600; font-size: 1rem;">
+                                style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+                                        color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 8px; 
+                                        font-weight: 600; font-size: 1rem;">
                                 🚀 Rejoindre l'entretien maintenant
                             </a>
                         </div>
@@ -600,8 +634,8 @@ class InterviewNotificationService:
             Bonne chance !
             L'équipe CV Analyzer Pro
             """
-            
-            result = self.send_email(candidate_email, subject, html_content, text_content)
+            wait_seconds = self.seconds_until_date_minus(interview_date_str, 0)
+            result = self.send_email_with_n8n(candidate_email, subject, html_content, text_content, wait_seconds)
             db.close()
             return result
             
@@ -640,7 +674,7 @@ class InterviewNotificationService:
                 <!-- Header -->
                 <div style="background: {header_color}; padding: 2rem; text-align: center;">
                     <h1 style="color: white; margin: 0; font-size: 1.5rem;">
- CV Analyzer Pro
+    CV Analyzer Pro
                     </h1>
                     <p style="color: {header_text_color}; margin: 0.5rem 0 0 0;">{title}</p>
                 </div>
@@ -713,101 +747,3 @@ class InterviewNotificationService:
             L'équipe CV Analyzer Pro
             """
 
-
-# Background task scheduler for interview notifications
-class InterviewNotificationScheduler:
-    def __init__(self):
-        self.notification_service = InterviewNotificationService()
-    
-    async def schedule_interview_notifications(self, application_id: int):
-        """Schedule all interview notifications for an application"""
-        try:
-            db = SessionLocal()
-            application = db.query(Application).filter(Application.id == application_id).first()
-            
-            if not application or not application.interview_date:
-                print(f"ERROR: No interview date found for application {application_id}")
-                return
-            
-            interview_datetime = application.interview_date
-            
-            # Schedule notifications
-            await self._schedule_notification(
-                application_id, 
-                interview_datetime - timedelta(hours=24),
-                "24h_reminder"
-            )
-            
-            await self._schedule_notification(
-                application_id,
-                interview_datetime - timedelta(minutes=20),
-                "20min_hr_reminder"
-            )
-            
-            await self._schedule_notification(
-                application_id,
-                interview_datetime - timedelta(minutes=15),
-                "15min_candidate_reminder"
-            )
-            
-            await self._schedule_notification(
-                application_id,
-                interview_datetime - timedelta(minutes=5),
-                "5min_hr_meeting_link"
-            )
-            
-            await self._schedule_notification(
-                application_id,
-                interview_datetime,
-                "meeting_time_candidate_link"
-            )
-            
-            print(f" All notifications scheduled for application {application_id}")
-            
-        except Exception as e:
-            print(f"ERROR: Error scheduling notifications: {e}")
-        finally:
-            db.close()
-    
-    async def _schedule_notification(self, application_id: int, scheduled_time: datetime, notification_type: str):
-        """Schedule a single notification"""
-        try:
-            # Calculate delay in seconds
-            now = datetime.now()
-            delay = (scheduled_time - now).total_seconds()
-            
-            if delay > 0:
-                print(f" Scheduling {notification_type} for application {application_id} in {delay/3600:.1f} hours")
-                
-                # Schedule the notification
-                asyncio.create_task(self._send_scheduled_notification(application_id, delay, notification_type))
-            else:
-                print(f"⚠️ Skipping {notification_type} for application {application_id} - time has passed")
-                
-        except Exception as e:
-            print(f"ERROR: Error scheduling {notification_type}: {e}")
-    
-    async def _send_scheduled_notification(self, application_id: int, delay: float, notification_type: str):
-        """Send a scheduled notification after delay"""
-        try:
-            await asyncio.sleep(delay)
-            
-            db = SessionLocal()
-            
-            if notification_type == "24h_reminder":
-                self.notification_service.send_24h_reminder(application_id, db)
-            elif notification_type == "20min_hr_reminder":
-                self.notification_service.send_20min_hr_reminder(application_id, db)
-            elif notification_type == "15min_candidate_reminder":
-                self.notification_service.send_15min_candidate_reminder(application_id, db)
-            elif notification_type == "5min_hr_meeting_link":
-                self.notification_service.send_5min_hr_meeting_link(application_id, db)
-            elif notification_type == "meeting_time_candidate_link":
-                self.notification_service.send_meeting_time_candidate_link(application_id, db)
-            
-            print(f" Sent {notification_type} for application {application_id}")
-            
-        except Exception as e:
-            print(f"ERROR: Error sending scheduled notification {notification_type}: {e}")
-        finally:
-            db.close()
