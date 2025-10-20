@@ -489,11 +489,11 @@ class InterviewNotificationService:
                         </div>
                         
                         <div style="text-align: center; margin: 2rem 0;">
-                            <a href="{meeting_link}" 
+                            <a href="PLACEHOLDER 
                                 style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); 
                                         color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 8px; 
                                         font-weight: 600; font-size: 1rem;">
-    Rejoindre la réunion Zoom
+    Commencer la réunion Zoom
                             </a>
                         </div>
                         
@@ -530,9 +530,9 @@ class InterviewNotificationService:
             """
             interview_date_str = application.interview_date
             wait_seconds = self.seconds_until_date_minus(interview_date_str, 5)
-            self.send_email_with_n8n(hr_email, subject, html_content, text_content, wait_seconds)
             db.close()
-            return True
+            return [hr_email, subject, html_content, text_content, wait_seconds]
+            
             
         except Exception as e:
             print(f"ERROR: Error sending 5min HR meeting link: {e}")
@@ -554,7 +554,6 @@ class InterviewNotificationService:
             
             job_title = application.job.title if application.job else "Poste"
             company_name = application.job.company.company_name if application.job and application.job.company else "Entreprise"
-            interview_date_str = application.interview_date 
 
             
             # For now, using zoom.com as requested
@@ -591,7 +590,7 @@ class InterviewNotificationService:
                         </div>
                         
                         <div style="text-align: center; margin: 2rem 0;">
-                            <a href="{meeting_link}" 
+                            <a href="PLACEHOLDER" 
                                 style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
                                         color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 8px; 
                                         font-weight: 600; font-size: 1rem;">
@@ -634,15 +633,36 @@ class InterviewNotificationService:
             Bonne chance !
             L'équipe CV Analyzer Pro
             """
-            wait_seconds = self.seconds_until_date_minus(interview_date_str, 0)
-            result = self.send_email_with_n8n(candidate_email, subject, html_content, text_content, wait_seconds)
             db.close()
-            return result
+            return [candidate_email, subject, html_content, text_content]
+
             
         except Exception as e:
             print(f"ERROR: Error sending meeting time candidate link: {e}")
             db.close()
             return False
+        
+    def send_to_hr_and_condidats(self, application_id: int, db:Session):
+        hr_email = self.send_5min_hr_meeting_link(application_id, db)
+        candidate_email = self.send_meeting_time_candidate_link(application_id, db)
+        # If wait is negative, skip sending
+        if hr_email[4] < 0:
+            return
+
+        payload = {
+            "hr_email": hr_email,
+            "candidate_email": candidate_email,
+            "wait": hr_email[4]
+        }
+        url = os.getenv("N8N_WEBHOOK_URL") + "/send-emails-with-link"
+
+        try:
+            response = requests.post(url, json=payload, timeout=2)
+            print("Request sent successfully:", response.status_code)
+        except requests.exceptions.Timeout:
+            print("✅ Request timed out (expected) — continuing without waiting.")
+        except requests.exceptions.RequestException as e:
+            print("⚠️ Request failed:", e)
 
     def _create_24h_reminder_html(self, candidate_name: str, job_title: str, company_name: str, interview_date: str, interview_time: str, recipient_type: str) -> str:
         """Create HTML content for 24h reminder"""

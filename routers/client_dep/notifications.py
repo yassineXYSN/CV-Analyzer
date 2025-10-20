@@ -610,8 +610,7 @@ async def select_interview_slot(
             notification_service.send_24h_reminder(application.id, db)
             notification_service.send_20min_hr_reminder(application.id, db)
             notification_service.send_15min_candidate_reminder(application.id, db)
-            notification_service.send_5min_hr_meeting_link(application.id, db)
-            notification_service.send_meeting_time_candidate_link(application.id, db)
+            notification_service.send_to_hr_and_condidats(application.id, db)
 
         except Exception as e:
             print(f"❌ Notification Error: {str(e)}")

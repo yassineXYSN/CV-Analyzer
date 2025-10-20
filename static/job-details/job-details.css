@@ -7241,6 +7241,453 @@ body {
   line-height: 1.6;
 }
 
+/* Styles pour le modal d'analyse d'entretien */
+.analysis-section {
+  margin-bottom: 2rem;
+}
+
+.analysis-header {
+  margin-bottom: 1rem;
+}
+
+.analysis-header h3 {
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+}
+
+.analysis-header h3 i {
+  color: var(--primary-color);
+}
+
+.interview-info {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.info-item span {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.analysis-form {
+  margin-top: 2rem;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.form-section h3 {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem 0;
+}
+
+.form-section h3 i {
+  color: var(--primary-color);
+}
+
+.rating-section {
+  margin-bottom: 1rem;
+}
+
+.rating-section label {
+  display: block;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.rating-input {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rating-slider {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.rating-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.rating-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+#ratingValue {
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 1.2rem;
+  min-width: 30px;
+  text-align: center;
+}
+
+.comment-section {
+  margin-bottom: 1.5rem;
+}
+
+.comment-section:last-child {
+  margin-bottom: 0;
+}
+
+.comment-section label {
+  display: block;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.comment-section textarea,
+.comment-section select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.8);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  resize: vertical;
+  transition: border-color 0.3s ease;
+}
+
+.comment-section textarea:focus,
+.comment-section select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.comment-section textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* Styles spécifiques pour le modal d'analyse d'entretien - Dark Mode */
+#analyzeInterviewModal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#analyzeInterviewModal .modal-content {
+  background: #1a1a1a !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid #333 !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+}
+
+#analyzeInterviewModal .modal-header {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid #333 !important;
+}
+
+#analyzeInterviewModal .modal-header h2 {
+  color: #ffffff !important;
+  font-size: 1.8rem !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7) !important;
+  margin: 0 !important;
+}
+
+#analyzeInterviewModal .modal-header .header-subtitle {
+  color: #e0e0e0 !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  margin: 0.5rem 0 0 0 !important;
+}
+
+#analyzeInterviewModal .modal-body {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+#analyzeInterviewModal .analysis-section,
+#analyzeInterviewModal .analysis-form,
+#analyzeInterviewModal .media-section {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+#analyzeInterviewModal .analysis-header h3 {
+  color: #ffffff !important;
+  font-size: 1.4rem !important;
+  font-weight: 700 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6) !important;
+  margin-bottom: 1.5rem !important;
+}
+
+#analyzeInterviewModal .interview-info {
+  background: #2a2a2a !important;
+  border: 1px solid #333 !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+}
+
+#analyzeInterviewModal .interview-info .info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#analyzeInterviewModal .interview-info .info-item:last-child {
+  border-bottom: none;
+}
+
+#analyzeInterviewModal .interview-info .info-item label {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+#analyzeInterviewModal .interview-info .info-item span {
+  color: #3b82f6 !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+#analyzeInterviewModal .form-section {
+  background: #2a2a2a !important;
+  border: 1px solid #333 !important;
+  color: #ffffff !important;
+}
+
+#analyzeInterviewModal label,
+#analyzeInterviewModal span,
+#analyzeInterviewModal h3 {
+  color: #ffffff !important;
+}
+
+#analyzeInterviewModal textarea,
+#analyzeInterviewModal select,
+#analyzeInterviewModal input[type="file"] {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  border: 1px solid #444 !important;
+}
+
+#analyzeInterviewModal .btn-primary,
+#analyzeInterviewModal .btn-secondary {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border: 1px solid #3b82f6 !important;
+}
+
+#analyzeInterviewModal .btn-secondary {
+  background: #6b7280 !important;
+  border-color: #6b7280 !important;
+}
+
+/* Styles pour la section média */
+#analyzeInterviewModal .media-section {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #2a2a2a !important;
+  border: 1px solid #333 !important;
+  border-radius: 12px;
+}
+
+#analyzeInterviewModal .media-header h3 {
+  color: #ffffff !important;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#analyzeInterviewModal .media-header h3 i {
+  font-size: 1.5rem;
+  color: #3b82f6 !important;
+  text-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+}
+
+#analyzeInterviewModal .media-uploads {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+#analyzeInterviewModal .upload-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#analyzeInterviewModal .upload-group label {
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+#analyzeInterviewModal .upload-group label i {
+  font-size: 1.3rem;
+  color: #3b82f6 !important;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+#analyzeInterviewModal .file-input {
+  padding: 1.5rem;
+  border: 3px dashed #555 !important;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2a2a2a, #1a1a1a) !important;
+  color: #ffffff !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+#analyzeInterviewModal .file-input::before {
+  content: "📁 Cliquez pour sélectionner un fichier";
+  display: block;
+  color: #ffffff;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+#analyzeInterviewModal .file-input:hover {
+  border-color: #3b82f6 !important;
+  background: linear-gradient(135deg, #2a2a2a, #1f1f1f) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+}
+
+#analyzeInterviewModal .file-input:hover::before {
+  content: "📁 Cliquez pour sélectionner un fichier";
+  color: #3b82f6;
+}
+
+#analyzeInterviewModal .file-input:focus {
+  outline: none;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+  background: linear-gradient(135deg, #2a2a2a, #1f1f1f) !important;
+}
+
+#analyzeInterviewModal .file-info {
+  font-size: 1rem;
+  color: #10b981 !important;
+  margin-top: 0.75rem;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  padding: 0.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+#analyzeInterviewModal .ai-analysis-section {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+#analyzeInterviewModal .btn-ai-analyze {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7) !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 1.2rem 2.5rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
+}
+
+#analyzeInterviewModal .btn-ai-analyze i {
+  font-size: 1.2rem;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+#analyzeInterviewModal .btn-ai-analyze:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, #9d4edd, #c77dff) !important;
+}
+
 /* Responsive pour la section entretien */
 @media (max-width: 768px) {
   .interview-info-grid {
