@@ -16,18 +16,16 @@ from deepface import DeepFace
 from types import SimpleNamespace
 
 class ConversationEmotionAnalyzer:
-    def __init__(self, whisper_model_size: str = "large"):
+    def __init__(self):
         """
         Initialize the analyzer with both Whisper and DeepFace models
-        
-        Args:
-            whisper_model_size: Whisper model size ("tiny", "base", "small", "medium", "large")
+        Always uses large model
         """
         print("Initializing models...")
         
-        # Load Whisper model for audio transcription
-        print(f"Loading Whisper {whisper_model_size} model...")
-        self.whisper_model = whisper.load_model(whisper_model_size)
+        # Load Whisper model for audio transcription - ALWAYS LARGE
+        print("Loading Whisper large model...")
+        self.whisper_model = whisper.load_model("large")
         print("Whisper model loaded successfully!")
         
         # DeepFace doesn't require explicit model loading
@@ -67,18 +65,20 @@ class ConversationEmotionAnalyzer:
         print(f"Transcribed {len(segments)} segments for {speaker_name}")
         return segments
     
-    def analyze_video_emotions(self, video_path: str, frame_interval: int = 10) -> List[Dict]:
+    def analyze_video_emotions(self, video_path: str) -> List[Dict]:
         """
         Analyze emotions in a video and return results with timestamps
         
         Args:
             video_path (str): Path to input video file
-            frame_interval (int): Analyze every nth frame (higher = faster processing)
             
         Returns:
             list: List of dictionaries containing emotions and timestamps
         """
         print("Starting video emotion analysis...")
+        
+        # ALWAYS use frame interval 10
+        frame_interval = 10
         
         # Open video file
         cap = cv2.VideoCapture(video_path)
@@ -91,6 +91,7 @@ class ConversationEmotionAnalyzer:
         
         print(f"Video FPS: {fps}")
         print(f"Total frames: {total_frames}")
+        print(f"Frame interval: {frame_interval}")
         
         results = []
         frame_count = 0
@@ -101,7 +102,7 @@ class ConversationEmotionAnalyzer:
             if not ret:
                 break
                 
-            # Process frame at specified interval
+            # Process frame at specified interval - ALWAYS 10
             if frame_count % frame_interval == 0:
                 # Convert BGR to RGB
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -220,10 +221,13 @@ class ConversationEmotionAnalyzer:
         
         return conversation
     
-    def format_conversation(self, merged_segments: List[Dict], min_gap: float = 2.0) -> List[Dict]:
+    def format_conversation(self, merged_segments: List[Dict]) -> List[Dict]:
         """
         Format the conversation with proper grouping and timing
+        ALWAYS uses minimum gap of 2.0 seconds
         """
+        min_gap = 2.0  # ALWAYS use minimum gap 2.0
+        
         if not merged_segments:
             return []
         
@@ -295,76 +299,12 @@ class ConversationEmotionAnalyzer:
         })
         
         return formatted
-    
-    def save_complete_analysis(self, conversation: List[Dict], output_format: str = "both"):
-        """
-        Save complete conversation analysis with emotions
-        """
-        base_name = "conversation_emotion_analysis"
-        
-        if output_format in ["text", "both"]:
-            txt_filename = f"{base_name}.txt"
-            with open(txt_filename, "w", encoding="utf-8") as f:
-                f.write("COMPLETE CONVERSATION ANALYSIS WITH EMOTIONS\n")
-                f.write("=" * 70 + "\n\n")
-                
-                for i, turn in enumerate(conversation, 1):
-                    start_time = str(timedelta(seconds=int(turn["start"])))
-                    emotion_info = f" [{turn['emotion']}]" if turn.get('emotion') and turn['emotion'] != 'unknown' else " [No emotion data]"
-                    
-                    f.write(f"Turn {i} [{start_time}]{emotion_info}:\n")
-                    f.write(f"{turn['speaker']}: {turn['text']}\n\n")
-            
-            print(f"Text analysis saved to: {txt_filename}")
-        
-        if output_format in ["json", "both"]:
-            json_filename = f"{base_name}.json"
-            with open(json_filename, "w", encoding="utf-8") as f:
-                json.dump(conversation, f, indent=2, ensure_ascii=False)
-            
-            print(f"JSON analysis saved to: {json_filename}")
-        
-        if output_format in ["csv", "both"]:
-            csv_filename = f"{base_name}.csv"
-            # Create a simplified DataFrame for CSV
-            csv_data = []
-            for turn in conversation:
-                csv_data.append({
-                    'turn_number': conversation.index(turn) + 1,
-                    'speaker': turn['speaker'],
-                    'start_time': turn['start'],
-                    'end_time': turn['end'],
-                    'duration': turn['duration'],
-                    'text': turn['text'],
-                    'emotion': turn.get('emotion', 'unknown'),
-                    'emotion_samples': turn.get('emotion_samples', 0)
-                })
-            
-            df = pd.DataFrame(csv_data)
-            df.to_csv(csv_filename, index=False)
-            print(f"CSV analysis saved to: {csv_filename}")
-    
-    def print_complete_analysis(self, conversation: List[Dict]):
-        """
-        Print the complete conversation analysis with emotions
-        """
-        print("\n" + "=" * 70)
-        print("COMPLETE CONVERSATION ANALYSIS WITH EMOTIONS")
-        print("=" * 70)
-        
-        for i, turn in enumerate(conversation, 1):
-            start_time = str(timedelta(seconds=int(turn["start"])))
-            emotion_info = f" [{turn['emotion']}]" if turn.get('emotion') and turn['emotion'] != 'unknown' else " [No emotion data]"
-            
-            print(f"\nTurn {i} [{start_time}]{emotion_info}:")
-            print(f"{turn['speaker']}: {turn['text']}")
-    
+
     def analyze_complete_conversation(self, audio_file1: str, audio_file2: str, video_file: str, 
-                                   speaker1: str = "Interviewer", speaker2: str = "Interviewee",
-                                   whisper_model: str = "large", output_format: str = "both",
-                                   merge_gap: float = 2.0, frame_interval: int = 10):
+                                   speaker1: str = "Interviewer", speaker2: str = "Interviewee"):
         """
         Complete analysis pipeline for conversation with emotions
+        Always uses large model, min gap 2, frame interval 10
         """
         # Validate input files
         for file_path in [audio_file1, audio_file2, video_file]:
@@ -378,7 +318,7 @@ class ConversationEmotionAnalyzer:
         
         # Step 2: Analyze video emotions
         print("\n=== STEP 2: Video Emotion Analysis ===")
-        emotion_data = self.analyze_video_emotions(video_file, frame_interval)
+        emotion_data = self.analyze_video_emotions(video_file)
         
         # Step 3: Merge conversation
         print("\n=== STEP 3: Merging Conversation ===")
@@ -390,64 +330,42 @@ class ConversationEmotionAnalyzer:
         
         # Step 5: Format final conversation
         print("\n=== STEP 5: Formatting Final Conversation ===")
-        final_conversation = self.format_conversation(conversation_with_emotions, merge_gap)
+        final_conversation = self.format_conversation(conversation_with_emotions)
         
         return final_conversation
 
-def main():
-    print("=== Complete Conversation & Emotion Analysis ===")
-    print("This script analyzes two audio files and one video to create a complete conversation transcript with emotions.\n")
-    
-    # Get user input
-    audio_file1 = input("Enter path to first audio file (Interviewer): ").strip().strip('"')
-    audio_file2 = input("Enter path to second audio file (Interviewee): ").strip().strip('"')
-    video_file = input("Enter path to video file (for emotion analysis): ").strip().strip('"')
+def full_transcription_and_emotion_analysis(
+    audio1: str,
+    audio2: str,
+    video: str,
+    speaker1: str = "Interviewer",
+    speaker2: str = "Interviewee"
+):
 
-    speaker1 = input("Enter name for first speaker [default: Interviewer]: ").strip() or "Interviewer"
-    speaker2 = input("Enter name for second speaker [default: Interviewee]: ").strip() or "Interviewee"
-
-    whisper_model = input("Enter Whisper model size (tiny/base/small/medium/large) [default: large]: ").strip() or "large"
-    output_format = input("Choose output format (text/json/csv/both) [default: both]: ").strip() or "both"
-    
     try:
-        merge_gap = float(input("Enter minimum gap in seconds to merge segments [default: 2.0]: ").strip() or 2.0)
-    except ValueError:
-        merge_gap = 2.0
-    
-    try:
-        frame_interval = int(input("Enter frame interval for emotion analysis (higher = faster) [default: 10]: ").strip() or 10)
-    except ValueError:
-        frame_interval = 10
-    
-    try:
-        # Initialize analyzer
-        analyzer = ConversationEmotionAnalyzer(whisper_model_size=whisper_model)
+        # Initialize analyzer - ALWAYS uses large model
+        analyzer = ConversationEmotionAnalyzer()
         
-        # Run complete analysis
+        # Run complete analysis - ALWAYS uses min gap 2 and frame interval 10
         final_conversation = analyzer.analyze_complete_conversation(
-            audio_file1=audio_file1,
-            audio_file2=audio_file2,
-            video_file=video_file,
+            audio_file1=audio1,
+            audio_file2=audio2,
+            video_file=video,
             speaker1=speaker1,
-            speaker2=speaker2,
-            whisper_model=whisper_model,
-            output_format=output_format,
-            merge_gap=merge_gap,
-            frame_interval=frame_interval
+            speaker2=speaker2
         )
-        
-        # Display and save results
-        analyzer.print_complete_analysis(final_conversation)
-        analyzer.save_complete_analysis(final_conversation, output_format)
+    
+    # ALWAYS return JSON data directly
+        print("\n" + "=" * 70)
+        print("COMPLETE CONVERSATION ANALYSIS WITH EMOTIONS")
+        print("=" * 70)
+        print(json.dumps(final_conversation, indent=2, ensure_ascii=False))
         
         print(f"\n✅ Analysis complete! Processed {len(final_conversation)} conversation turns.")
         print("Note: Emotion analysis is assigned to the speaker who appears in the video.")
-        
+
+        return final_conversation
+    
     except Exception as e:
         print(f"❌ Error during analysis: {str(e)}")
-        return 1
-    
-    return 0
-
-if __name__ == "__main__":
-    exit(main())
+        return None

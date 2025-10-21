@@ -584,17 +584,266 @@ async function updateCandidateButton(candidateId) {
 
 
 
-// Ces fonctions ne sont plus nécessaires car la confirmation est automatique
+// Fonction pour ouvrir le modal d'analyse d'entretien
+function openAnalyzeInterviewModal(candidateId, confirmedSlots) {
+  console.log(`[DEBUG] Ouverture du modal d'analyse pour le candidat ${candidateId}`)
+  
+  // Supprimer tout modal existant
+  const existingModal = document.getElementById('analyzeInterviewModal')
+  if (existingModal) {
+    existingModal.remove()
+  }
+  
+  // Créer le modal d'analyse d'entretien
+  const modalHtml = `
+    <div id="analyzeInterviewModal" class="modal modern-modal-overlay" style="display: flex !important; z-index: 9999 !important;">
+      <div class="modal-content modern-modal" style="max-width: 800px; width: 90%; margin: auto;">
+        <div class="modal-header modern-header">
+          <div class="header-content">
+            <div class="header-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="header-text">
+              <h2>🤖 Analyser l'entretien</h2>
+              <p class="header-subtitle">📊 Évaluez la performance du candidat avec l'IA</p>
+            </div>
+          </div>
+          <button class="close-btn modern-close" onclick="closeAnalyzeInterviewModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body modern-body">
+          <div class="analysis-section">
+            <div class="analysis-header">
+              <h3>📅 Informations sur l'entretien</h3>
+            </div>
+            <div class="interview-info">
+              <div class="info-item">
+                <label>📅 Date de l'entretien:</label>
+                <span>${new Date(confirmedSlots[0].start_time).toLocaleDateString('fr-FR')}</span>
+              </div>
+              <div class="info-item">
+                <label>🕐 Heure:</label>
+                <span>${new Date(confirmedSlots[0].start_time).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})} - ${new Date(confirmedSlots[0].end_time).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</span>
+              </div>
+              <div class="info-item">
+                <label>⏱️ Durée:</label>
+                <span>${Math.round((new Date(confirmedSlots[0].end_time) - new Date(confirmedSlots[0].start_time)) / (1000 * 60))} minutes</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="media-section">
+            <div class="media-header">
+              <h3><i class="fas fa-microphone"></i> Fichiers média de l'entretien</h3>
+            </div>
+            <div class="media-uploads">
+              <div class="upload-group">
+                <label for="hrAudioFile">
+                  <i class="fas fa-microphone"></i> Audio RH
+                </label>
+                <input type="file" id="hrAudioFile" accept="audio/*" class="file-input">
+                <div class="file-info" id="hrAudioInfo"></div>
+              </div>
+              
+              <div class="upload-group">
+                <label for="candidateAudioFile">
+                  <i class="fas fa-user-microphone"></i> Audio Candidat
+                </label>
+                <input type="file" id="candidateAudioFile" accept="audio/*" class="file-input">
+                <div class="file-info" id="candidateAudioInfo"></div>
+              </div>
+              
+              <div class="upload-group">
+                <label for="interviewVideoFile">
+                  <i class="fas fa-video"></i> Vidéo de l'entretien
+                </label>
+                <input type="file" id="interviewVideoFile" accept="video/*" class="file-input">
+                <div class="file-info" id="interviewVideoInfo"></div>
+              </div>
+            </div>
+            
+            <div class="ai-analysis-section">
+              <button class="btn-ai-analyze" onclick="performAIAnalysis(${candidateId})">
+                <i class="fas fa-robot"></i> Analyser avec l'IA
+              </button>
+            </div>
+          </div>
+          
+          
+        </div>
+      </div>
+    </div>
+  `
+  
+  // Ajouter le modal au DOM
+  document.body.insertAdjacentHTML('beforeend', modalHtml)
+  
+  // Ajouter les event listeners pour les fichiers
+  setTimeout(() => {
+    initializeCustomFileInputs()
+    
+    const hrAudioFile = document.getElementById('hrAudioFile')
+    const candidateAudioFile = document.getElementById('candidateAudioFile')
+    const interviewVideoFile = document.getElementById('interviewVideoFile')
+    
+    if (hrAudioFile) {
+      hrAudioFile.addEventListener('change', function() {
+        const fileInfo = document.getElementById('hrAudioInfo')
+        if (this.files[0]) {
+          fileInfo.textContent = `Fichier sélectionné: ${this.files[0].name} (${(this.files[0].size / 1024 / 1024).toFixed(2)} MB)`
+        } else {
+          fileInfo.textContent = ''
+        }
+      })
+    }
+    
+    if (candidateAudioFile) {
+      candidateAudioFile.addEventListener('change', function() {
+        const fileInfo = document.getElementById('candidateAudioInfo')
+        if (this.files[0]) {
+          fileInfo.textContent = `Fichier sélectionné: ${this.files[0].name} (${(this.files[0].size / 1024 / 1024).toFixed(2)} MB)`
+        } else {
+          fileInfo.textContent = ''
+        }
+      })
+    }
+    
+    if (interviewVideoFile) {
+      interviewVideoFile.addEventListener('change', function() {
+        const fileInfo = document.getElementById('interviewVideoInfo')
+        if (this.files[0]) {
+          fileInfo.textContent = `Fichier sélectionné: ${this.files[0].name} (${(this.files[0].size / 1024 / 1024).toFixed(2)} MB)`
+        } else {
+          fileInfo.textContent = ''
+        }
+      })
+    }
+  }, 100)
+}
 
+// Function to initialize custom file inputs
+function initializeCustomFileInputs() {
+  const fileInputs = document.querySelectorAll('#analyzeInterviewModal .file-input')
+  
+  fileInputs.forEach(input => {
+    const customInput = document.createElement('div')
+    customInput.className = 'file-input-custom'
+    
+    const icon = document.createElement('i')
+    icon.className = 'fas fa-cloud-upload-alt'
+    
+    const text = document.createElement('span')
+    text.className = 'file-input-text'
+    text.textContent = 'Aucun fichier sélectionné'
+    
+    const button = document.createElement('span')
+    button.className = 'file-input-button'
+    button.textContent = 'Parcourir'
+    
+    customInput.appendChild(icon)
+    customInput.appendChild(text)
+    customInput.appendChild(button)
+    
+    // Insert custom input after the original file input
+    input.parentNode.insertBefore(customInput, input.nextSibling)
+    
+    // Update custom input when file is selected
+    input.addEventListener('change', function() {
+      if (this.files && this.files.length > 0) {
+        text.textContent = this.files[0].name
+        customInput.style.borderColor = '#10b981'
+        customInput.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'
+        
+        // Update file info
+        const fileInfoId = this.id + 'Info'
+        const fileInfo = document.getElementById(fileInfoId)
+        if (fileInfo) {
+          const fileSize = (this.files[0].size / (1024 * 1024)).toFixed(2)
+          fileInfo.textContent = `Fichier sélectionné: ${this.files[0].name} (${fileSize} MB)`
+          fileInfo.classList.add('has-file')
+        }
+      } else {
+        text.textContent = 'Aucun fichier sélectionné'
+        customInput.style.borderColor = '#555'
+        customInput.style.backgroundColor = 'linear-gradient(135deg, #2a2a2a, #1a1a1a)'
+        
+        // Clear file info
+        const fileInfoId = this.id + 'Info'
+        const fileInfo = document.getElementById(fileInfoId)
+        if (fileInfo) {
+          fileInfo.textContent = ''
+          fileInfo.classList.remove('has-file')
+        }
+      }
+    })
+    
+    // Trigger file input when custom input is clicked
+    customInput.addEventListener('click', function() {
+      input.click()
+    })
+  })
+}
 
+// Fonction pour fermer le modal d'analyse
+function closeAnalyzeInterviewModal() {
+  const modal = document.getElementById('analyzeInterviewModal')
+  if (modal) {
+    modal.remove()
+  }
+}
 
-// Fonction supprimée - la logique de verrouillage est maintenant gérée par candidat individuellement
+// Fonction pour effectuer l'analyse IA
+async function performAIAnalysis(candidateId) {
+  const hrAudioFile = document.getElementById('hrAudioFile').files[0]
+  const candidateAudioFile = document.getElementById('candidateAudioFile').files[0]
+  const interviewVideoFile = document.getElementById('interviewVideoFile').files[0]
+  
+  if (!hrAudioFile && !candidateAudioFile && !interviewVideoFile) {
+    alert('Veuillez sélectionner au moins un fichier média pour l\'analyse IA')
+    return
+  }
+  
+  const formData = new FormData()
+  formData.append('candidate_id', candidateId)
+  
+  if (hrAudioFile) formData.append('hr_audio', hrAudioFile)
+  if (candidateAudioFile) formData.append('candidate_audio', candidateAudioFile)
+  if (interviewVideoFile) formData.append('interview_video', interviewVideoFile)
+  
+  // Show loading state
+  const aiButton = document.querySelector('.btn-ai-analyze')
+  const originalText = aiButton.innerHTML
+  aiButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyse en cours...'
+  aiButton.disabled = true
+  
+  try {
+    // Wait for the analysis to complete
+    const response = await fetch('/api/hr/ai-interview-analysis', {
+      method: 'POST',
+      body: formData
+    })
+    
+    if (response.ok) {
+      // Analysis completed successfully, now redirect
+      alert('Analyse IA terminée avec succès! Redirection vers la page de résultats...')
+      // Redirect to the dedicated analysis results page
+      window.open(`/api/hr/interview-results-page/${candidateId}`, '_blank')
+    } else {
+      const errorData = await response.json()
+      alert('Erreur lors de l\'analyse IA: ' + (errorData.detail || 'Erreur inconnue'))
+    }
+    
+  } catch (error) {
+    console.error('Erreur:', error)
+    alert('Erreur lors de l\'analyse IA')
+  } finally {
+    // Restore button state
+    aiButton.innerHTML = originalText
+    aiButton.disabled = false
+  }
+}
 
-
-
-// Fonction pour verrouiller le calendrier
-
-// Fonction supprimée - la logique de verrouillage est maintenant gérée par candidat individuellement
 
 
 
