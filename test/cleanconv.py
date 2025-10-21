@@ -1,5 +1,6 @@
 import json
 import requests
+from testfull import full_transcription_and_emotion_analysis
 
 
 def extract_conversation_from_json(file_path):
@@ -38,21 +39,24 @@ def extract_conversation_from_json(file_path):
         return ""
 
 # Example usage
-if __name__ == "__main__":
-    # Replace with your actual file path
-    file_path = "conversation_emotion_analysis.json"
-    
+def clean_conversation(audio1, audio2, video):
+    # Replace with your actual file path    
     # Extract conversation
-    conversation_text = extract_conversation_from_json(file_path)
-    
+    conversation = full_transcription_and_emotion_analysis(audio1, audio2, video, "HR", "Candidate")
     # Print the conversation
     print("Extracted Conversation:")
     print("=" * 50)
-    print(conversation_text)
-    
-    url = "https://gaxopin551.app.n8n.cloud/webhook-test/clean-conv"
+    print(conversation)
+    print(type(conversation))
+    conversation_text = "\n".join(
+        [f"{entry['speaker']}: {entry['text']}" for entry in conversation]
+    )
+    url = "https://gaxopin551.app.n8n.cloud/webhook/clean-conv"
     
     response = requests.post(url, json=conversation_text)
     
     print("Status Code:", response.status_code)
-    print("Response:", response.text)
+    return response.text
+
+
+print(clean_conversation(r"C:\Users\yassine\Documents\Zoom\2025-10-12 18.10.27 Mouhamed Yassine Chtourou's Zoom Meeting\Audio Record\audioMouhamedYassineC11624140658.m4a", r"C:\Users\yassine\Documents\Zoom\2025-10-12 18.10.27 Mouhamed Yassine Chtourou's Zoom Meeting\Audio Record\audioYoussefDammak21624140658.m4a", r"C:\Users\yassine\Documents\Zoom\2025-10-12 18.10.27 Mouhamed Yassine Chtourou's Zoom Meeting\video1624140658.mp4"))

@@ -1111,43 +1111,8 @@
     },
     {
       "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "gpt-4o-mini",
-          "mode": "list",
-          "cachedResultName": "GPT-4O-MINI"
-        },
-        "messages": {
-          "values": [
-            {
-              "content": "=You are a text-cleaning and structuring AI. You will receive a transcript of a conversation between two speakers: an Interviewer and an Interviewee. The transcript may have the following issues:\n- Typos, grammatical mistakes, or incomplete sentences\n- Repetition of words or phrases\n- Misordered or confusing sentences\n- Inconsistent speaker names\n\nYour task is to produce a **cleaned and organized JSON** output with the following requirements:\n1. Use consistent speaker names: \"Interviewer\" and \"Interviewee\".\n2. Each utterance should be grammatically correct, clear, and readable.\n3. Preserve the original meaning of each speaker.\n4. Remove any irrelevant or confusing fragments.\n5. Keep the conversation order intact.\n6. Output the JSON in this format:\n\n{\n  \"conversation\": [\n    {\n      \"speaker\": \"Interviewer\",\n      \"text\": \"Cleaned text of the interviewer's utterance.\"\n    },\n    {\n      \"speaker\": \"Interviewee\",\n      \"text\": \"Cleaned text of the interviewee's utterance.\"\n    },\n    ...\n  ]\n}\n\nInput:\n{{ $json.body }}\n",
-              "role": "assistant"
-            }
-          ]
-        },
-        "simplify": false,
-        "jsonOutput": true,
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 1.8,
-      "position": [
-        2928,
-        128
-      ],
-      "id": "9634c00a-5951-47c1-a0db-dae643db9fb8",
-      "name": "Compatibility2",
-      "credentials": {
-        "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
-          "name": "n8n free OpenAI API credits"
-        }
-      }
-    },
-    {
-      "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { \"ReviewParagraph\": $json.choices[0].message.content.ReviewParagraph } }}",
+        "responseBody": "={{ $json.choices[0].message.content.conversation }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -1185,8 +1150,8 @@
       "type": "n8n-nodes-base.zoom",
       "typeVersion": 1,
       "position": [
-        832,
-        -656
+        -208,
+        -960
       ],
       "id": "da6ecad5-5cee-4ae1-bd5c-2eb0aa136cc7",
       "name": "Create a meeting",
@@ -1199,35 +1164,262 @@
     },
     {
       "parameters": {
+        "sendTo": "={{ $json.body.to }}",
+        "subject": "={{ $json.body.subject }}",
+        "message": "={{ $json.body.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2304,
+        -384
+      ],
+      "id": "67853f4b-0c04-4b9d-891c-229717169938",
+      "name": "Send a message",
+      "webhookId": "9f3408a3-add9-4262-a008-ae5e579a2fd7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jUZEwLuG1SlJYbit",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.body.wait }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1872,
+        -256
+      ],
+      "id": "6abd6ab8-0e7e-4e36-8913-3475c2a9fde6",
+      "name": "Wait",
+      "webhookId": "03aabb90-0d40-439b-ac86-c0c5adfbf35b"
+    },
+    {
+      "parameters": {
         "httpMethod": "POST",
-        "path": "create-meet",
+        "path": "send-emails",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        464,
-        -672
+        1488,
+        -304
       ],
-      "id": "bb09fdf4-4d0c-4148-8d87-6527f10d054a",
-      "name": "Clean conversation webhook1",
+      "id": "5b792141-02f0-48c5-943c-7e7b1622a568",
+      "name": "Send email webhook",
       "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ {\"start\": $json.start_url,\n\"join\": $json.join_url}\n}}",
+        "responseBody": "=",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        1344,
-        -688
+        2592,
+        -368
       ],
-      "id": "dd4e3713-669c-44a1-af4d-73a89d3756dc",
-      "name": "Respond to Webhook6"
+      "id": "5c4cd8f1-cdc6-48a7-b84e-c8770722dbe7",
+      "name": "Respond to Webhook7"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.hr_email[0] }}",
+        "subject": "={{ $json.hr_email[1] }}",
+        "message": "={{ $json.hr_email[2] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        592,
+        -880
+      ],
+      "id": "42535d8e-62bf-45c1-9fde-605b305c9965",
+      "name": "Send a message1",
+      "webhookId": "9f3408a3-add9-4262-a008-ae5e579a2fd7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jUZEwLuG1SlJYbit",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.body.hr_email[4] }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -464,
+        -784
+      ],
+      "id": "c7c5f25a-4a63-4974-aab0-45a4d0e8cc12",
+      "name": "Wait1",
+      "webhookId": "03aabb90-0d40-439b-ac86-c0c5adfbf35b"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-emails-with-link",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        -832
+      ],
+      "id": "9f93d3b5-48a7-4a14-b602-84350ea4ee58",
+      "name": "Send email webhook1",
+      "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
+    },
+    {
+      "parameters": {
+        "amount": "=5",
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        -864
+      ],
+      "id": "79c73d5e-8ad4-4a7b-8c03-31a7d9f971dc",
+      "name": "Wait2",
+      "webhookId": "03aabb90-0d40-439b-ac86-c0c5adfbf35b"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.candidate_email[0] }}",
+        "subject": "={{ $json.candidate_email[1] }}",
+        "message": "={{ $json.candidate_email[2] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1744,
+        -880
+      ],
+      "id": "1037859d-610d-46ab-9b72-06235052595b",
+      "name": "Send a message2",
+      "webhookId": "9f3408a3-add9-4262-a008-ae5e579a2fd7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jUZEwLuG1SlJYbit",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1952,
+        -880
+      ],
+      "id": "0883250d-042e-466b-90c2-5d2fc53fad22",
+      "name": "Respond to Webhook8"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        48,
+        -736
+      ],
+      "id": "58d3a1c8-0d9b-4707-8fd4-e9490622449e",
+      "name": "Merge8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all input items\nconst items = $input.all();\n\n// --- Extract Zoom data ---\nconst zoomData = items[0].json; // first object (Zoom meeting info)\nconst startUrl = zoomData.start_url;\nconst joinUrl = zoomData.join_url;\n\n// --- Extract email payload ---\nconst payload = items[1].json.body;\nconst hrEmail = payload.hr_email;\nconst candidateEmail = payload.candidate_email;\n\n// --- Replace links in HTML and text content ---\nhrEmail[2] = hrEmail[2].replace(\n  /https:\\/\\/meet\\.companyexample\\.com\\/hr-room-\\d+/g,\n  startUrl\n);\nhrEmail[3] = hrEmail[3].replace(\n  /https:\\/\\/meet\\.companyexample\\.com\\/hr-room-\\d+/g,\n  startUrl\n);\n\ncandidateEmail[2] = candidateEmail[2].replace(\n  /https:\\/\\/meet\\.companyexample\\.com\\/candidate-room-\\d+/g,\n  joinUrl\n);\ncandidateEmail[3] = candidateEmail[3].replace(\n  /https:\\/\\/meet\\.companyexample\\.com\\/candidate-room-\\d+/g,\n  joinUrl\n);\n\n// --- Return updated emails ---\nreturn [\n  {\n    json: {\n      hr_email: hrEmail,\n      candidate_email: candidateEmail,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        -752
+      ],
+      "id": "a00e2c50-5c4b-4d99-825a-4f5155990246",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        864,
+        -784
+      ],
+      "id": "c6be17a2-a7c6-48fd-a78c-118886b2e44e",
+      "name": "Merge9"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop through all input items\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\n// Get all items\nconst allItems = $input.all();\n\n// Return only the second object (the one with hr_email and candidate_email)\nreturn [allItems[1]];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        -864
+      ],
+      "id": "08094a5f-bd2f-4ccd-8be3-13b11c809b74",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a text-cleaning and structuring AI. You will receive a transcript of a conversation between two speakers: an Interviewer and an Interviewee. The transcript may have the following issues:\n- Typos, grammatical mistakes, or incomplete sentences\n- Repetition of words or phrases\n- Misordered or confusing sentences\n- Inconsistent speaker names\n\nYour task is to produce a **cleaned and organized JSON** output with the following requirements:\n1. Use consistent speaker names: \"Interviewer\" and \"Interviewee\".\n2. Each utterance should be grammatically correct, clear, and readable.\n3. Preserve the original meaning of each speaker.\n4. Remove any irrelevant or confusing fragments.\n5. Keep the conversation order intact.\n6. Output the JSON in this format:\n\n{\n  \"conversation\": [\n    {\n      \"speaker\": \"Interviewer\",\n      \"emotion\": \"emotion\"\n      \"text\": \"Cleaned text of the interviewer's utterance.\"\n    },\n    {\n      \"speaker\": \"Interviewee\",\n      \"emotion\": \"emotion\"\n      \"text\": \"Cleaned text of the interviewee's utterance.\"\n    },\n    ...\n  ]\n}\n\nInput:\n{{ $json.body }}\n",
+              "role": "assistant"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2928,
+        128
+      ],
+      "id": "9634c00a-5951-47c1-a0db-dae643db9fb8",
+      "name": "Conversation cleaner",
+      "credentials": {
+        "openAiApi": {
+          "id": "Gn758lIsoRd83KoG",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
     }
   ],
   "connections": {
@@ -1769,22 +1961,11 @@
         ]
       ]
     },
-    "Compatibility2": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook5",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Clean conversation webhook": {
       "main": [
         [
           {
-            "node": "Compatibility2",
+            "node": "Conversation cleaner",
             "type": "main",
             "index": 0
           }
@@ -1795,18 +1976,160 @@
       "main": [
         [
           {
-            "node": "Respond to Webhook6",
+            "node": "Merge8",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Clean conversation webhook1": {
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email webhook": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        [
+          {
+            "node": "Merge9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
       "main": [
         [
           {
             "node": "Create a meeting",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge8",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Send email webhook1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge8": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge9",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge9": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation cleaner": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook5",
             "type": "main",
             "index": 0
           }
@@ -1814,7 +2137,45 @@
       ]
     }
   },
-  "pinData": {},
+  "pinData": {
+    "Send email webhook": [
+      {
+        "headers": {
+          "host": "gaxopin551.app.n8n.cloud",
+          "user-agent": "python-requests/2.31.0",
+          "content-length": "100",
+          "accept": "*/*",
+          "accept-encoding": "gzip, br",
+          "cdn-loop": "cloudflare; loops=1; subreqs=1",
+          "cf-connecting-ip": "197.244.177.101",
+          "cf-ew-via": "15",
+          "cf-ipcountry": "TN",
+          "cf-ray": "99130a694570e160-MRS",
+          "cf-visitor": "{\"scheme\":\"https\"}",
+          "cf-worker": "n8n.cloud",
+          "content-type": "application/json",
+          "x-forwarded-for": "197.244.177.101, 172.68.234.219",
+          "x-forwarded-host": "gaxopin551.app.n8n.cloud",
+          "x-forwarded-port": "443",
+          "x-forwarded-proto": "https",
+          "x-forwarded-server": "traefik-prod-users-gwc-30-6d57d45df-ngfj2",
+          "x-is-trusted": "yes",
+          "x-real-ip": "197.244.177.101"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "to": "to_email",
+          "subject": "subject",
+          "html": "html_content",
+          "text": "text_content",
+          "wait": 10
+        },
+        "webhookUrl": "https://gaxopin551.app.n8n.cloud/webhook-test/send-emails",
+        "executionMode": "test"
+      }
+    ]
+  },
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "f1bfad8ac962066b5bf4476dd1c6abfdb1d59fd136d3ca1f2bdcd7223e343d40"

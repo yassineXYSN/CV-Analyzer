@@ -493,7 +493,7 @@ class InterviewNotificationService:
                                 style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); 
                                         color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 8px; 
                                         font-weight: 600; font-size: 1rem;">
-    Commencer la réunion Zoom
+    🚀Commencer la réunion Zoom
                             </a>
                         </div>
                         

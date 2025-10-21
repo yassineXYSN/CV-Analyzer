@@ -52,6 +52,7 @@ url ="https://gaxopin551.app.n8n.cloud/webhook-test/send-emails-with-link"
 try:
     response = requests.post(url, json=payload, timeout=2)
     print("Request sent successfully:", response.status_code)
+    print("Response:", response.text)
 except requests.exceptions.Timeout:
     print("✅ Request timed out (expected) — continuing without waiting.")
 except requests.exceptions.RequestException as e:
