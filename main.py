@@ -65,21 +65,18 @@ app.include_router(ai_interview_analysis.router)
 # 404 Error Handler
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """Handle 404 and other HTTP errors with custom error pages"""
+    """Handle 404 and other HTTP errors with unified error page"""
     if exc.status_code == 404:
-        # Determine which template to use based on the request path
-        if request.url.path.startswith('/hr') or request.url.path.startswith('/api/hr'):
-            return templates.TemplateResponse("HR-dep/404.html", {"request": request})
-        else:
-            return templates.TemplateResponse("client-dep/404.html", {"request": request})
+        return templates.TemplateResponse("404.html", {"request": request})
     
-    # For other HTTP errors, return a generic error
-    return templates.TemplateResponse("client-dep/404.html", {"request": request})
+    # For other HTTP errors, return the unified error page
+    return templates.TemplateResponse("404.html", {"request": request})
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Handle validation errors"""
-    return templates.TemplateResponse("client-dep/404.html", {"request": request})
+    return templates.TemplateResponse("404.html", {"request": request})
+
 
 if __name__ == "__main__":
     import uvicorn

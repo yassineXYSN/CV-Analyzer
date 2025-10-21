@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page non trouvée - 404</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --surface: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --border-hover: #475569;
+            --neutral-50: #0f172a;
+            --neutral-100: #1e293b;
+            --neutral-200: #334155;
+            --neutral-300: #475569;
+            --neutral-400: #64748b;
+            --neutral-500: #94a3b8;
+            --neutral-600: #cbd5e1;
+            --neutral-700: #e2e8f0;
+            --neutral-800: #f1f5f9;
+            --neutral-900: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--neutral-50) 0%, var(--neutral-100) 50%, var(--neutral-200) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background elements */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveGrid 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes moveGrid {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .error-content {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 3.5rem 2.5rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 
+                        0 0 100px rgba(15, 23, 42, 0.3);
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        .error-code {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--neutral-500);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .error-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            line-height: 1.2;
+            background: linear-gradient(135deg, var(--neutral-600) 0%, var(--neutral-500) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .error-message {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+            font-weight: 400;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        /* Updated button colors to match the provided palette */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neutral-600) 0%, var(--neutral-500) 100%);
+            color: var(--neutral-50);
+            box-shadow: 0 10px 25px rgba(203, 213, 225, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(203, 213, 225, 0.3);
+            background: linear-gradient(135deg, var(--neutral-700) 0%, var(--neutral-600) 100%);
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(203, 213, 225, 0.1);
+            color: var(--text-secondary);
+            border: 1.5px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(203, 213, 225, 0.15);
+            border-color: var(--border-hover);
+            transform: translateY(-3px);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(-1px);
+        }
+
+        .error-footer {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .error-footer a {
+            color: var(--neutral-600);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .error-footer a:hover {
+            color: var(--neutral-700);
+            text-decoration: underline;
+        }
+
+        /* Responsive design */
+        @media (max-width: 640px) {
+            .error-content {
+                padding: 2.5rem 1.5rem;
+                border-radius: 20px;
+            }
+
+            .error-icon {
+                font-size: 4rem;
+                margin-bottom: 1rem;
+            }
+
+            .error-title {
+                font-size: 2rem;
+            }
+
+            .error-message {
+                font-size: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .error-actions {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Focus states for keyboard navigation */
+        .btn:focus-visible {
+            outline: 2px solid var(--neutral-600);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-content">
+            <span class="error-icon">🔍</span>
+            
+            <div class="error-code">Erreur 404</div>
+            
+            <h1 class="error-title">Page non trouvée</h1>
+            
+            <p class="error-message">
+                Oups ! Il semble que la page que vous recherchez n'existe pas ou ait été déplacée. 
+                Ne vous inquiétez pas, nous sommes là pour vous aider à retrouver votre chemin.
+            </p>
+            
+            <div class="error-actions">
+                <a href="/" class="btn btn-primary">
+                    <span>🏠</span>
+                    Retour à l'accueil
+                </a>
+                <button onclick="history.back()" class="btn btn-secondary">
+                    <span>⬅️</span>
+                    Retour en arrière
+                </button>
+            </div>
+            
+            <div class="error-footer">
+                Besoin d'aide ? <p style="color: var(--neutral-600);margin-top: 10px;">Contacter <strong>cvanalyzerpro25@gmail.com</strong></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
