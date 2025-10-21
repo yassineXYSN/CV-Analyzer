@@ -2,7 +2,7 @@ import jwt
 import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from passlib.context import CryptContext
 
@@ -93,11 +93,27 @@ class JWTManager:
         return pwd_context.verify(plain_password, hashed_password)
 
 # Dependency for protected routes
-async def get_current_hr_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
-    """Dependency to get current HR user from JWT token"""
-    print(f"🔍 JWT AUTH: Received credentials: {credentials}")
-    token = credentials.credentials
-    print(f"🔍 JWT AUTH: Token: {token[:50]}...")
+async def get_current_hr_user(request: Request) -> Dict[str, Any]:
+    """Dependency to get current HR user from JWT token (from cookies)"""
+    print(f"🔍 JWT AUTH: Getting current HR user from cookies")
+    
+    # Try to get token from cookies first
+    token = request.cookies.get("hr_access_token")
+    print(f"🔍 JWT AUTH: Token from cookies: {token[:50] if token else 'None'}...")
+    
+    if not token:
+        # Fallback to Authorization header
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            print(f"🔍 JWT AUTH: Token from header: {token[:50]}...")
+        else:
+            print(f"❌ JWT AUTH: No token found in cookies or headers")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+    
     payload = JWTManager.get_current_user_from_token(token)
     print(f"🔍 JWT AUTH: Payload: {payload}")
     

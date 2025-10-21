@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, R
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, validator
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import sys
 import os
@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from databasehr.database import SessionLocal
 from databasehr.models import InterviewSlot, SlotStatus, Job, Application, HRAdmin, Company
 from .email_service import EmailService
+from jwt_utils import get_current_hr_user
 
 # Add the parent directory to the path to import utils1
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -67,16 +68,33 @@ class CreateMeetRequest(BaseModel):
 
 @router.get("/interview-slots", response_model=List[dict])
 def list_interview_slots(
+    request: Request,
     job_id: Optional[int] = Query(None),
     recruiter_id: Optional[int] = Query(None),
-    db=Depends(get_db)
+    db=Depends(get_db),
+    current_user: Dict[str, Any] = Depends(get_current_hr_user)
 ):
+    print(f"🔍 DEBUG list_interview_slots: Début de la fonction")
+    print(f"🔍 DEBUG list_interview_slots: job_id={job_id}, recruiter_id={recruiter_id}")
+    print(f"🔍 DEBUG list_interview_slots: current_user={current_user}")
+    
+    try:
+        user_id = int(current_user.get("sub"))
+        print(f"🔍 DEBUG list_interview_slots: user_id extrait={user_id}")
+    except Exception as e:
+        print(f"❌ ERROR list_interview_slots: Erreur extraction user_id: {e}")
+        raise HTTPException(status_code=401, detail="Utilisateur non authentifié")
+    
     query = db.query(InterviewSlot)
     if job_id:
         query = query.filter(InterviewSlot.job_id == job_id)
-    if recruiter_id:
-        query = query.filter(InterviewSlot.recruiter_id == recruiter_id)
+    # Always filter by the connected recruiter
+    query = query.filter(InterviewSlot.recruiter_id == user_id)
     slots = query.order_by(InterviewSlot.start_time.asc()).all()
+    
+    print(f"🔍 DEBUG list_interview_slots: Nombre de slots trouvés: {len(slots)}")
+    for slot in slots:
+        print(f"🔍 DEBUG list_interview_slots: Slot {slot.id} - recruiter_id={slot.recruiter_id}, job_id={slot.job_id}, start={slot.start_time}")
     return [
         {
             "id": s.id,
@@ -95,18 +113,20 @@ def list_interview_slots(
 
 
 @router.post("/interview-slots")
-def create_interview_slots(payload: SlotCreateRequest, db=Depends(get_db)):
-    # Récupérer le premier admin HR disponible
-    hr_admin = db.query(HRAdmin).first()
-    if not hr_admin:
-        raise HTTPException(status_code=400, detail="Aucun administrateur HR trouvé")
-    user_id = hr_admin.id
+def create_interview_slots(request: Request, payload: SlotCreateRequest, db=Depends(get_db), current_user: Dict[str, Any] = Depends(get_current_hr_user)):
+    try:
+        user_id = int(current_user.get("sub"))
+        print(f"🔍 DEBUG: Utilisateur authentifié - ID: {user_id}")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Utilisateur non authentifié")
 
     job = db.query(Job).filter(Job.id == payload.job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job introuvable")
 
     created: List[InterviewSlot] = []
+    print(f"🔍 DEBUG create_interview_slots: Création de créneaux pour user_id={user_id}, job_id={payload.job_id}")
+    
     # Validate no conflicts per recruiter and enforce max 3 across both pending and existing for the day
     for s in payload.slots:
         start = datetime.fromisoformat(s["start_time"]) if isinstance(s["start_time"], str) else s["start_time"]
@@ -114,6 +134,8 @@ def create_interview_slots(payload: SlotCreateRequest, db=Depends(get_db)):
         if end <= start:
             raise HTTPException(status_code=400, detail="end_time doit être après start_time")
 
+        print(f"🔍 DEBUG create_interview_slots: Vérification créneau {start} - {end} pour user_id={user_id}")
+        
         # Enforce max 4 slots per request already checked, but also ensure no more than 4 per day existing
         start_day = start.date()
         same_day_count = db.query(InterviewSlot).filter(
@@ -121,17 +143,24 @@ def create_interview_slots(payload: SlotCreateRequest, db=Depends(get_db)):
             InterviewSlot.start_time >= datetime.combine(start_day, datetime.min.time()),
             InterviewSlot.start_time < datetime.combine(start_day + timedelta(days=1), datetime.min.time()),
         ).count()
+        print(f"🔍 DEBUG create_interview_slots: Créneaux existants le {start_day} pour user_id={user_id}: {same_day_count}")
+        
         # pending in this payload for same day
         pending_same_day = sum(1 for c in created if c.start_time.date() == start_day)
         if same_day_count + pending_same_day >= 4:
             raise HTTPException(status_code=400, detail="Maximum 4 créneaux par jour autorisés")
 
-        overlap = db.query(InterviewSlot).filter(
+        # Vérifier les créneaux existants pour ce recruteur
+        existing_slots = db.query(InterviewSlot).filter(
             InterviewSlot.recruiter_id == user_id,
             InterviewSlot.start_time < end,
             InterviewSlot.end_time > start,
-        ).first()
-        if overlap:
+        ).all()
+        print(f"🔍 DEBUG create_interview_slots: Créneaux en conflit trouvés: {len(existing_slots)}")
+        for slot in existing_slots:
+            print(f"🔍 DEBUG create_interview_slots: Conflit avec créneau {slot.id}: {slot.start_time} - {slot.end_time} (recruiter_id={slot.recruiter_id})")
+        
+        if existing_slots:
             raise HTTPException(status_code=400, detail="Conflit avec un créneau existant")
 
         created.append(
@@ -154,12 +183,11 @@ def create_interview_slots(payload: SlotCreateRequest, db=Depends(get_db)):
 
 
 @router.patch("/api/hr/interview-slots/{slot_id}")
-def update_slot_status(slot_id: int, payload: SlotUpdateStatusRequest, db=Depends(get_db)):
-    # Récupérer le premier admin HR disponible
-    hr_admin = db.query(HRAdmin).first()
-    if not hr_admin:
-        raise HTTPException(status_code=400, detail="Aucun administrateur HR trouvé")
-    user_id = hr_admin.id
+def update_slot_status(slot_id: int, request: Request, payload: SlotUpdateStatusRequest, db=Depends(get_db), current_user: Dict[str, Any] = Depends(get_current_hr_user)):
+    try:
+        user_id = int(current_user.get("sub"))
+    except Exception:
+        raise HTTPException(status_code=401, detail="Utilisateur non authentifié")
 
     slot = db.query(InterviewSlot).filter(InterviewSlot.id == slot_id).first()
     if not slot:
@@ -185,12 +213,11 @@ def update_slot_status(slot_id: int, payload: SlotUpdateStatusRequest, db=Depend
 
 
 @router.delete("/interview-slots/{slot_id}")
-def delete_slot(slot_id: int, db=Depends(get_db)):
-    # Récupérer le premier admin HR disponible
-    hr_admin = db.query(HRAdmin).first()
-    if not hr_admin:
-        raise HTTPException(status_code=400, detail="Aucun administrateur HR trouvé")
-    user_id = hr_admin.id
+def delete_slot(slot_id: int, request: Request, db=Depends(get_db), current_user: Dict[str, Any] = Depends(get_current_hr_user)):
+    try:
+        user_id = int(current_user.get("sub"))
+    except Exception:
+        raise HTTPException(status_code=401, detail="Utilisateur non authentifié")
     slot = db.query(InterviewSlot).filter(InterviewSlot.id == slot_id).first()
     if not slot:
         raise HTTPException(status_code=404, detail="Créneau introuvable")
@@ -207,12 +234,11 @@ def delete_slot(slot_id: int, db=Depends(get_db)):
 
 
 @router.get("/interview-slots/conflicts")
-def check_conflicts(start_time: str, end_time: str, db=Depends(get_db)):
-    # Récupérer le premier admin HR disponible
-    hr_admin = db.query(HRAdmin).first()
-    if not hr_admin:
-        raise HTTPException(status_code=400, detail="Aucun administrateur HR trouvé")
-    user_id = hr_admin.id
+def check_conflicts(request: Request, start_time: str, end_time: str, db=Depends(get_db), current_user: Dict[str, Any] = Depends(get_current_hr_user)):
+    try:
+        user_id = int(current_user.get("sub"))
+    except Exception:
+        raise HTTPException(status_code=401, detail="Utilisateur non authentifié")
     start = datetime.fromisoformat(start_time)
     end = datetime.fromisoformat(end_time)
     overlap = db.query(InterviewSlot).filter(
@@ -230,14 +256,14 @@ class ConfirmSlotsRequest(BaseModel):
 
 
 @router.post("/interview-slots/confirm")
-async def confirm_interview_slots(payload: ConfirmSlotsRequest, db=Depends(get_db)):
+async def confirm_interview_slots(request: Request, payload: ConfirmSlotsRequest, db=Depends(get_db), current_user: Dict[str, Any] = Depends(get_current_hr_user)):
     print("🚨 ENDPOINT CONFIRM APPELÉ ! 🚨")
     print(f"🔍 DEBUG: confirm_interview_slots appelé avec payload: {payload}")
-    # Récupérer le premier admin HR disponible
-    hr_admin = db.query(HRAdmin).first()
-    if not hr_admin:
-        raise HTTPException(status_code=400, detail="Aucun administrateur HR trouvé")
-    user_id = hr_admin.id
+    try:
+        user_id = int(current_user.get("sub"))
+        print(f"🔍 DEBUG: Utilisateur authentifié pour confirmation - ID: {user_id}")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Utilisateur non authentifié")
 
     # Vérifier que tous les créneaux appartiennent au même job et au même recruteur
     slots = db.query(InterviewSlot).filter(
@@ -396,15 +422,14 @@ async def confirm_interview_slots(payload: ConfirmSlotsRequest, db=Depends(get_d
 
 
 @router.get("/interview-slots/job-confirmed/{job_id}")
-def check_job_slots_confirmed(job_id: int, db=Depends(get_db)):
+def check_job_slots_confirmed(job_id: int, request: Request, db=Depends(get_db), current_user: Dict[str, Any] = Depends(get_current_hr_user)):
     """
     Vérifie si un job a des créneaux confirmés (calendrier verrouillé)
     """
-    # Récupérer le premier admin HR disponible
-    hr_admin = db.query(HRAdmin).first()
-    if not hr_admin:
-        raise HTTPException(status_code=400, detail="Aucun administrateur HR trouvé")
-    user_id = hr_admin.id
+    try:
+        user_id = int(current_user.get("sub"))
+    except Exception:
+        raise HTTPException(status_code=401, detail="Utilisateur non authentifié")
 
     # Vérifier s'il y a des créneaux confirmés pour ce job
     confirmed_slots = db.query(InterviewSlot).filter(

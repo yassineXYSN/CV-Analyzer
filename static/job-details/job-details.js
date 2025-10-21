@@ -430,7 +430,9 @@ async function checkCandidateSlotsStatus(candidateId) {
 
     
 
-    const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+    const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`, {
+      credentials: "include"
+    })
 
     const slotsData = await slotsRes.json()
 
@@ -543,25 +545,10 @@ async function updateCandidateButton(candidateId) {
     if (isInterviewScheduled) {
 
       // Si le statut de l'application est interview_scheduled, le candidat a confirmé
-      // Vérifier si l'entretien est dans le passé
-      const now = new Date()
-      const hasPastInterview = status.confirmedSlots.some(slot => {
-        const slotEndTime = new Date(slot.end_time)
-        return slotEndTime < now
-      })
 
-      if (hasPastInterview) {
-        // L'entretien est terminé, afficher le bouton d'analyse
-        textSpan.textContent = 'Analyser entretien'
-        icon.className = 'fas fa-chart-line'
-        button.onclick = () => openAnalyzeInterviewModal(candidateId, status.confirmedSlots)
-        console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Analyser entretien`)
-      } else {
-        // L'entretien n'a pas encore eu lieu
-        textSpan.textContent = 'Entretien confirmé'
-        button.onclick = () => showConfirmedSlotsModal(status.confirmedSlots)
-        console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Entretien confirmé`)
-      }
+      textSpan.textContent = 'Entretien confirmé'
+
+      console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Entretien confirmé`)
 
     } else {
 
@@ -571,9 +558,11 @@ async function updateCandidateButton(candidateId) {
 
       console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Créneaux en attente`)
 
-      button.onclick = () => showConfirmedSlotsModal(status.confirmedSlots)
-
     }
+
+    
+
+    button.onclick = () => showConfirmedSlotsModal(status.confirmedSlots)
 
   } else {
 
@@ -594,231 +583,6 @@ async function updateCandidateButton(candidateId) {
 }
 
 
-
-// Fonction pour ouvrir le modal d'analyse d'entretien
-function openAnalyzeInterviewModal(candidateId, confirmedSlots) {
-  console.log(`[DEBUG] Ouverture du modal d'analyse pour le candidat ${candidateId}`)
-  
-  // Supprimer tout modal existant
-  const existingModal = document.getElementById('analyzeInterviewModal')
-  if (existingModal) {
-    existingModal.remove()
-  }
-  
-  // Créer le modal d'analyse d'entretien
-  const modalHtml = `
-    <div id="analyzeInterviewModal" class="modal modern-modal-overlay" style="display: flex !important; z-index: 9999 !important;">
-      <div class="modal-content modern-modal" style="max-width: 800px; width: 90%; margin: auto;">
-        <div class="modal-header modern-header">
-          <div class="header-content">
-            <div class="header-icon">
-              <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="header-text">
-              <h2>🤖 Analyser l'entretien</h2>
-              <p class="header-subtitle">📊 Évaluez la performance du candidat avec l'IA</p>
-            </div>
-          </div>
-          <button class="close-btn modern-close" onclick="closeAnalyzeInterviewModal()">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body modern-body">
-          <div class="analysis-section">
-            <div class="analysis-header">
-              <h3>📅 Informations sur l'entretien</h3>
-            </div>
-            <div class="interview-info">
-              <div class="info-item">
-                <label>📅 Date de l'entretien:</label>
-                <span>${new Date(confirmedSlots[0].start_time).toLocaleDateString('fr-FR')}</span>
-              </div>
-              <div class="info-item">
-                <label>🕐 Heure:</label>
-                <span>${new Date(confirmedSlots[0].start_time).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})} - ${new Date(confirmedSlots[0].end_time).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</span>
-              </div>
-              <div class="info-item">
-                <label>⏱️ Durée:</label>
-                <span>${Math.round((new Date(confirmedSlots[0].end_time) - new Date(confirmedSlots[0].start_time)) / (1000 * 60))} minutes</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="media-section">
-            <div class="media-header">
-              <h3><i class="fas fa-microphone"></i> Fichiers média de l'entretien</h3>
-            </div>
-            <div class="media-uploads">
-              <div class="upload-group">
-                <label for="hrAudioFile">
-                  <i class="fas fa-microphone"></i> Audio RH
-                </label>
-                <input type="file" id="hrAudioFile" accept="audio/*" class="file-input">
-                <div class="file-info" id="hrAudioInfo"></div>
-              </div>
-              
-              <div class="upload-group">
-                <label for="candidateAudioFile">
-                  <i class="fas fa-user-microphone"></i> Audio Candidat
-                </label>
-                <input type="file" id="candidateAudioFile" accept="audio/*" class="file-input">
-                <div class="file-info" id="candidateAudioInfo"></div>
-              </div>
-              
-              <div class="upload-group">
-                <label for="interviewVideoFile">
-                  <i class="fas fa-video"></i> Vidéo de l'entretien
-                </label>
-                <input type="file" id="interviewVideoFile" accept="video/*" class="file-input">
-                <div class="file-info" id="interviewVideoInfo"></div>
-              </div>
-            </div>
-            
-            <div class="ai-analysis-section">
-              <button class="btn-ai-analyze" onclick="performAIAnalysis(${candidateId})">
-                <i class="fas fa-robot"></i> Analyser avec l'IA
-              </button>
-            </div>
-          </div>
-          
-          
-        </div>
-      </div>
-    </div>
-  `
-  
-  // Ajouter le modal au DOM
-  document.body.insertAdjacentHTML('beforeend', modalHtml)
-  
-  // Ajouter les event listeners pour les fichiers
-  setTimeout(() => {
-    const hrAudioFile = document.getElementById('hrAudioFile')
-    const candidateAudioFile = document.getElementById('candidateAudioFile')
-    const interviewVideoFile = document.getElementById('interviewVideoFile')
-    
-    if (hrAudioFile) {
-      hrAudioFile.addEventListener('change', function() {
-        const fileInfo = document.getElementById('hrAudioInfo')
-        if (this.files[0]) {
-          fileInfo.textContent = `Fichier sélectionné: ${this.files[0].name} (${(this.files[0].size / 1024 / 1024).toFixed(2)} MB)`
-        } else {
-          fileInfo.textContent = ''
-        }
-      })
-    }
-    
-    if (candidateAudioFile) {
-      candidateAudioFile.addEventListener('change', function() {
-        const fileInfo = document.getElementById('candidateAudioInfo')
-        if (this.files[0]) {
-          fileInfo.textContent = `Fichier sélectionné: ${this.files[0].name} (${(this.files[0].size / 1024 / 1024).toFixed(2)} MB)`
-        } else {
-          fileInfo.textContent = ''
-        }
-      })
-    }
-    
-    if (interviewVideoFile) {
-      interviewVideoFile.addEventListener('change', function() {
-        const fileInfo = document.getElementById('interviewVideoInfo')
-        if (this.files[0]) {
-          fileInfo.textContent = `Fichier sélectionné: ${this.files[0].name} (${(this.files[0].size / 1024 / 1024).toFixed(2)} MB)`
-        } else {
-          fileInfo.textContent = ''
-        }
-      })
-    }
-  }, 100)
-}
-
-// Fonction pour fermer le modal d'analyse
-function closeAnalyzeInterviewModal() {
-  const modal = document.getElementById('analyzeInterviewModal')
-  if (modal) {
-    modal.remove()
-  }
-}
-
-// Fonction pour effectuer l'analyse IA
-async function performAIAnalysis(candidateId) {
-  const hrAudioFile = document.getElementById('hrAudioFile').files[0]
-  const candidateAudioFile = document.getElementById('candidateAudioFile').files[0]
-  const interviewVideoFile = document.getElementById('interviewVideoFile').files[0]
-  
-  if (!hrAudioFile && !candidateAudioFile && !interviewVideoFile) {
-    alert('Veuillez sélectionner au moins un fichier média pour l\'analyse IA')
-    return
-  }
-  
-  const formData = new FormData()
-  formData.append('candidate_id', candidateId)
-  
-  if (hrAudioFile) formData.append('hr_audio', hrAudioFile)
-  if (candidateAudioFile) formData.append('candidate_audio', candidateAudioFile)
-  if (interviewVideoFile) formData.append('interview_video', interviewVideoFile)
-  
-  try {
-    const response = await fetch('/api/hr/ai-interview-analysis', {
-      method: 'POST',
-      body: formData
-    })
-    
-    const result = await response.json()
-    
-    if (result.success) {
-      alert('Analyse IA terminée avec succès!')
-      // Optionnel: afficher les résultats de l'analyse
-    } else {
-      alert('Erreur lors de l\'analyse IA: ' + result.message)
-    }
-  } catch (error) {
-    console.error('Erreur:', error)
-    alert('Erreur lors de l\'analyse IA')
-  }
-}
-
-// Fonction pour sauvegarder l'analyse d'entretien
-async function saveInterviewAnalysis(candidateId) {
-  // Find the application for this candidate
-  const application = applications?.find(app => app.id == candidateId)
-  if (!application) {
-    alert('Erreur: Application non trouvée')
-    return
-  }
-  
-  const analysisData = {
-    candidate_id: candidateId,
-    application_id: application.id,
-    overall_rating: 5, // Default rating since we removed the form
-    positive_points: "Analyse basée sur les fichiers média",
-    improvement_points: "À déterminer après analyse IA",
-    recommendation: "pending_ai_analysis"
-  }
-  
-  try {
-    const response = await fetch('/api/hr/interview-analysis', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(analysisData)
-    })
-    
-    const result = await response.json()
-    
-    if (result.success) {
-      alert('Analyse d\'entretien enregistrée avec succès!')
-      closeAnalyzeInterviewModal()
-      // Optionnel: recharger la page ou mettre à jour l'interface
-      location.reload()
-    } else {
-      alert('Erreur lors de l\'enregistrement: ' + result.message)
-    }
-  } catch (error) {
-    console.error('Erreur:', error)
-    alert('Erreur lors de l\'enregistrement de l\'analyse')
-  }
-}
 
 // Ces fonctions ne sont plus nécessaires car la confirmation est automatique
 
@@ -910,13 +674,15 @@ function markOccupiedTimeSlots(modal, dateString) {
 
     // Vérifier les conflits avec les créneaux bloqués (réservés par d'autres candidats) - seulement pour la date courante
 
+    console.log(`[DEBUG] Vérification conflits avec blockedSlots pour ${startTime}-${endTime}`)
+
     const hasConflictWithBlocked = blockedSlots && blockedSlots.some(blockedSlot => {
 
       const blockedStart = new Date(blockedSlot.start_time)
 
       const blockedEnd = new Date(blockedSlot.end_time)
 
-      
+      console.log(`[DEBUG] Comparaison avec blockedSlot: ${blockedStart.toISOString()} - ${blockedEnd.toISOString()}`)
 
       // Vérifier que le créneau bloqué est sur la même date
 
@@ -924,17 +690,19 @@ function markOccupiedTimeSlots(modal, dateString) {
 
       const currentDate = toLocalDateKey(startDateTime)
 
-      
+      console.log(`[DEBUG] blockedDate=${blockedDate}, currentDate=${currentDate}`)
 
       if (blockedDate !== currentDate) {
+
+        console.log(`[DEBUG] Dates différentes, pas de conflit`)
 
         return false // Ignorer les créneaux d'autres dates
 
       }
 
-      
-
       const conflict = startDateTime < blockedEnd && endDateTime > blockedStart
+
+      console.log(`[DEBUG] Conflit trouvé: ${conflict}`)
 
       if (conflict) {
 
@@ -1834,13 +1602,35 @@ async function loadConfirmedSlots() {
 
   const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
 
-  
+  console.log(`[DEBUG] loadConfirmedSlots: Chargement créneaux pour jobId=${jobId}`)
 
   try {
 
-    const res = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+    console.log(`[DEBUG] loadConfirmedSlots: Appel API vers /api/hr/interview-slots?job_id=${jobId}`)
+
+    const res = await fetch(`/api/hr/interview-slots?job_id=${jobId}`, {
+      credentials: "include"
+    })
+
+    console.log(`[DEBUG] loadConfirmedSlots: Response status=${res.status}, ok=${res.ok}`)
+
+    const contentType = res.headers.get('content-type')
+
+    console.log(`[DEBUG] loadConfirmedSlots: Content-Type=${contentType}`)
+
+    if (!contentType || !contentType.includes('application/json')) {
+
+      const textResponse = await res.text()
+
+      console.error(`[ERROR] loadConfirmedSlots: Réponse non-JSON reçue:`, textResponse.substring(0, 200))
+
+      throw new Error(`Réponse non-JSON reçue: ${res.status}`)
+
+    }
 
     const slots = await res.json()
+
+    console.log(`[DEBUG] loadConfirmedSlots: Slots reçus:`, slots)
 
     
 
@@ -1851,6 +1641,8 @@ async function loadConfirmedSlots() {
     // Stocker les créneaux confirmés dans la variable globale
 
     confirmedSlots = confirmed
+
+    console.log(`[DEBUG] loadConfirmedSlots: confirmedSlots mis à jour, longueur: ${confirmedSlots.length}`)
 
     
 
@@ -1886,13 +1678,35 @@ async function loadBlockedSlots() {
 
   const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
 
-  
+  console.log(`[DEBUG] loadBlockedSlots: Chargement créneaux bloqués pour jobId=${jobId}`)
 
   try {
 
-    const res = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+    console.log(`[DEBUG] loadBlockedSlots: Appel API vers /api/hr/interview-slots?job_id=${jobId}`)
+
+    const res = await fetch(`/api/hr/interview-slots?job_id=${jobId}`, {
+      credentials: "include"
+    })
+
+    console.log(`[DEBUG] loadBlockedSlots: Response status=${res.status}, ok=${res.ok}`)
+
+    const contentType = res.headers.get('content-type')
+
+    console.log(`[DEBUG] loadBlockedSlots: Content-Type=${contentType}`)
+
+    if (!contentType || !contentType.includes('application/json')) {
+
+      const textResponse = await res.text()
+
+      console.error(`[ERROR] loadBlockedSlots: Réponse non-JSON reçue:`, textResponse.substring(0, 200))
+
+      throw new Error(`Réponse non-JSON reçue: ${res.status}`)
+
+    }
 
     const slots = await res.json()
+
+    console.log(`[DEBUG] loadBlockedSlots: Slots reçus:`, slots)
 
     
 
@@ -1905,6 +1719,8 @@ async function loadBlockedSlots() {
     // Stocker les créneaux bloqués
 
     blockedSlots = reserved
+
+    console.log(`[DEBUG] loadBlockedSlots: blockedSlots mis à jour, longueur: ${blockedSlots.length}`)
 
     
 
@@ -2152,6 +1968,8 @@ async function saveInlineSlotsWithIds() {
 
         headers: { 'Content-Type': 'application/json' },
 
+        credentials: "include",
+
         body: JSON.stringify(confirmPayload)
 
       })
@@ -2254,7 +2072,9 @@ async function saveInlineSlotsWithIds() {
 
           // Récupérer les créneaux confirmés pour les afficher
 
-          const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+          const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`, {
+            credentials: "include"
+          })
 
           const slotsData = await slotsRes.json()
 
@@ -4250,7 +4070,9 @@ async function showTimeSelector(dateString, dayElement) {
 
       const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
 
-      const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+      const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`, {
+        credentials: "include"
+      })
 
       const slotsData = await slotsRes.json()
 
@@ -4390,7 +4212,9 @@ async function showTimeSelector(dateString, dayElement) {
 
       const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
 
-      const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+      const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`, {
+        credentials: "include"
+      })
 
       const slotsData = await slotsRes.json()
 
@@ -12524,7 +12348,9 @@ async function loadCandidateSlots(candidateId) {
 
     
 
-    const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`)
+    const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`, {
+      credentials: "include"
+    })
 
     const slotsData = await slotsRes.json()
 
