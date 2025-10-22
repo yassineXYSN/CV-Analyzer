@@ -120,26 +120,56 @@
 
         .emotion {
             display: inline-block;
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-            padding: 4px 12px;
-            border-radius: 20px;
+            padding: 6px 14px;
+            border-radius: 25px;
             font-size: 0.9em;
             font-weight: 600;
             margin-bottom: 10px;
-            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
 
-        .emotion.friendly { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
-        .emotion.confident { background: rgba(59, 130, 246, 0.2); color: var(--info-color); }
-        .emotion.interested { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
-        .emotion.thoughtful { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
-        .emotion.curious { background: rgba(239, 68, 68, 0.2); color: var(--error-color); }
-        .emotion.enthusiastic { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
-        .emotion.testing { background: rgba(239, 68, 68, 0.2); color: var(--error-color); }
-        .emotion.polite { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
-        .emotion.pleased { background: rgba(59, 130, 246, 0.2); color: var(--info-color); }
-        .emotion.casual { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+        .emotion-happy { 
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(34, 197, 94, 0.3)); 
+            color: #10b981; 
+            border: 2px solid #10b981; 
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+        .emotion-neutral { 
+            background: linear-gradient(135deg, rgba(148, 163, 184, 0.4), rgba(100, 116, 139, 0.3)); 
+            color: #94a3b8; 
+            border: 2px solid #94a3b8; 
+            box-shadow: 0 2px 8px rgba(148, 163, 184, 0.3);
+        }
+        .emotion-angry { 
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.4), rgba(220, 38, 38, 0.3)); 
+            color: #ef4444; 
+            border: 2px solid #ef4444; 
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+        .emotion-fear { 
+            background: linear-gradient(135deg, rgba(139, 69, 19, 0.4), rgba(120, 53, 15, 0.3)); 
+            color: #8b4513; 
+            border: 2px solid #8b4513; 
+            box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
+        }
+        .emotion-sad { 
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(37, 99, 235, 0.3)); 
+            color: #3b82f6; 
+            border: 2px solid #3b82f6; 
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+        .emotion-disgust { 
+            background: linear-gradient(135deg, rgba(107, 114, 128, 0.4), rgba(75, 85, 99, 0.3)); 
+            color: #6b7280; 
+            border: 2px solid #6b7280; 
+            box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+        }
+        .emotion-surprise { 
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(147, 51, 234, 0.3)); 
+            color: #a855f7; 
+            border: 2px solid #a855f7; 
+            box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
+        }
 
         .text {
             color: var(--text-primary);
@@ -231,61 +261,341 @@
             color: var(--text-primary);
             margin-bottom: 15px;
         }
+
+        /* Comprehensive Analysis Styles */
+        .comprehensive-analysis {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .recommendation-badge {
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recommendation-badge.recommend {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+            border: 2px solid var(--success-color);
+        }
+
+        .recommendation-badge.reject {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error-color);
+            border: 2px solid var(--error-color);
+        }
+
+        .recommendation-badge.neutral {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-muted);
+            border: 2px solid var(--text-muted);
+        }
+
+        .analysis-sections {
+            display: grid;
+            gap: 25px;
+        }
+
+        .analysis-section {
+            background: var(--dark-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .analysis-section h4 {
+            color: var(--info-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .analysis-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .analysis-section li {
+            background: var(--card-bg);
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border-left: 4px solid var(--info-color);
+        }
+
+        .analysis-section p {
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .final-verdict {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border: 2px solid var(--info-color);
+        }
+
+        .final-verdict h4 {
+            color: var(--info-color);
+            font-size: 1.2em;
+        }
+
+        /* Conversation Section Styles */
+        .conversation-section {
+            margin-top: 40px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .conversation-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-robot"></i> Résultats de l'Analyse IA</h1>
-            <p>Analyse conversationnelle avec détection d'émotions - Candidat {{ candidate_id }}</p>
+            <h1><i class="fas fa-robot"></i> AI Analysis Results</h1>
+            <p>Conversational analysis with emotion detection - Candidate {{ candidate_id }}</p>
         </div>
         <div class="content">
-            <div class="stats">
-                <h3><i class="fas fa-chart-bar"></i> Statistiques de l'Entretien</h3>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number">{{ analysis|length }}</div>
-                        <div class="stat-label">Échanges</div>
+            {% if analysis.type == 'combined_analysis' %}
+                <!-- New combined format: conversation + comprehensive analysis -->
+                <div class="comprehensive-analysis">
+                    <div class="analysis-header">
+                        <h3><i class="fas fa-chart-line"></i> Complete Interview Analysis</h3>
+                        <div class="recommendation-badge {{ 'recommend' if analysis.analysis.Overall_Recommendation == 'Accept' else 'reject' if analysis.analysis.Overall_Recommendation == 'Reject' else 'neutral' }}">
+                            <i class="fas fa-{{ 'check-circle' if analysis.analysis.Overall_Recommendation == 'Accept' else 'times-circle' if analysis.analysis.Overall_Recommendation == 'Reject' else 'question-circle' }}"></i>
+                            {{ analysis.analysis.Overall_Recommendation }}
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-number">{{ analysis|selectattr('speaker', 'equalto', 'Interviewer')|list|length }}</div>
-                        <div class="stat-label">Questions RH</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">{{ analysis|selectattr('speaker', 'equalto', 'Interviewee')|list|length }}</div>
-                        <div class="stat-label">Réponses Candidat</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">{{ analysis|map(attribute='emotion')|unique|list|length }}</div>
-                        <div class="stat-label">Émotions Détectées</div>
+                    
+                    <div class="analysis-sections">
+                        <div class="analysis-section">
+                            <h4><i class="fas fa-thumbs-up"></i> Strengths</h4>
+                            <ul>
+                                {% for strength in analysis.analysis.Strengths %}
+                                <li>{{ strength }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h4><i class="fas fa-exclamation-triangle"></i> Weaknesses</h4>
+                            <ul>
+                                {% for weakness in analysis.analysis.Weaknesses %}
+                                <li>{{ weakness }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h4><i class="fas fa-cogs"></i> Skills Fit</h4>
+                            <p>{{ analysis.analysis.Skills_fit }}</p>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h4><i class="fas fa-user"></i> Behavioral Analysis</h4>
+                            <p>{{ analysis.analysis.Behavioral }}</p>
+                        </div>
+                        
+                        <div class="analysis-section final-verdict">
+                            <h4><i class="fas fa-gavel"></i> Final Verdict</h4>
+                            <p>{{ analysis.analysis.Final_verdict }}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <h3><i class="fas fa-comments"></i> Conversation Analysée</h3>
-            <div class="analysis-grid">
-                {% for item in analysis %}
-                <div class="conversation-item">
-                    <div class="speaker {{ 'interviewer' if item.speaker == 'Interviewer' else 'interviewee' }}">
-                        <i class="fas fa-{{ 'user-tie' if item.speaker == 'Interviewer' else 'user' }}"></i>
-                        {{ item.speaker }}
+                
+                <!-- Conversation Section -->
+                <div class="conversation-section">
+                    <h3><i class="fas fa-comments"></i> Analyzed Conversation</h3>
+                    <div class="stats">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">{{ analysis.conversation|length }}</div>
+                                <div class="stat-label">Exchanges</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">{{ analysis.conversation|selectattr('speaker', 'equalto', 'HR')|list|length }}</div>
+                                <div class="stat-label">HR Questions</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">{{ analysis.conversation|selectattr('speaker', 'equalto', 'Candidate')|list|length }}</div>
+                                <div class="stat-label">Candidate Responses</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">{{ analysis.conversation|map(attribute='emotion')|unique|list|length }}</div>
+                                <div class="stat-label">Emotions Detected</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="emotion {{ item.emotion }}">
-                        <i class="fas fa-heart"></i> {{ item.emotion.title() }}
-                    </div>
-                    <div class="text">
-                        {{ item.text }}
+                    
+                    <div class="analysis-grid">
+                        {% for item in analysis.conversation %}
+                        <div class="conversation-item">
+                            <div class="speaker {{ 'interviewer' if item.speaker == 'HR' else 'interviewee' }}">
+                                <i class="fas fa-{{ 'user-tie' if item.speaker == 'HR' else 'user' }}"></i>
+                                {{ item.speaker }}
+                            </div>
+                            <div class="emotion emotion-{{ item.emotion }}">
+                                {% if item.emotion == 'happy' %}
+                                    😊 Happy
+                                {% elif item.emotion == 'neutral' %}
+                                    😐 Neutral
+                                {% elif item.emotion == 'angry' %}
+                                    😠 Angry
+                                {% elif item.emotion == 'fear' %}
+                                    😨 Fear
+                                {% elif item.emotion == 'sad' %}
+                                    😢 Sad
+                                {% elif item.emotion == 'disgust' %}
+                                    🤢 Disgust
+                                {% elif item.emotion == 'surprise' %}
+                                    😲 Surprise
+                                {% else %}
+                                    <i class="fas fa-heart"></i> {{ item.emotion.title() }}
+                                {% endif %}
+                            </div>
+                            <div class="text">
+                                {{ item.text }}
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
-                {% endfor %}
-            </div>
+            {% elif analysis.type == 'comprehensive_analysis' %}
+                <!-- Comprehensive analysis format only -->
+                <div class="comprehensive-analysis">
+                    <div class="analysis-header">
+                        <h3><i class="fas fa-chart-line"></i> Analyse Complète de l'Entretien</h3>
+                        <div class="recommendation-badge {{ 'recommend' if analysis.data.Overall_Recommendation == 'Accept' else 'reject' if analysis.data.Overall_Recommendation == 'Reject' else 'neutral' }}">
+                            <i class="fas fa-{{ 'check-circle' if analysis.data.Overall_Recommendation == 'Accept' else 'times-circle' if analysis.data.Overall_Recommendation == 'Reject' else 'question-circle' }}"></i>
+                            {{ analysis.data.Overall_Recommendation }}
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-sections">
+                        <div class="analysis-section">
+                            <h4><i class="fas fa-thumbs-up"></i> Points Forts</h4>
+                            <ul>
+                                {% for strength in analysis.data.Strengths %}
+                                <li>{{ strength }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h4><i class="fas fa-exclamation-triangle"></i> Points Faibles</h4>
+                            <ul>
+                                {% for weakness in analysis.data.Weaknesses %}
+                                <li>{{ weakness }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h4><i class="fas fa-cogs"></i> Adéquation des Compétences</h4>
+                            <p>{{ analysis.data.Skills_fit }}</p>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h4><i class="fas fa-user"></i> Comportement</h4>
+                            <p>{{ analysis.data.Behavioral }}</p>
+                        </div>
+                        
+                        <div class="analysis-section final-verdict">
+                            <h4><i class="fas fa-gavel"></i> Verdict Final</h4>
+                            <p>{{ analysis.data.Final_verdict }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <!-- Old conversation analysis format -->
+                <div class="stats">
+                    <h3><i class="fas fa-chart-bar"></i> Statistiques de l'Entretien</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number">{{ analysis.data|length if analysis.data else 0 }}</div>
+                            <div class="stat-label">Échanges</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ analysis.data|selectattr('speaker', 'equalto', 'Interviewer')|list|length if analysis.data else 0 }}</div>
+                            <div class="stat-label">Questions RH</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ analysis.data|selectattr('speaker', 'equalto', 'Interviewee')|list|length if analysis.data else 0 }}</div>
+                            <div class="stat-label">Réponses Candidat</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ analysis.data|map(attribute='emotion')|unique|list|length if analysis.data else 0 }}</div>
+                            <div class="stat-label">Émotions Détectées</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3><i class="fas fa-comments"></i> Conversation Analysée</h3>
+                <div class="analysis-grid">
+                    {% for item in analysis.data %}
+                    <div class="conversation-item">
+                        <div class="speaker {{ 'interviewer' if item.speaker == 'Interviewer' else 'interviewee' }}">
+                            <i class="fas fa-{{ 'user-tie' if item.speaker == 'Interviewer' else 'user' }}"></i>
+                            {{ item.speaker }}
+                        </div>
+                        <div class="emotion emotion-{{ item.emotion }}">
+                            {% if item.emotion == 'happy' %}
+                                <i class="fas fa-smile"></i> 😊 Happy
+                            {% elif item.emotion == 'neutral' %}
+                                <i class="fas fa-meh"></i> 😐 Neutral
+                            {% elif item.emotion == 'angry' %}
+                                <i class="fas fa-angry"></i> 😠 Angry
+                            {% elif item.emotion == 'fear' %}
+                                <i class="fas fa-surprise"></i> 😨 Fear
+                            {% elif item.emotion == 'sad' %}
+                                <i class="fas fa-sad-tear"></i> 😢 Sad
+                            {% elif item.emotion == 'disgust' %}
+                                <i class="fas fa-grimace"></i> 🤢 Disgust
+                            {% elif item.emotion == 'surprise' %}
+                                <i class="fas fa-surprise"></i> 😲 Surprise
+                            {% else %}
+                                <i class="fas fa-heart"></i> {{ item.emotion.title() }}
+                            {% endif %}
+                        </div>
+                        <div class="text">
+                            {{ item.text }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
             
             <div class="actions">
                 <button class="back-btn" onclick="window.close()">
-                    <i class="fas fa-arrow-left"></i> Fermer
+                    <i class="fas fa-arrow-left"></i> Close
                 </button>
                 <button class="export-btn" onclick="exportAnalysis()">
-                    <i class="fas fa-download"></i> Exporter PDF
+                    <i class="fas fa-download"></i> Export PDF
                 </button>
             </div>
         </div>

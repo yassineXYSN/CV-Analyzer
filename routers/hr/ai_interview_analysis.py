@@ -83,26 +83,43 @@ async def analyze_interview_with_ai(
             analysis_result = clean_conversation(
                 hr_audio_path or "", 
                 candidate_audio_path or "", 
-                video_path or ""
+                video_path or "",
+                application_id
             )
             
             print(f"Analysis result type: {type(analysis_result)}")
             print(f"Analysis result: {analysis_result}")
             
-            # Le résultat est déjà une liste Python, pas besoin de parser JSON
-            if isinstance(analysis_result, list):
-                analysis_data = analysis_result
+            # Handle the new combined format (conversation + analysis)
+            if isinstance(analysis_result, dict) and "conversation" in analysis_result and "analysis" in analysis_result:
+                # New combined format: conversation + comprehensive analysis
+                analysis_data = {
+                    "type": "combined_analysis",
+                    "conversation": analysis_result["conversation"],
+                    "analysis": analysis_result["analysis"]
+                }
+            elif isinstance(analysis_result, dict):
+                # Comprehensive analysis only
+                analysis_data = {
+                    "type": "comprehensive_analysis",
+                    "data": analysis_result
+                }
+            elif isinstance(analysis_result, list):
+                # Old format: conversation list
+                analysis_data = {
+                    "type": "conversation_analysis", 
+                    "data": analysis_result
+                }
             else:
-                # Si ce n'est pas une liste, essayer de parser comme JSON
-                try:
-                    analysis_data = json.loads(analysis_result)
-                except (json.JSONDecodeError, TypeError):
-                    # Si ce n'est pas du JSON, créer un format par défaut
-                    analysis_data = [{
+                # Fallback format
+                analysis_data = {
+                    "type": "fallback",
+                    "data": [{
                         "speaker": "System",
                         "emotion": "neutral",
                         "text": str(analysis_result)
                     }]
+                }
             
             print(f"Final analysis data: {analysis_data}")
             

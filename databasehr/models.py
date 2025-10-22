@@ -28,10 +28,12 @@ class ProfileCandidat(Base):
     profile = Column(Text)
     contact_id = Column(Integer, ForeignKey("contact.id"))
     analyse_id = Column(Integer, ForeignKey("analyse_candidat.id"))
+    yearOfExperience = Column(Integer)
     education = Column(JSON)
     languages = Column(JSON)
     certificates = Column(JSON)
     skills = Column(JSON)
+    profile_picture = Column(String(500))
 
     # Relations
     contact = relationship("Contact")
