@@ -313,7 +313,7 @@ def google_oauth_callback_hr(code: str, state: str = None, db=Depends(get_db)):
         if r.status_code != 200:
             print(f"❌ Google OAuth Callback HR: Échec échange code - Status: {r.status_code}")
             print(f"❌ Google OAuth Callback HR: Response: {r.text}")
-            return RedirectResponse("/HR-dep/hr-dashboard.html?error=google_auth_failed&message=Erreur lors de l'authentification Google. Veuillez réessayer.")
+            return RedirectResponse("/dashboard?error=google_auth_failed&message=Erreur lors de l'authentification Google. Veuillez réessayer.")
         
         token_data = r.json()
         print(f"✅ Google OAuth Callback HR: Token reçu: {list(token_data.keys())}")
@@ -322,7 +322,7 @@ def google_oauth_callback_hr(code: str, state: str = None, db=Depends(get_db)):
         save_tokens(db, user_id, token_data)
         print(f"✅ Google OAuth Callback HR: Tokens sauvegardés pour user_id: {user_id}")
         
-        return RedirectResponse("/HR-dep/hr-dashboard.html?connected=google&message=Google Calendar connecté avec succès !")
+        return RedirectResponse("/dashboard?connected=google&message=Google Calendar connecté avec succès !")
         
     except Exception as e:
         print(f"❌ Google OAuth Callback HR Error: {str(e)}")

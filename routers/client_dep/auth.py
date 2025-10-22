@@ -845,7 +845,7 @@ async def handle_hr_google_callback(code: str, state: str, db: Session):
             print(f"✅ HR Google OAuth Callback: User ID extrait du state: {user_id}")
         else:
             print(f"❌ HR Google OAuth Callback: State invalide ou manquant: {state}")
-            return RedirectResponse("/HR-dep/hr-dashboard.html?error=invalid_state")
+            return RedirectResponse("/dashboard?error=invalid_state")
         
         # Configuration Google OAuth - utiliser les variables d'environnement (même que le callback existant)
         GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "603669455866-m2sqvd5s7qdmlcua4o6fvrsb42iqr1bb.apps.googleusercontent.com")
@@ -868,7 +868,7 @@ async def handle_hr_google_callback(code: str, state: str, db: Session):
         if r.status_code != 200:
             print(f"❌ HR Google OAuth Callback: Échec échange code - Status: {r.status_code}")
             print(f"❌ HR Google OAuth Callback: Response: {r.text}")
-            return RedirectResponse("/HR-dep/hr-dashboard.html?error=google_auth_failed&message=Erreur de configuration Google OAuth. Veuillez vérifier que l'URL de redirection http://localhost:8000/auth/google/callback est configurée dans Google Cloud Console pour le client ID 603669455866-ke5hutefk7fp474dt65vfo0mp39sh3i3.apps.googleusercontent.com")
+            return RedirectResponse("/dashboard?error=google_auth_failed&message=Erreur de configuration Google OAuth. Veuillez vérifier que l'URL de redirection http://localhost:8000/auth/google/callback est configurée dans Google Cloud Console pour le client ID 603669455866-ke5hutefk7fp474dt65vfo0mp39sh3i3.apps.googleusercontent.com")
         
         token_data = r.json()
         print(f"✅ HR Google OAuth Callback: Token reçu: {list(token_data.keys())}")
@@ -877,13 +877,13 @@ async def handle_hr_google_callback(code: str, state: str, db: Session):
         save_hr_tokens(db, user_id, token_data)
         print(f"✅ HR Google OAuth Callback: Tokens sauvegardés pour user_id: {user_id}")
         
-        return RedirectResponse("/HR-dep/hr-dashboard.html?connected=google&message=Google Calendar connecté avec succès !")
+        return RedirectResponse("/dashboard?connected=google&message=Google Calendar connecté avec succès !")
         
     except Exception as e:
         print(f"❌ HR Google OAuth Callback Error: {str(e)}")
         import traceback
         traceback.print_exc()
-        return RedirectResponse("/HR-dep/hr-dashboard.html?error=google_auth_failed&message=Erreur lors de la connexion Google Calendar")
+        return RedirectResponse("/dashboard?error=google_auth_failed&message=Erreur lors de la connexion Google Calendar")
 
 
 def save_hr_tokens(db: Session, hr_admin_id: int, token_data: dict):
