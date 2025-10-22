@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
 from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
 from databasehr.database import SessionLocal
@@ -7,11 +8,12 @@ from databasehr.models import Application
 import os
 import json
 import tempfile
-import whisper
-import cv2
-from deepface import DeepFace
-from datetime import datetime, timedelta
-import requests
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from utils1.cleanconv import clean_conversation
+
+# Initialize templates
+templates = Jinja2Templates(directory="templates")
 
 router = APIRouter(prefix="/api/hr", tags=["ai-interview-analysis"])
 
@@ -22,218 +24,9 @@ def get_db():
     finally:
         db.close()
 
-class ConversationEmotionAnalyzer:
-    def __init__(self, whisper_model_size: str = "base"):
-        """Initialize the analyzer with Whisper and DeepFace models"""
-        print("Initializing AI models...")
-        self.whisper_model = whisper.load_model(whisper_model_size)
-        print("Models loaded successfully!")
-    
-    def transcribe_audio(self, audio_path: str, speaker_name: str = "Speaker") -> List[Dict]:
-        """Transcribe audio file and return segments with timestamps"""
-        print(f"Transcribing {speaker_name}'s audio...")
-        
-        result = self.whisper_model.transcribe(
-            audio_path,
-            word_timestamps=False,
-            task="translate"  # Forces translation to English
-        )
-        
-        segments = []
-        for segment in result["segments"]:
-            segments.append({
-                "speaker": speaker_name,
-                "text": segment["text"].strip(),
-                "start": segment["start"],
-                "end": segment["end"],
-                "language": "english"
-            })
-        
-        print(f"Transcribed {len(segments)} segments for {speaker_name}")
-        return segments
-    
-    def analyze_video_emotions(self, video_path: str, frame_interval: int = 30) -> List[Dict]:
-        """Analyze emotions in video and return results with timestamps"""
-        print("Starting video emotion analysis...")
-        
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            raise ValueError("Error: Could not open video file")
-        
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
-        print(f"Video FPS: {fps}, Total frames: {total_frames}")
-        
-        results = []
-        frame_count = 0
-        
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-                
-            if frame_count % frame_interval == 0:
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                
-                try:
-                    analysis = DeepFace.analyze(rgb_frame, actions=['emotion'], enforce_detection=False)
-                    timestamp = frame_count / fps
-                    time_str = str(datetime.utcfromtimestamp(timestamp).strftime('%H:%M:%S.%f')[:-3])
-                    
-                    emotions = analysis[0]['emotion']
-                    dominant_emotion = max(emotions.items(), key=lambda x: x[1])
-                    
-                    result = {
-                        'frame': frame_count,
-                        'timestamp': timestamp,
-                        'timestamp_formatted': time_str,
-                        'dominant_emotion': dominant_emotion[0],
-                        'emotion_confidence': dominant_emotion[1],
-                        'all_emotions': emotions
-                    }
-                    
-                    results.append(result)
-                    
-                except Exception as e:
-                    print(f"Error processing frame {frame_count}: {str(e)}")
-                    timestamp = frame_count / fps
-                    time_str = str(datetime.utcfromtimestamp(timestamp).strftime('%H:%M:%S.%f')[:-3])
-                    
-                    results.append({
-                        'frame': frame_count,
-                        'timestamp': timestamp,
-                        'timestamp_formatted': time_str,
-                        'dominant_emotion': 'unknown',
-                        'emotion_confidence': 0,
-                        'all_emotions': {}
-                    })
-            
-            frame_count += 1
-        
-        cap.release()
-        print(f"Video emotion analysis complete! Processed {len(results)} frames")
-        return results
-    
-    def merge_conversation(self, segments1: List[Dict], segments2: List[Dict]) -> List[Dict]:
-        """Merge segments from two speakers by timestamp"""
-        all_segments = segments1 + segments2
-        all_segments.sort(key=lambda x: x["start"])
-        return all_segments
-    
-    def assign_emotions_to_conversation(self, conversation: List[Dict], emotion_data: List[Dict]) -> List[Dict]:
-        """Assign emotion data to conversation segments based on timestamps"""
-        print("Assigning emotions to conversation segments...")
-        
-        for segment in conversation:
-            segment_start = segment["start"]
-            segment_end = segment["end"]
-            
-            segment_emotions = []
-            for emotion in emotion_data:
-                if segment_start <= emotion["timestamp"] <= segment_end:
-                    segment_emotions.append(emotion)
-            
-            if segment_emotions:
-                emotion_counts = {}
-                emotion_confidences = {}
-                
-                for emo in segment_emotions:
-                    emotion = emo["dominant_emotion"]
-                    if emotion != "unknown":
-                        emotion_counts[emotion] = emotion_counts.get(emotion, 0) + 1
-                        emotion_confidences[emotion] = emotion_confidences.get(emotion, 0) + emo["emotion_confidence"]
-                
-                if emotion_counts:
-                    dominant_emotion = max(emotion_counts.items(), key=lambda x: x[1])
-                    avg_confidence = emotion_confidences[dominant_emotion[0]] / emotion_counts[dominant_emotion[0]]
-                    
-                    segment["emotion"] = dominant_emotion[0]
-                    segment["emotion_confidence"] = avg_confidence
-                    segment["emotion_samples"] = len(segment_emotions)
-                else:
-                    segment["emotion"] = "unknown"
-                    segment["emotion_confidence"] = 0
-                    segment["emotion_samples"] = 0
-            else:
-                segment["emotion"] = "unknown"
-                segment["emotion_confidence"] = 0
-                segment["emotion_samples"] = 0
-        
-        return conversation
-    
-    def format_conversation(self, merged_segments: List[Dict], min_gap: float = 2.0) -> List[Dict]:
-        """Format the conversation with proper grouping and timing"""
-        if not merged_segments:
-            return []
-        
-        formatted = []
-        current_speaker = merged_segments[0]["speaker"]
-        current_text = merged_segments[0]["text"]
-        current_start = merged_segments[0]["start"]
-        current_end = merged_segments[0]["end"]
-        current_emotions = [merged_segments[0].get("emotion", "unknown")]
-        
-        for i in range(1, len(merged_segments)):
-            segment = merged_segments[i]
-            
-            if (segment["speaker"] == current_speaker and 
-                segment["start"] - current_end < min_gap):
-                current_text += " " + segment["text"]
-                current_end = segment["end"]
-                current_emotions.append(segment.get("emotion", "unknown"))
-            else:
-                if current_emotions:
-                    emotion_counts = {}
-                    for emotion in current_emotions:
-                        if emotion != "unknown":
-                            emotion_counts[emotion] = emotion_counts.get(emotion, 0) + 1
-                    
-                    dominant_emotion = max(emotion_counts.items(), key=lambda x: x[1])[0] if emotion_counts else "unknown"
-                else:
-                    dominant_emotion = "unknown"
-                
-                formatted.append({
-                    "speaker": current_speaker,
-                    "text": current_text,
-                    "start": current_start,
-                    "end": current_end,
-                    "duration": current_end - current_start,
-                    "emotion": dominant_emotion,
-                    "emotion_samples": len(current_emotions)
-                })
-                
-                current_speaker = segment["speaker"]
-                current_text = segment["text"]
-                current_start = segment["start"]
-                current_end = segment["end"]
-                current_emotions = [segment.get("emotion", "unknown")]
-        
-        if current_emotions:
-            emotion_counts = {}
-            for emotion in current_emotions:
-                if emotion != "unknown":
-                    emotion_counts[emotion] = emotion_counts.get(emotion, 0) + 1
-            
-            dominant_emotion = max(emotion_counts.items(), key=lambda x: x[1])[0] if emotion_counts else "unknown"
-        else:
-            dominant_emotion = "unknown"
-        
-        formatted.append({
-            "speaker": current_speaker,
-            "text": current_text,
-            "start": current_start,
-            "end": current_end,
-            "duration": current_end - current_start,
-            "emotion": dominant_emotion,
-            "emotion_samples": len(current_emotions)
-        })
-        
-        return formatted
-
 @router.post("/ai-interview-analysis")
 async def analyze_interview_with_ai(
-    candidate_id: int = Form(...),
+    application_id: int = Form(...),
     hr_audio: Optional[UploadFile] = File(None),
     candidate_audio: Optional[UploadFile] = File(None),
     interview_video: Optional[UploadFile] = File(None),
@@ -243,10 +36,12 @@ async def analyze_interview_with_ai(
     Endpoint pour l'analyse IA des fichiers média d'entretien.
     """
     try:
+        print("Yassine analyzing interview with ai")
         # Vérifier que l'application existe
         application = db.query(Application).filter(
-            Application.candidate_profile_id == candidate_id
+            Application.id == application_id
         ).first()
+        print(f"Yassine application found: {application.id if application else 'None'}")
         
         if not application:
             raise HTTPException(status_code=404, detail="Application not found")
@@ -257,9 +52,9 @@ async def analyze_interview_with_ai(
         
         # Créer des fichiers temporaires
         temp_files = []
-        analyzer = ConversationEmotionAnalyzer()
-        
+        print("Yassine temp files created",temp_files)
         try:
+            print("Yassine trying to save files")
             # Sauvegarder les fichiers uploadés
             hr_audio_path = None
             candidate_audio_path = None
@@ -283,53 +78,67 @@ async def analyze_interview_with_ai(
                     f.write(await interview_video.read())
                 temp_files.append(video_path)
             
-            # Analyser les fichiers
-            segments1 = []
-            segments2 = []
-            emotion_data = []
+            # Utiliser la fonction clean_conversation
+            print("Starting AI analysis with clean_conversation...")
+            analysis_result = clean_conversation(
+                hr_audio_path or "", 
+                candidate_audio_path or "", 
+                video_path or ""
+            )
             
-            if hr_audio_path:
-                segments1 = analyzer.transcribe_audio(hr_audio_path, "Interviewer")
+            print(f"Analysis result type: {type(analysis_result)}")
+            print(f"Analysis result: {analysis_result}")
             
-            if candidate_audio_path:
-                segments2 = analyzer.transcribe_audio(candidate_audio_path, "Interviewee")
-            
-            if video_path:
-                emotion_data = analyzer.analyze_video_emotions(video_path)
-            
-            # Fusionner et analyser la conversation
-            if segments1 or segments2:
-                merged_conversation = analyzer.merge_conversation(segments1, segments2)
-                conversation_with_emotions = analyzer.assign_emotions_to_conversation(merged_conversation, emotion_data)
-                final_conversation = analyzer.format_conversation(conversation_with_emotions)
-                
-                # Convertir en format de réponse
-                analysis_result = []
-                for turn in final_conversation:
-                    analysis_result.append({
-                        "speaker": turn["speaker"],
-                        "emotion": turn["emotion"],
-                        "text": turn["text"]
-                    })
-                
-                # Sauvegarder dans la base de données
-                application.ai_interview_analysis = json.dumps(analysis_result)
-                db.commit()
-                
-                # Return success response instead of redirect
-                return {
-                    "success": True,
-                    "message": "Analyse IA terminée avec succès",
-                    "candidate_id": candidate_id,
-                    "analysis": analysis_result,
-                    "files_processed": {
-                        "hr_audio": hr_audio is not None,
-                        "candidate_audio": candidate_audio is not None,
-                        "interview_video": interview_video is not None
-                    }
-                }
+            # Le résultat est déjà une liste Python, pas besoin de parser JSON
+            if isinstance(analysis_result, list):
+                analysis_data = analysis_result
             else:
-                raise HTTPException(status_code=400, detail="No valid audio files found for transcription")
+                # Si ce n'est pas une liste, essayer de parser comme JSON
+                try:
+                    analysis_data = json.loads(analysis_result)
+                except (json.JSONDecodeError, TypeError):
+                    # Si ce n'est pas du JSON, créer un format par défaut
+                    analysis_data = [{
+                        "speaker": "System",
+                        "emotion": "neutral",
+                        "text": str(analysis_result)
+                    }]
+            
+            print(f"Final analysis data: {analysis_data}")
+            
+            # Sauvegarder dans la base de données
+            try:
+                print(f"Before save - hasattr(Application, 'ai_interview_analysis') = {hasattr(Application, 'ai_interview_analysis')}")
+                # Tentative via l'attribut ORM (chemin préféré)
+                if hasattr(application, 'ai_interview_analysis'):
+                    current_val = getattr(application, 'ai_interview_analysis')
+                    print(f"Before save - application.ai_interview_analysis: {current_val}")
+                    setattr(application, 'ai_interview_analysis', json.dumps(analysis_data))
+                    print(f"After assignment - application.ai_interview_analysis: {application.ai_interview_analysis}")
+                    db.commit()
+                    print(f"Database commit successful for application {application_id} (ORM path)")
+                    db.refresh(application)
+                    print(f"After refresh - application.ai_interview_analysis: {application.ai_interview_analysis}")
+                else:
+                    # Fallback: écriture SQL brute si l'attribut ORM n'existe pas
+                    print("ORM attribute missing — falling back to raw SQL UPDATE")
+                    from sqlalchemy import text
+                    db.execute(
+                        text("UPDATE applications SET ai_interview_analysis = :data WHERE id = :id"),
+                        {"data": json.dumps(analysis_data), "id": application_id}
+                    )
+                    db.commit()
+                    print(f"Database commit successful for application {application_id} (raw SQL path)")
+            except Exception as save_error:
+                print(f"Error saving to database: {save_error}")
+                db.rollback()
+                raise save_error
+            
+            # Rediriger vers la page de résultats
+            return RedirectResponse(
+                url=f"/api/hr/interview-analysis-results/{application_id}",
+                status_code=303
+            )
         
         finally:
             # Nettoyer les fichiers temporaires
@@ -344,27 +153,115 @@ async def analyze_interview_with_ai(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'analyse IA: {str(e)}")
 
-@router.get("/ai-interview-analysis/{candidate_id}")
-async def get_interview_analysis(candidate_id: int, db: Session = Depends(get_db)):
-    """Récupérer l'analyse IA d'un candidat"""
+@router.get("/check-analysis/{application_id}")
+async def check_analysis_exists(application_id: int, db: Session = Depends(get_db)):
+    """Check if AI analysis exists for an application"""
     try:
+        print(f"Yassine checking analysis for application {application_id}")
+        
+        # Try ORM first
         application = db.query(Application).filter(
-            Application.candidate_profile_id == candidate_id
+            Application.id == application_id
         ).first()
         
         if not application:
-            raise HTTPException(status_code=404, detail="Application not found")
+            print(f"Application {application_id} not found")
+            return {"has_analysis": False, "analysis_data": None}
         
-        if not application.ai_interview_analysis:
-            raise HTTPException(status_code=404, detail="No AI analysis found for this candidate")
+        # Check if analysis exists
+        has_analysis = False
+        analysis_data = None
         
-        analysis = json.loads(application.ai_interview_analysis)
-        
+        try:
+            if hasattr(application, 'ai_interview_analysis') and application.ai_interview_analysis:
+                has_analysis = True
+                analysis_data = application.ai_interview_analysis
+                print(f"Found analysis via ORM: {has_analysis}")
+            else:
+                print("No analysis found via ORM, trying raw SQL")
+                # Fallback to raw SQL
+                from sqlalchemy import text
+                row = db.execute(
+                    text("SELECT ai_interview_analysis FROM applications WHERE id = :id"),
+                    {"id": application_id}
+                ).fetchone()
+                
+                if row and row[0]:
+                    has_analysis = True
+                    analysis_data = row[0]
+                    print(f"Found analysis via raw SQL: {has_analysis}")
+                else:
+                    print("No analysis found via raw SQL either")
+                    
+        except Exception as e:
+            print(f"Error checking analysis: {e}")
+            has_analysis = False
+
+        print(f"Yassine has_analysis: {has_analysis}")
         return {
-            "success": True,
-            "candidate_id": candidate_id,
-            "analysis": analysis
+            "has_analysis": has_analysis,
+            "analysis_data": analysis_data,
+            "application_id": application_id
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération de l'analyse: {str(e)}")
+        print(f"Error in check_analysis_exists: {e}")
+        return {"has_analysis": False, "analysis_data": None, "error": str(e)}
+
+@router.get("/interview-analysis-results/{application_id}")
+async def show_interview_analysis_results(application_id: int, request: Request, db: Session = Depends(get_db)):
+    """Afficher la page de résultats de l'analyse IA"""
+    print(f"Yassine showing interview analysis results for application {application_id}")
+    try:
+        print("Querying application from database...")
+        application = db.query(Application).filter(
+            Application.id == application_id
+        ).first()
+        print("Application queried.")
+
+        
+        print(f"Application found: {application is not None}")
+        if application:
+            print(f"Application ID: {application.id}")
+            print(f"AI analysis data: {application.ai_interview_analysis}")
+            print(f"AI analysis data type: {type(application.ai_interview_analysis)}")
+            print("test")
+        
+        if not application:
+            print("Application not found in database")
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Lire la donnée via ORM si possible, sinon fallback SQL brut
+        raw_json = None
+        if hasattr(application, 'ai_interview_analysis'):
+            raw_json = application.ai_interview_analysis
+            print(f"Read via ORM - ai_interview_analysis present: {raw_json is not None}")
+        else:
+            print("ORM attribute missing — trying raw SQL SELECT")
+            from sqlalchemy import text
+            row = db.execute(
+                text("SELECT ai_interview_analysis FROM applications WHERE id = :id"),
+                {"id": application_id}
+            ).fetchone()
+            raw_json = row[0] if row else None
+            print(f"Read via raw SQL - ai_interview_analysis present: {raw_json is not None}")
+
+        if not raw_json:
+            print("No AI analysis found in database - column is None or empty")
+            print(f"Application status: {application.status}")
+            print(f"Application columns: {[c.name for c in application.__table__.columns]}")
+            raise HTTPException(status_code=404, detail="No AI analysis found for this application")
+
+        print("AI analysis data found, parsing JSON...")
+        analysis = json.loads(raw_json)
+        print(f"Analysis loaded: {len(analysis) if analysis else 0} items")
+        
+        return templates.TemplateResponse("HR-dep/interview-analysis-results.html", {
+            "request": request,
+            "candidate_id": application.candidate_profile_id,
+            "application_id": application_id,
+            "analysis": analysis
+        })
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'affichage des résultats: {str(e)}")

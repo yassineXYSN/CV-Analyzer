@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats de l'Analyse IA - Candidat {{ candidate_id }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/hr-dashboard/hr-dashboard.css">
+    <style>
+        :root {
+            /* Professional Corporate Color Scheme */
+            --hr-primary: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            --hr-accent: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            --hr-secondary: linear-gradient(135deg, #64748b 0%, #475569 100%);
+            --hr-success: linear-gradient(135deg, #059669 0%, #047857 100%);
+            --hr-warning: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            --hr-error: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+
+            /* Background Colors */
+            --dark-bg: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --border-color: rgba(255, 255, 255, 0.12);
+
+            /* Text Colors */
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+
+            /* Semantic Colors */
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+            background: radial-gradient(ellipse at top, #1e293b 0%, #0f172a 50%, #020617 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .header {
+            background: var(--hr-primary);
+            color: var(--text-primary);
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .analysis-grid {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .conversation-item {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 5px solid #3b82f6;
+            transition: transform 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .conversation-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .speaker {
+            font-weight: 700;
+            color: var(--info-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .speaker.interviewer {
+            color: var(--info-color);
+        }
+
+        .speaker.interviewee {
+            color: var(--success-color);
+        }
+
+        .emotion {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .emotion.friendly { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+        .emotion.confident { background: rgba(59, 130, 246, 0.2); color: var(--info-color); }
+        .emotion.interested { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+        .emotion.thoughtful { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+        .emotion.curious { background: rgba(239, 68, 68, 0.2); color: var(--error-color); }
+        .emotion.enthusiastic { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+        .emotion.testing { background: rgba(239, 68, 68, 0.2); color: var(--error-color); }
+        .emotion.polite { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+        .emotion.pleased { background: rgba(59, 130, 246, 0.2); color: var(--info-color); }
+        .emotion.casual { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+
+        .text {
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 1.1em;
+        }
+
+        .stats {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stats h3 {
+            margin: 0 0 15px 0;
+            color: var(--info-color);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: var(--dark-bg);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--info-color);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .back-btn {
+            background: var(--hr-primary);
+            color: var(--text-primary);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            background: var(--hr-accent);
+            transform: translateY(-2px);
+        }
+
+        .export-btn {
+            background: var(--hr-success);
+            color: var(--text-primary);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            margin-left: 10px;
+        }
+
+        .export-btn:hover {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            transform: translateY(-2px);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        h3 {
+            color: var(--text-primary);
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> Résultats de l'Analyse IA</h1>
+            <p>Analyse conversationnelle avec détection d'émotions - Candidat {{ candidate_id }}</p>
+        </div>
+        <div class="content">
+            <div class="stats">
+                <h3><i class="fas fa-chart-bar"></i> Statistiques de l'Entretien</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ analysis|length }}</div>
+                        <div class="stat-label">Échanges</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ analysis|selectattr('speaker', 'equalto', 'Interviewer')|list|length }}</div>
+                        <div class="stat-label">Questions RH</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ analysis|selectattr('speaker', 'equalto', 'Interviewee')|list|length }}</div>
+                        <div class="stat-label">Réponses Candidat</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ analysis|map(attribute='emotion')|unique|list|length }}</div>
+                        <div class="stat-label">Émotions Détectées</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h3><i class="fas fa-comments"></i> Conversation Analysée</h3>
+            <div class="analysis-grid">
+                {% for item in analysis %}
+                <div class="conversation-item">
+                    <div class="speaker {{ 'interviewer' if item.speaker == 'Interviewer' else 'interviewee' }}">
+                        <i class="fas fa-{{ 'user-tie' if item.speaker == 'Interviewer' else 'user' }}"></i>
+                        {{ item.speaker }}
+                    </div>
+                    <div class="emotion {{ item.emotion }}">
+                        <i class="fas fa-heart"></i> {{ item.emotion.title() }}
+                    </div>
+                    <div class="text">
+                        {{ item.text }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="actions">
+                <button class="back-btn" onclick="window.close()">
+                    <i class="fas fa-arrow-left"></i> Fermer
+                </button>
+                <button class="export-btn" onclick="exportAnalysis()">
+                    <i class="fas fa-download"></i> Exporter PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function exportAnalysis() {
+            // Create a new window for printing/exporting
+            const printWindow = window.open('', '_blank');
+            const analysisData = {{ analysis|tojson }};
+            
+            let html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Analyse IA - Candidat {{ candidate_id }}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .conversation-item { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+                        .speaker { font-weight: bold; color: #333; }
+                        .emotion { background: #f0f0f0; padding: 2px 8px; border-radius: 10px; font-size: 0.9em; }
+                        .text { margin-top: 10px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Analyse IA - Candidat {{ candidate_id }}</h1>
+                        <p>Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
+                    </div>
+            `;
+            
+            analysisData.forEach(item => {
+                html += `
+                    <div class="conversation-item">
+                        <div class="speaker">${item.speaker}</div>
+                        <div class="emotion">${item.emotion}</div>
+                        <div class="text">${item.text}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</body></html>';
+            
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.print();
+        }
+    </script>
+</body>
+</html>

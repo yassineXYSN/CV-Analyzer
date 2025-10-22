@@ -420,16 +420,61 @@ let savedSlotIds = [];
 
 // Fonction pour vérifier l'état des créneaux d'un candidat spécifique
 
-async function checkCandidateSlotsStatus(candidateId) {
+async function checkCandidateSlotsStatus(applicationId) {
 
   try {
 
     const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
 
-    console.log(`[DEBUG] Vérification des créneaux pour le candidat ${candidateId} dans le job ${jobId}`)
+    console.log(`[DEBUG] Vérification des créneaux pour le candidat ${applicationId} dans le job ${jobId}`)
 
+    // First check if the application has interview data directly stored
+    const application = applications?.find(app => app.id == applicationId)
+    console.log(`[DEBUG] Application found:`, application)
     
+    if (application && (application.interview_date || application.interview_time)) {
+      console.log(`[DEBUG] Application ${applicationId} has direct interview data:`, {
+        interview_date: application.interview_date,
+        interview_time: application.interview_time,
+        status: application.status
+      })
+      
+      // Create a mock slot object from the application data
+      let startTime
+      if (application.interview_date && application.interview_time) {
+        // Check if interview_date already contains time (ISO format)
+        if (application.interview_date.includes('T')) {
+          // Already in ISO format, use as is
+          startTime = application.interview_date
+        } else {
+          // Convert DD/MM/YYYY format to YYYY-MM-DD for proper date parsing
+          const dateParts = application.interview_date.split('/')
+          if (dateParts.length === 3) {
+            const formattedDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`
+            startTime = `${formattedDate}T${application.interview_time}`
+          } else {
+            startTime = `${application.interview_date}T${application.interview_time}`
+          }
+        }
+      } else {
+        startTime = application.interview_date || application.interview_time
+      }
+      
+      const mockSlot = {
+        application_id: applicationId,
+        start_time: startTime,
+        is_confirmed: application.status === 'interview_scheduled' || application.status === 'interview_confirmed'
+      }
+      
+      console.log(`[DEBUG] Created mock slot for application ${applicationId}:`, mockSlot)
+      
+      return {
+        hasConfirmedSlots: true,
+        confirmedSlots: [mockSlot]
+      }
+    }
 
+    // Fallback to checking separate interview slots
     const slotsRes = await fetch(`/api/hr/interview-slots?job_id=${jobId}`, {
       credentials: "include"
     })
@@ -444,11 +489,11 @@ async function checkCandidateSlotsStatus(candidateId) {
 
     const confirmedSlotsForCandidate = slotsData.filter(slot => 
 
-      slot.is_confirmed && slot.application_id == candidateId
+      slot.is_confirmed && slot.application_id == applicationId
 
     )
 
-    console.log(`[DEBUG] Créneaux confirmés pour le candidat ${candidateId}:`, confirmedSlotsForCandidate)
+    console.log(`[DEBUG] Créneaux confirmés pour le candidat ${applicationId}:`, confirmedSlotsForCandidate)
 
     
 
@@ -472,17 +517,61 @@ async function checkCandidateSlotsStatus(candidateId) {
 
 
 
+// Fonction pour vérifier si une analyse IA existe déjà
+async function checkExistingAnalysis(applicationId, textSpan, icon, button, confirmedSlots) {
+  try {
+    console.log(`[DEBUG] Vérification de l'analyse existante pour l'application ${applicationId}`)
+    
+    // Use the dedicated endpoint to check for analysis
+    const response = await fetch(`/api/hr/check-analysis/${applicationId}`, {
+      method: 'GET',
+      credentials: 'include'
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      console.log(`[DEBUG] Analysis check result:`, result)
+      
+      if (result.has_analysis) {
+        // Analysis exists, show "Voir analyse IA"
+        textSpan.textContent = 'Voir analyse IA'
+        icon.className = 'fas fa-eye'
+        console.log(`[DEBUG] Analyse trouvée pour l'application ${applicationId}: Voir analyse IA`)
+        button.onclick = () => window.open(`/api/hr/interview-analysis-results/${applicationId}`, '_blank')
+      } else {
+        // No analysis found, show "Analyser entretien"
+        textSpan.textContent = 'Analyser entretien'
+        icon.className = 'fas fa-chart-line'
+        console.log(`[DEBUG] Aucune analyse trouvée pour l'application ${applicationId}: Analyser entretien`)
+        button.onclick = () => openAnalyzeInterviewModal(applicationId, confirmedSlots)
+      }
+    } else {
+      // Error checking analysis, default to "Analyser entretien"
+      textSpan.textContent = 'Analyser entretien'
+      icon.className = 'fas fa-chart-line'
+      console.log(`[DEBUG] Erreur lors de la vérification pour l'application ${applicationId}: Analyser entretien`)
+      button.onclick = () => openAnalyzeInterviewModal(applicationId, confirmedSlots)
+    }
+  } catch (error) {
+    console.error(`[ERROR] Erreur lors de la vérification de l'analyse pour l'application ${applicationId}:`, error)
+    // En cas d'erreur, afficher "Analyser entretien" par défaut
+    textSpan.textContent = 'Analyser entretien'
+    icon.className = 'fas fa-chart-line'
+    button.onclick = () => openAnalyzeInterviewModal(applicationId, confirmedSlots)
+  }
+}
+
 // Fonction pour mettre à jour le bouton d'un candidat spécifique
 
-async function updateCandidateButton(candidateId) {
+async function updateCandidateButton(applicationId) {
 
-  console.log(`[DEBUG] Mise à jour du bouton pour le candidat ${candidateId}`)
+  console.log(`[DEBUG] Mise à jour du bouton pour le candidat ${applicationId}`)
 
   
 
-  const button = document.getElementById(`schedule-btn-${candidateId}`)
+  const button = document.getElementById(`schedule-btn-${applicationId}`)
 
-  const textSpan = document.getElementById(`schedule-text-${candidateId}`)
+  const textSpan = document.getElementById(`schedule-text-${applicationId}`)
 
   const icon = button?.querySelector('i')
 
@@ -490,7 +579,7 @@ async function updateCandidateButton(candidateId) {
 
   if (!button) {
 
-    console.log(`[DEBUG] Bouton non trouvé pour le candidat ${candidateId} (ID: schedule-btn-${candidateId})`)
+    console.log(`[DEBUG] Bouton non trouvé pour le candidat ${applicationId} (ID: schedule-btn-${applicationId})`)
 
     return
 
@@ -500,7 +589,7 @@ async function updateCandidateButton(candidateId) {
 
   if (!textSpan) {
 
-    console.log(`[DEBUG] TextSpan non trouvé pour le candidat ${candidateId} (ID: schedule-text-${candidateId})`)
+    console.log(`[DEBUG] TextSpan non trouvé pour le candidat ${applicationId} (ID: schedule-text-${applicationId})`)
 
     return
 
@@ -510,7 +599,7 @@ async function updateCandidateButton(candidateId) {
 
   if (!icon) {
 
-    console.log(`[DEBUG] Icône non trouvée pour le candidat ${candidateId}`)
+    console.log(`[DEBUG] Icône non trouvée pour le candidat ${applicationId}`)
 
     return
 
@@ -518,15 +607,15 @@ async function updateCandidateButton(candidateId) {
 
   
 
-  const status = await checkCandidateSlotsStatus(candidateId)
+  const status = await checkCandidateSlotsStatus(applicationId)
 
-  console.log(`[DEBUG] Statut pour le candidat ${candidateId}:`, status)
+  console.log(`[DEBUG] Statut pour le candidat ${applicationId}:`, status)
 
   
 
   // Vérifier le statut de l'application dans le tableau
 
-  const application = applications?.find(app => app.id == candidateId)
+  const application = applications?.find(app => app.id == applicationId)
 
   const isInterviewScheduled = application?.status === 'interview_scheduled'
 
@@ -536,57 +625,73 @@ async function updateCandidateButton(candidateId) {
 
     // Le candidat a des créneaux confirmés
 
-    console.log(`[DEBUG] Candidat ${candidateId} a des créneaux confirmés - Mise à jour du bouton`)
+    console.log(`[DEBUG] Candidat ${applicationId} a des créneaux confirmés - Mise à jour du bouton`)
+    console.log(`[DEBUG] isInterviewScheduled: ${isInterviewScheduled}`)
+    console.log(`[DEBUG] confirmedSlots:`, status.confirmedSlots)
 
     icon.className = 'fas fa-calendar-check'
 
+    // Vérifier si l'entretien est dans le passé (peu importe le statut)
+    const now = new Date()
+    console.log(`[DEBUG] Current date/time: ${now}`)
+    console.log(`[DEBUG] Current date ISO: ${now.toISOString()}`)
+    console.log(`[DEBUG] Current date local: ${now.toLocaleString()}`)
     
+    const hasPastInterview = status.confirmedSlots.some(slot => {
+      const slotTime = new Date(slot.start_time)
+      console.log(`[DEBUG] === DATE COMPARISON DEBUG ===`)
+      console.log(`[DEBUG] Slot start_time string: "${slot.start_time}"`)
+      console.log(`[DEBUG] Slot parsed date: ${slotTime}`)
+      console.log(`[DEBUG] Slot ISO string: ${slotTime.toISOString()}`)
+      console.log(`[DEBUG] Slot local string: ${slotTime.toLocaleString()}`)
+      console.log(`[DEBUG] Current date: ${now}`)
+      console.log(`[DEBUG] Current ISO: ${now.toISOString()}`)
+      console.log(`[DEBUG] Current local: ${now.toLocaleString()}`)
+      console.log(`[DEBUG] Is slot < now? ${slotTime < now}`)
+      console.log(`[DEBUG] Time difference (ms): ${now.getTime() - slotTime.getTime()}`)
+      console.log(`[DEBUG] Time difference (days): ${(now.getTime() - slotTime.getTime()) / (1000 * 60 * 60 * 24)}`)
+      console.log(`[DEBUG] === END DATE COMPARISON ===`)
+      return slotTime < now
+    })
 
-    if (isInterviewScheduled) {
+    console.log(`[DEBUG] hasPastInterview: ${hasPastInterview}`)
 
-      // Si le statut de l'application est interview_scheduled, le candidat a confirmé
-
+    if (hasPastInterview) {
+      // L'entretien est dans le passé, vérifier si une analyse existe déjà
+      console.log(`[DEBUG] Past interview detected for application ${applicationId}, checking for existing analysis`)
+      checkExistingAnalysis(application.id, textSpan, icon, button, status.confirmedSlots)
+    } else if (isInterviewScheduled) {
+      // L'entretien est dans le futur et confirmé, afficher "Entretien confirmé"
       textSpan.textContent = 'Entretien confirmé'
-
-      console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Entretien confirmé`)
-
+      console.log(`[DEBUG] Bouton mis à jour pour le candidat ${applicationId}: Entretien confirmé`)
+      button.onclick = () => showConfirmedSlotsModal(status.confirmedSlots)
     } else {
-
       // Sinon, c'est juste des créneaux en attente de confirmation du candidat
-
       textSpan.textContent = 'Créneaux en attente'
-
-      console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Créneaux en attente`)
-
+      console.log(`[DEBUG] Bouton mis à jour pour le candidat ${applicationId}: Créneaux en attente`)
+      button.onclick = () => showConfirmedSlotsModal(status.confirmedSlots)
     }
-
-    
-
-    button.onclick = () => showConfirmedSlotsModal(status.confirmedSlots)
 
   } else {
 
     // Le candidat n'a pas de créneaux confirmés
 
-    console.log(`[DEBUG] Candidat ${candidateId} n'a pas de créneaux confirmés - Mise à jour du bouton`)
+    console.log(`[DEBUG] Candidat ${applicationId} n'a pas de créneaux confirmés - Mise à jour du bouton`)
 
     icon.className = 'fas fa-calendar-plus'
 
     textSpan.textContent = 'Programmer un entretien'
 
-    button.onclick = () => openScheduleInterviewModal(candidateId, 'Candidat')
+    button.onclick = () => openScheduleInterviewModal(applicationId, 'Candidat')
 
-    console.log(`[DEBUG] Bouton mis à jour pour le candidat ${candidateId}: Programmer un entretien`)
+    console.log(`[DEBUG] Bouton mis à jour pour le candidat ${applicationId}: Programmer un entretien`)
 
   }
 
 }
-
-
-
 // Fonction pour ouvrir le modal d'analyse d'entretien
-function openAnalyzeInterviewModal(candidateId, confirmedSlots) {
-  console.log(`[DEBUG] Ouverture du modal d'analyse pour le candidat ${candidateId}`)
+function openAnalyzeInterviewModal(applicationId, confirmedSlots) {
+  console.log(`[DEBUG] Ouverture du modal d'analyse pour l'application ${applicationId}`)
   
   // Supprimer tout modal existant
   const existingModal = document.getElementById('analyzeInterviewModal')
@@ -664,7 +769,7 @@ function openAnalyzeInterviewModal(candidateId, confirmedSlots) {
             </div>
             
             <div class="ai-analysis-section">
-              <button class="btn-ai-analyze" onclick="performAIAnalysis(${candidateId})">
+              <button class="btn-ai-analyze" onclick="performAIAnalysis(${applicationId})">
                 <i class="fas fa-robot"></i> Analyser avec l'IA
               </button>
             </div>
@@ -794,7 +899,7 @@ function closeAnalyzeInterviewModal() {
 }
 
 // Fonction pour effectuer l'analyse IA
-async function performAIAnalysis(candidateId) {
+async function performAIAnalysis(applicationId) {
   const hrAudioFile = document.getElementById('hrAudioFile').files[0]
   const candidateAudioFile = document.getElementById('candidateAudioFile').files[0]
   const interviewVideoFile = document.getElementById('interviewVideoFile').files[0]
@@ -805,7 +910,7 @@ async function performAIAnalysis(candidateId) {
   }
   
   const formData = new FormData()
-  formData.append('candidate_id', candidateId)
+  formData.append('application_id', applicationId)
   
   if (hrAudioFile) formData.append('hr_audio', hrAudioFile)
   if (candidateAudioFile) formData.append('candidate_audio', candidateAudioFile)
@@ -818,25 +923,65 @@ async function performAIAnalysis(candidateId) {
   aiButton.disabled = true
   
   try {
+    console.log('Yassine performing ai analysis')
     // Wait for the analysis to complete
     const response = await fetch('/api/hr/ai-interview-analysis', {
       method: 'POST',
-      body: formData
+      body: formData,
+      credentials: 'include'
     })
     
     if (response.ok) {
-      // Analysis completed successfully, now redirect
-      alert('Analyse IA terminée avec succès! Redirection vers la page de résultats...')
-      // Redirect to the dedicated analysis results page
-      window.open(`/api/hr/interview-results-page/${candidateId}`, '_blank')
+      // Check if response is a redirect
+      if (response.redirected || response.status === 303) {
+        // Get the redirect URL from the response
+        const redirectUrl = response.url || `/api/hr/interview-analysis-results/${applicationId}`
+        console.log('Redirection vers:', redirectUrl)
+        
+        // Show success message
+        alert('Analyse IA terminée avec succès! Redirection vers les résultats...')
+        
+        // Close the modal
+        closeAnalyzeInterviewModal()
+        
+        // Open results page in new tab
+        window.open(redirectUrl, '_blank')
+      } else {
+        // Try to parse as JSON first, if it fails, assume it's HTML (redirect response)
+        try {
+          const result = await response.json()
+          console.log('Analyse IA terminée:', result)
+          
+          alert('Analyse IA terminée avec succès!')
+          closeAnalyzeInterviewModal()
+          
+          // Open results page
+          window.open(`/api/hr/interview-analysis-results/${applicationId}`, '_blank')
+        } catch (jsonError) {
+          // If JSON parsing fails, it's likely HTML from redirect
+          console.log('Réponse HTML détectée (redirection), ouverture de la page de résultats...')
+          
+          alert('Analyse IA terminée avec succès!')
+          closeAnalyzeInterviewModal()
+          
+          // Open results page
+          window.open(`/api/hr/interview-analysis-results/${applicationId}`, '_blank')
+        }
+      }
     } else {
-      const errorData = await response.json()
-      alert('Erreur lors de l\'analyse IA: ' + (errorData.detail || 'Erreur inconnue'))
+      try {
+        const errorData = await response.json()
+        console.error('Erreur API:', errorData)
+        alert('Erreur lors de l\'analyse IA: ' + (errorData.detail || 'Erreur inconnue'))
+      } catch (jsonError) {
+        console.error('Erreur lors du parsing de la réponse d\'erreur:', jsonError)
+        alert('Erreur lors de l\'analyse IA: ' + response.statusText)
+      }
     }
     
   } catch (error) {
     console.error('Erreur:', error)
-    alert('Erreur lors de l\'analyse IA')
+    alert('Erreur lors de l\'analyse IA: ' + error.message)
   } finally {
     // Restore button state
     aiButton.innerHTML = originalText
@@ -1255,7 +1400,6 @@ function showConfirmedSlotsModal(confirmedSlots) {
 
 
 // Variables globales pour le calendrier confirmé
-
 let confirmedCalendarCurrentDate = new Date()
 
 let globalConfirmedSlots = []
@@ -2046,9 +2190,6 @@ async function loadBlockedSlots() {
   }
 
 }
-
-
-
 // Cette fonction n'est plus nécessaire
 
 
@@ -2287,13 +2428,13 @@ async function saveInlineSlotsWithIds() {
 
             for (const button of allButtons) {
 
-              const candidateId = button.id.replace('schedule-btn-', '')
+              const applicationId = button.id.replace('schedule-btn-', '')
 
-              console.log(`[DEBUG] Mise à jour du bouton pour le candidat: ${candidateId}`)
+              console.log(`[DEBUG] Mise à jour du bouton pour le candidat: ${applicationId}`)
 
-              if (candidateId) {
+              if (applicationId) {
 
-                await updateCandidateButton(candidateId)
+                await updateCandidateButton(applicationId)
 
               }
 
@@ -2810,9 +2951,6 @@ async function initGoogleSection() {
   }
 
 }
-
-
-
 function loadGoogleCalendarEmbed() {
 
   const calendarEmbed = document.getElementById('googleCalendarEmbed')
@@ -3600,9 +3738,6 @@ function showSelectedHours() {
   }, 100)
 
 }
-
-
-
 // Fonction pour forcer l'application des styles avec retry
 
 function forceApplyCalendarStylesWithRetry() {
@@ -3980,9 +4115,6 @@ function validateSlotTimes() {
   }
 
 }
-
-
-
 async function showTimeSelector(dateString, dayElement) {
 
   const [y, m, d] = dateString.split('-').map(Number)
@@ -4730,9 +4862,6 @@ async function showTimeSelector(dateString, dayElement) {
     }
 
   })
-
-  
-
   // Confirmer la sélection
 
   confirmBtn.addEventListener('click', async () => {
@@ -5436,9 +5565,6 @@ async function loadInterviewDataForApplications() {
   console.log("[v0] Interview data loaded from applications table.")
 
 }
-
-
-
 async function loadJobFromAPI(jobId) {
 
   try {
@@ -5453,7 +5579,8 @@ async function loadJobFromAPI(jobId) {
 
       const result = await response.json()
 
-      console.log("[DEBUG] Réponse complète de l'API:", result) // <-- AJOUTEZ CE LOG
+        console.log("[DEBUG] Réponse complète de l'API:", result) // <-- AJOUTEZ CE LOG
+        console.log("[DEBUG] API endpoint used: /api/job/" + jobId)
 
       
 
@@ -5464,6 +5591,7 @@ async function loadJobFromAPI(jobId) {
         applications = result.job.applications || []
 
         console.log("[DEBUG] Applications chargées:", applications) // <-- ET CELUI-CI
+        console.log("[DEBUG] First application ai_interview_analysis:", applications[0]?.ai_interview_analysis)
 
 
 
@@ -5476,6 +5604,8 @@ async function loadJobFromAPI(jobId) {
             const appsResult = await appsResponse.json()
 
             console.log("[DEBUG] API /api/applications response:", appsResult)
+            console.log("[DEBUG] Fallback API endpoint used: /api/applications?job_id=" + jobId)
+            console.log("[DEBUG] First fallback application ai_interview_analysis:", appsResult.applications?.[0]?.ai_interview_analysis)
 
             if (appsResult.success && appsResult.applications) {
 
@@ -6068,9 +6198,6 @@ function initializeSkillsValidationState() {
   })
 
 }
-
-
-
 function renderApplicationsWithCompatibility(filter = "all") {
 
   const container = document.getElementById("applicationsList")
@@ -6852,9 +6979,6 @@ async function viewCompatibilityDetails(applicationId) {
   }
 
 }
-
-
-
 function showDarkCompatibilityModal(
 
   compatibilityData,
@@ -7648,7 +7772,6 @@ function showDarkCompatibilityModal(
         `
 
         }
-
       </div>
 
       
@@ -7777,7 +7900,7 @@ function renderCandidateActions(app) {
 
   const candidateName = app.name || app.candidate_name || "Candidat inconnu"
 
-  const candidateId = app.candidate_id || app.candidate_profile_id || app.id
+  const applicationId = app.candidate_id || app.candidate_profile_id || app.id
 
 
 
@@ -7821,7 +7944,7 @@ function renderCandidateActions(app) {
 
     parts.push(`
 
-      <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+      <button class="btn-action info" onclick="viewCandidateProfile(${applicationId})">
 
         <i class="fas fa-info-circle"></i> Voir profil
 
@@ -7947,7 +8070,7 @@ function renderCandidateActions(app) {
 
     parts.push(`
 
-    <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+    <button class="btn-action info" onclick="viewCandidateProfile(${applicationId})">
 
       <i class="fas fa-info-circle"></i> Voir profil
 
@@ -8027,7 +8150,7 @@ function renderCandidateActions(app) {
 
     parts.push(`
 
-    <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+    <button class="btn-action info" onclick="viewCandidateProfile(${applicationId})">
 
       <i class="fas fa-info-circle"></i> Voir profil
 
@@ -8047,7 +8170,7 @@ function renderCandidateActions(app) {
 
   return `
 
-  <button class="btn-action info" onclick="viewCandidateProfile(${candidateId})">
+  <button class="btn-action info" onclick="viewCandidateProfile(${applicationId})">
 
     <i class="fas fa-info-circle"></i> Voir profil
 
@@ -8442,9 +8565,6 @@ function goBackToDashboard() {
   window.location.href = "/dashboard"
 
 }
-
-
-
 function getStatusText(status) {
 
   const statusTexts = {
@@ -9174,9 +9294,6 @@ function showAcceptConfirmation(applicationId, candidateName, jobTitle, departme
   document.addEventListener("keydown", handleEscapeKey)
 
 }
-
-
-
 function showRejectConfirmation(applicationId, candidateName, jobTitle) {
 
   const modal = document.createElement("div")
@@ -9603,9 +9720,9 @@ function filterApplications(filter) {
 
 
 
-function viewCandidateProfile(candidateId) {
+function viewCandidateProfile(applicationId) {
 
-  window.location.href = `/candidate-profile/${candidateId}`
+  window.location.href = `/candidate-profile/${applicationId}`
 
 }
 
@@ -9962,9 +10079,6 @@ function updateFilterCounts() {
   }
 
 }
-
-
-
 async function viewQuizResults(applicationId, candidateName) {
 
   try {
@@ -10139,83 +10253,11 @@ async function viewAIAnalysis(applicationId, candidateName) {
 
     } else {
 
-      console.log("[viewAIAnalysis] No review exists in loaded data, checking API directly")
+      console.log("[viewAIAnalysis] No review exists in loaded data, generating one automatically")
 
-      
+      // No review exists, generate one automatically using the same logic as quiz preview
 
-      // Show loading state while checking API
-
-      if (button) {
-
-        button.disabled = true
-
-        button.innerHTML = '<i class="fas fa-circle-notch spinning"></i> Vérification...'
-
-        button.style.opacity = '0.7'
-
-      }
-
-      
-
-      // Fallback: Check API directly in case data wasn't loaded properly
-
-      try {
-
-        const response = await fetch(`/api/applications/${applicationId}/quiz-review`)
-
-        const data = await response.json()
-
-        
-
-        if (data.success && data.has_review) {
-
-          console.log("[viewAIAnalysis] Found review via API, showing modal")
-
-          // Reset button state
-
-          if (button) {
-
-            button.disabled = false
-
-            button.innerHTML = originalButtonContent
-
-            button.style.opacity = '1'
-
-          }
-
-          showAIAnalysisModal(data.quiz_review, data.quiz_review_date, candidateName)
-
-        } else {
-
-          console.log("[viewAIAnalysis] No review exists, generating one automatically")
-
-          // No review exists, generate one automatically using the same logic as quiz preview
-
-          await generateAIAnalysis(applicationId, candidateName)
-
-        }
-
-      } catch (apiError) {
-
-        console.error("[viewAIAnalysis] API fallback error:", apiError)
-
-        showNotification("Erreur lors de la récupération de l'analyse IA", "error")
-
-        
-
-        // Reset button state on error
-
-        if (button) {
-
-          button.disabled = false
-
-          button.innerHTML = originalButtonContent
-
-          button.style.opacity = '1'
-
-        }
-
-      }
+      await generateAIAnalysis(applicationId, candidateName)
 
     }
 
@@ -10754,9 +10796,6 @@ function updateAnalyzeButtonText(applicationId, hasReview) {
   }
 
 }
-
-
-
 // Make test functions globally available
 
 window.testAIModal = testAIModal
@@ -11440,9 +11479,6 @@ function showQuizValidationError() {
   showNotification("❌ Impossible de valider le quiz : le candidat n'a pas encore complété le quiz ou n'a pas de score valide.", "error");
 
 }
-
-
-
 async function validateQuizAndRemoveOverlay(applicationId) {
 
   try {
@@ -11615,9 +11651,9 @@ function handleOpenCreateQuizClick(buttonEl) {
 
 
 
-async function openCreateQuizModal(candidateId = null, candidateName = null) {
+async function openCreateQuizModal(applicationId = null, candidateName = null) {
 
-  window.currentQuizCandidateId = candidateId
+  window.currentQuizCandidateId = applicationId
 
   window.currentQuizCandidateName = candidateName
 
@@ -12150,9 +12186,6 @@ function showQuizGenerationPopup() {
   })
 
 }
-
-
-
 async function proceedWithQuizGeneration() {
 
   const quizForm = document.getElementById("createQuizForm")
@@ -12339,7 +12372,7 @@ async function proceedWithQuizGeneration() {
 
 
 
-  const candidateId = window.currentQuizCandidateId || null
+  const applicationId = window.currentQuizCandidateId || null
 
 
 
@@ -12365,7 +12398,7 @@ async function proceedWithQuizGeneration() {
 
         job_id: currentJob ? currentJob.id || currentJob.job_id : null,
 
-        candidate_id: candidateId,
+        candidate_id: applicationId,
 
       }),
 
@@ -12587,13 +12620,13 @@ let currentCandidateId = null;
 
 // Fonction pour charger les créneaux d'un candidat spécifique
 
-async function loadCandidateSlots(candidateId) {
+async function loadCandidateSlots(applicationId) {
 
   try {
 
     const jobId = (currentJob && (currentJob.id || currentJob.job_id)) || new URLSearchParams(window.location.search).get("id")
 
-    console.log(`[DEBUG] Chargement des créneaux pour le candidat ${candidateId} dans le job ${jobId}`)
+    console.log(`[DEBUG] Chargement des créneaux pour le candidat ${applicationId} dans le job ${jobId}`)
 
     
 
@@ -12609,7 +12642,7 @@ async function loadCandidateSlots(candidateId) {
 
     const candidateSlots = slotsData.filter(slot => 
 
-      slot.application_id == candidateId
+      slot.application_id == applicationId
 
     )
 
@@ -12617,7 +12650,7 @@ async function loadCandidateSlots(candidateId) {
 
     // Stocker les créneaux pour ce candidat
 
-    selectedSlotsByCandidate[candidateId] = candidateSlots.map(slot => ({
+    selectedSlotsByCandidate[applicationId] = candidateSlots.map(slot => ({
 
       start: new Date(slot.start_time),
 
@@ -12631,17 +12664,17 @@ async function loadCandidateSlots(candidateId) {
 
     
 
-    console.log(`[DEBUG] Créneaux chargés pour le candidat ${candidateId}:`, selectedSlotsByCandidate[candidateId])
+    console.log(`[DEBUG] Créneaux chargés pour le candidat ${applicationId}:`, selectedSlotsByCandidate[applicationId])
 
     
 
-    return selectedSlotsByCandidate[candidateId]
+    return selectedSlotsByCandidate[applicationId]
 
   } catch (error) {
 
     console.error('Erreur lors du chargement des créneaux du candidat:', error)
 
-    selectedSlotsByCandidate[candidateId] = []
+    selectedSlotsByCandidate[applicationId] = []
 
     return []
 
@@ -12946,9 +12979,6 @@ function updateScoreCircle(element, percentage) {
   }
 
 }
-
-
-
 document.addEventListener("DOMContentLoaded", () => {
 
   const scoreCircles = document.querySelectorAll(".score-circle")
@@ -12968,4 +12998,3 @@ document.addEventListener("DOMContentLoaded", () => {
   })
 
 })
-

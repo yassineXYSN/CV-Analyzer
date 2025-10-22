@@ -248,6 +248,7 @@ class Application(Base):
     interview_date = Column(DateTime)
     interview_time = Column(String(50), comment="Interview time in HH:MM format")
     interview_type = Column(String(100), comment="Type of interview (e.g., 'Entretien technique', 'Entretien RH')")
+    ai_interview_analysis = Column(Text, comment="AI analysis of the interview")
     
     # Suivi
     reviewed_by = Column(Integer, ForeignKey("hr_admins.id"))

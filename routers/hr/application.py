@@ -155,6 +155,7 @@ class SkillValidationRequest(BaseModel):
 async def get_applications(
     status_filter: Optional[str] = Query("all"),
     compatibility_filter: Optional[str] = Query("all"),
+    job_id: Optional[int] = Query(None),
     db: Session = Depends(get_db)
 ):
     try:
@@ -216,6 +217,11 @@ async def get_applications(
         if status_filter and status_filter != "all":
             query = query.filter(Application.status == status_filter)
             print(f"🔍 [v0] API APPLICATIONS: Status filter applied: {status_filter}")
+        
+        # Appliquer le filtre par job_id si fourni
+        if job_id:
+            query = query.filter(Application.job_id == job_id)
+            print(f"🔍 [v0] API APPLICATIONS: Job ID filter applied: {job_id}")
 
         applications = query.order_by(Application.application_date.desc()).all()
         print(f"📊 [v0] API APPLICATIONS: Found {len(applications)} applications")
@@ -382,6 +388,8 @@ async def get_applications(
                 "interview_date": app.interview_date.isoformat() if app.interview_date else None,
                 "interview_time": app.interview_time,
                 "interview_type": app.interview_type,
+                # Données d'analyse IA
+                "ai_interview_analysis": app.ai_interview_analysis,
                 # Données de quiz
                 "quiz_score": quiz_data["quiz_score"] if quiz_data else 0,
                 "quiz_duration": quiz_data["quiz_duration"] if quiz_data else None,
@@ -955,6 +963,8 @@ async def get_job_with_applications(job_id: int, db: Session = Depends(get_db)):
                 "interview_date": app.interview_date.isoformat() if app.interview_date else None,
                 "interview_time": app.interview_time,
                 "interview_type": app.interview_type,
+                # Données d'analyse IA
+                "ai_interview_analysis": app.ai_interview_analysis,
 
             }
             
