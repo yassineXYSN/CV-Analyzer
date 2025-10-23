@@ -346,10 +346,26 @@ async def verify_email(
         user.verification_token_expires = None
         db.commit()
         
-        return templates.TemplateResponse("client-dep/auth/verification-success.html", {
+        # Create a session for the user after verification
+        session_token = create_user_session(db, user.id, remember_me=False)
+        
+        # Create response with session cookie
+        response = templates.TemplateResponse("client-dep/auth/verification-success.html", {
             "request": request,
             "user": user
         })
+        
+        # Set session cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            max_age=24 * 60 * 60,  # 24 hours
+            httponly=True,
+            secure=False,
+            samesite="lax"
+        )
+        
+        return response
         
     except Exception as e:
         print(f"Email verification error: {str(e)}")
@@ -441,19 +457,7 @@ async def signup_step2(
         timeout_seconds=180,
     )
 
-    # Optional: single poll on a result endpoint (if configured)
-    if n8n_data is None and N8N_RESULT_URL:
-        try:
-            poll_url = add_query_params(N8N_RESULT_URL, {"filename": filetoscan.filename})
-            async with httpx.AsyncClient(timeout=60) as client:
-                r = await client.get(poll_url)
-                if r.status_code < 400 and r.text.strip():
-                    if "application/json" in (r.headers.get("content-type", "").lower()):
-                        n8n_data = r.json()
-                    elif r.text.strip().startswith("{") or r.text.strip().startswith("["):
-                        n8n_data = json.loads(r.text)
-        except Exception:
-            n8n_data = None
+
 
     # Handle case where n8n doesn't respond
     if n8n_data is None:

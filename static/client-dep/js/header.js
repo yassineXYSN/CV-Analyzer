@@ -135,12 +135,6 @@ class HeaderComponent {
         const userData = await response.json()
         if (userData.authenticated && userData.user) {
           this.setUser(userData.user)
-          if (userData.user.profile === null) {
-            const step2Item = document.getElementById("setupstep2")
-            if (step2Item) {
-              step2Item.style.display = "block"
-            }
-          }
           return
         }
       }
@@ -191,6 +185,14 @@ class HeaderComponent {
       quizzesContainer.style.display = user.profile !== null ? "block" : "none"
     }
 
+    // Show "Continue Sign-up" button if user is verified but has no profile
+    if (user.profile === null && user.is_verified) {
+      const step2Item = document.getElementById("setupstep2")
+      if (step2Item) {
+        step2Item.style.display = "block"
+      }
+    }
+
     guestMenuContainers.forEach((container) => {
       container.style.display = "none"
     })
@@ -211,7 +213,7 @@ class HeaderComponent {
 
     // Update the displayed slot/date if available (does not affect visibility)
     this.updatePlannedInterviewMenu()
-}
+  }
 
 async updatePlannedInterviewMenu() {
     const slotContainer = document.getElementById("plannedInterviewSlot")

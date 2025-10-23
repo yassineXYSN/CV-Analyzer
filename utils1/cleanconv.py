@@ -23,7 +23,7 @@ def clean_conversation(audio1, audio2, video, application_id):
     conversation_text = "\n".join(
         [f"{entry['speaker']}: {entry['text']}" for entry in conversation]
     )
-    url = "https://gaxopin551.app.n8n.cloud/webhook/clean-conv"
+    url = "https://hisib81661.app.n8n.cloud/webhook/clean-conv"
     
     response = requests.post(url, json=conversation_text)
     
@@ -89,7 +89,7 @@ def analyze_conversation_detailed(conversation, application_id):
         if App.candidate_profile:
             print(f"  - Candidate Name: {App.candidate_profile.name}")
             print(f"  - Candidate Email: {App.candidate_profile.contact.email if App.candidate_profile.contact else 'N/A'}")
-            url = "https://gaxopin551.app.n8n.cloud/webhook/analyze-conv"
+            url = "https://hisib81661.app.n8n.cloud/webhook/analyze-conv"
             
             payload = {
                 "conversation": conversation,

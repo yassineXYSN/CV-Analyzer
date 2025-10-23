@@ -24,8 +24,7 @@ templates = Jinja2Templates(directory=templates_dir)
 # n8n webhook URL (set N8N_WEBHOOK_URL in env to override)
 N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")+"/cv-upload"
 
-# Optional polling endpoint if your n8n exposes one (leave empty if not used)
-N8N_RESULT_URL = os.getenv("N8N_RESULT_URL")
+
 
 
 def add_query_params(url: str, params: Dict[str, str]) -> str:
@@ -238,18 +237,7 @@ async def scan_file(
     )
 
     # 2) Optional: single poll on a result endpoint (if configured)
-    if n8n_data is None and N8N_RESULT_URL:
-        try:
-            poll_url = add_query_params(N8N_RESULT_URL, {"filename": filetoscan.filename})
-            async with httpx.AsyncClient(timeout=60) as client:
-                r = await client.get(poll_url)
-                if r.status_code < 400 and r.text.strip():
-                    if "application/json" in (r.headers.get("content-type", "").lower()):
-                        n8n_data = r.json()
-                    elif r.text.strip().startswith("{") or r.text.strip().startswith("["):
-                        n8n_data = json.loads(r.text)
-        except Exception:
-            n8n_data = None
+
 
     # If no JSON, render with a friendly error
     if n8n_data is None:
