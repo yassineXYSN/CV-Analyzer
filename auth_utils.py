@@ -16,7 +16,7 @@ class PasswordManager:
     @staticmethod
     def hash_password(password: str) -> str:
         """Hache un mot de passe avec salt"""
-        # Générer un salt aléatoire de 32 bytes
+        # Générer vhvgun salt aléatoire de 32 bytes
         salt = secrets.token_hex(32)
         
         # Hacher le mot de passe avec PBKDF2
