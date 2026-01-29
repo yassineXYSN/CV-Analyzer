@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum, Numeric
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, DECIMAL, Boolean, DateTime, Date, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from databasehr.database import Base
@@ -19,63 +19,19 @@ class AnalyseCandidat(Base):
 
 class ProfileCandidat(Base):
     __tablename__ = "profile_candidat"
-
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
-
     name = Column(String(255))
     title = Column(String(255))
     profile = Column(Text)
     contact_id = Column(Integer, ForeignKey("contact.id"))
     analyse_id = Column(Integer, ForeignKey("analyse_candidat.id"))
-    yearOfExperience = Column(Integer)
     education = Column(JSON)
     languages = Column(JSON)
     certificates = Column(JSON)
     skills = Column(JSON)
-    profile_picture = Column(String(500))
 
-    # Relations
     contact = relationship("Contact")
     analyse = relationship("AnalyseCandidat")
-    user = relationship("User", back_populates="profile")  # 👈 correct one
-from enum import Enum as PyEnum   # 👈 différencier les deux
-
-# Enum Python
-class InterviewStatus(PyEnum):
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    PENDING = "pending"
-
-# Modèle SQLAlchemy
-class Interview(Base):
-    __tablename__ = "interviews"
-
-    id = Column(Integer, primary_key=True, index=True)
-
-    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # <-- ici
-    application_id = Column(Integer, ForeignKey("applications.id"), nullable=False)
-
-    status = Column(
-        Enum(InterviewStatus, name="interview_status"),
-        default=InterviewStatus.PENDING,
-        nullable=False
-    )
-
-    start_session = Column(Boolean, default=False)
-    end_session = Column(Boolean, default=False)
-
-    scheduled_at = Column(DateTime, nullable=True)
-    started_at = Column(DateTime, nullable=True)
-    ended_at = Column(DateTime, nullable=True)
-
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-
-    # Relations
-    candidate = relationship("User", backref="interviews")  # <-- utiliser User
-    application = relationship("Application", backref="interviews")
-
 
 # NOUVEAUX MODÈLES HR
 class HRAdmin(Base):
@@ -86,15 +42,11 @@ class HRAdmin(Base):
     password_hash = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    role = Column(Enum('super_admin', 'recruiter', 'department_head','admin'), default='admin')
+    role = Column(Enum('super_admin', 'hr_admin', 'hr_manager'), default='hr_admin')
     is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)  # Nouveau champ
     last_login = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    
-    verification_token = Column(String(255), nullable=True)
-    token_expires = Column(DateTime, nullable=True)
 
 class Company(Base):
     __tablename__ = "companies"
@@ -103,7 +55,7 @@ class Company(Base):
     company_name = Column(String(255), nullable=False)
     industry = Column(String(100))
     company_size = Column(Enum('1-10', '11-50', '51-200', '201-1000', '1000+'))
-    founded_year = Column(DateTime)
+    founded_year = Column(Integer)
     description = Column(Text)
     logo_url = Column(String(500))
     
@@ -115,10 +67,11 @@ class Company(Base):
     
     # Réseaux sociaux
     linkedin_url = Column(String(255))
+    twitter_url = Column(String(255))
     facebook_url = Column(String(255))
     
     # Métadonnées
-    setup_completed = Column(Integer, default=0)
+    setup_completed = Column(Boolean, default=False)
     created_by = Column(Integer, ForeignKey("hr_admins.id"))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -132,7 +85,6 @@ class AdminCompanyAccess(Base):
     access_level = Column(Enum('owner', 'admin', 'viewer'), default='admin')
     granted_at = Column(DateTime, default=func.now())
     granted_by = Column(Integer, ForeignKey("hr_admins.id"))
-    
 
 class Department(Base):
     __tablename__ = "departments"
@@ -141,7 +93,7 @@ class Department(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(Text)
-    manager_id = Column(Integer)
+    manager_name = Column(String(255))
     color = Column(String(7), default='#e74c3c')
     budget = Column(DECIMAL(15,2))
     is_active = Column(Boolean, default=True)
@@ -199,7 +151,7 @@ class Job(Base):
     employment_type = Column(Enum('CDI', 'CDD', 'Stage', 'Freelance'), nullable=False)
     salary_min = Column(DECIMAL(10,2))
     salary_max = Column(DECIMAL(10,2))
-    currency = Column(String(3), default='TND')
+    currency = Column(String(3), default='EUR')
     
     # Gestion du poste
     priority = Column(Enum('low', 'normal', 'urgent'), default='normal')
@@ -214,10 +166,6 @@ class Job(Base):
     
     # Statistiques
     applications_count = Column(Integer, default=0)
-    
-    # Relationships
-    department = relationship("Department")
-    company = relationship("Company")
 
 class JobSkill(Base):
     __tablename__ = "job_skills"
@@ -238,19 +186,16 @@ class Application(Base):
     id = Column(Integer, primary_key=True, index=True)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
     candidate_profile_id = Column(Integer, ForeignKey("profile_candidat.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     # Informations de candidature
     application_date = Column(DateTime, default=func.now())
-    status = Column(Enum('pending', 'reviewed', 'interview_scheduled', 'interview_completed', 'accepted', 'rejected', 'withdrawn','accepted_pending_validation'), default='pending')
+    status = Column(Enum('pending', 'reviewed', 'interview_scheduled', 'interview_completed', 'accepted', 'rejected', 'withdrawn'), default='pending')
     
     # Évaluation
     hr_rating = Column(DECIMAL(3,2))
     hr_notes = Column(Text)
     interview_date = Column(DateTime)
-    interview_time = Column(String(50), comment="Interview time in HH:MM format")
-    interview_type = Column(String(100), comment="Type of interview (e.g., 'Entretien technique', 'Entretien RH')")
-    ai_interview_analysis = Column(Text, comment="AI analysis of the interview")
+    interview_notes = Column(Text)
     
     # Suivi
     reviewed_by = Column(Integer, ForeignKey("hr_admins.id"))
@@ -258,56 +203,14 @@ class Application(Base):
     decision_date = Column(DateTime)
     decision_reason = Column(Text)
     
-    # NOUVEAUX CHAMPS DE RECOMMANDATION
-    is_recommended = Column(Boolean, default=False)
-    recommended_by_admin_id = Column(Integer, ForeignKey("hr_admins.id"))
-    recommendation_comment = Column(Text)
-    recommendation_priority = Column(Enum('normal', 'high', 'urgent'), default='normal')
-    recommendation_date = Column(DateTime)
-    
-
-    
     # Métadonnées
     source = Column(String(100))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
-    # Relations
-    job = relationship("Job")
-    candidate_profile = relationship("ProfileCandidat")
-    reviewed_by_admin = relationship("HRAdmin", foreign_keys=[reviewed_by])
-    recommended_by_admin = relationship("HRAdmin", foreign_keys=[recommended_by_admin_id])
-    
-    skills_validated = Column(Boolean, default=False)
-    skills_validated_by = Column(Integer, ForeignKey("hr_admins.id"))
-    skills_validated_at = Column(DateTime)
-    skills_validated_notes = Column(Text)
-    
-    skills_validated_by_admin = relationship("HRAdmin", foreign_keys=[skills_validated_by])
-    quiz_validated = Column(Boolean, default=False)
-    quiz_validated_by = Column(Integer, ForeignKey("hr_admins.id"))
-    quiz_validated_at = Column(DateTime)
-    quiz_validated_notes = Column(Text)
-    
-    # Relations
-    quiz_validated_by_admin = relationship("HRAdmin", foreign_keys=[quiz_validated_by])
-
-
-    # Relationships
-    job = relationship("Job")
-    candidate_profile = relationship("ProfileCandidat")
-    
-    compatibility_score = Column(Numeric(5, 2), comment="Compatibility score between candidate and job (0-100)")
-    compatibility_reason = Column(Text, comment="Detailed reason for compatibility score from AI analysis")
-    n8n_webhook_triggered = Column(Boolean, default=False, comment="Flag to track if n8n webhook was triggered")
-    
-    # AI Quiz Review
-    quiz_review = Column(Text, comment="AI analysis review of quiz performance and candidate assessment")
-    quiz_review_date = Column(DateTime, comment="Date when the quiz review was generated")
-    
-    # Google Calendar Integration
-    google_calendar_event_id = Column(String(200), comment="Google Calendar event ID for the interview")
-    google_meet_link = Column(Text, comment="Google Meet link for the interview")
+    # Add compatibility score
+    compatibility_score = Column(DECIMAL(4,1))
+    skills_match = Column(JSON)
 
 # NOUVEAU MODÈLE POUR L'ACTIVITÉ RÉCENTE
 class ActivityLog(Base):
@@ -334,210 +237,3 @@ class ActivityLog(Base):
     # Relations
     company = relationship("Company")
     admin = relationship("HRAdmin")
-
-class AdminPermissions(Base):
-    __tablename__ = "admin_permissions"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
-    can_add_department = Column(Boolean, default=False)
-    can_manage_applications = Column(Boolean, default=False)
-    can_recommend_candidates = Column(Boolean, default=False)
-    # Relations
-    admin = relationship("HRAdmin")
-
-class AdminDepartments(Base):
-    __tablename__ = "admin_departments"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
-    department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
-    
-    # Relations
-    admin = relationship("HRAdmin")
-    department = relationship("Department")
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), nullable=False, unique=True)
-    password_hash = Column(String(255))
-    first_name = Column(String(100), nullable=False)
-    last_name = Column(String(100), nullable=False)
-    google_id = Column(String(255), unique=True)
-    profile_picture = Column(String(500))
-    is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    verification_token = Column(String(255))
-    verification_token_expires = Column(DateTime)
-
-    # Relations
-    profile = relationship("ProfileCandidat", back_populates="user", uselist=False)
-    
-class Notification(Base):
-    __tablename__ = "notifications"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    type = Column(String(50), nullable=False)
-    title = Column(String(200), nullable=False)
-    message = Column(Text, nullable=False)
-    is_read = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    response_status = Column(Boolean, default=False)   # ✅ ici, c'est un booléen
-    application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
-    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
-    status = Column(String(50), nullable=True)
-    company_name = Column(String(200), nullable=True)
-    job_title = Column(String(200), nullable=True)
-    admin_name = Column(String(100), nullable=True)
-    scheduled_slots = Column(Text, nullable=True)
-    chosen_slot = Column(String(50), nullable=True)
-
-
-class Quiz(Base):
-    __tablename__ = "quizzes"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False)
-    description = Column(Text)
-    time_limit	 = Column(Integer, nullable=False)
-    total_questions = Column(Integer, default=0)
-    
-    # Relations
-    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
-    candidate_id = Column(Integer, ForeignKey("profile_candidat.id"), nullable=True)
-    created_by_admin_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
-    
-    # Status and metadata
-    status = Column(Enum('draft', 'active', 'completed', 'archived'), default='draft')
-    n8n_webhook_url = Column(String(500))
-    n8n_response = Column(JSON)
-    n8n_webhook_triggered = Column(Boolean, default=False)
-    webhook_error = Column(Text)
-    
-    # Timestamps
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    
-    # Relationships
-    job = relationship("Job")
-    candidate = relationship("ProfileCandidat")
-    created_by = relationship("HRAdmin")
-
-class QuizSkill(Base):
-    __tablename__ = "quiz_skills"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
-    skill_name = Column(String(100), nullable=False)
-    questions_count = Column(Integer, nullable=False)
-    difficulty = Column(Enum('easy', 'medium', 'hard', 'expert'), nullable=False)
-    
-    # Timestamps
-    created_at = Column(DateTime, default=func.now())
-    
-    # Relationships
-    quiz = relationship("Quiz", backref="skills")
-
-class QuizQuestion(Base):
-    __tablename__ = "quiz_questions"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
-    skill = Column(String(100), nullable=False)
-    question_text = Column(Text, nullable=False)
-    
-    # Question options and answers
-    options = Column(JSON)  # For multiple choice questions
-    correct_answer = Column(Text, nullable=False)
-    explanation = Column(Text)
-    
-    # Order and metadata
-    question_order = Column(Integer, default=0)
-    
-    # Timestamps
-    created_at = Column(DateTime, default=func.now())
-    
-    # Relationships
-    quiz = relationship("Quiz", backref="questions")
-
-class QuizAttempt(Base):
-    __tablename__ = "quiz_attempts"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
-    candidate_id = Column(Integer, ForeignKey("profile_candidat.id"), nullable=False)
-    
-    # Attempt details - matching actual database schema
-    start_time = Column(DateTime, default=func.now())
-    end_time = Column(DateTime)
-    score = Column(DECIMAL(5,2), default=0.00)
-    total_correct = Column(Integer, default=0)
-    total_questions = Column(Integer, default=0)
-    status = Column(Enum('in_progress', 'completed', 'abandoned', 'expired'), default='in_progress')
-    
-    # Timestamps
-    created_at = Column(DateTime, default=func.now())
-    
-    # Relationships
-    quiz = relationship("Quiz")
-    candidate = relationship("ProfileCandidat")
-
-class QuizAnswer(Base):
-    __tablename__ = "quiz_answers"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    attempt_id = Column(Integer, ForeignKey("quiz_attempts.id"), nullable=False)
-    question_id = Column(Integer, ForeignKey("quiz_questions.id"), nullable=False)
-    
-    # Answer details - matching actual database schema
-    selected_options = Column(Text, nullable=False)
-    is_correct = Column(Boolean, default=False)
-    time_taken_seconds = Column(Integer)
-    
-    # Timestamps
-    created_at = Column(DateTime, default=func.now())
-    
-    # Relationships
-    attempt = relationship("QuizAttempt", backref="answers")
-    question = relationship("QuizQuestion")
-
-
-# Enum pour les statuts des créneaux d'entretien
-class SlotStatus(PyEnum):
-    FREE = "free"
-    RESERVED = "reserved"
-    CONFIRMED = "confirmed"
-
-
-# Modèle pour les créneaux d'entretien
-class InterviewSlot(Base):
-    __tablename__ = "interview_slots"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    recruiter_id = Column(Integer, ForeignKey("hr_admins.id"), nullable=False)
-    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
-    application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
-    
-    start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime, nullable=False)
-    status = Column(Enum(SlotStatus), default=SlotStatus.FREE)
-    
-    # Nouveau champ pour marquer la confirmation des créneaux par l'agent RH
-    is_confirmed = Column(Boolean, default=False)
-    confirmed_at = Column(DateTime, nullable=True)
-    confirmed_by = Column(Integer, ForeignKey("hr_admins.id"), nullable=True)
-    
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    
-    # Relations
-    recruiter = relationship("HRAdmin", foreign_keys=[recruiter_id], backref="interview_slots")
-    job = relationship("Job", backref="interview_slots")
-    application = relationship("Application", backref="interview_slots")
-    confirmed_by_admin = relationship("HRAdmin", foreign_keys=[confirmed_by])
-
