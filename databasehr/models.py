@@ -203,6 +203,8 @@ class Job(Base):
     priority = Column(Enum('low', 'normal', 'urgent'), default='normal')
     status = Column(Enum('draft', 'active', 'paused', 'closed', 'filled'), default='draft')
     assigned_employee_id = Column(Integer, ForeignKey("employees.id"))
+    interview_time = Column(String(50))
+    interview_type = Column(String(50))
     
     # Dates importantes
     deadline = Column(Date)

@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        160,
-        -64
+        6880,
+        10832
       ],
-      "id": "9a3c4e5b-6d5c-44af-89bc-84dba64a41ec",
+      "id": "8b20b0c2-d459-4bcd-b070-bac8a977b53c",
       "name": "Analyze quiz webhook",
       "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
     },
@@ -40,14 +40,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        544,
-        0
+        7104,
+        10832
       ],
-      "id": "16126b2b-ff23-4376-8e7f-59c3afd2aedc",
+      "id": "c32a6d86-c557-4464-adae-81517945b79c",
       "name": "Compatibility1",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -61,10 +61,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        1216,
-        48
+        7456,
+        10832
       ],
-      "id": "007ae08f-1de7-4318-ba3f-0d0792d85bbd",
+      "id": "96e41ab6-3f79-4005-bb8a-2f5386c51a9c",
       "name": "Respond to Webhook4"
     },
     {
@@ -77,10 +77,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        2112,
-        256
+        6880,
+        11504
       ],
-      "id": "c3089be1-ef2b-4f59-896d-bdf0eb87ddd5",
+      "id": "081c8d1b-dfaa-413d-8b92-9dd2bd01cd48",
       "name": "Quiz creation",
       "webhookId": "69c5f680-542e-4c5e-82cf-9bd935078c71"
     },
@@ -89,10 +89,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        3344,
-        672
+        7904,
+        11504
       ],
-      "id": "2fa99993-2feb-4447-a94e-66a339a2e491",
+      "id": "31647580-6e1f-46d5-ab11-2fffd70fda41",
       "name": "Merge4"
     },
     {
@@ -118,14 +118,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        2960,
-        800
+        7552,
+        11568
       ],
-      "id": "d9c0f4a3-09b8-4fb3-8e3e-b68539eb9dda",
+      "id": "d1f01cdd-7089-4e26-88ec-d163a58f71b4",
       "name": "Quiz generator",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -140,10 +140,10 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        2368,
-        464
+        7104,
+        11504
       ],
-      "id": "aed47bf2-1bb1-49db-b6ac-fe4a097089b4",
+      "id": "1129360a-1bc0-421b-a15b-bc5e8e43db7f",
       "name": "Split Out"
     },
     {
@@ -154,10 +154,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        3728,
-        432
+        7616,
+        11280
       ],
-      "id": "50fbe32f-ec1c-42c8-a4ed-833d4c902384",
+      "id": "03f3cb2b-2a63-45d6-9e0f-f60e5a450236",
       "name": "Respond to Webhook3"
     },
     {
@@ -167,10 +167,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3872,
-        832
+        8128,
+        11568
       ],
-      "id": "9632d3ee-adea-4583-845b-5d231d19f7d5",
+      "id": "7e302441-b354-40de-b027-88dd139a8364",
       "name": "Code4"
     },
     {
@@ -183,10 +183,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        2656,
-        496
+        7328,
+        11504
       ],
-      "id": "6a845bf4-fda2-47c8-a7b4-f1be4253c3b1",
+      "id": "4d3a7ed6-d35f-4e5a-b4a3-4acf90850ab4",
       "name": "Loop Over Items"
     },
     {
@@ -199,10 +199,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        2992,
-        1184
+        8480,
+        12192
       ],
-      "id": "617d6f51-f18e-4cef-b9fd-d1b1221eaf3b",
+      "id": "1057f114-2084-4d4f-ad9c-9ca0e468b246",
       "name": "Analyze compatibility webhook",
       "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
     },
@@ -216,10 +216,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        176,
-        1696
+        5824,
+        12912
       ],
-      "id": "6f92b2ef-17ec-4dc3-9b53-453cf0375521",
+      "id": "b1160098-ae7f-40c4-bc9f-0e29b51bd087",
       "name": "Analyze cv webhook",
       "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
     },
@@ -233,10 +233,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        224,
-        1104
+        8480,
+        11584
       ],
-      "id": "7b0d71c5-7675-40b6-a43a-42e5fb89bea1",
+      "id": "ad1be76b-bcb2-41a7-9bad-0c3db250daa6",
       "name": "Account creation webhook",
       "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
     },
@@ -247,10 +247,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2192,
-        1056
+        9504,
+        11584
       ],
-      "id": "83b03528-cecb-4582-90bf-329b13ebd92c",
+      "id": "18bf6c0d-6af1-469e-8e90-7010128c2af2",
       "name": "Code3"
     },
     {
@@ -276,15 +276,15 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        3376,
-        1248
+        8704,
+        12192
       ],
-      "id": "48cf4897-3fff-42c7-863d-0bdd08517981",
+      "id": "3e2f648f-5a9d-4f52-b71c-9a63e14cbdca",
       "name": "Compatibility",
       "alwaysOutputData": false,
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -332,10 +332,10 @@
       "type": "@n8n/n8n-nodes-langchain.informationExtractor",
       "typeVersion": 1.2,
       "position": [
-        1024,
-        432
+        8928,
+        10992
       ],
-      "id": "717b5662-6d98-4537-8e42-7d81ff760ed6",
+      "id": "f0c7b2c2-e880-42ae-95c6-78b0d06971e5",
       "name": "Information Extractor1",
       "retryOnFail": true,
       "alwaysOutputData": true
@@ -349,10 +349,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        544,
-        992
+        8704,
+        11584
       ],
-      "id": "1da1df1c-1473-4091-ab10-2acd43ccaf59",
+      "id": "5bb35cec-f588-44ef-822b-5ce41b95432d",
       "name": "Extract from File1"
     },
     {
@@ -367,14 +367,14 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        1136,
-        592
+        8992,
+        11216
       ],
-      "id": "5a5adcb4-939e-4ecc-ac61-f7ca0ed9a715",
+      "id": "bf2a9679-0a2d-4a19-9a70-ca78571ad97c",
       "name": "OpenAI Chat Model1",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -386,10 +386,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1776,
-        1024
+        9280,
+        11536
       ],
-      "id": "fb0d7e0c-54dc-47f6-a271-cc1039cc29e7",
+      "id": "57021ac1-1a34-4ef6-93f3-efcffc94d338",
       "name": "Merge7"
     },
     {
@@ -415,14 +415,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        880,
-        656
+        8928,
+        11392
       ],
-      "id": "bfa51794-60f9-4ed9-875c-f79d096b9d55",
+      "id": "3674adac-3b5b-44f1-a6c8-615d1d7b9d02",
       "name": "Skills1",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -450,14 +450,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        880,
-        816
+        8928,
+        11584
       ],
-      "id": "a3ec6155-bdfa-498c-9bb8-ac85f189f84d",
+      "id": "2b981c98-9f24-4c02-9698-983a277c46f3",
       "name": "languages1",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -485,14 +485,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        864,
-        976
+        8928,
+        11776
       ],
-      "id": "50a77d36-d17f-4bf0-bd32-04aadfebd25b",
+      "id": "be389940-0496-48bf-b633-f488c73e9054",
       "name": "educations1",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -520,14 +520,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        848,
-        1168
+        8928,
+        11968
       ],
-      "id": "45d3c733-8c55-4da4-a420-4e815e81d91e",
+      "id": "e5b6dc1c-81d9-4298-b457-921a92b7796c",
       "name": "certificates1",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -540,10 +540,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        2496,
-        1072
+        9728,
+        11584
       ],
-      "id": "f3322a8a-56f3-4a52-beaa-1f89235129c3",
+      "id": "f98a339f-ccf3-4759-9507-e9af872bf488",
       "name": "Respond to Webhook2"
     },
     {
@@ -589,10 +589,10 @@
       "type": "@n8n/n8n-nodes-langchain.informationExtractor",
       "typeVersion": 1.2,
       "position": [
-        704,
-        1360
+        6272,
+        11840
       ],
-      "id": "ce8d01f9-7ba3-414b-ba66-8d7c1f5d5898",
+      "id": "063340d1-bd43-4e30-b3b2-f39f21239366",
       "name": "Information Extractor",
       "retryOnFail": true,
       "alwaysOutputData": true
@@ -606,10 +606,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        480,
-        1520
+        6048,
+        12480
       ],
-      "id": "778ed010-38a6-44b1-b6ab-fcddfbab3fa4",
+      "id": "8b299967-c714-4f0e-a966-82ec361e539a",
       "name": "Extract from File"
     },
     {
@@ -624,14 +624,14 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        800,
-        1504
+        6344,
+        12064
       ],
-      "id": "cf923618-acf2-426a-b37e-5e621806bb14",
+      "id": "f0173352-4986-4b67-bbb4-c1846fb1b211",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -643,10 +643,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1536,
-        1616
+        6624,
+        12384
       ],
-      "id": "303d0c2a-b829-47cc-b512-9ed852d24c31",
+      "id": "17973eea-c55e-40a9-b05e-80325655e8b3",
       "name": "Merge"
     },
     {
@@ -656,10 +656,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1744,
-        1664
+        6848,
+        12432
       ],
-      "id": "7dccb1c2-8322-4082-b0f1-43c97dbb4998",
+      "id": "258d6920-7ef2-491e-8b07-5a2d78b9a3ff",
       "name": "Code"
     },
     {
@@ -685,14 +685,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        688,
-        1664
+        6272,
+        12240
       ],
-      "id": "2eed9732-e9e5-4417-8fde-8f0f5542e037",
+      "id": "bd078911-ccf0-4b75-b2e6-0247da6a2ef8",
       "name": "Skills",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -720,14 +720,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        688,
-        1840
+        6272,
+        12432
       ],
-      "id": "35ea6b7d-c41c-44f0-bf30-196cbd45c6bb",
+      "id": "16e0fb8a-81b8-4caf-8795-b646e615d1ff",
       "name": "languages",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -755,14 +755,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        688,
-        2064
+        6272,
+        12744
       ],
-      "id": "f101472e-e9e4-4f2c-9bb7-ac0804d0f519",
+      "id": "a43865cd-a2e0-44f8-baf0-79fa7daeab6c",
       "name": "educations",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -790,14 +790,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        688,
-        2304
+        6272,
+        12936
       ],
-      "id": "137e3ebe-86d0-420c-9dec-f872dc9cbaf1",
+      "id": "5eb05955-5770-45f0-9bd6-6e8551681273",
       "name": "certificates",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -825,14 +825,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        2048,
-        1456
+        7072,
+        12140
       ],
-      "id": "54dc1e5c-f35d-42bf-bbc1-908db86abb59",
+      "id": "eeb6bbf6-6024-4e61-bd50-b62eaeddeca3",
       "name": "good points",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -860,14 +860,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        2112,
-        1728
+        7072,
+        12428
       ],
-      "id": "391648c1-a026-4457-9c65-135789711cc7",
+      "id": "d9d7855d-af5f-46be-a4ad-73e6ce52da71",
       "name": "weak points",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -895,14 +895,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        2144,
-        1920
+        7072,
+        12792
       ],
-      "id": "41936b48-2035-4bb6-bdbd-5bddb3dae12c",
+      "id": "558c8960-771c-4818-ace6-609079df9cf5",
       "name": "categorie points",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -930,14 +930,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        3360,
-        1568
+        8000,
+        12216
       ],
-      "id": "3f45d6f4-9cd3-493b-ac24-6e1f606d19e9",
+      "id": "312a5684-4415-48cb-a6ff-1c9adfa56549",
       "name": "improvements",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -949,10 +949,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        2656,
-        1632
+        7488,
+        12328
       ],
-      "id": "df3eae94-9b98-4c6a-a6e9-7ec901590edf",
+      "id": "ce0057a3-62ab-4543-b1de-815d202c9e45",
       "name": "Merge1"
     },
     {
@@ -962,10 +962,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3056,
-        1664
+        7776,
+        12360
       ],
-      "id": "ae839ad3-79da-4ce4-b0a6-7381d0978121",
+      "id": "c27590e5-3ccf-429f-a3c9-adcf1364a215",
       "name": "Code1"
     },
     {
@@ -975,10 +975,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4176,
-        1712
+        8576,
+        12480
       ],
-      "id": "465aa11e-db7d-4fba-bbbd-7911e4a4018a",
+      "id": "10aa9abc-e192-4650-8ba5-883479774f9b",
       "name": "Code2"
     },
     {
@@ -993,10 +993,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        3840,
-        1696
+        8352,
+        12448
       ],
-      "id": "44ea8d4d-c25b-47f9-8803-163d23250e2f",
+      "id": "65ec4f01-ed58-45cf-9234-ecdee3120f5b",
       "name": "Merge2"
     },
     {
@@ -1022,14 +1022,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        3392,
-        1904
+        8000,
+        12888
       ],
-      "id": "7b261ee3-2c10-44ab-9da3-29c34038f967",
+      "id": "c14207cf-d56e-4e5c-93a4-d4c049d8d7fc",
       "name": "honest summary",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -1042,10 +1042,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        4384,
-        1712
+        8800,
+        12480
       ],
-      "id": "2cb166b9-6d59-4002-9d1d-aa42d20703aa",
+      "id": "78f96e75-b9c6-4616-8a1d-71f6ba4e7d96",
       "name": "Respond to Webhook"
     },
     {
@@ -1053,10 +1053,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        2000,
-        2208
+        7136,
+        13032
       ],
-      "id": "21e62664-7d80-4658-98bb-bd58dac66116",
+      "id": "63d67a7d-e3b2-41ab-9d3d-106cf8731fe9",
       "name": "Merge3"
     },
     {
@@ -1082,14 +1082,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        3392,
-        2288
+        7424,
+        13032
       ],
-      "id": "8d69daaf-eece-4f35-a9af-216302e9cb39",
+      "id": "0c8770cf-7284-46f2-8308-d535e5ab9e22",
       "name": "profiles score",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -1103,10 +1103,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        4048,
-        1296
+        9056,
+        12192
       ],
-      "id": "bf8f12f8-88a5-4d1b-9f42-a4bf759296f6",
+      "id": "0d689392-3019-43e6-a9b3-0c988a860f8c",
       "name": "Respond to Webhook1"
     },
     {
@@ -1132,14 +1132,14 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        2928,
-        128
+        7104,
+        11056
       ],
-      "id": "9634c00a-5951-47c1-a0db-dae643db9fb8",
+      "id": "36ed487d-2bde-4f09-9343-70b627f31956",
       "name": "Compatibility2",
       "credentials": {
         "openAiApi": {
-          "id": "Gn758lIsoRd83KoG",
+          "id": "XRnXf0O7FKLhe7yz",
           "name": "n8n free OpenAI API credits"
         }
       }
@@ -1153,10 +1153,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        3600,
-        176
+        7456,
+        11056
       ],
-      "id": "708c190b-0388-4a41-a5a9-baf90be94066",
+      "id": "32a06ae1-ba5e-401d-89a3-55f46c9a7f8f",
       "name": "Respond to Webhook5"
     },
     {
@@ -1169,10 +1169,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        2544,
-        64
+        6880,
+        11056
       ],
-      "id": "7e00b447-5261-4b7d-9130-5008c2293e86",
+      "id": "82d4152c-667d-47c7-a9f9-5a2a26d134f9",
       "name": "Clean conversation webhook",
       "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
     },
@@ -1185,15 +1185,15 @@
       "type": "n8n-nodes-base.zoom",
       "typeVersion": 1,
       "position": [
-        832,
-        -656
+        7104,
+        11792
       ],
-      "id": "da6ecad5-5cee-4ae1-bd5c-2eb0aa136cc7",
+      "id": "1763bea7-67da-45a7-8600-41fd55cd63f7",
       "name": "Create a meeting",
       "credentials": {
         "zoomOAuth2Api": {
-          "id": "rANcBGxQoisdu6zI",
-          "name": "Zoom account 2"
+          "id": "gfQecyfE1Wc3L4nP",
+          "name": "Zoom account"
         }
       }
     },
@@ -1207,10 +1207,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        464,
-        -672
+        6880,
+        11792
       ],
-      "id": "bb09fdf4-4d0c-4148-8d87-6527f10d054a",
+      "id": "7cc40b85-47e5-4d9f-9dc0-9d67fc0884c2",
       "name": "Clean conversation webhook1",
       "webhookId": "3c601ca4-48b3-40e9-ab29-19c374880442"
     },
@@ -1223,11 +1223,129 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        1344,
-        -688
+        7328,
+        11792
       ],
-      "id": "dd4e3713-669c-44a1-af4d-73a89d3756dc",
+      "id": "c9db2664-d95a-44f8-bce8-3734259967a5",
       "name": "Respond to Webhook6"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/send-emails",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8939b665-5112-4a76-93e8-cf04b8bd7716",
+      "name": "Send Emails Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        6880,
+        10608
+      ],
+      "webhookId": "f705ea7c-8817-4fbd-92ea-52d6d061d43f"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "to",
+              "value": "={{ $json.body.to }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "subject",
+              "value": "={{ $json.body.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "html",
+              "value": "={{ $json.body.html }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "text",
+              "value": "={{ $json.body.text }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "wait",
+              "value": "={{ $json.body.wait }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f881a13f-2a02-4048-96b2-3d4533b1568c",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        7104,
+        10608
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.wait }}",
+        "unit": "minutes"
+      },
+      "id": "99a8747d-4a97-40fb-8ca9-49737b485e62",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        7328,
+        10608
+      ],
+      "webhookId": "80ed408e-8c71-4e57-b13c-de7261f15653"
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@example.com",
+        "toEmail": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "html": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "1f73bbad-1116-451d-94e5-0475097c6181",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        7552,
+        10608
+      ],
+      "webhookId": "62c46403-5cf7-42df-94a5-47345a57f203",
+      "credentials": {
+        "smtp": {
+          "id": "TWfjUW3xLNxEiIVX",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Email sent successfully\" } }}",
+        "options": {}
+      },
+      "id": "2e1186f4-459b-40f9-9e68-55d6ee5aa16f",
+      "name": "Respond to Webhook7",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        7776,
+        10608
+      ]
     }
   ],
   "connections": {
@@ -1812,11 +1930,60 @@
           }
         ]
       ]
+    },
+    "Send Emails Webhook": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "f1bfad8ac962066b5bf4476dd1c6abfdb1d59fd136d3ca1f2bdcd7223e343d40"
+    "instanceId": "a6e37ad967e991cde342049b6885c804d206326b0590f13d5916e99112c5f3c6"
   }
 }
+
+
+lafita2527@juhxs.com
+yassine123Y
+https://lafita2527.app.n8n.cloud/workflow/veG0KAdEm1PubRwIbdkRr

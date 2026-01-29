@@ -171,6 +171,9 @@ class Job(Base):
     priority = Column(Enum('low', 'normal', 'urgent', name='job_priority'), default='normal')
     status = Column(Enum('draft', 'active', 'paused', 'closed', 'filled', name='job_status'), default='draft')
     assigned_employee_id = Column(Integer, ForeignKey("employees.id"))
+    # Optional interview defaults used by scheduling workflows
+    interview_time = Column(String(50))
+    interview_type = Column(String(50))
     deadline = Column(Date)
     start_date = Column(Date)
     created_at = Column(DateTime, default=func.now())
@@ -203,6 +206,8 @@ class Application(Base):
     hr_rating = Column(Numeric(3, 2))
     hr_notes = Column(Text)
     interview_date = Column(DateTime)
+    interview_time = Column(String(50))
+    interview_type = Column(String(50))
     reviewed_by = Column(Integer, ForeignKey("hr_admins.id"))
     reviewed_at = Column(DateTime)
     decision_date = Column(DateTime)
@@ -214,6 +219,8 @@ class Application(Base):
     compatibility_score = Column(Numeric(5, 2), comment="Compatibility score between candidate and job (0-100)")
     compatibility_reason = Column(Text, comment="Detailed reason for compatibility score from AI analysis")
     n8n_webhook_triggered = Column(Boolean, default=False, comment="Flag to track if n8n webhook was triggered")
+    google_calendar_event_id = Column(String(255))
+    google_meet_link = Column(String(500))
     
     user = relationship("User")
     job = relationship("Job")
